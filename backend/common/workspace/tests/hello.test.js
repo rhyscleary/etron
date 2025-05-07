@@ -7,7 +7,6 @@ describe('Tests index', function () {
     it('verifies successful response', async () => {
         const event = {}
         const context = {};
-        const test = "hi"
 
         const result = await helloHandler(event, context)
 
