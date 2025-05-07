@@ -1,5 +1,5 @@
 {
-  "name": "hello-function",
+  "name": "etron-app",
   "version": "1.0.0",
   "description": "The modular backend for ETRON's functions",
   "author": "InSync",
@@ -7,9 +7,12 @@
     "axios": ">=1.6.0"
   },
   "scripts": {
-    
+    "test": "jest tests/unit/ tests/integration/ tests/"
   },
   "devDependencies": {
-    
+    "@babel/core": "^7.27.1",
+    "@babel/preset-env": "^7.27.2",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0"
   }
 }
