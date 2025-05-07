@@ -1,0 +1,62 @@
+name: Backend CI/CD workflow
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for building
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies for building
+        run: |
+          cd backend
+          npm install
+
+      - name: Build the SAM application
+        run: |
+          cd backend
+          sam build --no-cached
+  
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for testing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies for testing
+        run: |
+          cd backend
+          npm install
+
+      - name: Run test for the SAM application
+        run: |
+          cd backend
+          npm run test
+          
+  #deploy:
