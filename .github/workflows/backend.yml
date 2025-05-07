@@ -113,7 +113,7 @@ jobs:
       - name: Deploy the SAM app
         run: |
           cd backend
-          sam deploy --stack-name ${{ env.STACK_NAME }} \
+          sam deploy --stack-name "${{ env.STACK_NAME }}" \
                       --region ap-southeast-2 \
                       --capabilities CAPABILITY_IAM \
                       --confirm-changeset \
