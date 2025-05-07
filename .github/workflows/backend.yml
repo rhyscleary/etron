@@ -16,11 +16,54 @@ on:
       - 'backend/**'
 
 jobs:
-          
+  backend_build:
+    runs-on: ubuntu-latest
+    name: Backend Build
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for building
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies for building
+        run: |
+          cd backend
+          npm install
+
+      - name: Build the SAM application
+        run: |
+          cd backend
+          sam build --no-cached
+  
+  backend_test:
+    runs-on: ubuntu-latest
+    name: Backend Tests
+    needs: backend_build
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js for testing
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies for testing
+        run: |
+          cd backend
+          npm install
+
+      - name: Run test for the SAM application
+        run: |
+          cd backend
+          npm run test       
   backend_deploy:
     runs-on: ubuntu-latest
     name: Build and Deploy Backend to AWS
-    #needs: backend_test
+    needs: backend_test
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -64,5 +107,14 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: echo "STACK_NAME=etron-prod" >> $GITHUB_ENV
 
-      - name: Check STACK_NAME
-        run: echo "STACK_NAME=${{ env.STACK_NAME }}"
+      #- name: Check STACK_NAME
+        #run: echo "STACK_NAME=${{ env.STACK_NAME }}"
+
+      - name: Deploy the SAM app
+        run: |
+          cd backend
+          sam deploy --stack-name "${{ env.STACK_NAME }}" \
+                      --region ap-southeast-2 \
+                      --capabilities CAPABILITY_IAM \
+                      --confirm-changeset \
+                      --no-disable-rollback
