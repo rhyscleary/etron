@@ -29,8 +29,10 @@ jobs:
         id: set_stack_name
         run: |
           if [[ github.ref == 'refs/heads/develop' ]]; then
+            echo "hi dev"
             echo "STACK_NAME=etron-dev" >> $GITHUB_ENV
           elif [[ github.ref == 'refs/heads/main' ]]; then
+            echo "hi main"
             echo "STACK_NAME=etron-prod" >> $GITHUB_ENV
           fi
 
