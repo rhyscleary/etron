@@ -102,7 +102,7 @@ jobs:
           sam build --no-cached
 
       - name: Set the stack name
-        if: set_stack_name
+        id: set_stack_name
         run: |
           if [[ github.ref == 'refs/heads/develop' ]]; then
             echo "STACK_NAME = etron-dev" >> $GITHUB_ENV
