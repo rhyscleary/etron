@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - develop
+      - 'feature-*'
     paths:
       - 'backend/**'
 
@@ -12,6 +13,7 @@ on:
     branches:
       - main
       - develop
+      - 'feature-*'
     paths:
       - 'backend/**'
 
@@ -64,6 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Build and Deploy Backend to AWS
     needs: backend_test
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
