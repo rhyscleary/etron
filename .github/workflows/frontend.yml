@@ -45,7 +45,7 @@ jobs:
   frontend_android_build:
     runs-on: ubuntu-latest
     name: Build Android
-    needs: frontend_test
+    #needs: frontend_test
 
     steps:
       - name: Checkout source code
