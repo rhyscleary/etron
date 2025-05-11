@@ -42,8 +42,38 @@ jobs:
           cd frontend
           npm run test
 
-  frontend_deploy_build:
+  frontend_android_build:
     runs-on: ubuntu-latest
-    name: Deploy to Expo and build for iOS and Android
+    name: Build Android
     needs: frontend_test
-    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+         
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Set up EAS CLI
+        run: |
+          npm install -g eas-cli
+          eas login --token ${{ secrets.EXPO_TOKEN }}
+          
+
+      - name: Build Android APK
+        run: |
+          cd frontend
+          eas build --platform android --profile development
+
+  #frontend_deploy_build:
+    #runs-on: ubuntu-latest
+    #name: Deploy to Expo and build for iOS and Android
+    #needs: frontend_test
+    #if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
