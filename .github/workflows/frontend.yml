@@ -20,7 +20,7 @@ on:
 
 jobs:
   frontend_test:
-    runs-on: ubuntu_latest
+    runs-on: ubuntu-latest
     name: Run tests for React Native App
 
     steps:
