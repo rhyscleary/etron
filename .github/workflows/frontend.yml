@@ -73,7 +73,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd frontend
-          eas build --platform android --profile development
+          eas build --platform android --profile development --non-interactive
 
   #frontend_deploy_build:
     #runs-on: ubuntu-latest
