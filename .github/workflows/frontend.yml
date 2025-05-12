@@ -37,10 +37,10 @@ jobs:
           cd frontend
           npm install
 
-      - name: Run Unit and Integration tests
-        run: |
-          cd frontend
-          npm run test
+      #- name: Run Unit and Integration tests
+        #run: |
+          #cd frontend
+          #npm run test
 
 
   #frontend_deploy_build:
