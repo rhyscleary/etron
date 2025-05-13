@@ -37,10 +37,10 @@ jobs:
           cd frontend
           npm install
 
-      #- name: Run Unit and Integration tests
-        #run: |
-          #cd frontend
-          #npm run test
+      - name: Run Unit and Integration tests
+        run: |
+          cd frontend
+          npm run test
 
   frontend_android_build:
     runs-on: ubuntu-latest
@@ -76,10 +76,3 @@ jobs:
         run: |
           cd frontend
           eas build --platform android --profile development --non-interactive
-
-
-  #frontend_deploy_build:
-    #runs-on: ubuntu-latest
-    #name: Deploy to Expo and build for iOS and Android
-    #needs: frontend_test
-    #if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
