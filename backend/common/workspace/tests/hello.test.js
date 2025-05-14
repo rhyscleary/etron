@@ -1,7 +1,7 @@
 'use strict';
 
-//const { helloHandler } = require('../functions/hello.js');
-import { helloHandler } from '../functions/hello.js';
+const { helloHandler } = require('../functions/hello.js');
+//import { helloHandler } from '../functions/hello.js';
 
 describe('Tests index', function () {
     it('verifies successful response', async () => {
