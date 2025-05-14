@@ -11,7 +11,7 @@
  * 
  */
 
-export const helloHandler = async (event, context) => {
+const helloHandler = async (event, context) => {
     const response = {
       statusCode: 200,
       body: JSON.stringify({
@@ -21,4 +21,6 @@ export const helloHandler = async (event, context) => {
 
     return response;
   };
+
+  module.exports = { helloHandler };
   

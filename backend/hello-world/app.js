@@ -18,7 +18,6 @@ export const lambdaHandler = async (event, context) => {
         message: 'hello world',
       })
     };
-
     return response;
   };
   
