@@ -15,10 +15,25 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./functions/
-      Handler: create-workspace.workspaceHandler
+      Handler: workspace.handler
       Events:
         CreateWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace/create
+            Path: /workspace
             Method: post
+        UpdateWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace
+            Method: put
+        GetWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace
+            Method: get
+        DeleteWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace
+            Method: delete
