@@ -14,7 +14,7 @@ const handler = async (event, context) => {
 
     try {
         switch (event.routeKey) {
-            // add a workspace or update an existing one
+            // add a workspace
             case "PUT /workspace":
                 let requestJSON = JSON.parse(event.body);
                 let id = requestJSON.workspaceId || uuidv4();
