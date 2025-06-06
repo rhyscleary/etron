@@ -6,7 +6,7 @@ const cognitoAuthConfig = {
     client_id: "30uq8adstk0l8blharsir4f6ed",
     redirect_uri: "http://localhost:8081/logged-in",
     response_type: "code",
-    scope: "email openid phone",
+    scope: "email openid phone aws.cognito.signin.user.admin",
 };
 
 /*export default function RootLayout() {
