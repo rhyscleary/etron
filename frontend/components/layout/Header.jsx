@@ -1,7 +1,7 @@
 // Author(s): Rhys Cleary
 
-import { useNavigation } from "@react-navigation/native";
-import { Appbar, useTheme } from "react-native-paper";
+import { useNavigation } from "expo-router";
+import { Appbar, useTheme, Searchbar } from "react-native-paper";
 
 /*
 TODO:
@@ -45,6 +45,7 @@ const Header = ({
                     <Appbar.Action icon="check" onPress={onRightIconPress} />
                 ) : null
             }
+
         </Appbar.Header>
     );
 }

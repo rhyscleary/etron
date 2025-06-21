@@ -1,0 +1,26 @@
+import { MD3LightTheme, MD3DarkTheme } from "react-native-paper";
+
+const LightTheme = {
+
+};
+
+const DarkTheme = {
+    ...MD3DarkTheme,
+    colors: {
+        ...MD3DarkTheme.colors,
+        primary: '#118AB2', 
+        secondary: '#577590',
+        text: '#F7F7F7',
+        outline: '#577590', // the colour for text input and button outlines
+        background: '#2B2B2B', // background for screens
+        error: '#EF476F', // error messages and dangerous actions
+        icon: '#F7F7F7',
+        navRailBackground: '#1D4364'
+
+    }
+};
+
+export const themes = {
+    light: LightTheme,
+    dark: DarkTheme
+}
