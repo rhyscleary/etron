@@ -1,7 +1,7 @@
 // Author(s): Rhys Cleary
 
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Button, Icon, useTheme } from 'react-native-paper';
+import { Icon, useTheme } from 'react-native-paper';
 
 const DescriptiveButton = ({
     icon,
@@ -39,7 +39,8 @@ const styles = StyleSheet.create({
     descriptiveButton: {
         borderRadius: 10,
         width: '100%',
-        borderWidth: 1
+        borderWidth: 1,
+        marginVertical: 6,
     },
     innerContainer: {
         flexDirection: 'row',
