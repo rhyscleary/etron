@@ -12,8 +12,9 @@ const DarkTheme = {
         secondary: '#577590',
         text: '#F7F7F7',
         outline: '#577590', // the colour for text input and button outlines
-        background: '#2B2B2B', // background for screens
+        //background: '#2B2B2B', // background for screens
         error: '#EF476F', // error messages and dangerous actions
+        //error: '#EF4747', // red version
         icon: '#F7F7F7',
         navRailBackground: '#1D4364'
 

@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { useNavigation } from "expo-router";
+import { useRouter } from "expo-router";
 import { Appbar, useTheme, Searchbar } from "react-native-paper";
 
 /*
@@ -21,14 +21,14 @@ const Header = ({
     showPlus,
     onRightIconPress
 }) => {
-    const nav = useNavigation();
+    const router = useRouter();
     const theme = useTheme();
 
     return (
         <Appbar.Header mode="center-aligned" style={{backgroundColor: theme.colors.background}}>
             {
                 showBack ? (
-                    <Appbar.BackAction onPress={() => nav.goBack()} />
+                    <Appbar.BackAction onPress={() => router.back()} />
                 ) : showMenu ? (
                     <Appbar.Action icon="menu" onPress={() => {}} />
                 ) : null
