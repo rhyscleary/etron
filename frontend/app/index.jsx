@@ -1,6 +1,6 @@
 import { Redirect, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Text, Button, TextInput } from 'react-native';
+import { Text, Button, TextInput, View } from 'react-native';
 
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
@@ -12,7 +12,8 @@ import {
     getCurrentUser,
     fetchAuthSession,
     fetchUserAttributes,
-    updateUserAttribute
+    updateUserAttribute,
+    confirmUserAttribute
 } from 'aws-amplify/auth';
 
 
@@ -67,15 +68,54 @@ async function handleUpdateUserAttribute(attributeKey, value) {
     }
 }
 
-function App() {
-    const [newName, setNewName] = useState('');
+async function handleConfirmUserAttribute(userAttributeKey, confirmationCode) {
+    try {
+        await confirmUserAttribute({userAttributeKey, confirmationCode});
+        console.log("User attribute confirmation successful.");
+    } catch (error) {
+        console.log("Error confirming user attribute:", error);
+    }
+}
 
-    const handleNewNameChange = (text) => {
-        setNewName(text);
+function App() {
+    const [newGivenName, setNewGivenName] = useState('');
+    const handleNewGivenNameInput = (text) => {
+        setNewGivenName(text);
+    }
+    const changeGivenNameButtonPressed = () => {
+        handleUpdateUserAttribute('given_name', newGivenName);
     }
 
-    const changeNameButtonPressed = () => {
-        handleUpdateUserAttribute('given_name', newName);
+    const [newFamilyName, setNewFamilyName] = useState('');
+    const handleNewFamilyNameInput = (text) => {
+        setNewFamilyName(text);
+    }
+    const changeFamilyNameButtonPressed = () => {
+        handleUpdateUserAttribute('family_name', newFamilyName);
+    }
+    
+    const [newPhoneNumber, setNewPhoneNumber] = useState('');
+    const handleNewPhoneNumberInput = (text) => {
+        setNewPhoneNumber(text);
+    }
+    const changePhoneNumberButtonPressed = () => {
+        handleUpdateUserAttribute('phone_number', newPhoneNumber);
+    }
+
+    const [confirmationCode, setConfirmationCode] = useState('');
+    const handleConfirmationCodeInput = (text) => {
+        setConfirmationCode(text);
+    }
+    const confirmationCodeButtonPressed = () => {
+        handleConfirmUserAttribute("email", confirmationCode);
+    }
+
+    const [newEmail, setNewEmail] = useState('');
+    const handleNewEmailInput = (text) => {
+        setNewEmail(text);
+    }
+    const changeEmailButtonPressed = () => {
+        handleUpdateUserAttribute('email', newEmail);
     }
 
     useEffect(() => {
@@ -84,10 +124,30 @@ function App() {
 
     return ( 
         <>
-            <Text>Hello</Text>
-            <SignOutButton />
-            <TextInput value={newName} onChangeText={handleNewNameChange}/>
-            <Button title="changeName" onPress={(changeNameButtonPressed)}/>
+            <View>
+                <Text>Hello</Text>
+                <SignOutButton />
+            </View>
+            <View>
+                <TextInput onChangeText={handleNewGivenNameInput}/>
+                <Button title="Change first name" onPress={(changeGivenNameButtonPressed)}/>
+            </View>
+            <View>
+                <TextInput onChangeText={handleNewFamilyNameInput}/>
+                <Button title="Change last name" onPress={(changeFamilyNameButtonPressed)}/>
+            </View>
+            <View>
+                <TextInput onChangeText={handleNewPhoneNumberInput}/>
+                <Button title="Change phone number" onPress={(changePhoneNumberButtonPressed)}/>
+            </View>
+            <View>
+                <TextInput onChangeText={handleNewEmailInput}/>
+                <Button title="Change email" onPress={(changeEmailButtonPressed)}/>
+            </View>
+            <View>
+                <TextInput onChangeText={handleConfirmationCodeInput}/>
+                <Button title="Confirmation code" onPress={(confirmationCodeButtonPressed)}/>
+            </View>
         </>
     );
 }
