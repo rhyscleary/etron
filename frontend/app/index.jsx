@@ -50,23 +50,20 @@ async function handleUpdateUserAttribute(attributeKey, value) {
                 value
             }
         });  //sometimes, output needs to be checked via nextStep property for if it needs a confirmation code
-        handleUpdateUserAttributeNextSteps(output);
+
+        const { nextStep } = output;
+
+        switch (nextStep.updateAttributeStep) {
+            case 'CONFIRM_ATTRIBUTE_WITH_CODE':  //confirming needs to be done with confirmUserAttribute from https://aws-amplify.github.io/amplify-js/api/functions/aws_amplify.auth.confirmUserAttribute.html
+                const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+                console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
+                break;
+            case 'DONE':
+                console.log(`Attribute was updated successfully`);
+                break;
+        }
     } catch (error) {
         console.log("Error updating user attribute:", error);
-    }
-}
-
-function handleUpdateUserAttributeNextSteps(output) {
-    const { nextStep } = output;
-
-    switch (nextStep.updateAttributeStep) {
-        case 'CONFIRM_ATTRIBUTE_WITH_CODE':  //confirming needs to be done with confirmUserAttribute from https://aws-amplify.github.io/amplify-js/api/functions/aws_amplify.auth.confirmUserAttribute.html
-            const codeDeliveryDetails = nextStep.codeDeliveryDetails;
-            console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
-            break;
-        case 'DONE':
-            console.log(`attribute was updated successfully`);
-            break;
     }
 }
 
