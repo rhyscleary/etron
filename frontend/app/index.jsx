@@ -1,16 +1,7 @@
-import { Redirect, useRouter } from "expo-router";
-<<<<<<< HEAD
+import { Redirect, useRouter, Link } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
-import { View } from "react-native";
-
-export default function Index() {
-    
-    return (
-        <Redirect href="/settings" />
-    );
-=======
 import React, { useEffect, useState } from "react";
-import { Text, Button, TextInput, View } from 'react-native';
+import { Button, TextInput, View, Pressable } from 'react-native';
 
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
@@ -32,7 +23,6 @@ function SignOutButton() {
     return (
         <Button onPress={signOut} title="Sign Out" />
     )
->>>>>>> feature-account-details
 }
 
 async function getAuthenticatedUserDetails() {
@@ -47,11 +37,6 @@ async function getAuthenticatedUserDetails() {
         console.log("ID Token:", authSession.tokens.idToken);
         console.log("Access Token:", authSession.tokens.accessToken);
 
-<<<<<<< HEAD
-const Landing = () => {
-    return (
-        <Text>Hello</Text>
-=======
         const userAttributes = await fetchUserAttributes();
         console.log("User Attributes:", userAttributes);
     } catch (err) {
@@ -164,9 +149,20 @@ function App() {
                 <TextInput onChangeText={handleConfirmationCodeInput}/>
                 <Button title="Confirmation code" onPress={(confirmationCodeButtonPressed)}/>
             </View>
+            <Link href="/settings" asChild>
+                <Pressable>
+                    <Text>Go to Settings</Text>
+                </Pressable>
+            </Link>
         </>
->>>>>>> feature-account-details
     );
 }
 
 export default withAuthenticator(App);
+
+/*export default function Index() {
+    
+    return (
+        <Redirect href="/settings" />
+    );
+}*/
