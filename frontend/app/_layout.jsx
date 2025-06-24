@@ -20,4 +20,8 @@ export default function RootLayout() {
         </SafeAreaProvider>
     );
 
+export default function Index() {
+    return (
+        <Stack />
+    );
 }

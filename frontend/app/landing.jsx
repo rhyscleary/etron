@@ -4,7 +4,10 @@ import {Text} from 'react-native';
 
 const Landing = () => {
     return (
-        <Text>Hello, I am RJ!</Text>
+        <div>
+            <Text>Hello, I am test!</Text>
+            <p><a href="#">Register or Login</a></p>
+        </div>
     );
 };
 
