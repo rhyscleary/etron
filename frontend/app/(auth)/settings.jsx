@@ -1,10 +1,10 @@
 // Author(s): Rhys Cleary
 
 import { View, ScrollView } from 'react-native'
-import Header from '../components/layout/Header';
-import DescriptiveButton from '../components/common/buttons/DescriptiveButton';
+import Header from '../../components/layout/Header';
+import DescriptiveButton from '../../components/common/buttons/DescriptiveButton';
 import { router } from 'expo-router';
-import { commonStyles } from '../assets/styles/stylesheets/common';
+import { commonStyles } from '../../assets/styles/stylesheets/common';
 
 const Settings = () => { 
 

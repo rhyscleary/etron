@@ -1,12 +1,12 @@
 // Author(s): Rhys Cleary
 
 import { ScrollView, StyleSheet, View } from "react-native";
-import Header from "../components/layout/Header";
-import { commonStyles } from "../assets/styles/stylesheets/common";
-import DescriptiveButton from "../components/common/buttons/DescriptiveButton";
+import Header from "../../components/layout/Header";
+import { commonStyles } from "../../assets/styles/stylesheets/common";
+import DescriptiveButton from "../../components/common/buttons/DescriptiveButton";
 import { useTheme } from "react-native-paper";
 import { router } from "expo-router";
-import BasicButton from "../components/common/buttons/BasicButton";
+import BasicButton from "../../components/common/buttons/BasicButton";
 
 const WorkspaceManagement = () => {
     const theme = useTheme();
