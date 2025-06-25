@@ -10,12 +10,12 @@ const Settings = () => {
 
     const settingOptionButtons = [
         { icon: "account", label: "Account", },
-        { icon: "", label: "Workspace", onPress: () => router.push("/workspace-management") },
+        { icon: "briefcase-outline", label: "Workspace", onPress: () => router.push("/workspace-management") },
         { icon: "palette-outline", label: "Themes", },
         { icon: "", label: "Accessibility",},
         { icon: "information-outline", label: "Support", },
         { icon: "", label: "Privacy Policy", },
-        { icon: "", label: "Terms and Conditions",},
+        { icon: "file-document-multiple-outline", label: "Terms and Conditions",},
     ];
 
     return (

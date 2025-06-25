@@ -6,15 +6,13 @@ import { commonStyles } from "../assets/styles/stylesheets/common";
 import DescriptiveButton from "../components/common/buttons/DescriptiveButton";
 import { Button, useTheme } from "react-native-paper";
 import { router } from "expo-router";
-import { TextField } from "../components/common/input/TextField";
 import { useState } from "react";
-import BasicButton from "../components/common/buttons/Button";
+import BasicButton from "../components/common/buttons/BasicButton";
+import TextField from "../components/common/input/TextField";
 
 
-//<TextField label="" value={name} placeholder="" />
 
-
-const WorkspaceEdit = () => {
+const WorkspaceDetails = () => {
     const theme = useTheme();
 
     const [name, setName] = useState("");
@@ -32,10 +30,14 @@ const WorkspaceEdit = () => {
                     </View>
                 ) : (
                     <View>
-                        
+                        <View style={styles.textFieldContainer}> 
+                            <TextField label="Name" value={name} placeholder="Name" onChangeText={setName} />
+                            <TextField label="Location (Optional)" value={name} placeholder="Location" onChangeText={setName} />
+                            <TextField label="Description (Optional)" value={name} placeholder="Description" onChangeText={setName} />
+                        </View>
 
-                        <View style={styles.test}>
-                            <BasicButton label="Update" danger />
+                        <View style={styles.buttonContainer}>
+                            <BasicButton label="Update" />
                         </View>
                     </View>
                 )}
@@ -45,18 +47,17 @@ const WorkspaceEdit = () => {
 }
 
 const styles = StyleSheet.create({
-    test: {
+    TextField: {
+        marginVertical: 20
+    },
+    buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
-        marginTop: 12,
-        gap: 12
-        
-    },
-    button: {
-        borderRadius: 10,
-        width: 145
+        marginVertical: 20,
+        gap: 32
     }
+    
     
 })
 
-export default WorkspaceEdit;
+export default WorkspaceDetails;

@@ -11,13 +11,13 @@ const DarkTheme = {
         primary: '#118AB2', 
         secondary: '#577590',
         text: '#F7F7F7',
-        outline: '#577590', // the colour for text input and button outlines
-        //background: '#2B2B2B', // background for screens
+        //outline: '#577590', // the colour for text input and button outlines
+        outline: '#476580', // new outline?
+        buttonBackground: '#2B2B2B', // background for cards and outlined buttons
         error: '#EF476F', // error messages and dangerous actions
         //error: '#EF4747', // red version
         icon: '#F7F7F7',
-        navRailBackground: '#1D4364'
-
+        navigationRailBackground: '#1D4364',
     }
 };
 

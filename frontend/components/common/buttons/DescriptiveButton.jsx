@@ -13,7 +13,7 @@ const DescriptiveButton = ({
     const theme = useTheme();
 
     return (
-        <Pressable onPress={onPress} style={[styles.descriptiveButton, {borderColor: theme.colors.outline}]}>
+        <Pressable onPress={onPress} style={[styles.descriptiveButton, {borderColor: theme.colors.outline}, {backgroundColor: theme.colors.buttonBackground}]}>
             <View 
                 mode="outlined" 
                 style={styles.innerContainer}
@@ -39,7 +39,7 @@ const styles = StyleSheet.create({
     descriptiveButton: {
         borderRadius: 10,
         width: '100%',
-        borderWidth: 1,
+        borderWidth: 2,
         marginVertical: 6,
     },
     innerContainer: {
