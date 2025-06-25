@@ -1,33 +1,41 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native'
+// Author(s): Rhys Cleary
+
+import { View, ScrollView } from 'react-native'
 import Header from '../components/layout/Header';
 import DescriptiveButton from '../components/common/buttons/DescriptiveButton';
-import { Button, useTheme } from 'react-native-paper';
-import TextField from '../components/common/input/TextField';
+import { router } from 'expo-router';
+import { commonStyles } from '../assets/styles/stylesheets/common';
 
-const Settings = () => {
-    const theme = useTheme();
+const Settings = () => { 
+
+    const settingOptionButtons = [
+        { icon: "account", label: "Account", },
+        { icon: "briefcase-outline", label: "Workspace", onPress: () => router.push("/workspace-management") },
+        { icon: "palette-outline", label: "Themes", },
+        { icon: "", label: "Accessibility",},
+        { icon: "information-outline", label: "Support", },
+        { icon: "", label: "Privacy Policy", },
+        { icon: "file-document-multiple-outline", label: "Terms and Conditions",},
+    ];
 
     return (
         <View>
             <Header title="Settings" showMenu />
 
-            <Text>Test Settings page</Text>
-            <View style={styles.contentContainer}>
-                <DescriptiveButton icon="account" label="test"  description="hello there" />
-            </View>
-            <TextField label="Name" />
+            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
+                {settingOptionButtons.map((item) => (
+                    <DescriptiveButton 
+                        key={item.label}
+                        icon={item.icon}
+                        label={item.label}
+                        description={item.description}
+                        onPress={item.onPress}
+                    />
+                ))}
+            </ScrollView>
 
-            <Button mode="contained" style={{backgroundColor: theme.colors.primary}}>Hi</Button>
         </View>
     )
 }
-
-const styles = StyleSheet.create({
-    contentContainer: {
-        alignItems: 'center',
-        
-    }
-});
 
 export default Settings;

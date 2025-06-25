@@ -7,7 +7,8 @@ const TextField = ({
     label,
     value,
     placeholder,
-    error
+    error,
+    onChangeText
 }) => {
     const theme = useTheme();
 
@@ -17,20 +18,22 @@ const TextField = ({
                 <Text style={[styles.label, {color: theme.colors.text}]}> {label} </Text>
             </View>
             <TextInput
-            mode="outlined"
-            value={value}
-            placeholder={placeholder}
-            {...(error === true ? {error: true} : {})}
-
-            label={null}
-        />
+                mode="outlined"
+                value={value}
+                placeholder={placeholder}
+                {...(error === true ? {error: true} : {})}
+                onChangeText={onChangeText}
+                outlineStyle={{
+                    borderWidth: 2
+                }}
+            
+            />
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     componentContainer: {
-        marginVertical: 20,
         position: 'relative'
     },
     labelContainer: {
