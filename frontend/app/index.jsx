@@ -1,4 +1,4 @@
-import { Redirect, useRouter, Link } from "expo-router";
+import { Redirect, useRouter, router, Link } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
@@ -149,20 +149,9 @@ function App() {
                 <TextInput onChangeText={handleConfirmationCodeInput}/>
                 <Button title="Confirmation code" onPress={(confirmationCodeButtonPressed)}/>
             </View>
-            <Link href="/settings" asChild>
-                <Pressable>
-                    <Text>Go to Settings</Text>
-                </Pressable>
-            </Link>
+            <Button onPress={() => router.push("/settings")} title="Settings" />
         </>
     );
 }
 
 export default withAuthenticator(App);
-
-/*export default function Index() {
-    
-    return (
-        <Redirect href="/settings" />
-    );
-}*/
