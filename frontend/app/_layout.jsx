@@ -19,5 +19,10 @@ export default function RootLayout() {
             </PaperProvider>
         </SafeAreaProvider>
     );
-
 }
+
+/*export default function Index() {
+    return (
+        <Stack />
+    );
+}*/
