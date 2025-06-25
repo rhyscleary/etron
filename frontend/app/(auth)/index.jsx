@@ -6,7 +6,7 @@ import { Button, TextInput, View, Pressable } from 'react-native';
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
 
-import awsmobile from '../src/aws-exports';
+import awsmobile from '../../src/aws-exports';
 Amplify.configure(awsmobile);
 
 import {
@@ -33,12 +33,12 @@ async function getAuthenticatedUserDetails() {
         console.log(`email: ${signInDetails.loginId}`);
         console.log(signInDetails);
 
-        const authSession = await fetchAuthSession();
+        /*const authSession = await fetchAuthSession();
         console.log("ID Token:", authSession.tokens.idToken);
         console.log("Access Token:", authSession.tokens.accessToken);
 
         const userAttributes = await fetchUserAttributes();
-        console.log("User Attributes:", userAttributes);
+        console.log("User Attributes:", userAttributes);*/
     } catch (err) {
         console.log(err);
     }
