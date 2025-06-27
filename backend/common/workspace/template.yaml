@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  ETRON workspace functions template
+
+Globals:
+  Function:
+    Timeout: 3
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+Resources:
+  CreateWorkspaceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/
+      Handler: workspace.handler
+      Events:
+        CreateWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace
+            Method: post
+        UpdateWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace
+            Method: put
+        GetWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{id}/modules
+            Method: get
+        DeleteWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace
+            Method: delete
