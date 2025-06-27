@@ -30,7 +30,7 @@ Resources:
         GetWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace
+            Path: /workspace/{id}/modules
             Method: get
         DeleteWorkspace:
           Type: Api 
