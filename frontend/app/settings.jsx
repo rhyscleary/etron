@@ -1,10 +1,12 @@
 // Author(s): Rhys Cleary
 
-import { View, ScrollView } from 'react-native'
+import { View, ScrollView, Pressable } from 'react-native'
 import Header from '../components/layout/Header';
 import DescriptiveButton from '../components/common/buttons/DescriptiveButton';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { commonStyles } from '../assets/styles/stylesheets/common';
+import StackLayout from '../components/layout/StackLayout';
+import { Text } from 'react-native-paper';
 
 const Settings = () => { 
 
@@ -19,19 +21,21 @@ const Settings = () => {
     ];
 
     return (
-        <View>
+        <View style={commonStyles.screen}>
             <Header title="Settings" showMenu />
 
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
-                {settingOptionButtons.map((item) => (
-                    <DescriptiveButton 
-                        key={item.label}
-                        icon={item.icon}
-                        label={item.label}
-                        description={item.description}
-                        onPress={item.onPress}
-                    />
+                <StackLayout spacing={12}>
+                    {settingOptionButtons.map((item) => (
+                        <DescriptiveButton 
+                            key={item.label}
+                            icon={item.icon}
+                            label={item.label}
+                            description={item.description}
+                            onPress={item.onPress}
+                        />
                 ))}
+                </StackLayout>
             </ScrollView>
 
         </View>

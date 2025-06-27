@@ -1,0 +1,101 @@
+// Author(s): Rhys Cleary
+
+import { View } from "react-native";
+import Header from "../components/layout/Header";
+import { commonStyles } from "../assets/styles/stylesheets/common";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import BasicButton from "../components/common/buttons/BasicButton";
+import TextField from "../components/common/input/TextField";
+import StackLayout from "../components/layout/StackLayout";
+import { post } from "aws-amplify/api";
+import { Snackbar, Text, useTheme } from "react-native-paper";
+
+const CreateWorkspace = () => {
+    const router = useRouter();
+    const theme = useTheme();
+
+    const [name, setName] = useState("");
+    const [location, setLocation] = useState("");
+    const [description, setDescription] = useState("");
+    const [nameError, setNameError] = useState(false);
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+
+    async function handleCreate() {
+
+        if (!name.trim()) {
+            setNameError(true);
+            return;
+        }
+
+        try {
+            const workspaceData = {
+                name,
+                location: location || null,
+                description: description || null
+            }
+
+            const request = post({
+                apiName: 'testApi',
+                path: '/items',
+                options: {
+                    body: workspaceData
+                }
+            });
+
+            const body = await request.response;
+            const result = await body.json();
+
+            console.log('Workspace created:', result);
+
+            // navigate to the dashboard
+            router.navigate('/dashboard');
+        } catch (error) {
+            console.log("Error creating workspace: ", error);
+            setSnackbarVisible(true)
+        }
+    }
+
+    return (
+        <View style={commonStyles.screen}>
+            <Header title="Create Workspace" showBack />
+
+            <View>
+                <StackLayout spacing={20}> 
+                    <View>
+                        <TextField 
+                            label="Name *" 
+                            value={name} 
+                            placeholder="Name" 
+                            onChangeText={(text) => {
+                                setName(text);
+                                if (text.trim()) {
+                                    setNameError(false)
+                                }
+                            }} 
+                        />
+                        {nameError && (
+                            <Text style={theme.colors.error}>Please enter a name</Text>
+                        )}
+                    </View>
+                    <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
+                    <TextField label="Description (Optional)" value={description} placeholder="Description" onChangeText={setDescription} />
+                </StackLayout>
+
+                <View style={commonStyles.inlineButtonContainer}>
+                    <BasicButton label="Create" onPress={handleCreate} disabled={!name.trim()} />
+                </View>
+            </View>
+
+            <Snackbar
+                visible={snackbarVisible}
+                onDismiss={() => setSnackbarVisible(false)}
+                duration={5000}
+            >
+                An error has occured. Please try again.
+            </Snackbar>
+        </View>
+    )
+}
+
+export default CreateWorkspace;

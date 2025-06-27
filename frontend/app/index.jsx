@@ -149,6 +149,11 @@ function App() {
                 <TextInput onChangeText={handleConfirmationCodeInput}/>
                 <Button title="Confirmation code" onPress={(confirmationCodeButtonPressed)}/>
             </View>
+            <Link href="/create-workspace" asChild>
+                <Pressable>
+                    <Text>Go to Create Workspace</Text>
+                </Pressable>
+            </Link>
             <Link href="/settings" asChild>
                 <Pressable>
                     <Text>Go to Settings</Text>
