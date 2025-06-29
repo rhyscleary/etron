@@ -29,9 +29,11 @@
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
     "aws-amplify": "^6.15.0",
+    "axios": "^1.10.0",
     "expo": "~53.0.9",
     "expo-blur": "~14.1.4",
     "expo-constants": "~17.1.6",
+    "expo-dev-client": "~5.2.1",
     "expo-font": "~13.3.1",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.1.7",
@@ -58,8 +60,7 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "react-oidc-context": "^3.3.0",
-    "uuid": "^11.0.0",
-    "expo-dev-client": "~5.2.1"
+    "uuid": "^11.0.0"
   },
   "overrides": {
     "uuid": "^11.0.0"

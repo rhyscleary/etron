@@ -4,7 +4,7 @@ const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-const {v4 : uuidv4} = require('uuid');
+const {"v4" : uuidv4} = require('uuid');
 const tableName = "Workspaces";
 
 const handler = async (event) => {
@@ -188,6 +188,9 @@ const handler = async (event) => {
                 body = {modules: result.Item.modules || []}
                 break;
             }
+
+            // ENABLE MODULE
+            // DISABLE MODULE
             
             default:
                 statusCode = 404;

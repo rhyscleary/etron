@@ -8,8 +8,10 @@ import { useState } from "react";
 import BasicButton from "../components/common/buttons/BasicButton";
 import TextField from "../components/common/input/TextField";
 import StackLayout from "../components/layout/StackLayout";
-import { post } from "aws-amplify/api";
+
 import { Snackbar, Text, useTheme } from "react-native-paper";
+import { apiPost } from "../utils/api";
+import MessageBar from "../components/overlays/MessageBar";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -35,16 +37,10 @@ const CreateWorkspace = () => {
                 description: description || null
             }
 
-            const request = post({
-                apiName: 'testApi',
-                path: '/items',
-                options: {
-                    body: workspaceData
-                }
-            });
-
-            const body = await request.response;
-            const result = await body.json();
+            const result = await apiPost(
+                'https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace',
+                workspaceData
+            );
 
             console.log('Workspace created:', result);
 
@@ -70,12 +66,12 @@ const CreateWorkspace = () => {
                             onChangeText={(text) => {
                                 setName(text);
                                 if (text.trim()) {
-                                    setNameError(false)
+                                    setNameError(false);
                                 }
                             }} 
                         />
                         {nameError && (
-                            <Text style={theme.colors.error}>Please enter a name</Text>
+                            <Text style={{color: theme.colors.error}}>Please enter a name.</Text>
                         )}
                     </View>
                     <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
@@ -87,13 +83,11 @@ const CreateWorkspace = () => {
                 </View>
             </View>
 
-            <Snackbar
-                visible={snackbarVisible}
-                onDismiss={() => setSnackbarVisible(false)}
-                duration={5000}
-            >
-                An error has occured. Please try again.
-            </Snackbar>
+            <MessageBar 
+                visible={snackbarVisible} 
+                message="An error has occured. Please try again."
+                onDismiss={() => setSnackbarVisible(false)} 
+            />
         </View>
     )
 }

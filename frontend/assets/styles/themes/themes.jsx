@@ -18,7 +18,7 @@ const DarkTheme = {
         //error: '#EF4747', // red version
         icon: '#F7F7F7',
         navigationRailBackground: '#1D4364',
-    }
+    },   
 };
 
 export const themes = {

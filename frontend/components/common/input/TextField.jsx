@@ -21,7 +21,7 @@ const TextField = ({
                 mode="outlined"
                 value={value}
                 placeholder={placeholder}
-                {...(error === true ? {error: true} : {})}
+                error={error}
                 onChangeText={onChangeText}
                 outlineStyle={{
                     borderWidth: 2

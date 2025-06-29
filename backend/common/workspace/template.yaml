@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  ETRON workspace functions template
+  eTRON workspace functions template
 
 Globals:
   Function:
@@ -25,15 +25,15 @@ Resources:
         UpdateWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace
+            Path: /workspace/{id}
             Method: put
         GetWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace/{id}/modules
+            Path: /workspace/{id}
             Method: get
         DeleteWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace
+            Path: /workspace/{id}
             Method: delete
