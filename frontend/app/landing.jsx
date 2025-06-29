@@ -3,6 +3,8 @@ import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
 import TextField from '../components/common/input/TextField';
+import BasicButton from '../components/common/buttons/BasicButton';
+import { useTheme } from 'react-native-paper';
 
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
@@ -129,32 +131,46 @@ function App() {
         }
     };
 
+    const theme = useTheme();
+
     return (
-        <PaperProvider>
-            <View style={{ padding: 20, flex: 1, justifyContent: 'center' }}>
-                <Text style={{ fontSize: 24, marginBottom: 20 }}>
-                    {isSignUp ? 'Sign Up' : 'Sign In'}
+            <View style={{ padding: 20, gap: 30, flex: 1, justifyContent: 'center' }}>
+                <Text style={{ fontSize: 40, textAlign: 'center' }}>
+                    {isSignUp ? 'Welcome' : 'Welcome Back'}
                 </Text>
 
-                <TextField
-                    label="Email"
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
-                />
+                <View style={{ gap: 30 }}>
+                    <TextField
+                        label="Email"
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                    />
 
-                <TextField
-                    label="Password"
-                    placeholder="Password"
-                    value={password}
-                    secureTextEntry
-                    onChangeText={setPassword}
-                />
+                    <View>
+                        <TextField
+                            label="Password"
+                            placeholder="Password"
+                            value={password}
+                            secureTextEntry
+                            onChangeText={setPassword}
+                        />
 
-                <Button
-                    title={isSignUp ? 'Create Account' : 'Login'}
-                    onPress={isSignUp ? handleSignUp : handleSignIn}
-                />
+                        <Text style={{ marginTop: 5, marginLeft: 16, color: theme.colors.error }}>
+                            {isSignUp
+                                ? 'Already have an account? Sign In'
+                                : "Forgot Password?"}
+                        </Text>    
+                    </View>
+
+                </View>
+
+                <View style={{ alignItems: 'flex-end', marginTop: -25 }}>
+                    <BasicButton
+                        label={isSignUp ? 'Create Account' : 'Login'}
+                        onPress={isSignUp ? handleSignUp : handleSignIn}
+                    />
+                </View>
 
                 <Pressable onPress={() => setIsSignUp(!isSignUp)}>
                     <Text style={{ marginTop: 16, color: 'blue' }}>
@@ -164,9 +180,8 @@ function App() {
                     </Text>
                 </Pressable>
 
-                <Text style={{ marginTop: 20 }}>{message}</Text>
+                <Text style={{ marginTop: 30 }}>{message}</Text>
             </View>
-        </PaperProvider>
     );
 }
 
