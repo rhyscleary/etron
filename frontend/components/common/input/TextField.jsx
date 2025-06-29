@@ -8,7 +8,8 @@ const TextField = ({
     value,
     placeholder,
     error,
-    onChangeText
+    onChangeText,
+    secureTextEntry = false
 }) => {
     const theme = useTheme();
 
@@ -21,6 +22,7 @@ const TextField = ({
                 mode="outlined"
                 value={value}
                 placeholder={placeholder}
+                secureTextEntry={secureTextEntry}
                 {...(error === true ? {error: true} : {})}
                 onChangeText={onChangeText}
                 outlineStyle={{

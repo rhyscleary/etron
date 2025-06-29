@@ -2,9 +2,12 @@ import { Redirect, useRouter, router, Link } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
+import TextField from '../components/common/input/TextField';
 
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
+
+import { signIn, signUp } from 'aws-amplify/auth';
 
 import awsmobile from '../src/aws-exports';
 Amplify.configure(awsmobile);
@@ -81,6 +84,13 @@ async function handleConfirmUserAttribute(userAttributeKey, confirmationCode) {
 function App() {
     const { authStatus } = useAuthenticator();
 
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSignUp, setIsSignUp] = useState(false); // toggle sign in vs sign up
+    const [message, setMessage] = useState('');
+
+    const router = useRouter();
+
     useEffect(() => {
         console.log("(Landing page). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
@@ -91,11 +101,73 @@ function App() {
         }
     }, [authStatus]);
 
+    const handleSignIn = async () => {
+        try {
+            await signIn({ username: email, password });
+            setMessage("Sign in successful!");
+        } catch (error) {
+            console.log('Error signing in:', error);
+            setMessage(`Error: ${error.message}`);
+        }
+    };
+
+    const handleSignUp = async () => {
+        try {
+            await signUp({
+                username: email,
+                password,
+                options: {
+                    userAttributes: {
+                        email
+                    }
+                }
+            });
+            setMessage("Sign up successful! Check your email to confirm.");
+        } catch (error) {
+            console.log('Error signing up:', error);
+            setMessage(`Error: ${error.message}`);
+        }
+    };
+
     return (
-        <>
-            <Text>Base empty page</Text>
-        </>
+        <PaperProvider>
+            <View style={{ padding: 20, flex: 1, justifyContent: 'center' }}>
+                <Text style={{ fontSize: 24, marginBottom: 20 }}>
+                    {isSignUp ? 'Sign Up' : 'Sign In'}
+                </Text>
+
+                <TextField
+                    label="Email"
+                    placeholder="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                />
+
+                <TextField
+                    label="Password"
+                    placeholder="Password"
+                    value={password}
+                    secureTextEntry
+                    onChangeText={setPassword}
+                />
+
+                <Button
+                    title={isSignUp ? 'Create Account' : 'Login'}
+                    onPress={isSignUp ? handleSignUp : handleSignIn}
+                />
+
+                <Pressable onPress={() => setIsSignUp(!isSignUp)}>
+                    <Text style={{ marginTop: 16, color: 'blue' }}>
+                        {isSignUp
+                            ? 'Already have an account? Sign In'
+                            : "Don't have an account? Sign Up"}
+                    </Text>
+                </Pressable>
+
+                <Text style={{ marginTop: 20 }}>{message}</Text>
+            </View>
+        </PaperProvider>
     );
 }
 
-export default withAuthenticator(App);
+export default App;
