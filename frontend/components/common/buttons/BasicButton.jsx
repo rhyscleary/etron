@@ -5,24 +5,40 @@ import { Button, useTheme } from 'react-native-paper';
 
 const BasicButton = ({
     danger = false,
+    altBackground = false,
+    altText = false,
     label,
     onPress,
-    width = 145
+    fullWidth = false,
+    style
 }) => {
     const theme = useTheme();
+    
+    let buttonColor;
+    if (danger) {
+        buttonColor = theme.colors.error;
+    } else if (altBackground) {
+        buttonColor = theme.colors.buttonBackgroundAlt;
+    } else {
+        buttonColor = theme.colors.primary;
+    }
+
+    let textColor = altText
+        ? theme.colors.altText
+        : theme.colors.text;
 
     return (
         <View>
             <Button 
                 compact  
                 mode="contained" 
-                textColor={theme.colors.text} 
-                buttonColor={danger ? (
-                    theme.colors.error
-                ) : (
-                    theme.colors.primary
-                )}
-                style={[styles.button, {width}]}
+                textColor={textColor}  
+                buttonColor={buttonColor}
+                style={[
+                    styles.button,
+                    fullWidth ? styles.fullWidth : styles.fixedWidth,
+                    style
+                ]}
                 onPress={onPress}
             >
                 {label}
@@ -34,6 +50,12 @@ const BasicButton = ({
 const styles = StyleSheet.create({
     button: {
         borderRadius: 10,
+    },
+    fixedWidth: {
+        width: 145,
+    },
+    fullWidth: {
+        width: '100%',
     },
 });
 
