@@ -10,11 +10,11 @@ export default function AuthLayout() {
 
     useEffect(() => {
         console.log("(AuthLayout) Auth status:", authStatus);
-        if (authStatus === 'unauthenticated') {
-            console.log("Redirecting to root page.")
-            router.replace('/landing'); // Go to the protected root page
-        } else {
+        if (authStatus === 'authenticated') {
             console.log("Showing authenticated page.")
+        } else {
+            console.log("Redirecting to root page.")
+            router.replace('/'); // Go to the protected root page
         }
     }, [authStatus]);
 
