@@ -1,15 +1,18 @@
 // Author(s): Rhys Cleary
 
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import Header from "../components/layout/Header";
-import { commonStyles } from "../assets/styles/stylesheets/common";
+import Header from "../../components/layout/Header";
+import { commonStyles } from "../../assets/styles/stylesheets/common";
+import DescriptiveButton from "../../components/common/buttons/DescriptiveButton";
 import { router } from "expo-router";
 import { useState } from "react";
-import BasicButton from "../components/common/buttons/BasicButton";
-import TextField from "../components/common/input/TextField";
-import StackLayout from "../components/layout/StackLayout";
+import StackLayout from "../../components/layout/StackLayout";
 import { Text, useTheme } from "react-native-paper";
-import { apiPut } from "../utils/api";
+import { apiPut } from "../../utils/api";
+import BasicButton from "../../components/common/buttons/BasicButton";
+import TextField from "../../components/common/input/TextField";
+
+
 
 const WorkspaceDetails = () => {
     const theme = useTheme();

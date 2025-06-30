@@ -1,17 +1,17 @@
 // Author(s): Rhys Cleary
 
 import { View } from "react-native";
-import Header from "../components/layout/Header";
-import { commonStyles } from "../assets/styles/stylesheets/common";
+import Header from "../../components/layout/Header";
+import { commonStyles } from "../../assets/styles/stylesheets/common";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import BasicButton from "../components/common/buttons/BasicButton";
-import TextField from "../components/common/input/TextField";
-import StackLayout from "../components/layout/StackLayout";
+import BasicButton from "../../components/common/buttons/BasicButton";
+import TextField from "../../components/common/input/TextField";
+import StackLayout from "../../components/layout/StackLayout";
 
 import { Snackbar, Text, useTheme } from "react-native-paper";
-import { apiPost } from "../utils/api";
-import MessageBar from "../components/overlays/MessageBar";
+import { apiPost } from "../../utils/api";
+import MessageBar from "../../components/overlays/MessageBar";
 
 const CreateWorkspace = () => {
     const router = useRouter();

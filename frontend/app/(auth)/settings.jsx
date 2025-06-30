@@ -1,12 +1,12 @@
 // Author(s): Rhys Cleary
 
 import { View, ScrollView, Pressable } from 'react-native'
-import Header from '../components/layout/Header';
-import DescriptiveButton from '../components/common/buttons/DescriptiveButton';
 import { Link, router } from 'expo-router';
-import { commonStyles } from '../assets/styles/stylesheets/common';
-import StackLayout from '../components/layout/StackLayout';
+import StackLayout from '../../components/layout/StackLayout';
 import { Text } from 'react-native-paper';
+import Header from '../../components/layout/Header';
+import DescriptiveButton from '../../components/common/buttons/DescriptiveButton';
+import { commonStyles } from '../../assets/styles/stylesheets/common';
 
 const Settings = () => { 
 

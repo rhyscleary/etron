@@ -1,17 +1,17 @@
 // Author(s): Rhys Cleary
 
 import { ScrollView, StyleSheet, View } from "react-native";
-import Header from "../components/layout/Header";
-import { commonStyles } from "../assets/styles/stylesheets/common";
-import DescriptiveButton from "../components/common/buttons/DescriptiveButton";
 import { router, useRouter } from "expo-router";
-import BasicButton from "../components/common/buttons/BasicButton";
-import StackLayout from "../components/layout/StackLayout";
-import BasicDialog from "../components/overlays/BasicDialog";
+import StackLayout from "../../components/layout/StackLayout";
+import BasicDialog from "../../components/overlays/BasicDialog";
 import { useState } from "react";
-import { apiDelete } from "../utils/api";
+import { apiDelete } from "../../utils/api";
 import { useTheme } from "react-native-paper";
-import { verifyPassword } from "../utils/verifyPassword";
+import { verifyPassword } from "../../utils/verifyPassword";
+import Header from "../../components/layout/Header";
+import { commonStyles } from "../../assets/styles/stylesheets/common";
+import DescriptiveButton from "../../components/common/buttons/DescriptiveButton";
+import BasicButton from "../../components/common/buttons/BasicButton";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
