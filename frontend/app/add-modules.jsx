@@ -8,12 +8,14 @@ import { commonStyles } from "../assets/styles/stylesheets/common";
 import { useState } from "react";
 import { router } from "expo-router";
 import ModuleCard from "../components/cards/moduleCard";
+import BasicDialog from "../components/overlays/BasicDialog";
 
-const ModuleManagement = () => {
+const AddModules = () => {
     
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    const [installDialog, setInstallDialog] = useState(false);
+    const [installDialogVisible, setInstallDialogVisible] = useState(false);
+    const [selectedModule, setSelectedModule] = useState(null);
 
     const modules = [
         {   
@@ -37,6 +39,20 @@ const ModuleManagement = () => {
             icon: "",
             keywords: []
         },
+        {
+            moduleId: "1234544",
+            title: "",
+            description: "",
+            icon: "",
+            keywords: []
+        },
+        {
+            moduleId: "123rttg45",
+            title: "",
+            description: "",
+            icon: "",
+            keywords: []
+        },
     ]
 
     const renderModules = ({item}) => (
@@ -45,11 +61,17 @@ const ModuleManagement = () => {
             description={item.description}
             icon={item.icon}
             onPress={() => {
-                setInstallDialog(true);
-                console.log("g'day");
+                setSelectedModule(item);
+                setInstallDialogVisible(true);
+                
+                console.log(item.moduleId);
             }}
         />
     );
+
+    const handleModuleInstallation = () => {
+
+    };
     
     return (
         <View style={commonStyles.screen}>
@@ -67,13 +89,25 @@ const ModuleManagement = () => {
                         data={modules}
                         renderItem={renderModules}
                         keyExtractor={item => item.moduleId}
+                        ItemSeparatorComponent={() => <View style={{height: 12}} />}
                     />
                 )}
             </View>
-
+            
+            <BasicDialog
+                visible={installDialogVisible}
+                message={`Install the ${selectedModule?.title || "selected"} module?`}
+                leftActionLabel="Cancel"
+                handleLeftAction={() => {
+                    setInstallDialogVisible(false);
+                    setSelectedModule(null);
+                }}
+                rightActionLabel="Install"
+                handleRightAction={handleModuleInstallation}
+            />
         </View>
     )
-}
+};
 
 const styles = StyleSheet.create({
     contentContainer: {
@@ -86,4 +120,4 @@ const styles = StyleSheet.create({
     }
 })
 
-export default ModuleManagement;
+export default AddModules;

@@ -6,15 +6,16 @@ import BasicButton from "../components/common/buttons/BasicButton";
 import { Text } from "react-native-paper";
 import { commonStyles } from "../assets/styles/stylesheets/common";
 import { useState } from "react";
-import { router } from "expo-router";
+import { router, useRouter } from "expo-router";
 
 const ModuleManagement = () => {
+    const router = useRouter();
     
     const [loading, setLoading] = useState(false);
     
     return (
         <View style={commonStyles.screen}>
-            <Header title="Modules" showBack showPlus onRightIconPress={router.navigate("/add-modules")}/>
+            <Header title="Modules" showBack showPlus onRightIconPress={() => router.push("/add-modules")} />
 
             <View style={styles.contentContainer}>
                 
