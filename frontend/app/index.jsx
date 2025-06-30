@@ -85,7 +85,7 @@ function App() {
         console.log("(Landing page). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
             console.log("Redirection to auth root page.")
-            router.replace('/(auth)'); // Go to the protected root page
+            router.replace('/(auth)/account-settings'); // Go to the protected root page
         } else {
             console.log("Showing base page.")
         }
