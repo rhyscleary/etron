@@ -13,21 +13,25 @@ const ModuleManagement = () => {
     
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [installDialog, setInstallDialog] = useState(false);
 
     const modules = [
-        {
+        {   
+            moduleId: "123",
             title: "Leave",
             description: "Let employees request leave and review the information",
             icon: "book",
             keywords: ["report", "insights"]
         },
         {
+            moduleId: "1234",
             title: "",
             description: "",
             icon: "",
             keywords: []
         },
         {
+            moduleId: "12345",
             title: "",
             description: "",
             icon: "",
@@ -35,9 +39,15 @@ const ModuleManagement = () => {
         },
     ]
 
-    const renderModules = () => (
+    const renderModules = ({item}) => (
         <ModuleCard
-             
+            title={item.title}
+            description={item.description}
+            icon={item.icon}
+            onPress={() => {
+                setInstallDialog(true);
+                console.log("g'day");
+            }}
         />
     );
     
@@ -56,25 +66,10 @@ const ModuleManagement = () => {
                     <FlatList
                         data={modules}
                         renderItem={renderModules}
-                        keyExtractor={item => item.id}
+                        keyExtractor={item => item.moduleId}
                     />
                 )}
             </View>
-
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
-                <StackLayout spacing={12}>
-                    {workspaceOptionButtons.map((item) => (
-                        <DescriptiveButton 
-                            key={item.label}
-                            icon={item.icon}
-                            label={item.label}
-                            description={item.description}
-                            onPress={item.onPress}
-                        />
-                    ))}
-                </StackLayout>
-
-            </ScrollView>
 
         </View>
     )

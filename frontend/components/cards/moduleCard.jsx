@@ -1,10 +1,10 @@
 import { useRouter } from "expo-router"
-import { Pressable, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Avatar, Card, Icon, Text, useTheme } from "react-native-paper"
 
 const ModuleCard = ({
     onPress,
-    moduleName = "",
+    title = "",
     icon = "",
     description = ""
 }) => {
@@ -12,9 +12,10 @@ const ModuleCard = ({
 
     return (
         <Pressable onPress={onPress}>
-            <Card>
+            <Card style={[styles.card, {backgroundColor: theme.colors.buttonBackground}]}>
                 <Card.Title 
-                    title={moduleName}
+                    title={title}
+                    subtitle={description}
                     left={(props) => (
                         <Icon
                             {...props}
@@ -31,5 +32,9 @@ const ModuleCard = ({
         </Pressable>
     );
 }
+
+const styles = StyleSheet.create({
+
+})
 
 export default ModuleCard;

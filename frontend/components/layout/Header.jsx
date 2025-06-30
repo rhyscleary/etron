@@ -25,7 +25,7 @@ const Header = ({
     const theme = useTheme();
 
     return (
-        <Appbar.Header mode="center-aligned" style={{backgroundColor: theme.colors.background}}>
+        <Appbar.Header mode="center-aligned" style={[{backgroundColor: theme.colors.background}, {marginBottom: 12}]}>
             {
                 showBack ? (
                     <Appbar.BackAction onPress={() => router.back()} />
