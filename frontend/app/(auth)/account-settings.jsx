@@ -149,7 +149,16 @@ function App() {
                 <TextInput onChangeText={handleConfirmationCodeInput}/>
                 <Button title="Confirmation code" onPress={(confirmationCodeButtonPressed)}/>
             </View>
-            <Button onPress={() => router.push("/settings")} title="Settings" />
+            <Link href="/create-workspace" asChild>
+                <Pressable>
+                    <Text>Go to Create Workspace</Text>
+                </Pressable>
+            </Link>
+            <Link href="/settings" asChild>
+                <Pressable>
+                    <Text>Go to Settings</Text>
+                </Pressable>
+            </Link>
         </>
     );
 }

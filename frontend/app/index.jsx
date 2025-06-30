@@ -17,67 +17,6 @@ import {
     confirmUserAttribute
 } from 'aws-amplify/auth';
 
-
-function SignOutButton() {
-    const { signOut } = useAuthenticator();
-    return (
-        <Button onPress={signOut} title="Sign Out" />
-    )
-}
-
-async function getAuthenticatedUserDetails() {
-    try {
-        const { username, userId, signInDetails } = await getCurrentUser();
-        console.log(`username: ${username}`);
-        console.log(`userId: ${userId}`);
-        console.log(`email: ${signInDetails.loginId}`);
-        console.log(signInDetails);
-
-        /*const authSession = await fetchAuthSession();
-        console.log("ID Token:", authSession.tokens.idToken);
-        console.log("Access Token:", authSession.tokens.accessToken);
-
-        const userAttributes = await fetchUserAttributes();
-        console.log("User Attributes:", userAttributes);*/
-    } catch (err) {
-        console.log(err);
-    }
-}
-
-async function handleUpdateUserAttribute(attributeKey, value) {
-    try {
-        const output = await updateUserAttribute({
-            userAttribute: {
-                attributeKey,
-                value
-            }
-        });  //sometimes, output needs to be checked via nextStep property for if it needs a confirmation code
-
-        const { nextStep } = output;
-
-        switch (nextStep.updateAttributeStep) {
-            case 'CONFIRM_ATTRIBUTE_WITH_CODE':  //confirming needs to be done with confirmUserAttribute from https://aws-amplify.github.io/amplify-js/api/functions/aws_amplify.auth.confirmUserAttribute.html
-                const codeDeliveryDetails = nextStep.codeDeliveryDetails;
-                console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
-                break;
-            case 'DONE':
-                console.log(`Attribute was updated successfully`);
-                break;
-        }
-    } catch (error) {
-        console.log("Error updating user attribute:", error);
-    }
-}
-
-async function handleConfirmUserAttribute(userAttributeKey, confirmationCode) {
-    try {
-        await confirmUserAttribute({userAttributeKey, confirmationCode});
-        console.log("User attribute confirmation successful.");
-    } catch (error) {
-        console.log("Error confirming user attribute:", error);
-    }
-}
-
 function App() {
     const { authStatus } = useAuthenticator();
 

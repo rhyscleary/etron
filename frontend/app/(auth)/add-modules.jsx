@@ -1,0 +1,89 @@
+import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import Header from "../../components/layout/Header";
+import TextField from "../../components/common/input/TextField";
+import StackLayout from "../../components/layout/StackLayout";
+import BasicButton from "../../components/common/buttons/BasicButton";
+import { Text } from "react-native-paper";
+import { commonStyles } from "../../assets/styles/stylesheets/common";
+import { useState } from "react";
+import { router } from "expo-router";
+import ModuleCard from "../../components/cards/moduleCard";
+
+const ModuleManagement = () => {
+    
+    const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [installDialog, setInstallDialog] = useState(false);
+
+    const modules = [
+        {   
+            moduleId: "123",
+            title: "Leave",
+            description: "Let employees request leave and review the information",
+            icon: "book",
+            keywords: ["report", "insights"]
+        },
+        {
+            moduleId: "1234",
+            title: "",
+            description: "",
+            icon: "",
+            keywords: []
+        },
+        {
+            moduleId: "12345",
+            title: "",
+            description: "",
+            icon: "",
+            keywords: []
+        },
+    ]
+
+    const renderModules = ({item}) => (
+        <ModuleCard
+            title={item.title}
+            description={item.description}
+            icon={item.icon}
+            onPress={() => {
+                setInstallDialog(true);
+                console.log("g'day");
+            }}
+        />
+    );
+    
+    return (
+        <View style={commonStyles.screen}>
+            <Header title="Add Modules" showBack />
+            
+            {/*Search bar here*/}
+
+            <View style={styles.contentContainer}>
+                {loading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" />
+                    </View>
+                ) : (
+                    <FlatList
+                        data={modules}
+                        renderItem={renderModules}
+                        keyExtractor={item => item.moduleId}
+                    />
+                )}
+            </View>
+
+        </View>
+    )
+}
+
+const styles = StyleSheet.create({
+    contentContainer: {
+        flex: 1,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center"
+    }
+})
+
+export default ModuleManagement;

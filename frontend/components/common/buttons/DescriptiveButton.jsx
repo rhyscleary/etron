@@ -39,8 +39,7 @@ const styles = StyleSheet.create({
     descriptiveButton: {
         borderRadius: 10,
         width: '100%',
-        borderWidth: 2,
-        marginVertical: 6,
+        borderWidth: 2
     },
     innerContainer: {
         flexDirection: 'row',

@@ -7,7 +7,8 @@ const BasicButton = ({
     danger = false,
     label,
     onPress,
-    width = 145
+    width = 145,
+    disabled = false
 }) => {
     const theme = useTheme();
 
@@ -24,6 +25,7 @@ const BasicButton = ({
                 )}
                 style={[styles.button, {width}]}
                 onPress={onPress}
+                disabled={disabled}
             >
                 {label}
             </Button>
