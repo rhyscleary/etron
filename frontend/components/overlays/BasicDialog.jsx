@@ -33,7 +33,7 @@ const BasicDialog = ({
                 {title ? <Dialog.Title style={styles.title}>{title}</Dialog.Title> : null}
 
                 <Dialog.Content>
-                    <Text>{message}</Text>
+                    <Text variant="bodyLarge">{message}</Text>
                     {showInput && (
                         <View style={styles.inputContainer}>
                             <TextField 
