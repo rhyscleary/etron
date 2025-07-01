@@ -4,7 +4,7 @@ const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-const {"v4" : uuidv4} = require('uuid');
+const {v4 : uuidv4} = require('uuid');
 const tableName = "Workspaces";
 
 const handler = async (event) => {
@@ -29,7 +29,6 @@ const handler = async (event) => {
                 }
 
                 const id = uuidv4();
-                const workspaceId = `workspace#${id}`;
                 
                 const date = new Date().toISOString();
 
@@ -40,8 +39,8 @@ const handler = async (event) => {
                     new PutCommand( {
                         TableName: tableName,
                         Item: {
-                            PK: workspaceId,
-                            SK: "workspace",
+                            workspaceId: id,
+                            type: "workspace",
                             name: requestJSON.name,
                             location: requestJSON.location || null,
                             description: requestJSON.description || null,
@@ -62,7 +61,6 @@ const handler = async (event) => {
             case "PUT /workspace/{id}": {
                 // got to finish writing this
                 const id = pathParams.id;
-                const pk = `workspace#${id}`;
 
                 const result = await dynamoDB.send(
                     new GetCommand( {
@@ -93,14 +91,13 @@ const handler = async (event) => {
             // GET WORKSPACE BY ID
             case "GET /workspace/{id}": {
                 const id = pathParams.id;
-                const pk = `workspace#${id}`;
 
                 const result = await dynamoDB.send(
                     new GetCommand( {
                         TableName: tableName,
                         Key: {
-                            PK: pk,
-                            SK: "workspace"
+                            workspaceId: id,
+                            type: "workspace"
                         },
                     })
                 );
@@ -129,14 +126,13 @@ const handler = async (event) => {
             // DELETE WORKSPACE
             case "DELETE /workspace/{id}": {
                 const id = pathParams.id;
-                const pk = `workspace#${id}`;
 
                 const workspace = await dynamoDB.send(
                     new GetCommand( {
                         TableName: tableName,
                         Key: {
-                            PK: pk,
-                            SK: "workspace"
+                            workspaceId: workspace,
+                            type: "workspace"
                         },
                     })
                 );
@@ -153,8 +149,8 @@ const handler = async (event) => {
                     new DeleteCommand( {
                         TableName: tableName,
                         Key: {
-                            PK: pk,
-                            SK: "workspace"
+                            workspace: id,
+                            type: "workspace"
                         },
                     })
                 );

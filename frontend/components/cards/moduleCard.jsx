@@ -23,8 +23,8 @@ const ModuleCard = ({
                             <Icon source="dots-square" size={48} />
                         )} 
                         <View style={{flex: 1, marginLeft: 6}}>
-                            <Text variant="titleMedium" numberOfLines={1} style={{marginBottom: 6}}>Card title maybe</Text>
-                            <Text variant="bodyMedium" numberOfLines={4}>Card description maybe ok whats happening today good sir? Sunny Day? Dark Night? 1234 1234 1234 1234 1234 1234 1234 1234 1234 1234 123454</Text>
+                            <Text variant="titleMedium" numberOfLines={1} style={{marginBottom: 6}}>Card title</Text>
+                            <Text variant="bodyMedium" numberOfLines={4}>Card description 1234 1234 1234 1234 1234 1234 1234 1234 1234 1234 123454</Text>
                         </View>
                     </View>
                 </Card.Content> 
