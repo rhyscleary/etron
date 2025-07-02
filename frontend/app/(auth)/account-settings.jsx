@@ -2,12 +2,12 @@ import { Redirect, useRouter, router, Link } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
-import TextField from '../components/common/input/TextField';
-import BasicButton from '../components/common/buttons/BasicButton';
+import TextField from '../../components/common/input/TextField';
+import BasicButton from '../../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
-import GoogleButton from '../components/common/buttons/GoogleButton';
-import MicrosoftButton from '../components/common/buttons/MicrosoftButton';
-import Divider from "../components/layout/Divider";
+import GoogleButton from '../../components/common/buttons/GoogleButton';
+import MicrosoftButton from '../../components/common/buttons/MicrosoftButton';
+import Divider from "../../components/layout/Divider";
 
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';

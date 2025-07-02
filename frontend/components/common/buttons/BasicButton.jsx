@@ -40,7 +40,7 @@ const BasicButton = ({
                     style
                 ]}
                 onPress={onPress}
-                disabled={disabled}
+                //disabled={disabled}
             >
                 {label}
             </Button>

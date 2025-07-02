@@ -21,20 +21,24 @@ function App() {
     const { authStatus } = useAuthenticator();
 
     useEffect(() => {
-        console.log("(Landing page). Auth status:", authStatus);
+        console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
-            console.log("Redirection to auth root page.")
-            router.replace('/(auth)/account-settings'); // Go to the protected root page
+            console.log("Redirecting to auth root page.")
+            router.replace('(auth)/account-settings'); // Go to the protected root page
+        } else if (authStatus === "configuring") {
         } else {
-            console.log("Showing base page.")
+            router.replace('landing');
         }
     }, [authStatus]);
 
+    //router.push('/landing');
+
     return (
         <>
-            <Text>Base empty page</Text>
+            <Text>This page shouldn't be seen.</Text>
         </>
     );
 }
 
-export default withAuthenticator(App);
+//export default withAuthenticator(App);
+export default App;
