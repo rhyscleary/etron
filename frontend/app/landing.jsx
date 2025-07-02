@@ -10,7 +10,7 @@ import MicrosoftButton from '../components/common/buttons/MicrosoftButton';
 import Divider from "../components/layout/Divider";
 
 import { Amplify } from 'aws-amplify';
-import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
+import { useAuthenticator } from '@aws-amplify/ui-react-native';
 
 import { signIn, signUp } from 'aws-amplify/auth';
 

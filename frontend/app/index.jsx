@@ -9,13 +9,6 @@ import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-nativ
 import awsmobile from '../src/aws-exports';
 Amplify.configure(awsmobile);
 
-import {
-    getCurrentUser,
-    fetchAuthSession,
-    fetchUserAttributes,
-    updateUserAttribute,
-    confirmUserAttribute
-} from 'aws-amplify/auth';
 
 function App() {
     const { authStatus } = useAuthenticator();
@@ -30,8 +23,6 @@ function App() {
             router.replace('landing');
         }
     }, [authStatus]);
-
-    //router.push('/landing');
 
     return (
         <>
