@@ -16,7 +16,6 @@ export default function RootLayout() {
             <Authenticator.Provider>
                 <SafeAreaProvider>
                     <SafeView>            
-                        <Text>Base _layout</Text>
                         <Slot />
                     </SafeView>
                 </SafeAreaProvider>

@@ -1,15 +1,14 @@
 {
-  "name": "workspace-functions",
+  "name": "module-functions",
   "version": "1.0.0",
   "description": "The backend for ETRON's workspace functions",
   "author": "InSync",
   "dependencies": {
-    "axios": ">=1.6.0"
+    "axios": ">=1.6.0",
+    "uuid": "^11.1.0"
   },
-  "scripts": {
-  
-  },
-  "devDependencies": {
-    
-  }
+  "scripts": {},
+  "main": "moduleHandler.js",
+  "keywords": [],
+  "license": "ISC"
 }
