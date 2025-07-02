@@ -1,3 +1,3 @@
-const Dashboard = ({})
+const Dashboard = () => {}
 
 export default Dashboard;

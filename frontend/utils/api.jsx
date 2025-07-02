@@ -3,11 +3,11 @@ import axios from 'axios';
 
 async function getHeaders() {
     const session = await fetchAuthSession();
-    const token = session.tokens.accessToken.toString();
+    const idToken = session.tokens.idToken.toString();
     
     return {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${idToken}`
     };
 }
 
