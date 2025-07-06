@@ -28,6 +28,10 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./common/workspace/template.yaml
+  ModuleFunctions:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./common/modules/template.yaml
 
 #Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

@@ -1,3 +1,5 @@
+// Author(s): Rhys Cleary
+
 import { useRouter } from "expo-router"
 import { Pressable, StyleSheet, View } from "react-native";
 import { Avatar, Card, Icon, Text, useTheme } from "react-native-paper"
@@ -12,21 +14,19 @@ const ModuleCard = ({
 
     return (
         <Pressable onPress={onPress}>
-            <Card style={[styles.card, {backgroundColor: theme.colors.buttonBackground}]}>
-                <Card.Title 
-                    title={title}
-                    subtitle={description}
-                    left={(props) => (
-                        <Icon
-                            {...props}
-                            source={icon}
-                            size={48}
-                        />
-                    )} 
-                />
+            <Card mode="outlined" style={[styles.card, {backgroundColor: theme.colors.buttonBackground}]}>
                 <Card.Content>
-                    <Text>Card title maybe</Text>
-                    <Text>Card description maybe</Text>
+                    <View style={{flexDirection: "row", alignItems: "flex-start"}}>
+                        {icon ? (
+                            <Icon source={icon} size={48} />
+                        ) : (
+                            <Icon source="dots-square" size={48} />
+                        )} 
+                        <View style={{flex: 1, marginLeft: 6}}>
+                            <Text variant="titleMedium" numberOfLines={1} style={{marginBottom: 6}}>Card title</Text>
+                            <Text variant="bodyMedium" numberOfLines={4}>Card description 1234 1234 1234 1234 1234 1234 1234 1234 1234 1234 123454</Text>
+                        </View>
+                    </View>
                 </Card.Content> 
             </Card>
         </Pressable>
@@ -34,7 +34,10 @@ const ModuleCard = ({
 }
 
 const styles = StyleSheet.create({
-
+    card: {
+        alignSelf: "stretch",
+        height: 142.5
+    }
 })
 
 export default ModuleCard;

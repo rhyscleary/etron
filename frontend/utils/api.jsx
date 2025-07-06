@@ -3,11 +3,11 @@ import axios from 'axios';
 
 async function getHeaders() {
     const session = await fetchAuthSession();
-    const token = session.tokens.idToken.toString();
+    const idToken = session.tokens.idToken.toString();
     
     return {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${idToken}`
     };
 }
 
@@ -26,7 +26,7 @@ async function request(method, path, body = {}, params = {}) {
     }
     
     try {
-        const response = await axios({requestConfig});
+        const response = await axios(requestConfig);
         return response.data;
     } catch (error) {
         if (error.response) {

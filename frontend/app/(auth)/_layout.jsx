@@ -20,7 +20,6 @@ export default function AuthLayout() {
 
     return (         
         <>
-            <Text>Auth _layout</Text>
             <Slot />
         </> 
     );

@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  eTRON workspace functions template
+  eTRON module functions template
 
 Globals:
   Function:
@@ -11,35 +11,35 @@ Globals:
       - x86_64
 
 Resources:
-  WorkspaceFunction:
+  ModuleFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./functions/
-      Handler: workspaceHandler.handler
+      Handler: moduleHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Workspaces
       Events:
-        CreateWorkspace:
+        GetAvailableModules:
           Type: Api 
           Properties:
-            Path: /workspace
-            Method: post
+            Path: /modules
+            Method: get
 
-        UpdateWorkspace:
+        AddModuleToWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace/{id}
+            Path: /workspace/{workspaceId}/modules/{moduleId}
             Method: put
 
-        GetWorkspace:
+        RemoveModuleFromWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace/{id}
-            Method: get
-            
-        DeleteWorkspace:
-          Type: Api 
-          Properties:
-            Path: /workspace/{id}
+            Path: /workspace/{workspaceId}/modules/{moduleId}
             Method: delete
+            
+        GetModulesInWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules
+            Method: get
