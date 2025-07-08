@@ -122,7 +122,6 @@ function App() {
 
     useEffect(() => {
         getAuthenticatedUserDetails();
-        saveTestWorkspaceInfo();
     }, []);
 
     return ( 
@@ -156,9 +155,14 @@ function App() {
                     <Text>Go to Create Workspace</Text>
                 </Pressable>
             </Link>
-            <Link href="/settings" asChild>
+            <Link href="/settings/settings" asChild>
                 <Pressable>
                     <Text>Go to Settings</Text>
+                </Pressable>
+            </Link>
+            <Link href="/profile" asChild>
+                <Pressable>
+                    <Text>Go to Profile</Text>
                 </Pressable>
             </Link>
         </>

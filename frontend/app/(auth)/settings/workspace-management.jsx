@@ -2,16 +2,16 @@
 
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useRouter } from "expo-router";
-import StackLayout from "../../components/layout/StackLayout";
-import BasicDialog from "../../components/overlays/BasicDialog";
+import StackLayout from "../../../components/layout/StackLayout";
+import BasicDialog from "../../../components/overlays/BasicDialog";
 import { useState } from "react";
-import { apiDelete } from "../../utils/api";
+import { apiDelete } from "../../../utils/api";
 import { useTheme } from "react-native-paper";
-import { verifyPassword } from "../../utils/verifyPassword";
-import Header from "../../components/layout/Header";
-import { commonStyles } from "../../assets/styles/stylesheets/common";
-import DescriptiveButton from "../../components/common/buttons/DescriptiveButton";
-import BasicButton from "../../components/common/buttons/BasicButton";
+import { verifyPassword } from "../../../utils/verifyPassword";
+import Header from "../../../components/layout/Header";
+import { commonStyles } from "../../../assets/styles/stylesheets/common";
+import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
+import BasicButton from "../../../components/common/buttons/BasicButton";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
@@ -24,9 +24,9 @@ const WorkspaceManagement = () => {
 
     // container for different workspace management options
     const workspaceOptionButtons = [
-            { label: "Workspace Details", description: "Update name, location and description", onPress: () => router.push("/workspace-details") },
-            { label: "Module Management", description: "Add and remove modules from the workspace", onPress: () => router.push("/module-management") },
-            { label: "Profile Management", description: "Edit profiles within the workspace", onPress: () => router.push("/profiles") },
+            { label: "Workspace Details", description: "Update name, location and description", onPress: () => router.push("/settings/workspace-details") },
+            { label: "Module Management", description: "Add and remove modules from the workspace", onPress: () => router.push("/settings/module-management") },
+            { label: "Profile Management", description: "Edit profiles within the workspace", onPress: () => router.push("/settings/profile-management") },
     ];
 
     async function handleConfirmDeletion() {
