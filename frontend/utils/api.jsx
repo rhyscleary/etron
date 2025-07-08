@@ -44,8 +44,8 @@ export async function apiGet(path, params = {}) {
     return request('get', path, {}, params);
 }
 
-export async function apiPut(path, body = {}, params = {}) {
-    return request('put', path, body, params);
+export async function apiPut(path, body = {}) {
+    return request('put', path, body, {});
 }
 
 export async function apiDelete(path, params = {}) {

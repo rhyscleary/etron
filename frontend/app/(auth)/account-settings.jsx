@@ -16,6 +16,7 @@ import {
     updateUserAttribute,
     confirmUserAttribute
 } from 'aws-amplify/auth';
+import { saveTestWorkspaceInfo } from "../../storage/workspaceStorage";
 
 
 function SignOutButton() {
@@ -121,6 +122,7 @@ function App() {
 
     useEffect(() => {
         getAuthenticatedUserDetails();
+        saveTestWorkspaceInfo();
     }, []);
 
     return ( 

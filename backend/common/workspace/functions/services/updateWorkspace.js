@@ -27,27 +27,30 @@ async function updateWorkspace(workspaceId, data) {
     const expressionAttributeNames = {};
 
     if (data.name !== undefined) {
-        updateFields.push("name = :name");
-        expressionAttributeValues["#name"] = data.name;
+        updateFields.push("#name = :name");
+        expressionAttributeValues[":name"] = data.name;
         expressionAttributeNames["#name"] = "name";
     }
 
     if (data.location !== undefined) {
-        updateFields.push("location = :location");
+        updateFields.push("#location = :location");
         expressionAttributeValues[":location"] = data.location;
+        expressionAttributeNames["#location"] = "location";
     }
 
     if (data.description !== undefined) {
-        updateFields.push("description = :description");
+        updateFields.push("#description = :description");
         expressionAttributeValues[":description"] = data.description;
+        expressionAttributeNames["#description"] = "description";
     }
 
     if (updateFields.length === 0) {
         throw new Error("No fields to update");
     }
 
-    updateFields.push("updatedAt = :updatedAt");
+    updateFields.push("#updatedAt = :updatedAt");
     expressionAttributeValues[":updatedAt"] = new Date().toISOString();
+    expressionAttributeNames["#updatedAt"] = "updatedAt";
 
     await dynamoDB.send(
         new UpdateCommand( {
@@ -58,7 +61,7 @@ async function updateWorkspace(workspaceId, data) {
             },
             UpdateExpression: "SET " + updateFields.join(", "),
             ExpressionAttributeValues: expressionAttributeValues,
-            expressionAttributeNames: expressionAttributeNames
+            ExpressionAttributeNames: expressionAttributeNames
         })
     );
 
