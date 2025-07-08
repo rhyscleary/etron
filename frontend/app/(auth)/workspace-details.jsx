@@ -5,13 +5,13 @@ import Header from "../../components/layout/Header";
 import { commonStyles } from "../../assets/styles/stylesheets/common";
 import DescriptiveButton from "../../components/common/buttons/DescriptiveButton";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import StackLayout from "../../components/layout/StackLayout";
 import { Text, useTheme } from "react-native-paper";
 import { apiPut } from "../../utils/api";
 import BasicButton from "../../components/common/buttons/BasicButton";
 import TextField from "../../components/common/input/TextField";
-
+import { getWorkspaceId, getWorkspaceInfo } from "../../storage/workspaceStorage";
 
 
 const WorkspaceDetails = () => {
@@ -23,6 +23,25 @@ const WorkspaceDetails = () => {
     const [nameError, setNameError] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    useEffect(() => {
+        async function loadWorkspaceDetails() {
+            setLoading(true);
+            try {
+                const workspace = await getWorkspaceInfo();
+                if (workspace) {
+                    // set values for workspace details
+                    setName(workspace.name || "");
+                    setDescription(workspace.description || "");
+                    setLocation(workspace.location || "");
+                }
+            } catch (error) {
+                console.log("Error loading workspace details: ", error);
+            }
+            setLoading(false);
+        }
+        loadWorkspaceDetails();
+    }, []);
+
     async function handleUpdate() {
     
         if (!name.trim()) {
@@ -31,6 +50,9 @@ const WorkspaceDetails = () => {
         }
 
         try {
+            // get workspace id from local storage
+            const workspaceId = await getWorkspaceId();
+
             const workspaceData = {
                 name,
                 location: location || null,
@@ -38,7 +60,7 @@ const WorkspaceDetails = () => {
             }
 
             const result = await apiPut(
-                'https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace',
+                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}`,
                 workspaceData
             );
 
@@ -65,7 +87,7 @@ const WorkspaceDetails = () => {
                                 label="Name *" 
                                 value={name} 
                                 placeholder="Name"
-                                error={nameError} 
+                                error={nameError}
                                 onChangeText={(text) => {
                                     setName(text);
                                     if (text.trim()) {

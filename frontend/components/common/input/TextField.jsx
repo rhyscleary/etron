@@ -26,7 +26,6 @@ const TextField = ({
                 outlineStyle={{
                     borderWidth: 2
                 }}
-            
             />
         </View>
     );
