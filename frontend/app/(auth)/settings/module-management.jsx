@@ -1,10 +1,10 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
-import Header from "../../components/layout/Header";
-import TextField from "../../components/common/input/TextField";
-import StackLayout from "../../components/layout/StackLayout";
-import BasicButton from "../../components/common/buttons/BasicButton";
+import Header from "../../../components/layout/Header";
+import TextField from "../../../components/common/input/TextField";
+import StackLayout from "../../../components/layout/StackLayout";
+import BasicButton from "../../../components/common/buttons/BasicButton";
 import { Text } from "react-native-paper";
-import { commonStyles } from "../../assets/styles/stylesheets/common";
+import { commonStyles } from "../../../assets/styles/stylesheets/common";
 import { useState } from "react";
 import { router, useRouter } from "expo-router";
 
@@ -15,7 +15,7 @@ const ModuleManagement = () => {
     
     return (
         <View style={commonStyles.screen}>
-            <Header title="Modules" showBack showPlus onRightIconPress={() => router.push("/add-modules")} />
+            <Header title="Modules" showBack showPlus onRightIconPress={() => router.push("/settings/add-modules")} />
 
             <View style={styles.contentContainer}>
                 
