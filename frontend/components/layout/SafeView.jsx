@@ -9,11 +9,16 @@ const SafeView = ({ children}) => {
     const insets = useSafeAreaInsets();
 
     return (
-        <SafeAreaView
-            style={{ flex: 1, paddingHorizontal: 10, backgroundColor: theme.colors.background }}
+        <View
+            style={{ 
+                flex: 1,  
+                backgroundColor: theme.colors.background,
+                paddingTop: insets.top,
+                paddingHorizontal: 20
+            }}
         >
             {children}
-        </SafeAreaView>
+        </View>
     );
 };
 

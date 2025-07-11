@@ -17,7 +17,7 @@ const currentTheme = themes['dark'];
 export default function RootLayout() {
     useEffect(() => {
         if (Platform.OS === 'android') {
-            //NavigationBar.setBackgroundColorAsync(currentTheme.colors.background);
+            NavigationBar.setButtonStyleAsync('dark');
         }
     }, []);
 
