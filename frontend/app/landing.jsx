@@ -1,7 +1,7 @@
-import { Redirect, useRouter, router, Link } from "expo-router";
-import { PaperProvider, Text } from 'react-native-paper';
-import React, { useEffect, useState } from "react";
-import { Button, TextInput, View, Pressable } from 'react-native';
+import { useRouter } from "expo-router";
+import { Text } from 'react-native-paper';
+import { useEffect, useState } from "react";
+import { View } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
@@ -12,10 +12,18 @@ import Divider from "../components/layout/Divider";
 import { Amplify } from 'aws-amplify';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 
-import { signIn, signUp } from 'aws-amplify/auth';
+import { Linking } from 'react-native';
 
-import awsmobile from '../src/aws-exports';
-Amplify.configure(awsmobile);
+import { signIn, signUp, signInWithRedirect } from 'aws-amplify/auth';
+
+/*import awsmobile from '../src/aws-exports';
+Amplify.configure({
+    awsmobile,
+    oauth: {
+        redirectSignIn: 'myapp://auth/',
+        redirectSignOut: 'myapp://signout/',
+        responseType: 'code'
+    }});*/
 
 function App() {
     const { authStatus } = useAuthenticator();
@@ -69,6 +77,14 @@ function App() {
         }
     };
 
+    const handleGoogleSignIn = async () => {
+        try {
+            await signInWithRedirect({ provider: 'Google' });
+        } catch (error) {
+            console.log('Error signing in with Google:', error);
+        }
+    }
+
     const theme = useTheme();
 
     return (
@@ -120,7 +136,7 @@ function App() {
                 <GoogleButton
                     imageSource={require('../assets/images/Google.jpg')}
                     label="Continue with Google"
-                    onPress
+                    onPress={handleGoogleSignIn}
                 />
 
                 <MicrosoftButton
@@ -133,16 +149,16 @@ function App() {
             <Divider/>
 
             <BasicButton
-                    label={isSignUp ? 'Already have an account? Log In' 
-                                    : "Don't have an account? Sign Up"}
-                    onPress={() => {
-                        setIsSignUp(!isSignUp);
-                        setConfirmPassword('');
-                    }}
-                    fullWidth
-                    altBackground='true'
-                    altText='true'
-                />
+                label={isSignUp ? 'Already have an account? Log In' 
+                                : "Don't have an account? Sign Up"}
+                onPress={() => {
+                    setIsSignUp(!isSignUp);
+                    setConfirmPassword('');
+                }}
+                fullWidth
+                altBackground='true'
+                altText='true'
+            />
 
             <Text style={{ marginTop: 30 }}>{message}</Text>
         </View>
