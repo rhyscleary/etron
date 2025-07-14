@@ -2,16 +2,15 @@ const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, GetCommand } = require("@aws-sdk/lib-dynamodb");
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
-const tableName = "Workspaces";
+const invitesTable = "WorkspaceInvites";
 
-async function getWorkspaceById(workspaceId) {
+async function getUserInvites(email) {
 
     const result = await dynamoDB.send(
         new GetCommand( {
-            TableName: tableName,
+            TableName: invitesTable,
             Key: {
-                workspaceId: workspaceId,
-                type: "workspace"
+                pk: workspaceId,
             },
         })
     );
@@ -35,4 +34,4 @@ async function getWorkspaceById(workspaceId) {
     };
 }
 
-module.exports = getWorkspaceById;
+module.exports = getUserInvites;

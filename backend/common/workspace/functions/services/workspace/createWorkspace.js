@@ -5,7 +5,8 @@ const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCom
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 const {v4 : uuidv4} = require('uuid');
-const tableName = "Workspaces";
+const workspaceTable = "Workspaces";
+const usersTable = "WorkspaceUsers";
 
 async function createWorkspace(userId, data) {
     if (!data.name) {
@@ -18,10 +19,10 @@ async function createWorkspace(userId, data) {
     // create a new workspace item
     await dynamoDB.send(
         new PutCommand( {
-            TableName: tableName,
+            TableName: workspaceTable,
             Item: {
                 workspaceId: workspaceId,
-                type: "workspace",
+                sk: "meta",
                 name: data.name,
                 location: data.location || null,
                 description: data.description || null,
@@ -40,10 +41,11 @@ async function createWorkspace(userId, data) {
 
     await dynamoDB.send(
         new PutCommand( {
-            TableName: tableName,
+            TableName: usersTable,
             Item: {
                 workspaceId: workspaceId,
-                type: sk,
+                sk: sk,
+                type: "Owner",
                 role: "Owner",
                 joinedAt: date
             },

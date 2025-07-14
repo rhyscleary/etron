@@ -3,17 +3,22 @@ const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCom
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 const {v4 : uuidv4} = require('uuid');
+const { isOwner } = require("../utils/permissions");
 const tableName = "Workspaces";
 
 async function deleteWorkspace(userId, workspaceId) {
     // needs to delete all entries in the table
+
+    if (! await isOwner(userId, workspaceId)) {
+        throw new Error("User does not have permission to perform action")
+    }
 
     const workspace = await dynamoDB.send(
         new GetCommand( {
             TableName: tableName,
             Key: {
                 workspaceId: workspaceId,
-                type: "workspace"
+                sk: "meta"
             },
         })
     );
@@ -31,7 +36,7 @@ async function deleteWorkspace(userId, workspaceId) {
             TableName: tableName,
             Key: {
                 workspaceId: workspaceId,
-                type: "workspace"
+                sk: "meta"
             },
         })
     );

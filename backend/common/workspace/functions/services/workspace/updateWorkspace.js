@@ -2,18 +2,23 @@
 
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { isOwner } = require("../utils/permissions");
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 const tableName = "Workspaces";
 
-async function updateWorkspace(workspaceId, data) {
+async function updateWorkspace(userId, workspaceId, data) {
+
+    if (! await isOwner(userId, workspaceId)) {
+        throw new Error("User does not have permission to perform action")
+    }
 
     const workspace = await dynamoDB.send(
         new GetCommand( {
             TableName: tableName,
             Key: {
                 workspaceId: workspaceId,
-                type: "workspace"
+                sk: "meta"
             },
         })
     );
@@ -57,7 +62,7 @@ async function updateWorkspace(workspaceId, data) {
             TableName: tableName,
             Key: {
                 workspaceId: workspaceId,
-                type: "workspace"
+                sk: "meta"
             },
             UpdateExpression: "SET " + updateFields.join(", "),
             ExpressionAttributeValues: expressionAttributeValues,
