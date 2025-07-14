@@ -6,7 +6,7 @@ const MicrosoftButton = ({
     imageSource,
     label,
     onPress,
-    style
+    style,
 }) => {
     const theme = useTheme();
 
@@ -19,7 +19,7 @@ const MicrosoftButton = ({
                     borderColor: theme.colors.altGM, 
                     backgroundColor: theme.colors.background
                 }, 
-                style
+                style,
             ]}
         >
         
@@ -46,7 +46,7 @@ const MicrosoftButton = ({
 
         </Pressable>
     );
-}
+};
 
 const styles = StyleSheet.create({
   microsoftButton: {
