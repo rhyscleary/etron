@@ -7,31 +7,18 @@ const invitesTable = "WorkspaceInvites";
 async function getUserInvites(email) {
 
     const result = await dynamoDB.send(
-        new GetCommand( {
+        new QueryCommand({
             TableName: invitesTable,
-            Key: {
-                pk: workspaceId,
-            },
+            IndexName: "",
+            KeyConditionExpression: "email = :email",
+            ExpressionAttributeValues: {
+                ":email": email
+            }
         })
     );
 
-    if (!result.Item) {
-        throw new Error("Workspace not found");
-    }
+    return result.Items || [];
 
-    const item = result.Item;
-
-    return {
-        workspace: {
-            workspaceId: item.workspaceId,
-            name: item.name,
-            location: item.location || null,
-            description: item.description || null,
-            ownerId: item.ownerId,
-            createdAt: item.createdAt,
-            updatedAt: item.updatedAt
-        }
-    };
 }
 
 module.exports = getUserInvites;

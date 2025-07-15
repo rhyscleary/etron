@@ -19,6 +19,16 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+        - Statement:
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+            Resource: arn:aws:cognito-idp:ap-southeast-2:201810768226:userpool/ap-southeast-2_RRTDNv40t
+
       Events:
         CreateWorkspace:
           Type: Api 
@@ -29,17 +39,85 @@ Resources:
         UpdateWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace/{id}
+            Path: /workspace/{workspaceId}
             Method: put
 
         GetWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace/{id}
+            Path: /workspace/{workspaceId}
             Method: get
             
         DeleteWorkspace:
           Type: Api 
           Properties:
-            Path: /workspace/{id}
+            Path: /workspace/{workspaceId}
             Method: delete
+
+        InviteUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/invites/create
+            Method: post
+
+        CancelInvite:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/invites/cancel/{email}
+            Method: delete
+
+        ViewSentInvites:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/invites
+            Method: get
+
+        AddUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/add/{inviteId}
+            Method: post
+
+        UpdateUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/update/{userId}
+            Method: put
+
+        RemoveUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/remove/{userId}
+            Method: delete
+
+        GetUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/{userId}
+            Method: get
+
+        GetAllUsers:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users
+            Method: get
+
+        CreateRole:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles/create
+            Method: post
+
+        DeleteRole:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles/remove/{roleId}
+            Method: delete
+
+        GetRoles:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles
+            Method: get
+
+

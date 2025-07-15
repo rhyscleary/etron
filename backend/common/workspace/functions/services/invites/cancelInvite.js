@@ -19,7 +19,7 @@ async function cancelInvite(userId, workspaceId, email) {
 
     // find invite with email
     const result = await dynamoDB.send(
-        new GetCommand( {
+        new QueryCommand( {
             TableName: invitesTable,
             IndexName: "workspaceId-email-index",
             KeyConditionExpression: "workspaceId = :w AND email = :e",

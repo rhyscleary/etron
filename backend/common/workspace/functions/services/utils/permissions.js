@@ -25,7 +25,7 @@ async function isManager(userId, workspaceId) {
         })
     );
 
-    return result.Item.type === "manager";
+    return result.Item && result.Item.type === "manager";
 }
 
 async function isOwner(userId, workspaceId) {
@@ -47,7 +47,7 @@ async function isOwner(userId, workspaceId) {
         })
     );
 
-    return result.Item.type === "owner";
+    return result.Item && result.Item.type === "owner";
 }
 
 module.exports = {

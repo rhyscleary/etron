@@ -5,8 +5,9 @@ const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCom
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 const {v4 : uuidv4} = require('uuid');
+const { getUserById } = require("../utils/auth");
 const workspaceTable = "Workspaces";
-const usersTable = "WorkspaceUsers";
+const workspaceUsersTable = "WorkspaceUsers";
 
 async function createWorkspace(userId, data) {
     if (!data.name) {
@@ -37,17 +38,25 @@ async function createWorkspace(userId, data) {
 
 
     // add user as an owner of the workspace
-    const sk = `user#${userId}`;
+    //const sk = `user#${userId}`;
+
+    // get cognito user by sub
+    const userProfile = await getUserById(userId);
 
     await dynamoDB.send(
         new PutCommand( {
-            TableName: usersTable,
+            TableName: workspaceUsersTable,
             Item: {
                 workspaceId: workspaceId,
-                sk: sk,
-                type: "Owner",
-                role: "Owner",
-                joinedAt: date
+                userId: userId,
+                email: userProfile.email,
+                preferred_username: userProfile.preferred_username,
+                given_name: userProfile.given_name,
+                family_name: userProfile.family_name,
+                type: "owner",
+                role: "owner",
+                joinedAt: date,
+                updatedAt: date
             },
         })
     );

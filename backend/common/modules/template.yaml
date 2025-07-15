@@ -30,7 +30,6 @@ Resources:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/modules/{moduleId}
-            Path: /modules/install/{workspaceId}/{moduleId}
             Method: put
 
         RemoveModuleFromWorkspace:

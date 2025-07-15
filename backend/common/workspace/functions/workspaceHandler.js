@@ -2,6 +2,14 @@
 const cancelInvite = require("./services/invites/cancelInvite");
 const getSentInvites = require("./services/invites/getSentInvites");
 const inviteUser = require("./services/invites/inviteUser");
+const createRole = require("./services/roles/createRole");
+const deleteRole = require("./services/roles/deleteRole");
+const getRoles = require("./services/roles/getRoles");
+const addUser = require("./services/users/addUser");
+const getUser = require("./services/users/getUser");
+const getUsers = require("./services/users/getUsers");
+const removeUser = require("./services/users/removeUser");
+const updateUser = require("./services/users/updateUser");
 const createWorkspace = require("./services/workspace/createWorkspace");
 const deleteWorkspace = require("./services/workspace/deleteWorkspace");
 const getWorkspaceById = require("./services/workspace/getWorkspaceById");
@@ -70,33 +78,59 @@ exports.handler = async (event) => {
 
 
             // ADD USER TO WORKSPACE
-            case "POST /workspace/{workspaceId}/users/add": {
-                body = await deleteWorkspace(userId, pathParams.workspaceId, requestJSON);
+            case "POST /workspace/{workspaceId}/users/add/{inviteId}": {
+                body = await addUser(pathParams.workspaceId, pathParams.inviteId);
                 break;
             }
 
             // UPDATE USER IN WORKSPACE
             case "PUT /workspace/{workspaceId}/users/update/{userId}": {
-                body = await deleteWorkspace(userId, pathParams.workspaceId, pathParams.userId);
+                body = await updateUser(userId, pathParams.workspaceId, pathParams.userId, requestJSON);
                 break;
             }
 
             // REMOVE USER FROM WORKSPACE
             case "DELETE /workspace/{workspaceId}/users/remove/{userId}": {
-                body = await deleteWorkspace(userId, pathParams.workspaceId, pathParams.userId);
+                body = await removeUser(userId, pathParams.workspaceId, pathParams.userId);
+                break;
+            }
+
+            // GET USER IN WORKSPACE
+            case "GET /workspace/{workspaceId}/users/{userId}": {
+                body = await getUser(userId, pathParams.workspaceId, pathParams.userId);
                 break;
             }
 
             // GET ALL USERS IN WORKSPACE
             case "GET /workspace/{workspaceId}/users": {
-                body = await deleteWorkspace(userId, pathParams.workspaceId);
+                body = await getUsers(userId, pathParams.workspaceId);
                 break;
             }
 
 
             // CREATE ROLE
+            case "POST /workspace/{workspaceId}/roles/create": {
+                body = await createRole(userId, pathParams.workspaceId, requestJSON);
+                break;
+            }
+
             // UPDATE ROLE
+            case "PUT /workspace/{workspaceId}/roles/update/{roleId}": {
+                body = await updateRole(userId, pathParams.workspaceId, pathParams.roleId, requestJSON);
+                break;
+            }
+
             // DELETE ROLE
+            case "DELETE /workspace/{workspaceId}/roles/remove/{roleId}": {
+                body = await deleteRole(userId, pathParams.workspaceId, pathParams.roleId);
+                break;
+            }
+
+            // GET ALL ROLES IN WORKSPACE
+            case "GET /workspace/{workspaceId}/roles": {
+                body = await getRoles(userId, pathParams.workspaceId);
+                break;
+            }
 
 
             // TODO MODULES:
