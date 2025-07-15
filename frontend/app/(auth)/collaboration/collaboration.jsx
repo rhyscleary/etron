@@ -19,6 +19,18 @@ const Collaboration = () => {
         { id: 'email2', name: 'Bob Smith', role: 'Employee' },
         { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
         { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
+        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
+        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
+        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
+        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
+        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
+        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
+        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
+        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
+        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
+        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
+        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
+        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
         { id: 'phone2', name: 'Edward Yang', role: 'Employee' }
     ];
 
@@ -39,12 +51,7 @@ const Collaboration = () => {
         <View style={commonStyles.screen}>
             <Header title="Users" showMenu showPlus onRightIconPress={() => router.push("/collaboration/add-user")} />
 
-            {/*Temporary redirect to profile screen*/}
-            <Link href="/profile" asChild>
-                <Pressable>
-                    <Text>temp home page</Text>
-                </Pressable>
-            </Link>
+
 
             {/* Search Box */}
             <TextInput
@@ -54,6 +61,13 @@ const Collaboration = () => {
                 mode="outlined"
                 style={{ marginVertical: 16 }}
             />
+            
+            {/*Temporary redirect to profile screen*/}
+            <Link href="/profile" asChild>
+                <Pressable>
+                    <Text>temp home page</Text>
+                </Pressable>
+            </Link>
 
             {/* Placeholder filters for search */}
             <Text>Placeholder</Text>
