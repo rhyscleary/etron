@@ -13,7 +13,7 @@ async function getUserByEmail(email) {
         Limit: 1
     }));
 
-    if (!result.Users) {
+    if (!result.Users || result.Users.length === 0) {
         throw new Error("User not found in the identity pool");
     }
 
@@ -42,7 +42,7 @@ async function getUserById(userId) {
         Limit: 1
     }));
 
-    if (!result.Users) {
+    if (!result.Users || result.Users.length === 0) {
         throw new Error("User not found in the identity pool");
     }
 
