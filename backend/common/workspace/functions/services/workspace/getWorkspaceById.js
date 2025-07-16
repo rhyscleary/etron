@@ -11,7 +11,7 @@ async function getWorkspaceById(workspaceId) {
             TableName: tableName,
             Key: {
                 workspaceId: workspaceId,
-                type: "workspace"
+                sk: "meta"
             },
         })
     );

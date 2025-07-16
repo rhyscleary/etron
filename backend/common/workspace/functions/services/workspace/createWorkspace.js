@@ -5,7 +5,9 @@ const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCom
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 const {v4 : uuidv4} = require('uuid');
-const tableName = "Workspaces";
+const { getUserById } = require("../utils/auth");
+const workspaceTable = "Workspaces";
+const workspaceUsersTable = "WorkspaceUsers";
 
 async function createWorkspace(userId, data) {
     if (!data.name) {
@@ -18,10 +20,10 @@ async function createWorkspace(userId, data) {
     // create a new workspace item
     await dynamoDB.send(
         new PutCommand( {
-            TableName: tableName,
+            TableName: workspaceTable,
             Item: {
                 workspaceId: workspaceId,
-                type: "workspace",
+                sk: "meta",
                 name: data.name,
                 location: data.location || null,
                 description: data.description || null,
@@ -36,16 +38,25 @@ async function createWorkspace(userId, data) {
 
 
     // add user as an owner of the workspace
-    const sk = `user#${userId}`;
+    //const sk = `user#${userId}`;
+
+    // get cognito user by sub
+    const userProfile = await getUserById(userId);
 
     await dynamoDB.send(
         new PutCommand( {
-            TableName: tableName,
+            TableName: workspaceUsersTable,
             Item: {
                 workspaceId: workspaceId,
-                type: sk,
-                role: "Owner",
-                joinedAt: date
+                userId: userId,
+                email: userProfile.email,
+                preferred_username: userProfile.preferred_username,
+                given_name: userProfile.given_name,
+                family_name: userProfile.family_name,
+                type: "owner",
+                role: "owner",
+                joinedAt: date,
+                updatedAt: date
             },
         })
     );
