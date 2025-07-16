@@ -43,29 +43,14 @@ const changeProfilePhoto = () => {
             const fileBuffer = await FileSystem.readAsStringAsync(localUri, {
                 encoding: FileSystem.EncodingType.Base64,
             });
-            console.log("File buffer read successful.");
 
-            /*const uploadResult = await Storage.put(s3Key, Buffer.from(fileBuffer, 'base64'), {
-                contentType: "image/jpeg",
-                level: "public",  //shouldn't stay public forever, just useful while testing
-            });
-
-            console.log("Photo upload successful:", uploadResult);
-
-            const s3Url = await Storage.get(s3Key);
-            console.log("Photo URL:", s3Url);*/
-        /*} catch (error) {
-            console.error("Photo upload failed:", error);
-        }
-        try {*/
             const result = await uploadData({
-                path: 'public/album/2024/1.jpg', 
-                // Alternatively, path: ({identityId}) => `protected/${identityId}/album/2024/1.jpg`
+                path: s3Key,
                 data: Buffer.from(fileBuffer, 'base64')
             }).result;
-            console.log('Succeeded: ', result);
+            console.log("Successfully uploaded photo: ", result);
         } catch (error) {
-            console.log('Error : ', error);
+            console.log("Error uploading photo: ", error);
         }
     }
 
