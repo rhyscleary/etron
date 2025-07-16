@@ -1,124 +1,60 @@
-import { Pressable, View, SectionList, Text as RNText } from "react-native";
+// Author(s): Rhys Cleary
+
+import { Pressable, ScrollView, View } from "react-native";
+import { Link, router, useRouter } from "expo-router";
+import { Text, useTheme } from "react-native-paper";
 import Header from "../../../components/layout/Header";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
-import { Link, router } from "expo-router";
-import { Text, TextInput, TouchableRipple } from "react-native-paper";
-import { useState } from "react";
+import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
+import StackLayout from "../../../components/layout/StackLayout";
 
 const Collaboration = () => {
+    const router = useRouter();
+    const theme = useTheme();
 
-
-    const [searchQuery, setSearchQuery] = useState('');
-
-    const handleSearchChange = (query) => {
-        setSearchQuery(query);
-    };
-
-    const stubUsers = [
-        { id: 'email1', name: 'Alice Johnson', role: 'Business Owner' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' }
+    // container for different collaboration options
+    const workspaceOptionButtons = [
+            { label: "Users", description: "Manage users in the workspace", onPress: () => router.push("collaboration/users") },
+            { label: "Roles", description: "Add and remove modules from the workspace", onPress: () => router.push("collaboration/invites") },
+            { label: "Invites", description: "Manage invites to the workspace", onPress: () => router.push("collaboration/invite-user") },
+            { label: "Workspace Log", description: "Audit log of actions within the workspace", onPress: () => router.push("collaboration/workspace-log") }
     ];
-
-    // Stub roles
-    const roles = ['Business Owner', 'Manager', 'Employee'];
-
-    const groupedUsers = roles.map(role => {
-        const data = stubUsers
-            .filter(user =>
-                user.role === role &&
-                user.name.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-
-        return { title: role, data };
-    }).filter(section => section.data.length > 0); // removes empty sections in the event of a role having no users
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Users" showMenu showPlus onRightIconPress={() => router.push("/collaboration/add-user")} />
+            <Header title="Collaboration" showMenu />
 
-
-
-            {/* Search Box */}
-            <TextInput
-                label="Search..."
-                value={searchQuery}
-                onChangeText={handleSearchChange}
-                mode="outlined"
-                style={{ marginVertical: 16 }}
-            />
-            
             {/*Temporary redirect to profile screen*/}
             <Link href="/profile" asChild>
                 <Pressable>
                     <Text>temp home page</Text>
                 </Pressable>
             </Link>
-
-            {/* Placeholder filters for search */}
-            <Text>Placeholder</Text>
-
-            {/* Workspace Log */}
-            <Link href="/collaboration/workspace-log" asChild>
-                <Pressable
-                    style={{
-                        borderWidth: 1,
-                        borderColor: '#ccc',
-                        borderRadius: 4,
-                        padding: 16,
-                        marginVertical: 8
-                    }}
-                >
-                    <Text>Workspace Log</Text>
+            
+            {/*Temporary redirect to collab/workspace join endpoints screen*/}
+            <Link href="/collaboration/collab-endpoints" asChild>
+                <Pressable>
+                    <Text>Go to Endpoints</Text>
                 </Pressable>
             </Link>
 
+            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
+                <StackLayout spacing={12}>
+                    {workspaceOptionButtons.map((item) => (
+                        <DescriptiveButton 
+                            key={item.label}
+                            icon={item.icon}
+                            label={item.label}
+                            description={item.description}
+                            onPress={item.onPress}
+                        />
+                    ))}
+                </StackLayout>
 
+            </ScrollView>
 
-            {/* Sectioned User List */}
-            <SectionList
-                sections={groupedUsers}
-                keyExtractor={(item) => item.id}
-                renderSectionHeader={({ section: { title } }) => (
-                    <Text style={{ marginTop: 16, fontWeight: 'bold' }}>{title}</Text>
-                )}
-                renderItem={({ item }) => (
-                    <TouchableRipple
-                        style={{
-                            borderWidth: 1,
-                            borderColor: '#e0e0e0',
-                            borderRadius: 4,
-                            padding: 12,
-                            marginVertical: 4
-                        }}
-                        onPress={() => console.log('User tapped:', item.name)}
-                        rippleColor="rgba(0, 0, 0, .1)"
-                    >
-                        <Text>{item.name}</Text>
-                    </TouchableRipple>
-                )}
-                ListEmptyComponent={
-                    <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                        No users found
-                    </RNText>
-                }
-            />
         </View>
-    );
-};
+    )
+}
 
 export default Collaboration;

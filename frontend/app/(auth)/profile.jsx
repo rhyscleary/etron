@@ -43,7 +43,7 @@ const Profile = () => {
 
             <Link href="/collaboration/collaboration" asChild>
                 <Pressable>
-                    <Text>Go to Users - Collaboration</Text>
+                    <Text>Go to Collaboration</Text>
                 </Pressable>
             </Link>
 
