@@ -3,11 +3,8 @@ import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
 
-import { Amplify } from 'aws-amplify';
+import { Amplify, Storage } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
-
-import awsmobile from '../../src/aws-exports';
-Amplify.configure(awsmobile);
 
 import {
     getCurrentUser,
@@ -163,6 +160,11 @@ function App() {
             <Link href="/profile" asChild>
                 <Pressable>
                     <Text>Go to Profile</Text>
+                </Pressable>
+            </Link>
+            <Link href="/profile-photo" asChild>
+                <Pressable>
+                    <Text>Go to change profile photo page</Text>
                 </Pressable>
             </Link>
         </>

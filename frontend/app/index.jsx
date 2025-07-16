@@ -3,19 +3,12 @@ import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
 
-import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
-
+import { Amplify } from 'aws-amplify';
+import { Storage } from '@aws-amplify/storage';
 import awsmobile from '../src/aws-exports';
-Amplify.configure(awsmobile);
 
-import {
-    getCurrentUser,
-    fetchAuthSession,
-    fetchUserAttributes,
-    updateUserAttribute,
-    confirmUserAttribute
-} from 'aws-amplify/auth';
+Amplify.configure(awsmobile);
 
 function App() {
     const { authStatus } = useAuthenticator();

@@ -26,5 +26,47 @@
       "providerPlugin": "awscloudformation",
       "service": "Cognito"
     }
+  },
+  "function": {
+    "S3Trigger2072070a": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_S3Trigger2072070a_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "S3Trigger2072070a"
+        }
+      ]
+    },
+    "AMPLIFY_function_S3Trigger2072070a_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "S3Trigger2072070a"
+        }
+      ]
+    }
+  },
+  "storage": {
+    "etronProfilePhotos": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "LambdaExecutionRole"
+          ],
+          "category": "function",
+          "resourceName": "S3Trigger2072070a"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "S3"
+    }
   }
 }
