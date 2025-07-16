@@ -1,5 +1,7 @@
 // Author(s): Rhys Cleary
 
+const getUserInvites = require("./services/invites/getUserInvites");
+
 
 exports.handler = async (event) => {
     let statusCode = 200;

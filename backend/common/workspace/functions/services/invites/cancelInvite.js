@@ -37,7 +37,7 @@ async function cancelInvite(userId, workspaceId, email) {
     const items = result.Items;
 
     // delete invite
-    for (let item in items) {
+    for (let item of items) {
         await dynamoDB.send(
             new DeleteCommand( {
                 TableName: invitesTable,

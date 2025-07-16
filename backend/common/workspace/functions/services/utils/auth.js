@@ -1,12 +1,11 @@
 // Author(s): Rhys Cleary
 
 const { CognitoIdentityProviderClient, ListUsersCommand } = require("@aws-sdk/client-cognito-identity-provider");
-const cognito = new CognitoIdentityProviderClient();
+const cognito = new CognitoIdentityProviderClient({region: "ap-southeast-2"});
 
+const userPoolId = "ap-southeast-2_RRTDNv40t";
 
 async function getUserByEmail(email) {
-
-    const userPoolId = "mjgihpivgnjha4216bcf1umsp";
 
     const result = await cognito.send(new ListUsersCommand({
         UserPoolId: userPoolId,
@@ -19,6 +18,7 @@ async function getUserByEmail(email) {
     }
 
     const user = result.Users[0];
+    console.log(user);
 
     const attributes = user.Attributes.reduce((acc, attribute) => {
         acc[attribute.Name] = attribute.Value;
@@ -35,8 +35,6 @@ async function getUserByEmail(email) {
 }
 
 async function getUserById(userId) {
-
-    const userPoolId = "mjgihpivgnjha4216bcf1umsp";
 
     const result = await cognito.send(new ListUsersCommand({
         UserPoolId: userPoolId,
