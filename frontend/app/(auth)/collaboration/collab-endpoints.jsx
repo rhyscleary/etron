@@ -7,7 +7,7 @@ import { apiDelete, apiGet, apiPost } from "../../../utils/api";
 import { useState } from "react";
 
 const CollabEndpoints = () => {
-    const workspaceId = "893709be-a41a-4340-8e5a-f5d8aca9d940";
+    const workspaceId = "00c60a07-15e9-488e-bdc4-d33ac9ce3b2b";
     const email = "rhysjcleary@gmail.com"
     const [inviteId, setInviteId] = useState("");
     const [roleId, setRoleId] = useState("");
@@ -78,6 +78,8 @@ const CollabEndpoints = () => {
             console.log(error);
         }
     }
+
+    // ROLES
 
     async function createRole() {
         try {

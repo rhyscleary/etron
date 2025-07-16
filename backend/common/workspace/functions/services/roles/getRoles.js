@@ -28,7 +28,10 @@ async function getRoles(userId, workspaceId) {
             })
         );
 
-    return result.Items || [];
+    return (result.Items || []).map(({sk, ...rest}) => ({
+        ...rest,
+        roleId: sk.replace("role#", "")
+    }));
     
 }
 
