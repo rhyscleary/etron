@@ -22,10 +22,10 @@ const changeProfilePhoto = () => {
 
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
-            allowsEditing: true,  //means they can crop it
-            quality: 0.7,
+            allowsEditing: true,
+            //aspect: [1, 1]  //todo: check if this works, i read it but haven't tested it yet
+            quality: 0.7,  //todo: find a lower number for this that fits the tiny profile photos so we don't waste storage
         });
-
         if (result.canceled) {
             console.log("Photo picking failed: User cancelled image picker.");
             return;
@@ -48,10 +48,13 @@ const changeProfilePhoto = () => {
                 path: s3Key,
                 data: Buffer.from(fileBuffer, 'base64')
             }).result;
-            console.log("Successfully uploaded photo: ", result);
+            console.log("Successfully uploaded photo:", result);
         } catch (error) {
-            console.log("Error uploading photo: ", error);
+            console.log("Error uploading photo:", error);
         }
+
+        //todo: add the s3Key to the user's picture attribute in Cognito
+        //todo: also add way to display the photo in the app
     }
 
     return (
