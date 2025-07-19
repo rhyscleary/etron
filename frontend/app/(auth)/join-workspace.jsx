@@ -11,6 +11,8 @@ const JoinWorkspace = () => {
             <Text style={{ fontSize: 16 }}>
               You have the following options:
             </Text>
+
+            
         </View>
     )
 

@@ -12,13 +12,13 @@ import Divider from "../components/layout/Divider";
 import { Amplify } from 'aws-amplify';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 
-import { signIn, signUp, confirmSignUp } from 'aws-amplify/auth';
+import { signIn, signUp, confirmSignUp, signInWithRedirect } from 'aws-amplify/auth';
 
 import awsmobile from '../src/aws-exports';
 Amplify.configure(awsmobile);
 
-function App() {
-    const { authStatus } = useAuthenticator();
+function LoginSignup() {
+    /*const { authStatus } = useAuthenticator();
 
     useEffect(() => {
         console.log("(landing.jsx). Auth status:", authStatus);
@@ -26,7 +26,7 @@ function App() {
             console.log("Redirecting to auth root page.")
             router.replace('(auth)/profile'); // Go to the protected root page
         }
-    }, [authStatus]);
+    }, [authStatus]);*/
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -36,18 +36,33 @@ function App() {
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
 
+    const [loading, setLoading] = useState(false);
+
     const router = useRouter();
 
     const { isSignUp } = useLocalSearchParams();
     const isSignUpBool = isSignUp === 'true'
 
     const handleSignIn = async () => {
+        setLoading(true);
         try {
             await signIn({ username: email, password });
+
+            // check if the user is part of a workspace
+            const test = true;
+            if (test) {
+                console.log("User is part of a workspace, redirecting to profile");
+                router.replace("(auth)/profile");
+            } else {
+                router.replace("(auth)/personalise-account");
+            }
+
             setMessage("Sign in successful!");
         } catch (error) {
             console.log('Error signing in:', error);
             setMessage(`Error: ${error.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -77,6 +92,9 @@ function App() {
 
     const handleGoogleSignIn = () => {
         console.log('Google Sign-In pressed');
+        /*signInWithRedirect({
+            provider: "Google"
+        })*/
     };
 
     const handleMicrosoftSignIn = () => {
@@ -87,10 +105,10 @@ function App() {
         try {
             await confirmSignUp({ username: email, confirmationCode: verificationCode });
             setShowVerificationModal(false);
-            setMessage("Confirmation successful! Please personalize your account.");
+            console.log("Confirmation successful! Please personalize your account.");
 
-            // Navigate to personalization page
-            router.push('(auth)/personalise-account');
+            // sign in the user
+            await handleSignIn();
         } catch (error) {
             console.log('Error confirming code:', error);
             setMessage(`Error: ${error.message}`);
@@ -113,13 +131,27 @@ function App() {
                     onChangeText={setEmail}
                 />
 
-                <TextField
-                    label="Password"
-                    placeholder="Password"
-                    value={password}
-                    secureTextEntry
-                    onChangeText={setPassword}
-                />
+                <View>
+                    <TextField
+                        label="Password"
+                        placeholder="Password"
+                        value={password}
+                        secureTextEntry
+                        onChangeText={setPassword}
+                    />
+
+                    {!isSignUpBool && (
+                        <View style={{marginTop: 10}}>
+                            <Link href="/forgot-password">
+                                <Text style={{ 
+                                    textDecorationLine: 'underline'
+                                }}>
+                                    Forgot Your Password?
+                                </Text>
+                            </Link>
+                        </View>
+                    )}
+                </View>
 
                 {isSignUpBool && (
                     <TextField
@@ -140,7 +172,7 @@ function App() {
                 />
             </View>
 
-            <Text style={{ fontSize: 24, textAlign: 'center' }}>
+            <Text style={{ fontSize: 20, textAlign: 'center' }}>
                 OR
             </Text>
 
@@ -236,4 +268,4 @@ function App() {
     );
 }
 
-export default App;
+export default LoginSignup;

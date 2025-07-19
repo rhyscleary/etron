@@ -8,7 +8,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import StackLayout from "../../../../components/layout/StackLayout";
 import { Text, useTheme } from "react-native-paper";
-import { apiPut } from "../../../../utils/api";
+import { apiPut } from "../../../../utils/api/apiClient";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
 import TextField from "../../../../components/common/input/TextField";
 import { getWorkspaceId, getWorkspaceInfo } from "../../../../storage/workspaceStorage";
@@ -82,7 +82,7 @@ const WorkspaceDetails = () => {
                     </View>
                 ) : (
                     <View>
-                        <StackLayout spacing={20}> 
+                        <StackLayout spacing={30}> 
                             <TextField 
                                 label="Name *" 
                                 value={name} 

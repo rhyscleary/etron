@@ -5,7 +5,7 @@ import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import { Redirect, useRouter, router, Link } from 'expo-router';
-
+import StackLayout from '../components/layout/StackLayout';
 
 const ResetPassword = () => {
   const [displayName, setDisplayName] = useState('');
@@ -30,26 +30,28 @@ const ResetPassword = () => {
       </Text>
 
       <Text style={{ fontSize: 16, textAlign: 'center' }}>
-        Enter your email or phone number linked to your account to recieve a password reset link
+        Password must be at least 12 characters long, and contain at least 1 capital letter, 1 number and 1 symbol
       </Text>
 
-      <TextField
-        label="Email Address"
-        placeholder="Email"
-        value={displayName}
-        onChangeText={setDisplayName}
-      />
+      <StackLayout spacing={30}>
+        <TextField
+          label="New Password"
+          placeholder="New Password"
+          value={displayName}
+          onChangeText={setDisplayName}
+        />
 
-      <TextField
-        label="Phone Number"
-        placeholder="Phone Number"
-        value={displayName}
-        onChangeText={setDisplayName}
-      />
+        <TextField
+          label="Confirm Passowrd"
+          placeholder="Confirm Password"
+          value={displayName}
+          onChangeText={setDisplayName}
+        />
+      </StackLayout>
 
       <View>
         <BasicButton
-          label='Send Password Reset Link'
+          label='Change Password'
           onPress={handleSave}
           fullWidth='true'
         />

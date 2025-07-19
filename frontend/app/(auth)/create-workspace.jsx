@@ -10,7 +10,7 @@ import TextField from "../../components/common/input/TextField";
 import StackLayout from "../../components/layout/StackLayout";
 
 import { Snackbar, Text, useTheme } from "react-native-paper";
-import { apiPost } from "../../utils/api";
+import { apiPost } from "../../utils/api/apiClient";
 import MessageBar from "../../components/overlays/MessageBar";
 
 const CreateWorkspace = () => {
@@ -57,7 +57,7 @@ const CreateWorkspace = () => {
             <Header title="Create Workspace" showBack />
 
             <View>
-                <StackLayout spacing={20}> 
+                <StackLayout spacing={30}> 
                     <View>
                         <TextField 
                             label="Name *" 

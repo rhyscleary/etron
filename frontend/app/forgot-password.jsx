@@ -5,17 +5,19 @@ import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import { Redirect, useRouter, router, Link } from 'expo-router';
+import Header from '../components/layout/Header';
 
-const ResetPassword = () => {
+
+const ForgotPassword = () => {
   const [displayName, setDisplayName] = useState('');
   const [fullName, setFullName] = useState('');
 
-  const handleSave = async () => {
+  const handleSendCode = async () => {
     console.log({
         //Save selected invite as chosen workspace
     });
     // BACKEND CONNECTION HERE FOR SAVING CHOICE
-    router.push('/login-signup');
+    router.push('/reset-password');
   };
 
   const theme = useTheme();
@@ -23,33 +25,34 @@ const ResetPassword = () => {
   return (
     <View style={{ padding: 20, gap: 30, justifyContent: 'center' }}>
       
-      
-      <Text style={{ fontSize: 24, textAlign: 'center' }}>
-        Password Reset
-      </Text>
+      <Header title="Forgot Password" showBack />
 
       <Text style={{ fontSize: 16, textAlign: 'center' }}>
-        Password must be at least 12 characters long, and contain at least 1 capital letter, 1 number and 1 symbol
+        Please enter your email or phone number linked to your account to recieve a password reset code.
       </Text>
 
       <TextField
-        label="New Password"
-        placeholder="New Password"
+        label="Email Address"
+        placeholder="Email"
         value={displayName}
         onChangeText={setDisplayName}
       />
 
+      <Text style={{ fontSize: 20, textAlign: 'center' }}>
+        OR
+      </Text>
+
       <TextField
-        label="Confirm Passowrd"
-        placeholder="Confirm Password"
+        label="Phone Number"
+        placeholder="Phone Number"
         value={displayName}
         onChangeText={setDisplayName}
       />
 
       <View>
         <BasicButton
-          label='Change Password'
-          onPress={handleSave}
+          label='Send Password Reset Code'
+          onPress={handleSendCode}
           fullWidth='true'
         />
       </View>
@@ -57,4 +60,4 @@ const ResetPassword = () => {
   );
 }
 
-export default ResetPassword;
+export default ForgotPassword;

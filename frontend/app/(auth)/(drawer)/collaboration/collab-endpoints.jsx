@@ -3,7 +3,7 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { Link, router } from "expo-router";
 import { Text, TextInput } from "react-native-paper";
-import { apiDelete, apiGet, apiPost } from "../../../../utils/api";
+import { apiDelete, apiGet, apiPost } from "../../../../utils/api/apiClient";
 import { useState } from "react";
 
 const CollabEndpoints = () => {

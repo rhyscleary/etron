@@ -5,6 +5,9 @@ import TextField from '../../components/common/input/TextField';
 import BasicButton from '../../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
+import Header from '../../components/layout/Header';
+import { commonStyles } from '../../assets/styles/stylesheets/common';
+import StackLayout from '../../components/layout/StackLayout';
 
 //import * as ImagePicker from 'expo-image-picker';
 
@@ -42,101 +45,105 @@ const PersonaliseAccount = () => {
   const theme = useTheme();
 
   return (
-    <View style={{ padding: 20, gap: 30, justifyContent: 'center' }}>
-      
-      
-      <Text style={{ fontSize: 24, textAlign: 'center' }}>
-        Personalise Your Account
-      </Text>
+    <View style={commonStyles.screen}>
+      <View style={{ padding: 20, gap: 30, justifyContent: 'center' }}>
 
-      <TextField
-        label="Display Name"
-        placeholder="Display Name"
-        value={displayName}
-        onChangeText={setDisplayName}
-      />
+        
+        <Text style={{ fontSize: 24, textAlign: 'center' }}>
+          Personalise Your Account
+        </Text>
 
-      <TextField
-        label="Full Name (Optional)"
-        placeholder="Full Name"
-        value={fullName}
-        onChangeText={setFullName}
-      />
+        <StackLayout spacing={30}>
+          <TextField
+            label="Display Name"
+            placeholder="Display Name"
+            value={displayName}
+            onChangeText={setDisplayName}
+          />
 
-      <TextField
-        label="Phone Number (Optional)"
-        placeholder="Phone Number"
-        value={phoneNumber}
-        onChangeText={setPhoneNumber}
-      />
+          <TextField
+              label="Full Name (Optional)"
+              placeholder="Full Name"
+              value={fullName}
+              onChangeText={setFullName}
+          />
 
-      <View style={{ alignItems: 'flex-end' }}>
-        <BasicButton
-          label='Continue'
-          onPress={handleSave}
-        />
-      </View>
+          <TextField
+              label="Phone Number (Optional)"
+              placeholder="Phone Number"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+          />
+        </StackLayout>
 
-      <Modal
-        visible={showWorkspaceModal}
-        animationType="slide"
-        transparent={true}
-      >
-        <View style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-        }}>
+        <View style={{ alignItems: 'flex-end' }}>
+          <BasicButton
+            label='Continue'
+            onPress={handleSave}
+          />
+        </View>
+
+        <Modal
+          visible={showWorkspaceModal}
+          animationType="slide"
+          transparent={true}
+        >
           <View style={{
-          backgroundColor: theme.colors.background,
-          padding: 10,
-          borderRadius: 10,
-          width: '65%',
-          alignItems: 'center'
-        }}>
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+          }}>
+            <View style={{
+            backgroundColor: theme.colors.background,
+            padding: 10,
+            borderRadius: 10,
+            width: '65%',
+            alignItems: 'center'
+          }}>
 
-          <Text style={{ fontSize: 24, marginBottom: 20 }}>
-            Workspace
-          </Text>
+            <Text style={{ fontSize: 24, marginBottom: 20 }}>
+              Workspace
+            </Text>
 
-          <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center' }}>
-            Are you creating your own workspace or joining an existing one?
-          </Text>
+            <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center' }}>
+              Are you creating your own workspace or joining an existing one?
+            </Text>
 
-         <View style={{
-           flexDirection: 'row',
-           justifyContent: 'space-between',
-           width: '100%',
-           marginBottom: 20
-         }}>
-           <BasicButton
-             label="Creating"
-             fullWidth='true'
-             onPress={() => {
-               setWorkspaceModal(false);
-               router.push('/(auth)/create-workspace-parko');
-             }}
-             style={{ marginRight: 50 }}
-           />
-           <BasicButton
-             label="Joining"
-             fullWidth='true'
-             onPress={() => {
-               setWorkspaceModal(false);
-               router.push('/(auth)/join-workspace');
-             }}
-             style={{ marginRight: 50 }}
-           />
-         </View>
-            
-         <TouchableOpacity onPress={() => setWorkspaceModal(false)}>
-           <Text>Go back</Text>
-         </TouchableOpacity>
-       </View>
-     </View>
-      </Modal>
+          <View style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            width: '100%',
+            marginBottom: 20
+          }}>
+            <BasicButton
+              label="Creating"
+              fullWidth='true'
+              onPress={() => {
+                setWorkspaceModal(false);
+                router.push('/(auth)/create-workspace');
+              }}
+              style={{ marginRight: 50 }}
+            />
+            <BasicButton
+              label="Joining"
+              fullWidth='true'
+              onPress={() => {
+                setWorkspaceModal(false);
+                router.push('/(auth)/join-workspace');
+              }}
+              style={{ marginRight: 50 }}
+            />
+          </View>
+              
+          <TouchableOpacity onPress={() => setWorkspaceModal(false)}>
+            <Text>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+        </Modal>
 
+      </View>
     </View>
   );
 }

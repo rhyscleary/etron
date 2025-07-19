@@ -5,7 +5,7 @@ import { router, useRouter } from "expo-router";
 import StackLayout from "../../../../components/layout/StackLayout";
 import BasicDialog from "../../../../components/overlays/BasicDialog";
 import { useState } from "react";
-import { apiDelete } from "../../../../utils/api";
+import { apiDelete } from "../../../../utils/api/apiClient";
 import { useTheme } from "react-native-paper";
 import { verifyPassword } from "../../../../utils/verifyPassword";
 import Header from "../../../../components/layout/Header";
