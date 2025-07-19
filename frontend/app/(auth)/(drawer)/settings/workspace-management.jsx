@@ -90,6 +90,7 @@ const WorkspaceManagement = () => {
                 }}
                 inputError={passwordError}
                 inputErrorMessage="The password entered is invalid."
+                secureTextEntry={true}
                 leftActionLabel="Cancel"
                 handleLeftAction={() => {
                     setDeleteDialogVisible(false);

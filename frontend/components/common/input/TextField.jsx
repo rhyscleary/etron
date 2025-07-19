@@ -1,5 +1,6 @@
 // Author(s): Rhys Cleary
 
+import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { TextInput, useTheme } from "react-native-paper";
 
@@ -8,9 +9,12 @@ const TextField = ({
     value,
     placeholder,
     error,
-    onChangeText
+    onChangeText,
+    secureTextEntry = false
 }) => {
     const theme = useTheme();
+    const [hidePassword, setHidePassword] = useState(secureTextEntry);
+    const isPassword = secureTextEntry === true;
 
     return (
         <View style={styles.componentContainer}>
@@ -26,6 +30,15 @@ const TextField = ({
                 outlineStyle={{
                     borderWidth: 2
                 }}
+                secureTextEntry={isPassword ? hidePassword : false}
+                right={
+                    isPassword ? (
+                        <TextInput.Icon
+                            icon={hidePassword ? "eye-off" : "eye"}
+                            onPress={() => setHidePassword(!hidePassword)}
+                        />    
+                    ) : null
+                }
             />
         </View>
     );
