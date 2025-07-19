@@ -24,7 +24,7 @@ function App() {
         console.log("(landing.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
             console.log("Redirecting to auth root page.")
-            router.replace('(auth)/dashboard'); // Go to the protected root page
+            router.replace('(auth)/profile'); // Go to the protected root page
         }
     }, [authStatus]);
 

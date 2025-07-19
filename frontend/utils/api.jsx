@@ -4,6 +4,7 @@ import axios from 'axios';
 async function getHeaders() {
     const session = await fetchAuthSession();
     const idToken = session.tokens.idToken.toString();
+    //console.log(idToken);
     
     return {
         'Content-Type': 'application/json',
@@ -44,10 +45,10 @@ export async function apiGet(path, params = {}) {
     return request('get', path, {}, params);
 }
 
-export async function apiPut(path, body = {}, params = {}) {
-    return request('put', path, body, params);
+export async function apiPut(path, body = {}) {
+    return request('put', path, body, {});
 }
 
 export async function apiDelete(path, params = {}) {
-    return request('delete', path, body, params);
+    return request('delete', path, {}, params);
 }

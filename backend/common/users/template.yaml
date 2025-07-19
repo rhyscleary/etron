@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  eTRON user functions template
+
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+Resources:
+  UserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/
+      Handler: userHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+      Events:
+        GetUserInvites:
+          Type: Api 
+          Properties:
+            Path: /user/{email}/invites
+            Method: get

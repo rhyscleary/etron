@@ -22,6 +22,7 @@ import {
     updateUserAttribute,
     confirmUserAttribute
 } from 'aws-amplify/auth';
+import { saveTestWorkspaceInfo } from "../../storage/workspaceStorage";
 
 
 function SignOutButton() {
@@ -168,9 +169,14 @@ function App() {
                     <Text>Go to Create Workspace</Text>
                 </Pressable>
             </Link>
-            <Link href="/settings" asChild>
+            <Link href="/settings/settings" asChild>
                 <Pressable>
                     <Text>Go to Settings</Text>
+                </Pressable>
+            </Link>
+            <Link href="/profile" asChild>
+                <Pressable>
+                    <Text>Go to Profile</Text>
                 </Pressable>
             </Link>
         </>

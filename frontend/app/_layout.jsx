@@ -20,6 +20,7 @@ export default function RootLayout() {
     return (    
         <PaperProvider theme={currentTheme}>
             <Authenticator.Provider>
+                {/*Wrap the drawer layout around the safe area and the slot */}
                 <SafeAreaProvider>
                     <SafeView>            
                         <Slot />

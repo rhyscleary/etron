@@ -44,8 +44,8 @@ const CreateWorkspace = () => {
 
             console.log('Workspace created:', result);
 
-            // navigate to the dashboard
-            router.push("/dashboard");
+            // navigate to the profile
+            router.push("/profile");
         } catch (error) {
             console.log("Error creating workspace: ", error);
             setSnackbarVisible(true)
