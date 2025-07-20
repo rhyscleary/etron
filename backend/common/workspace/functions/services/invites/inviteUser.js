@@ -1,7 +1,7 @@
 // Author(s): Rhys Cleary
 
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
+const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand, QueryCommand } = require("@aws-sdk/lib-dynamodb");
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 const {v4 : uuidv4} = require('uuid');
@@ -16,6 +16,25 @@ async function inviteUser(userId, workspaceId, data) {
 
     if (! await isOwner(userId, workspaceId) && ! await isManager(userId, workspaceId)) {
         throw new Error("User does not have permission to perform action")
+    }
+
+    // check if the user already exists in the workspace
+
+    // check if an invite has already been sent to the user
+    const existingInvites = await dynamoDB.send(
+        new QueryCommand({
+            TableName: invitesTable,
+            IndexName: "workspaceId-email-index",
+            KeyConditionExpression: "workspaceId = :w AND email = :e",
+            ExpressionAttributeValues: {
+                ":w": workspaceId,
+                ":e": data.email
+            }
+        })
+    );
+    
+    if (existingInvites.Items) {
+        return {message: "User is already invited to the workspace"};
     }
 
     const inviteId = uuidv4();

@@ -23,15 +23,13 @@ async function getWorkspaceById(workspaceId) {
     const item = result.Item;
 
     return {
-        workspace: {
-            workspaceId: item.workspaceId,
-            name: item.name,
-            location: item.location || null,
-            description: item.description || null,
-            ownerId: item.ownerId,
-            createdAt: item.createdAt,
-            updatedAt: item.updatedAt
-        }
+        workspaceId: item.workspaceId,
+        name: item.name,
+        location: item.location || null,
+        description: item.description || null,
+        ownerId: item.ownerId,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
     };
 }
 

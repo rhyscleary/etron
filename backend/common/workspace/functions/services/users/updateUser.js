@@ -53,7 +53,7 @@ async function updateUser(authUserId, workspaceId, userId, data) {
     expressionAttributeValues[":updatedAt"] = new Date().toISOString();
     expressionAttributeNames["#updatedAt"] = "updatedAt";
 
-    await dynamoDB.send(
+    const result = await dynamoDB.send(
         new UpdateCommand( {
             TableName: workspaceUsersTable,
             Key: {
@@ -62,11 +62,12 @@ async function updateUser(authUserId, workspaceId, userId, data) {
             },
             UpdateExpression: "SET " + updateFields.join(", "),
             ExpressionAttributeValues: expressionAttributeValues,
-            ExpressionAttributeNames: expressionAttributeNames
+            ExpressionAttributeNames: expressionAttributeNames,
+            ReturnValues: "ALL_NEW"
         })
     );
 
-    return {message: "User updated successfully"};
+    return result || [];
 }
 
 module.exports = updateUser;
