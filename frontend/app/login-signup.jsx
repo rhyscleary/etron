@@ -49,7 +49,7 @@ function LoginSignup() {
             await signIn({ username: email, password });
 
             // check if the user is part of a workspace
-            const test = true;
+            const test = false;
             if (test) {
                 console.log("User is part of a workspace, redirecting to profile");
                 router.replace("(auth)/profile");
