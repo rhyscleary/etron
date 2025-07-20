@@ -18,6 +18,21 @@ async function inviteUser(userId, workspaceId, data) {
         throw new Error("User does not have permission to perform action")
     }
 
+    // check if an invite has already been sent to the user
+    const existingInvites = await dynamoDB.send(
+        new QueryCommand({
+            TableName: invitesTable,
+            KeyConditionExpression: "workspaceId = :workspaceId",
+            ExpressionAttributeValues: {
+                ":workspaceId": workspaceId
+            }
+        })
+    );
+    
+    if (existingInvites.Items) {
+        return {message: "User is already invited to the workspace"};
+    }
+
     const inviteId = uuidv4();
     const dateObject = new Date();
     const date = dateObject.toISOString();

@@ -18,28 +18,28 @@ async function createWorkspace(userId, data) {
     const date = new Date().toISOString();
 
     // create a new workspace item
+    const workspaceItem = {
+        workspaceId: workspaceId,
+        sk: "meta",
+        name: data.name,
+        location: data.location || null,
+        description: data.description || null,
+        ownerId: userId,
+        createdAt: date,
+        updatedAt: date
+    };
+
     await dynamoDB.send(
         new PutCommand( {
             TableName: workspaceTable,
-            Item: {
-                workspaceId: workspaceId,
-                sk: "meta",
-                name: data.name,
-                location: data.location || null,
-                description: data.description || null,
-                ownerId: userId,
-                createdAt: date,
-                updatedAt: date
-            },
+            Item: workspaceItem
         })
     );
 
     // search modules and add defaults to workspace
-
+    
 
     // add user as an owner of the workspace
-    //const sk = `user#${userId}`;
-
     // get cognito user by sub
     const userProfile = await getUserById(userId);
 
@@ -61,8 +61,15 @@ async function createWorkspace(userId, data) {
         })
     );
 
-
-    return {message: "Workspace created successfully", workspaceId: workspaceId};
+    return {
+        workspaceId: workspaceId,
+        name: data.name,
+        location: data.location || null,
+        description: data.description || null,
+        ownerId: userId,
+        createdAt: date,
+        updatedAt: date
+    };
 }
 
 module.exports = createWorkspace;

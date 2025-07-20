@@ -20,9 +20,9 @@ async function getSentInvites(userId, workspaceId) {
     const result = await dynamoDB.send(
             new QueryCommand({
                 TableName: invitesTable,
-                KeyConditionExpression: "workspaceId = :w",
+                KeyConditionExpression: "workspaceId = :workspaceId",
                 ExpressionAttributeValues: {
-                    ":w": workspaceId
+                    ":workspaceId": workspaceId
                 }
             })
         );
