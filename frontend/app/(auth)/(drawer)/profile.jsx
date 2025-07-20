@@ -3,14 +3,9 @@ import Header from "../../../components/layout/Header";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
 import { Link } from "expo-router";
 import { Text } from "react-native-paper";
-import { saveTestWorkspaceInfo } from "../../../storage/workspaceStorage";
 import { useEffect } from "react";
 
 const Profile = () => {
-
-    useEffect(() => {
-        saveTestWorkspaceInfo();
-    }, []);
 
     return (
         <View style={commonStyles.screen}>

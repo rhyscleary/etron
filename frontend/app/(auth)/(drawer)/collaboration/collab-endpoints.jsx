@@ -5,14 +5,23 @@ import { Link, router } from "expo-router";
 import { Text, TextInput } from "react-native-paper";
 import { apiDelete, apiGet, apiPost } from "../../../../utils/api/apiClient";
 import { useState } from "react";
+import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import { useEffect } from "react";
 
 const CollabEndpoints = () => {
-    const workspaceId = "00c60a07-15e9-488e-bdc4-d33ac9ce3b2b";
+    const [workspaceId, setWorkspaceId] = useState(null);
     const email = "rhysjcleary@gmail.com"
     const [inviteId, setInviteId] = useState("");
     const [roleId, setRoleId] = useState("");
     const [userId, setUserId] = useState("");
 
+    useEffect(() => {
+        async function loadWorkspaceId() {
+            const workspaceId = await getWorkspaceId();
+            setWorkspaceId(workspaceId);
+        }
+        loadWorkspaceId();
+    }, []);
 
     // Type of user: owner (cannot be set on the frontend), manager, employee
     // Role can be anything

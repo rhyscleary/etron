@@ -22,7 +22,6 @@ import {
     updateUserAttribute,
     confirmUserAttribute
 } from 'aws-amplify/auth';
-import { saveTestWorkspaceInfo } from "../../storage/workspaceStorage";
 
 
 function SignOutButton() {

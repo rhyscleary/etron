@@ -13,6 +13,7 @@ import { Snackbar, Text, useTheme } from "react-native-paper";
 import { apiPost } from "../../utils/api/apiClient";
 import MessageBar from "../../components/overlays/MessageBar";
 import endpoints from "../../utils/api/endpoints";
+import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -43,7 +44,11 @@ const CreateWorkspace = () => {
                 workspaceData
             );
 
+            // save workspace info to local storage
+            saveWorkspaceInfo(result);
+
             console.log('Workspace created:', result);
+
 
             // navigate to the profile
             router.push("/profile");
