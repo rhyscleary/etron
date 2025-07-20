@@ -3,55 +3,58 @@ import Header from "../../../components/layout/Header";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
 import { Link, router } from "expo-router";
 import { Text, TextInput, TouchableRipple } from "react-native-paper";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { apiGet } from "../../../utils/api"; // adjust path to your actual API helper
+import { useLocalSearchParams } from "expo-router";
 
 const Users = () => {
-
+    const { workspaceId } = useLocalSearchParams();
 
     const [searchQuery, setSearchQuery] = useState('');
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     const handleSearchChange = (query) => {
         setSearchQuery(query);
     };
 
-    const stubUsers = [
-        { id: 'email1', name: 'Alice Johnson', role: 'Business Owner' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' },
-        { id: 'email2', name: 'Bob Smith', role: 'Employee' },
-        { id: 'email3', name: 'Charlie Rose', role: 'Manager' },
-        { id: 'phone1', name: 'Danielle Blake', role: 'Employee' },
-        { id: 'phone2', name: 'Edward Yang', role: 'Employee' }
-    ];
+    useEffect(() => {
+        getAllUsers();
+    }, []);
 
-    // Stub roles
+    async function getAllUsers() {
+        try {
+            const result = await apiGet(
+                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users`
+            );
+            setUsers(result);
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     const roles = ['Business Owner', 'Manager', 'Employee'];
 
     const groupedUsers = roles.map(role => {
-        const data = stubUsers
+        const data = users
             .filter(user =>
                 user.role === role &&
                 user.name.toLowerCase().includes(searchQuery.toLowerCase())
             );
 
         return { title: role, data };
-    }).filter(section => section.data.length > 0); // removes empty sections in the event of a role having no users
+    }).filter(section => section.data.length > 0);
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Users" showBack showPlus onRightIconPress={() => router.push("/collaboration/invite-user")} />
-
-
+            <Header
+                title="Users"
+                showBack
+                showPlus
+                onRightIconPress={() => router.push("/collaboration/invite-user")}
+            />
 
             {/* Search Box */}
             <TextInput
@@ -61,8 +64,6 @@ const Users = () => {
                 mode="outlined"
                 style={{ marginVertical: 16 }}
             />
-            
-
 
             {/* Placeholder filters for search */}
             <Text>Placeholder</Text>
@@ -81,8 +82,6 @@ const Users = () => {
                     <Text>Workspace Log</Text>
                 </Pressable>
             </Link>
-
-
 
             {/* Sectioned User List */}
             <SectionList
@@ -107,12 +106,17 @@ const Users = () => {
                     </TouchableRipple>
                 )}
                 ListEmptyComponent={
-                    <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                        No users found
-                    </RNText>
+                    loading ? (
+                        <RNText style={{ textAlign: 'center', marginTop: 16 }}>
+                            Loading...
+                        </RNText>
+                    ) : (
+                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
+                            No users found
+                        </RNText>
+                    )
                 }
             />
-
         </View>
     );
 };
