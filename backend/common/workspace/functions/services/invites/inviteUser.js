@@ -24,25 +24,27 @@ async function inviteUser(userId, workspaceId, data) {
     const expireAt = Math.floor((dateObject.getTime() + 7 * 24 * 60 * 60 * 1000) / 1000);
     
     // create a new invite item
+    const inviteItem = {
+        workspaceId: workspaceId,
+        inviteId: inviteId,
+        email: data.email,
+        type: data.type,
+        role: data.role || null,
+        status: "pending",
+        createdAt: date,
+        expireAt: expireAt
+    };
+
     await dynamoDB.send(
         new PutCommand( {
             TableName: invitesTable,
-            Item: {
-                workspaceId: workspaceId,
-                inviteId: inviteId,
-                email: data.email,
-                type: data.type,
-                role: data.role || null,
-                status: "pending",
-                createdAt: date,
-                expireAt: expireAt
-            },
+            Item: inviteItem
         })
     );
 
     // send that email a message
 
-    return {message: "Invite successful", invite: inviteId};
+    return inviteItem;
 }
 
 module.exports = inviteUser;

@@ -25,26 +25,28 @@ async function addUser(workspaceId, inviteId) {
 
     const date = new Date().toISOString();
     
-    // create a new user
+    // create a new user item
+    const userItem = {
+        workspaceId: workspaceId,
+        userId: userProfile.userId,
+        email: userProfile.email,
+        preferred_username: userProfile.preferred_username,
+        given_name: userProfile.given_name,
+        family_name: userProfile.family_name,
+        type: invite.type,
+        role: invite.role || null,
+        joinedAt: date,
+        updatedAt: date
+    };
+
     await dynamoDB.send(
         new PutCommand( {
             TableName: workspaceUsersTable,
-            Item: {
-                workspaceId: workspaceId,
-                userId: userProfile.userId,
-                email: userProfile.email,
-                preferred_username: userProfile.preferred_username,
-                given_name: userProfile.given_name,
-                family_name: userProfile.family_name,
-                type: invite.type,
-                role: invite.role || null,
-                joinedAt: date,
-                updatedAt: date
-            },
+            Item: userItem
         })
     );
 
-    return {message: "User added successfully" };
+    return userItem;
 
 }
 
