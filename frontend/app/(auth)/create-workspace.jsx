@@ -12,6 +12,7 @@ import StackLayout from "../../components/layout/StackLayout";
 import { Snackbar, Text, useTheme } from "react-native-paper";
 import { apiPost } from "../../utils/api/apiClient";
 import MessageBar from "../../components/overlays/MessageBar";
+import endpoints from "../../utils/api/endpoints";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -38,7 +39,7 @@ const CreateWorkspace = () => {
             }
 
             const result = await apiPost(
-                'https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace',
+                endpoints.workspace.create,
                 workspaceData
             );
 
