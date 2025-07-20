@@ -50,7 +50,7 @@ const PersonaliseAccount = () => {
 
         
         <Text style={{ fontSize: 24, textAlign: 'center' }}>
-          Personalise Your Account
+          Account Personalisation
         </Text>
 
         <StackLayout spacing={30}>
