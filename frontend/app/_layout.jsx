@@ -12,6 +12,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import * as NavigationBar from 'expo-navigation-bar'
 
+import * as Linking from 'expo-linking';
+
+Linking.addEventListener('url', (event) => { //deep linking; used for microsoft/google sign in redirects
+    console.log('App was opened with URL:', event.url);
+})
+
 const currentTheme = themes['dark'];
 
 export default function RootLayout() {
@@ -24,12 +30,15 @@ export default function RootLayout() {
     return (    
         <PaperProvider theme={currentTheme}>
             <Authenticator.Provider>
+                {/*Wrap the drawer layout around the safe area and the slot */}
                 <GestureHandlerRootView style={{flex: 1, backgroundColor: currentTheme.colors.background}}>
                     <StatusBar backgroundColor={currentTheme.colors.background} />
                     <DrawerLayout>
-                        <SafeView>
-                            <Slot />
-                        </SafeView>
+                        <SafeAreaProvider>
+                            <SafeView>
+                                <Slot />
+                            </SafeView>
+                        </SafeAreaProvider>
                     </DrawerLayout>
                 </GestureHandlerRootView>
             </Authenticator.Provider>

@@ -1,7 +1,8 @@
 import { Pressable, View } from "react-native";
-import { Link, router } from "expo-router";
-import { Text, useTheme } from "react-native-paper";
-import { saveTestWorkspaceInfo } from "../../../storage/workspaceStorage";
+import Header from "../../../components/layout/Header";
+import { commonStyles } from "../../../assets/styles/stylesheets/common";
+import { Link } from "expo-router";
+import { Text } from "react-native-paper";
 import { useEffect } from "react";
 import Header from "../../../components/layout/Header";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
@@ -9,10 +10,6 @@ import Screen from "../../../components/layout/Screen";
 
 const Profile = () => {
     const theme = useTheme();
-
-    useEffect(() => {
-        saveTestWorkspaceInfo();
-    }, []);
 
     return (
         <Screen>
@@ -36,7 +33,7 @@ const Profile = () => {
                 </Pressable>
             </Link>
 
-            <Link href="/notifications/notifications" asChild>
+            <Link href="/modules/day-book/notifications/notifications" asChild>
                 <Pressable>
                     <Text>Go to Notifications</Text>
                 </Pressable>

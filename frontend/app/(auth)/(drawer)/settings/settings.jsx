@@ -7,7 +7,6 @@ import { Text } from 'react-native-paper';
 import Header from '../../../../components/layout/Header';
 import DescriptiveButton from '../../../../components/common/buttons/DescriptiveButton';
 import { commonStyles } from '../../../../assets/styles/stylesheets/common';
-import Screen from '../../../../components/layout/Screen';
 
 const Settings = () => { 
 

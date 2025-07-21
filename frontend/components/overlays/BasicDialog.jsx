@@ -23,7 +23,8 @@ const BasicDialog = ({
     rightDanger = false,
     handleRightAction = () => {},
     inputError = false,
-    inputErrorMessage = ""
+    inputErrorMessage = "",
+    secureTextEntry = false
 }) => {
     const theme = useTheme();
 
@@ -42,6 +43,7 @@ const BasicDialog = ({
                                 placeholder={inputPlaceholder} 
                                 onChangeText={inputOnChangeText}
                                 error={inputError}
+                                secureTextEntry={secureTextEntry}
                             />
                         </View>
                     )}

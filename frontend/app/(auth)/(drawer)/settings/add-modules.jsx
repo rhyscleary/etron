@@ -1,14 +1,11 @@
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
-import TextField from "../../../../components/common/input/TextField";
-import StackLayout from "../../../../components/layout/StackLayout";
-import BasicButton from "../../../../components/common/buttons/BasicButton";
+import Header from "../../../../components/layout/Header";
+import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { Text } from "react-native-paper";
 import { useState } from "react";
 import { router } from "expo-router";
 import ModuleCard from "../../../../components/cards/moduleCard";
 import BasicDialog from "../../../../components/overlays/BasicDialog";
-import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 
 const AddModules = () => {
     

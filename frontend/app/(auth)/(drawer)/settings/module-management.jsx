@@ -1,10 +1,10 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import TextField from "../../../../components/common/input/TextField";
 import StackLayout from "../../../../components/layout/StackLayout";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
 import { Text } from "react-native-paper";
+import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { useState } from "react";
 import { router, useRouter } from "expo-router";
 

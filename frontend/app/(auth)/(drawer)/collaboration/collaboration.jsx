@@ -15,6 +15,13 @@ const Collaboration = () => {
                     <Text>Go to Profile</Text>
                 </Pressable>
             </Link>
+
+            {/*Temporary redirect to collab/workspace join endpoints screen*/}
+            <Link href="/collaboration/collab-endpoints" asChild>
+                <Pressable>
+                    <Text>Go to Endpoints</Text>
+                </Pressable>
+            </Link>
         </View>
     )
 }
