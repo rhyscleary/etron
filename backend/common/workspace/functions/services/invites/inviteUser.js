@@ -8,6 +8,7 @@ const {v4 : uuidv4} = require('uuid');
 const { isOwner, isManager } = require("../utils/permissions");
 
 const invitesTable = "WorkspaceInvites";
+const workspaceUsersTable = "WorkspaceUsers";
 
 async function inviteUser(userId, workspaceId, data) {
     if (!data.email || !data.type) {
@@ -19,6 +20,19 @@ async function inviteUser(userId, workspaceId, data) {
     }
 
     // check if the user already exists in the workspace
+    const user = await dynamoDB.send(
+        new GetCommand({
+            TableName: workspaceUsersTable,
+            Key: {
+                workspaceId: workspaceId,
+                userId: userId
+            }
+        })
+    );
+    
+    if (!user.Item) {
+        return {message: "User is already part of the workspace"};
+    } 
 
     // check if an invite has already been sent to the user
     const existingInvites = await dynamoDB.send(

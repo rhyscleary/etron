@@ -8,30 +8,25 @@ const {v4 : uuidv4} = require('uuid');
 const { isOwner, isManager } = require("../utils/permissions");
 const invitesTable = "WorkspaceInvites";
 
-async function cancelInvite(userId, workspaceId, email) {
-    if (!workspaceId || !email) {
+async function cancelInvites(email) {
+    if (!email) {
         throw new Error("Missing required parameters");
     }
 
-    if (! await isOwner(userId, workspaceId) && ! await isManager(userId, workspaceId)) {
-        throw new Error("User does not have permission to perform action")
-    }
-
-    // find invite with email
+    // find invites with email
     const result = await dynamoDB.send(
         new QueryCommand( {
             TableName: invitesTable,
-            IndexName: "workspaceId-email-index",
-            KeyConditionExpression: "workspaceId = :w AND email = :e",
+            IndexName: "email-index",
+            KeyConditionExpression: "email = :email",
             ExpressionAttributeValues: {
-                ":w": workspaceId,
-                ":e": email
+                ":email": email
             }
         })
     );
 
     if (!result.Items) {
-        throw new Error("No invitation found");
+        throw new Error("No workspace invitations found");
     }
 
     const items = result.Items;
@@ -49,8 +44,8 @@ async function cancelInvite(userId, workspaceId, email) {
         );
     }
     
-    return {message: "Invite(s) cancelled"}
+    return {message: "Invites cancelled"}
     
 }
 
-module.exports = cancelInvite;
+module.exports = cancelInvites;
