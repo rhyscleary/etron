@@ -15,8 +15,8 @@ const Collaboration = () => {
     // container for different collaboration options
     const workspaceOptionButtons = [
             { label: "Users", description: "Manage users in the workspace", onPress: () => router.push("collaboration/users") },
-            { label: "Roles", description: "Add and remove modules from the workspace", onPress: () => router.push("collaboration/invites") },
-            { label: "Invites", description: "Manage invites to the workspace", onPress: () => router.push("collaboration/invite-user") },
+            { label: "Roles", description: "Add and remove modules from the workspace", onPress: () => router.push("collaboration/roles") },
+            { label: "Invites", description: "Manage invites to the workspace", onPress: () => router.push("collaboration/invites") },
             { label: "Workspace Log", description: "Audit log of actions within the workspace", onPress: () => router.push("collaboration/workspace-log") }
     ];
 
