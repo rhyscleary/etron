@@ -4,22 +4,19 @@ import { commonStyles } from "../../../assets/styles/stylesheets/common";
 import { Link } from "expo-router";
 import { Text } from "react-native-paper";
 import { useEffect } from "react";
-import Header from "../../../components/layout/Header";
-import { commonStyles } from "../../../assets/styles/stylesheets/common";
-import Screen from "../../../components/layout/Screen";
 
 const Profile = () => {
-    const theme = useTheme();
 
     return (
-        <Screen>
+        <View style={commonStyles.screen}>
             <Header title="profile name here" showMenu />
 
 
-            <Pressable onPress={() => router.push("/settings/settings")}>
-                <Text>Go to Settings</Text>
-            </Pressable>
-          
+            <Link href="/settings/settings" asChild>
+                <Pressable>
+                    <Text>Go to Settings</Text>
+                </Pressable>
+            </Link>
 
             <Link href="/modules/day-book/data-management/data-management" asChild>
                 <Pressable>
@@ -41,7 +38,7 @@ const Profile = () => {
 
             <Link href="/collaboration/collaboration" asChild>
                 <Pressable>
-                    <Text>Go to Users - Collaboration</Text>
+                    <Text>Go to Collaboration</Text>
                 </Pressable>
             </Link>
 
@@ -50,7 +47,7 @@ const Profile = () => {
                     <Text>Go to temporary account settings UI</Text>
                 </Pressable>
             </Link>
-        </Screen>
+        </View>
     )
 }
 

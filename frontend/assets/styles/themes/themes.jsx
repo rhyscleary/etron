@@ -23,8 +23,11 @@ const DarkTheme = {
         icon: '#F7F7F7',
         navigationRailBackground: '#1D4364',
 
-        altGM: '#F7F7F7'
+        altGM: '#F7F7F7',
         //surface: "#1E1E1E"
+        background: '#2B2B2B', // theme 1/dark grey
+        primaryP8: '#BCD4F6', // micromax primary p8
+        black: '#000000', // black
     },   
 };
 

@@ -21,7 +21,7 @@ const Settings = () => {
     ];
 
     return (
-        <Screen>
+        <View style={commonStyles.screen}>
             <Header title="Settings" showMenu />
 
             {/*Temporary redirect to profile screen*/}
@@ -45,7 +45,7 @@ const Settings = () => {
                 </StackLayout>
             </ScrollView>
 
-        </Screen>
+        </View>
     )
 }
 

@@ -1,11 +1,6 @@
 import { Pressable, View } from "react-native";
-<<<<<<<< HEAD:frontend/app/(auth)/(drawer)/notifications/notifications.jsx
-import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-========
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
->>>>>>>> develop:frontend/app/(auth)/(drawer)/modules/day-book/notifications/notifications.jsx
 import { Link, router } from "expo-router";
 import { Text } from "react-native-paper";
 
