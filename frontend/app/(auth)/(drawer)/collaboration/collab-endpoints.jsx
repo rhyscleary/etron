@@ -31,7 +31,7 @@ const CollabEndpoints = () => {
     async function inviteUser() {
         try {
             const data = {
-                email: "rhysjcleary@gmail.com",
+                email: "bob@gmail.com",
                 type: "manager",
                 role: "tv"
             }

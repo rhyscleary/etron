@@ -21,16 +21,18 @@ async function inviteUser(userId, workspaceId, data) {
 
     // check if the user already exists in the workspace
     const user = await dynamoDB.send(
-        new GetCommand({
+        new QueryCommand({
             TableName: workspaceUsersTable,
-            Key: {
-                workspaceId: workspaceId,
-                userId: userId
+            IndexName: "workspaceId-email-index",
+            KeyConditionExpression: "workspaceId = :w AND email = :e",
+            ExpressionAttributeValues: {
+                ":w": workspaceId,
+                ":e": data.email
             }
         })
     );
     
-    if (!user.Item) {
+    if (user.Items?.[0]) {
         return {message: "User is already part of the workspace"};
     } 
 
@@ -47,7 +49,7 @@ async function inviteUser(userId, workspaceId, data) {
         })
     );
     
-    if (existingInvites.Items) {
+    if (existingInvites.Items?.[0]) {
         return {message: "User is already invited to the workspace"};
     }
 
