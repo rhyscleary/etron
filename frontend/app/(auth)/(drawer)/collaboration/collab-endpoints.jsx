@@ -32,7 +32,7 @@ const CollabEndpoints = () => {
         try {
             const data = {
                 email: "rhysjcleary@gmail.com",
-                type: "manager",
+                type: "employee",
                 role: "tv"
             }
 
@@ -169,6 +169,7 @@ const CollabEndpoints = () => {
             const result = await apiGet(
                 `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users`
             );
+console.log("workspaceId:", workspaceId);
 
             console.log(result);
 

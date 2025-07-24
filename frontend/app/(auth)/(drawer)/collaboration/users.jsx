@@ -5,11 +5,10 @@ import { Link, router } from "expo-router";
 import { Text, TextInput, TouchableRipple } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../../utils/api/apiClient"; // adjust path to your actual API helper
-import { useLocalSearchParams } from "expo-router";
+import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 
 const Users = () => {
-    const { workspaceId } = useLocalSearchParams();
-
+    const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,19 +18,25 @@ const Users = () => {
     };
 
     useEffect(() => {
+        fetchId();
         getAllUsers();
     }, []);
 
+    const fetchId = async () => {
+        const id = await getWorkspaceId();
+        setWorkspaceId(id);
+    }; 
+
     async function getAllUsers() {
         try {
-            const result = await apiGet(
+           const result = await apiGet(
                 `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users`
             );
+            console.log(workspaceId);
+            console.log(result);
             setUsers(result);
         } catch (error) {
             console.log(error);
-        } finally {
-            setLoading(false);
         }
     }
 
