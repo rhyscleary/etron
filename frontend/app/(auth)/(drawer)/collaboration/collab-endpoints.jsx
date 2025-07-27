@@ -7,6 +7,7 @@ import { apiDelete, apiGet, apiPost } from "../../../../utils/api/apiClient";
 import { useState } from "react";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { useEffect } from "react";
+import endpoints from "../../../../utils/api/endpoints";
 
 const CollabEndpoints = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
@@ -26,6 +27,20 @@ const CollabEndpoints = () => {
     // Type of user: owner (cannot be set on the frontend), manager, employee
     // Role can be anything
 
+    // Default permissions
+    async function getDefaultPermissions() {
+        try {
+            const result = await apiGet(
+                endpoints.workspace.core.getDefaultPermissions
+            );
+
+            console.log(result);
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     // INVITES
 
     async function inviteUser() {
@@ -33,11 +48,11 @@ const CollabEndpoints = () => {
             const data = {
                 email: "bob@gmail.com",
                 type: "manager",
-                role: "tv"
+                roleId: "tv"
             }
 
             const result = await apiPost(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/invites/create`,
+                endpoints.workspace.invites.create(workspaceId),
                 data
             );
 
@@ -212,6 +227,10 @@ const CollabEndpoints = () => {
     return (
         <View style={commonStyles.screen}>
             <Header title="Endpoints" showBack />
+
+            <View>
+                <Button title="Default perms" onPress={(getDefaultPermissions)}/>
+            </View>
 
             <Text>Invites</Text>
 

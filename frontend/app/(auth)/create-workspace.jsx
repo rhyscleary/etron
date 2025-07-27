@@ -40,7 +40,7 @@ const CreateWorkspace = () => {
             }
 
             const result = await apiPost(
-                endpoints.workspace.create,
+                endpoints.workspace.core.create,
                 workspaceData
             );
 

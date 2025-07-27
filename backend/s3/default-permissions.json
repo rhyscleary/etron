@@ -1,0 +1,18 @@
+{
+    "permissions": [
+        {
+            "key": "view_users",
+            "label": "View Users",
+            "description": "Allows users to view employees of a workspace",
+            "category": "Collaboration",
+            "enabled": true
+        },
+        {
+            "key": "create_profile",
+            "label": "Create Profiles",
+            "description": "Allows users to create new profiles in the workspace",
+            "category": "Profiles",
+            "enabled": false
+        }
+    ]
+}

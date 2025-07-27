@@ -12,30 +12,14 @@ Globals:
       - x86_64
 
 Resources:
-  HelloWorldFunctionTwo:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: common/workspace/functions/
-      Handler: hello.helloHandler
-      Events:
-        HelloWorldTwo:
-          Type: Api 
-          Properties:
-            Path: /hello/two
-            Method: get
-
-  WorkspaceFunctions:
+  WorkspaceDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: ./common/workspace/template.yaml
-  ModuleFunctions:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: ./common/modules/template.yaml
-  UserFunctions:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: ./common/users/template.yaml
+      TemplateURL: ./workspace/template.yaml
+  #UserDomainFunctions:
+    #Type: AWS::CloudFormation::Stack
+    #Properties:
+      #TemplateURL: ./common/users/template.yaml
 
 #Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

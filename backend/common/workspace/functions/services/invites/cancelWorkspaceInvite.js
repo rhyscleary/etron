@@ -17,7 +17,7 @@ async function cancelWorkspaceInvite(userId, workspaceId, inviteId) {
         throw new Error("User does not have permission to perform action")
     }
 
-    // find invites with email
+    // find invite
     const result = await dynamoDB.send(
         new GetCommand( {
             TableName: invitesTable,

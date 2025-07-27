@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  eTRON workspace-domain functions template
+
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+Resources:
+
+  # Workspace Lambda 
+  WorkspaceCoreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-core
+      Handler: workspaceHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        CreateWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace
+            Method: post
+
+        UpdateWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}
+            Method: put
+
+        GetWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}
+            Method: get
+
+        GetWorkspaceByUserId:
+          Type: Api 
+          Properties: 
+            Path: /workspace/users/{userId}
+            Method: get
+
+        TransferOwnership:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/transfer/{userId}
+            Method: put
+
+        DeleteWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}
+            Method: delete
+
+        GetDefaultPermissions:
+          Type: Api
+          Properties:
+            Path: /workspace/permissions 
+            Method: get
+
+  # Invite Lambda 
+  WorkspaceInvitesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-invites
+      Handler: inviteHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        InviteUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/invites
+            Method: post
+
+        CancelUsersInvites:
+          Type: Api 
+          Properties:
+            Path: /workspace/invites/{email}
+            Method: delete
+
+        CancelUserInvite:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/invites/{inviteId}
+            Method: delete
+        
+        GetInvite:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/invites/{inviteId}
+            Method: get
+
+        GetSentInvites:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/invites
+            Method: get
