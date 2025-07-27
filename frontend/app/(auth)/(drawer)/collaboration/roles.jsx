@@ -38,7 +38,7 @@ const Roles = () => {
                 title="Roles"
                 showBack
                 showPlus
-                onRightIconPress={() => router.push("/collaboration/roles/add")}
+                onRightIconPress={() => router.push("/collaboration/create-role")}
             />
 
             <FlatList
