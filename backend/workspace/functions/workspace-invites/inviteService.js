@@ -31,13 +31,13 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
     }
 
     // check if the user exists in the workspace
-    const user = workspaceUsersRepo.getUsersByWorkspaceIdAndEmail(workspaceId, data.email);
+    const user = await workspaceUsersRepo.getUsersByWorkspaceIdAndEmail(workspaceId, data.email);
 
     if (user?.[0]) {
         return {message: "User is already part of the workspace"};
     }
 
-    const existingInvites = workspaceInvitesRepo.getInvitesByWorkspaceIdAndEmail(workspaceId, data.email);  
+    const existingInvites = await workspaceInvitesRepo.getInvitesByWorkspaceIdAndEmail(workspaceId, data.email);  
     if (existingInvites?.[0]) {
         return {message: "User is already invited to the workspace"};
     }
@@ -73,7 +73,7 @@ async function cancelInviteToWorkspace(authUserId, workspaceId, inviteId) {
 
     const invite = await workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
 
-    if (!invite?.[0]) {
+    if (!invite) {
         throw new Error("Invite not found");
     }
 

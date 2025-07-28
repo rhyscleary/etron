@@ -88,10 +88,13 @@ async function updateRole(workspaceId, roleId, data) {
         })
     );
 
-    return (result || []).map(({sk, ...rest}) => ({
+    const itemAttributes = result.Attributes;
+    const { sk: skValue, ...rest } = itemAttributes;
+
+    return {
         ...rest,
-        roleId: sk.replace("role#", "")
-    }));
+        roleId: skValue.replace("role#", "")
+    };
 }
 
 // get role in a workspace
@@ -107,8 +110,19 @@ async function getRoleById(workspaceId, roleId) {
             }
         })
     );
+
+    const item = result.Item;
+
+    if (!item) {
+        return null;
+    }
+
+    const { sk: skValue, ...rest } = item;
     
-    return result.Item || null;
+    return {
+        ...rest,
+        roleId: skValue.replace("role#", "")
+    };
 }
 
 // get all roles in a workspace
@@ -203,10 +217,13 @@ async function updateProfile(workspaceId, profileId, data) {
         })
     );
 
-    return (result.Attributes || []).map(({sk, ...rest}) => ({
+    const itemAttributes = result.Attributes;
+    const { sk: skValue, ...rest } = itemAttributes;
+
+    return {
         ...rest,
-        profileId: sk.replace("profile#", "")
-    }));
+        profileId: skValue.replace("profile#", "")
+    };
 }
 
 // get profile in a workspace
@@ -223,7 +240,18 @@ async function getProfileById(workspaceId, profileId) {
         })
     );
     
-    return result.Item || null;
+    const item = result.Item;
+
+    if (!item) {
+        return null;
+    }
+
+    const { sk: skValue, ...rest } = item;
+    
+    return {
+        ...rest,
+        profileId: skValue.replace("profile#", "")
+    };
 }
 
 // get all profiles in a workspace

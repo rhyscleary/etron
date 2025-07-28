@@ -132,7 +132,7 @@ Resources:
         AddUser:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/users/{inviteId}
+            Path: /workspace/{workspaceId}/users/invites/{inviteId}
             Method: post
 
         UpdateUser:
@@ -152,12 +152,13 @@ Resources:
           Properties:
             Path: /workspace/{workspaceId}/users/{userId}
             Method: get
-            
+
         GetAllUsers:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/users
             Method: get
+        
 
   # Role Lambda 
   WorkspaceRolesFunction:

@@ -20,7 +20,7 @@ exports.handler = async (event) => {
         switch (routeKey) {
         
             // ADD USER TO WORKSPACE
-            case "POST /workspace/{workspaceId}/users/{inviteId}": {
+            case "POST /workspace/{workspaceId}/users/invites/{inviteId}": {
                 if (!pathParams.workspaceId || !pathParams.inviteId) {
                     throw new Error("Missing required path parameters");
                 }

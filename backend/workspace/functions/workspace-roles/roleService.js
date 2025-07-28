@@ -56,7 +56,7 @@ async function mergePermissions(role) {
     // get default perms and combine them with the role perms
     const defaultPerms = await getDefaultPermissions();
 
-    if (!role.permissions) {
+    if (role.permissions.length === 0) {
         role.permissions = defaultPerms;
         return role;
     }

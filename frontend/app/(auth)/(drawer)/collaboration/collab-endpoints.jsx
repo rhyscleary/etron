@@ -11,7 +11,7 @@ import endpoints from "../../../../utils/api/endpoints";
 
 const CollabEndpoints = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
-    const email = "rhysjcleary@gmail.com"
+    const email = "rhysjcleary@gmail.com";
     const [inviteId, setInviteId] = useState("");
     const [roleId, setRoleId] = useState("");
     const [userId, setUserId] = useState("");
@@ -57,7 +57,7 @@ const CollabEndpoints = () => {
             );
 
             console.log(result);
-            setInviteId(result.invite);
+            setInviteId(result.inviteId);
 
         } catch (error) {
             console.log(error);
@@ -188,6 +188,7 @@ const CollabEndpoints = () => {
     // USERS
     async function addUser() {
         try {
+            console.log(inviteId);
             const result = await apiPost(
                 endpoints.workspace.users.add(workspaceId, inviteId)
             );
