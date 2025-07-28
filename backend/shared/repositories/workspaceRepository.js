@@ -88,7 +88,7 @@ async function updateRole(workspaceId, roleId, data) {
         })
     );
 
-    return (result.Attributes || []).map(({sk, ...rest}) => ({
+    return (result || []).map(({sk, ...rest}) => ({
         ...rest,
         roleId: sk.replace("role#", "")
     }));

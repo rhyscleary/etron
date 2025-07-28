@@ -110,7 +110,7 @@ const CollabEndpoints = () => {
         try {
             const data = {
                 name: "Human Resources",
-                permissions: {}
+                permissions: []
             }
 
             const result = await apiPost(
@@ -130,7 +130,7 @@ const CollabEndpoints = () => {
         try {
             const data = {
                 name: "Developers",
-                permissions: {}
+                permissions: ["view_users"]
             }
 
             const result = await apiPut(
@@ -241,7 +241,7 @@ const CollabEndpoints = () => {
     async function updateUser() {
         try {
             const data = {
-                type: "Employee",
+                type: "employee",
                 role: "Cleaner"
             }
 

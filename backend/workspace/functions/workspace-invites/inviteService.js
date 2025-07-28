@@ -73,7 +73,7 @@ async function cancelInviteToWorkspace(authUserId, workspaceId, inviteId) {
 
     const invite = await workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
 
-    if (!invite) {
+    if (!invite?.[0]) {
         throw new Error("Invite not found");
     }
 
