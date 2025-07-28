@@ -57,7 +57,7 @@ const CollabEndpoints = () => {
             );
 
             console.log(result);
-            setInviteId(result.invite);
+            setInviteId(result.inviteId);
 
         } catch (error) {
             console.log(error);
