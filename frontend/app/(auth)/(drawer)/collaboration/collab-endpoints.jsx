@@ -3,7 +3,7 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { Link, router } from "expo-router";
 import { Text, TextInput } from "react-native-paper";
-import { apiDelete, apiGet, apiPost } from "../../../../utils/api/apiClient";
+import { apiDelete, apiGet, apiPost, apiPut } from "../../../../utils/api/apiClient";
 import { useState } from "react";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { useEffect } from "react";
@@ -67,7 +67,7 @@ const CollabEndpoints = () => {
     async function cancelInvite() {
         try {
             const result = await apiDelete(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/invites/cancel/${email}`
+                endpoints.workspace.invites.cancelInvite(workspaceId, inviteId)
             );
 
             console.log(result);
@@ -80,7 +80,7 @@ const CollabEndpoints = () => {
     async function getSentInvites() {
         try {
             const result = await apiGet(
-               `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/invites`
+               endpoints.workspace.invites.getInvitesSent(workspaceId)
             );
 
             console.log(result);
@@ -90,7 +90,8 @@ const CollabEndpoints = () => {
         }
     }
 
-    async function getUserInvites() {
+    // needs to be fixed up in the backend
+    /*async function getUserInvites() {
         try {
             const result = await apiGet(
                 `https://nlt5sop5q9.execute-api.ap-southeast-2.amazonaws.com/Prod/user/${email}/invites`
@@ -101,7 +102,7 @@ const CollabEndpoints = () => {
         } catch (error) {
             console.log(error);
         }
-    }
+    }*/
 
     // ROLES
 
@@ -113,7 +114,7 @@ const CollabEndpoints = () => {
             }
 
             const result = await apiPost(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/roles/create`,
+                endpoints.workspace.roles.create(workspaceId),
                 data
             );
 
@@ -125,10 +126,42 @@ const CollabEndpoints = () => {
         }
     }
 
+    async function updateRole() {
+        try {
+            const data = {
+                name: "Developers",
+                permissions: {}
+            }
+
+            const result = await apiPut(
+                endpoints.workspace.roles.update(workspaceId, roleId),
+                data
+            );
+
+            console.log(result);
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     async function deleteRole() {
         try {
             const result = await apiDelete(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/roles/remove/${roleId}`
+                endpoints.workspace.roles.delete(workspaceId, roleId)
+            );
+
+            console.log(result);
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function getRole() {
+        try {
+            const result = await apiGet(
+                endpoints.workspace.roles.getRole(workspaceId, roleId)
             );
 
             console.log(result);
@@ -141,7 +174,7 @@ const CollabEndpoints = () => {
     async function getRoles() {
         try {
             const result = await apiGet(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/roles`
+                endpoints.workspace.roles.getRoles(workspaceId)
             );
 
             console.log(result);
@@ -156,7 +189,7 @@ const CollabEndpoints = () => {
     async function addUser() {
         try {
             const result = await apiPost(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users/add/${inviteId}`,
+                endpoints.workspace.users.add(workspaceId, inviteId)
             );
 
             console.log(result);
@@ -169,7 +202,7 @@ const CollabEndpoints = () => {
     async function getUser() {
         try {
             const result = await apiGet(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users/${userId}`
+                endpoints.workspace.users.getUser(workspaceId, userId)
             );
 
             console.log(result);
@@ -182,7 +215,7 @@ const CollabEndpoints = () => {
     async function getAllUsers() {
         try {
             const result = await apiGet(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users`
+                endpoints.workspace.users.getUsers(workspaceId)
             );
 
             console.log(result);
@@ -195,7 +228,7 @@ const CollabEndpoints = () => {
     async function removeUser() {
         try {
             const result = await apiDelete(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users/remove/${userId}`
+                endpoints.workspace.users.remove(workspaceId, userId)
             );
 
             console.log(result);
@@ -208,12 +241,12 @@ const CollabEndpoints = () => {
     async function updateUser() {
         try {
             const data = {
-                type: "employee",
+                type: "Employee",
                 role: "Cleaner"
             }
 
             const result = await apiPost(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users/update/${userId}`,
+                endpoints.workspace.users.update(workspaceId, userId),
                 data
             );
 
@@ -247,7 +280,7 @@ const CollabEndpoints = () => {
             </View>
 
             <View>
-                <Button title="Get invites for email" onPress={(getUserInvites)}/> {/*Will be used in Join Workspace page*/}
+                <Button title="Get invites for email" /> {/*Will be used in Join Workspace page*/}
             </View>
 
             <Text>Roles</Text>
@@ -257,14 +290,20 @@ const CollabEndpoints = () => {
             </View>
 
             <View>
+                <Button title="Update role" onPress={(updateRole)}/>
+            </View>
+
+            <View>
                 <Button title="Delete role" onPress={(deleteRole)}/>
+            </View>
+
+            <View>
+                <Button title="Get role with roleId in workspace" onPress={(getRole)}/>
             </View>
 
             <View>
                 <Button title="Get roles in workspace" onPress={(getRoles)}/>
             </View>
-
-            {/*Todo: update role*/}
 
             <Text>Users</Text>
 

@@ -113,3 +113,99 @@ Resources:
           Properties:
             Path: /workspace/{workspaceId}/invites
             Method: get
+
+  # User Lambda 
+  
+
+  # Role Lambda 
+  WorkspaceRolesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-roles
+      Handler: roleHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        CreateRole:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles
+            Method: post
+
+        UpdateRole:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles/{roleId}
+            Method: put
+
+        DeleteRole:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles/{roleId}
+            Method: delete
+
+        GetRole:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles/{roleId}
+            Method: get
+
+        GetRoles:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roles
+            Method: get
+
+
+  # Profile Lambda 
+  WorkspaceProfilesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-profiles
+      Handler: profileHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        CreateProfile:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/profiles
+            Method: post
+
+        UpdateProfile:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/profiles/{profileId}
+            Method: put
+
+        DeleteProfile:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/profiles/{profileId}
+            Method: delete
+
+        GetProfile:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/profiles/{profileId}
+            Method: get
+
+        GetProfiles:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/profiles
+            Method: get
+
+  

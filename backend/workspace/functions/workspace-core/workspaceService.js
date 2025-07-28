@@ -88,7 +88,7 @@ async function createWorkspace(authUserId, data) {
         email: userProfile.email,
         given_name: userProfile.given_name,
         family_name: userProfile.family_name,
-        type: "Owner",
+        type: "owner",
         roleId: ownerRoleId,
         joinedAt: date,
         updatedAt: date
@@ -234,7 +234,7 @@ async function transferWorkspaceOwnership(authUserId, workspaceId, userId) {
     }
 
     const targetUserItem = {
-        type: "Owner",
+        type: "owner",
         role: "Owner"
     };
 
@@ -243,7 +243,7 @@ async function transferWorkspaceOwnership(authUserId, workspaceId, userId) {
 
     // remove ownership from the current user and make them manager
     const updatedUserItem = {
-        type: "Manager",
+        type: "manager",
         role: "Manager"
     }
 

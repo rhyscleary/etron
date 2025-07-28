@@ -45,8 +45,9 @@ async function getDefaultPermissions() {
         );
 
         const jsonString = await response.Body.transformToString();
-        console.log(jsonString);
-        return JSON.parse(jsonString);
+        const parsed = JSON.parse(jsonString);
+
+        return parsed.permissions || [];
     } catch (error) {
         if (error instanceof S3ServiceException) {
             console.error(`Error from S3 while fetching the permissions from ${bucketName}`);

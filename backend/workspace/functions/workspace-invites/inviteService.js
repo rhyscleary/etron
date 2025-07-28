@@ -1,9 +1,9 @@
 // Author(s): Rhys Cleary
 
-const { UserType } = require("../../shared/constants/enums");
-const workspaceInvitesRepo = require("../../shared/repositories/workspaceInvitesRepository");
-const workspaceUsersRepo = require("../../shared/repositories/workspaceUsersRepository");
-const { isOwner, isManager } = require("../../shared/utils/permissions");
+const { UserType } = require("@etron/shared/constants/enums");
+const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
+const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
+const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 
 async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
     if (!data.email || !data.type) {
@@ -16,9 +16,12 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
         throw new Error("User does not have permission to perform action");
     }
 
+    // convert type to lowercase
+    const type = data.type.toLowerCase();
+
     // check if the user type is valid
-    if (!Object.values(UserType).includes(data.type)) {
-        throw new Error(`Invalid type of user: ${data.type}`);
+    if (!Object.values(UserType).includes(type)) {
+        throw new Error(`Invalid type of user: ${type}`);
     }
 
     // if a role is specified check if it's valid
@@ -48,7 +51,7 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
         workspaceId: workspaceId,
         inviteId: inviteId,
         email: data.email,
-        type: data.type,
+        type: type,
         roleId: data.roleId || null,
         status: "pending",
         createdAt: date,

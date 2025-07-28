@@ -1,7 +1,7 @@
 // Author(s): Rhys Cleary
 
-const workspaceRepo = require("../../shared/repositories/workspaceRepository");
-const { isOwner, isManager } = require("../../shared/utils/permissions");
+const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
+const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 
 async function createProfileInWorkspace(authUserId, workspaceId, data) {
     const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
