@@ -47,8 +47,7 @@ async function createWorkspace(authUserId, data) {
     // add owner and manager roles with permissions to workspace
     const ownerRoleId = uuidv4();
     const managerRoleId = uuidv4();
-    const defaultPermissionsObject = await getDefaultPermissions();
-    const defaultPerms = defaultPermissionsObject.permissions;
+    const defaultPerms = await getDefaultPermissions();
     console.log(defaultPerms);
 
     const ownerPerms = defaultPerms.map(perm => perm.key);

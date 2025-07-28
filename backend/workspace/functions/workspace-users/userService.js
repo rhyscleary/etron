@@ -6,6 +6,7 @@ const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRep
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { getUserByEmail } = require("@etron/shared/utils/auth");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const {v4 : uuidv4} = require('uuid');
 
 async function addUserToWorkspace(workspaceId, inviteId) {
     // get invite
