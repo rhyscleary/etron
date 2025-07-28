@@ -7,12 +7,13 @@ const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 const { isOwner, isManager } = require("../utils/permissions");
 const workspaceUsersTable = "WorkspaceUsers";
 
-async function removeUser(userId, workspaceId) {
+async function removeUser(authUserId, workspaceId, userId) {
 
-    if (! await isOwner(userId, workspaceId) && ! await isManager(userId, workspaceId)) {
+    if (! await isOwner(authUserId, workspaceId) && ! await isManager(authUserId, workspaceId)) {
         throw new Error("User does not have permission to perform action")
     }
 
+    // check if the user exists
     const user = await dynamoDB.send(
         new GetCommand( {
             TableName: workspaceUsersTable,
@@ -27,6 +28,11 @@ async function removeUser(userId, workspaceId) {
         throw new Error("User not found");
     }
 
+    // check if the user is the workspace owner
+    if (user.Item.type === "owner") {
+        throw new Error("The owner cannot be removed");
+    }
+
     await dynamoDB.send(
         new DeleteCommand( {
             TableName: workspaceUsersTable,
@@ -37,7 +43,7 @@ async function removeUser(userId, workspaceId) {
         })
     );
 
-    return {message: "User successfully removed"}
+    return {message: "User successfully removed"};
 }
 
 module.exports = removeUser;

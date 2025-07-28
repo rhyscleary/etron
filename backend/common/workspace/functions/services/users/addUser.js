@@ -4,6 +4,7 @@ const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, UpdateCommand } = require("@aws-sdk/lib-dynamodb");
 const getInvite = require("../invites/getInvite");
 const { getUserByEmail } = require("../utils/auth");
+const cancelInvites = require("../invites/cancelInvites");
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
 
 const workspaceUsersTable = "WorkspaceUsers";
@@ -45,6 +46,9 @@ async function addUser(workspaceId, inviteId) {
             Item: userItem
         })
     );
+
+    // now user is added to workspace remove all other invites
+    await cancelInvites(email);
 
     return userItem;
 

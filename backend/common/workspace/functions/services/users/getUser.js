@@ -12,7 +12,7 @@ async function getUser(authUserId, workspaceId, userId) {
         throw new Error("Missing required path parameters");
     }
 
-    // find the users in a workspace
+    // find the user in a workspace
     const result = await dynamoDB.send(
             new GetCommand({
                 TableName: workspaceUsersTable,
