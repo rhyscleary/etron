@@ -252,7 +252,7 @@ Resources:
             Method: get
 
   # Module Lambda 
-  WorkspaceProfilesFunction:
+  WorkspaceModulesFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./functions/workspace-modules
@@ -269,31 +269,31 @@ Resources:
         InstallModule:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/modules/{moduleId}
+            Path: /workspace/{workspaceId}/modules/{moduleKey}
             Method: post
 
         ToggleModule:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/modules/{moduleId}/toggle
+            Path: /workspace/{workspaceId}/modules/{moduleKey}/toggle
             Method: put
 
         UninstallModule:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/modules/{moduleId}
+            Path: /workspace/{workspaceId}/modules/{moduleKey}
             Method: delete
 
         GetInstalledModules:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/modules
+            Path: /workspace/{workspaceId}/modules/installed
             Method: get
 
-        GetAvailableModules:
+        GetUninstalledModules:
           Type: Api 
           Properties:
-            Path: /workspace/modules
+            Path: /workspace/{workspaceId}/modules/uninstalled
             Method: get
 
   

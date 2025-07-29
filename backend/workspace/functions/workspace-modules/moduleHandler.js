@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { inviteUsertoWorkspace, cancelUsersInvites, cancelInviteToWorkspace, getInvite, getSentInvites } = require("./inviteService");
+const { toggleModule, uninstallModule, installModule, getInstalledModules, getAvailableModules } = require("./moduleService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -20,8 +20,8 @@ exports.handler = async (event) => {
         switch (routeKey) {
 
             // INSTALL MODULE
-            case "POST /workspace/{workspaceId}/modules/{moduleId}": {
-                if (!pathParams.workspaceId || !pathParams.moduleId) {
+            case "POST /workspace/{workspaceId}/modules/{moduleKey}": {
+                if (!pathParams.workspaceId || !pathParams.moduleKey) {
                     throw new Error("Missing required path parameters");
                 }
 
@@ -29,17 +29,17 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof pathParams.moduleId !== "string") {
-                    throw new Error("moduleId must be a UUID, 'string'");
+                if (typeof pathParams.moduleKey !== "string") {
+                    throw new Error("moduleKey must be a UUID, 'string'");
                 }
 
-                body = await inviteUsertoWorkspace(authUserId, pathParams.workspaceId, requestJSON);
+                body = await installModule(authUserId, pathParams.workspaceId, pathParams.moduleKey);
                 break;
             }
 
             // TOGGLE A MODULE IN THE WORKSPACE
-            case "PUT /workspace/{workspaceId}/modules/{moduleId}/toggle": {
-                if (!pathParams.workspaceId || !pathParams.moduleId) {
+            case "PUT /workspace/{workspaceId}/modules/{moduleKey}/toggle": {
+                if (!pathParams.workspaceId || !pathParams.moduleKey) {
                     throw new Error("Missing required path parameters");
                 }
 
@@ -47,17 +47,17 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof pathParams.moduleId !== "string") {
-                    throw new Error("moduleId must be a UUID, 'string'");
+                if (typeof pathParams.moduleKey !== "string") {
+                    throw new Error("moduleKey must be a UUID, 'string'");
                 }
 
-                body = await cancelUsersInvites(pathParams.email);
+                body = await toggleModule(pathParams.workspaceId, pathParams.moduleKey);
                 break;
             }
 
             // UNINSTALL A MODULE IN THE WORKSPACE
-            case "DELETE /workspace/{workspaceId}/modules/{moduleId}": {
-                if (!pathParams.workspaceId || !pathParams.moduleId) {
+            case "DELETE /workspace/{workspaceId}/modules/{moduleKey}": {
+                if (!pathParams.workspaceId || !pathParams.moduleKey) {
                     throw new Error("Missing required path parameters");
                 }
 
@@ -65,16 +65,16 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof pathParams.moduleId !== "string") {
-                    throw new Error("moduleId must be a UUID, 'string'");
+                if (typeof pathParams.moduleKey !== "string") {
+                    throw new Error("moduleKey must be a UUID, 'string'");
                 }
 
-                body = await cancelInviteToWorkspace(authUserId, pathParams.workspaceId, pathParams.inviteId);
+                body = await uninstallModule(authUserId, pathParams.workspaceId, pathParams.moduleKey);
                 break;
             }
 
             // GET INSTALLED MODULES
-            case "GET /workspace/{workspaceId}/modules": {
+            case "GET /workspace/{workspaceId}/modules/installed": {
                 if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
@@ -83,17 +83,24 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                body = await getInvite(pathParams.workspaceId, pathParams.inviteId);
+                body = await getInstalledModules(authUserId, pathParams.workspaceId);
                 break;
             }
 
             // GET ALL AVAILABLE MODULES
-            case "GET /workspace/modules": {
-                body = await getSentInvites(authUserId);
+            case "GET /workspace/{workspaceId}/modules/uninstalled": {
+                if (!pathParams.workspaceId) {
+                    throw new Error("Missing required path parameters");
+                }
+
+                if (typeof pathParams.workspaceId !== "string") {
+                    throw new Error("workspaceId must be a UUID, 'string'");
+                }
+
+                body = await getAvailableModules(authUserId, pathParams.workspaceId);
                 break;
             }
         
-            
             default:
                 statusCode = 404;
                 body = {message: `Unsupported route: ${event.routeKey}`}

@@ -258,6 +258,36 @@ const CollabEndpoints = () => {
         }
     }
 
+    // MODULES
+
+    async function getInstalledModules() {
+        try {
+            
+            const result = await apiGet(
+                endpoints.workspace.modules.getInstalledModules(workspaceId),
+            );
+
+            console.log(result);
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    async function getUninstalledModules() {
+        try {
+            
+            const result = await apiGet(
+                endpoints.workspace.modules.getUninstalledModules(workspaceId),
+            );
+
+            console.log(result);
+
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
     return (
         <View style={commonStyles.screen}>
             <Header title="Endpoints" showBack />
@@ -326,6 +356,16 @@ const CollabEndpoints = () => {
 
             <View>
                 <Button title="Update user info (role and type)" onPress={(updateUser)}/>
+            </View>
+
+            <Text>Modules</Text>
+
+            <View>
+                <Button title="Get Installed Modules" onPress={(getInstalledModules)}/>
+            </View>
+
+            <View>
+                <Button title="Get Uninstalled Modules" onPress={(getUninstalledModules)}/>
             </View>
         </View>
     )

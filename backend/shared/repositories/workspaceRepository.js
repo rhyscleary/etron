@@ -365,6 +365,120 @@ async function updateWorkspace(workspaceId, data) {
     return result;
 }
 
+// MODULES
+
+// add module to workspace
+async function addModule(moduleItem) {
+    const {moduleId, ...rest} = moduleItem;
+    const updatedModuleItem = {
+        ...rest,
+        sk: `module#${moduleId}`
+    }
+
+    // send request to datastore
+    await dynamoDB.send(
+        new PutCommand( {
+            TableName: tableName,
+            Item: updatedModuleItem
+        })
+    );
+}
+
+// remove module from workspace
+async function removeModule(workspaceId, moduleId) {
+    const sk = `module#${moduleId}`;
+    
+    // send request to delete entry
+    await dynamoDB.send(
+        new DeleteCommand( {
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                sk: sk
+            },
+        })
+    );
+}
+
+// update module in workspace
+async function updateModule(workspaceId, moduleId, enabled) {
+    const updateFields = [];
+    const expressionAttributeValues = {};
+    const expressionAttributeNames = {};
+
+    updateFields.push("#enabled = :enabled");
+    expressionAttributeValues[":enabled"] = enabled
+    expressionAttributeNames["#enabled"] = "enabled";
+
+    updateFields.push("#updatedAt = :updatedAt");
+    expressionAttributeValues[":updatedAt"] = new Date().toISOString();
+    expressionAttributeNames["#updatedAt"] = "updatedAt";
+
+    const sk = `module#${moduleId}`;
+
+    const result = await dynamoDB.send(
+        new UpdateCommand( {
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                sk: sk
+            },
+            UpdateExpression: "SET " + updateFields.join(", "),
+            ExpressionAttributeValues: expressionAttributeValues,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ReturnValues: "ALL_NEW"
+        })
+    );
+
+    const itemAttributes = result.Attributes;
+    const { sk: skValue, ...rest } = itemAttributes;
+
+    return {
+        ...rest,
+        moduleId: skValue.replace("module#", "")
+    };
+}
+
+// get all modules in a workspace
+async function getModulesByWorkspaceId(workspaceId) {
+    // get the modules in a workspace
+    const result = await dynamoDB.send(
+            new QueryCommand({
+                TableName: tableName,
+                KeyConditionExpression: "workspaceId = :workspaceId AND begins_with(sk, :prefix)",
+                ExpressionAttributeValues: {
+                    ":workspaceId": workspaceId,
+                    ":prefix": "module#"
+                }
+            })
+        );
+
+    return (result.Items || null).map(({sk, ...rest}) => ({
+        ...rest,
+        moduleId: sk.replace("module#", "")
+    }));
+}
+
+// get all modules in a workspace by key
+async function getModuleByKey(workspaceId, moduleKey) {
+    // get the modules in a workspace
+    const result = await dynamoDB.send(
+            new QueryCommand({
+                TableName: tableName,
+                IndexName: "workspaceId-moduleKey-index",
+                KeyConditionExpression: "workspaceId = :workspaceId AND moduleKey = :moduleKey",
+                ExpressionAttributeValues: {
+                    ":workspaceId": workspaceId,
+                    ":moduleKey": moduleKey
+                }
+            })
+        );
+
+    return (result.Items || null).map(({sk, ...rest}) => ({
+        ...rest,
+        moduleId: sk.replace("module#", "")
+    }));
+}
 
 module.exports = {
     addRole,
@@ -380,5 +494,10 @@ module.exports = {
     addWorkspace,
     removeWorkspace,
     getWorkspaceById,
-    updateWorkspace
+    updateWorkspace,
+    addModule,
+    updateModule,
+    removeModule,
+    getModulesByWorkspaceId,
+    getModuleByKey
 }
