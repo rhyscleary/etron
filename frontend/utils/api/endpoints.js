@@ -47,6 +47,11 @@ const endpoints = {
         },
 
         modules: {
+            install: ``,
+            uninstall: ``,
+            toggle: ``,
+            getAvailableModules: ``,
+            getInstalledModules: ``,
             
         }
     },

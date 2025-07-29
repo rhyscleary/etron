@@ -251,4 +251,49 @@ Resources:
             Path: /workspace/{workspaceId}/profiles
             Method: get
 
+  # Module Lambda 
+  WorkspaceProfilesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-modules
+      Handler: moduleHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        InstallModule:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules/{moduleId}
+            Method: post
+
+        ToggleModule:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules/{moduleId}/toggle
+            Method: put
+
+        UninstallModule:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules/{moduleId}
+            Method: delete
+
+        GetInstalledModules:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules
+            Method: get
+
+        GetAvailableModules:
+          Type: Api 
+          Properties:
+            Path: /workspace/modules
+            Method: get
+
   
