@@ -22,11 +22,11 @@ exports.handler = async (event) => {
         
             // CREATE ROLE
             case "POST /workspace/{workspaceId}/roles": {
-                if (!workspaceId) {
+                if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
@@ -36,15 +36,15 @@ exports.handler = async (event) => {
 
             // UPDATE ROLE
             case "PUT /workspace/{workspaceId}/roles/{roleId}": {
-                if (!workspaceId || !roleId) {
+                if (!pathParams.workspaceId || !pathParams.roleId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof roleId !== "string") {
+                if (typeof pathParams.roleId !== "string") {
                     throw new Error("roleId must be a UUID, 'string'");
                 }
 
@@ -54,15 +54,15 @@ exports.handler = async (event) => {
 
             // DELETE ROLE
             case "DELETE /workspace/{workspaceId}/roles/{roleId}": {
-                if (!workspaceId || !roleId) {
+                if (!pathParams.workspaceId || !pathParams.roleId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof roleId !== "string") {
+                if (typeof pathParams.roleId !== "string") {
                     throw new Error("roleId must be a UUID, 'string'");
                 }
 
@@ -72,15 +72,15 @@ exports.handler = async (event) => {
 
             // GET ROLE IN WORKSPACE
             case "GET /workspace/{workspaceId}/roles/{roleId}": {
-                if (!workspaceId || !roleId) {
+                if (!pathParams.workspaceId || !pathParams.roleId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof roleId !== "string") {
+                if (typeof pathParams.roleId !== "string") {
                     throw new Error("roleId must be a UUID, 'string'");
                 }
 
@@ -90,11 +90,11 @@ exports.handler = async (event) => {
 
             // GET ALL ROLES IN WORKSPACE
             case "GET /workspace/{workspaceId}/roles": {
-                if (!workspaceId) {
+                if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 

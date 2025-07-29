@@ -21,11 +21,11 @@ exports.handler = async (event) => {
         
             // CREATE PROFILE
             case "POST /workspace/{workspaceId}/profiles": {
-                if (!workspaceId) {
+                if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
@@ -35,15 +35,15 @@ exports.handler = async (event) => {
 
             // UPDATE PROFILE
             case "PUT /workspace/{workspaceId}/profiles/{profileId}": {
-                if (!workspaceId || !profileId) {
+                if (!pathParams.workspaceId || !pathParams.profileId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof profileId !== "string") {
+                if (typeof pathParams.profileId !== "string") {
                     throw new Error("profileId must be a UUID, 'string'");
                 }
 
@@ -53,15 +53,15 @@ exports.handler = async (event) => {
 
             // DELETE PROFILE
             case "DELETE /workspace/{workspaceId}/profiles/{profileId}": {
-                if (!workspaceId || !profileId) {
+                if (!pathParams.workspaceId || !pathParams.profileId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof profileId !== "string") {
+                if (typeof pathParams.profileId !== "string") {
                     throw new Error("profileId must be a UUID, 'string'");
                 }
 
@@ -71,15 +71,15 @@ exports.handler = async (event) => {
 
             // GET PROFILE IN WORKSPACE
             case "GET /workspace/{workspaceId}/profiles/{profileId}": {
-                if (!workspaceId || !profileId) {
+                if (!pathParams.workspaceId || !pathParams.profileId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof profileId !== "string") {
+                if (typeof pathParams.profileId !== "string") {
                     throw new Error("profileId must be a UUID, 'string'");
                 }
 
@@ -89,11 +89,11 @@ exports.handler = async (event) => {
 
             // GET ALL PROFILES IN WORKSPACE
             case "GET /workspace/{workspaceId}/profiles": {
-                if (!workspaceId) {
+                if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof workspaceId !== "string") {
+                if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 

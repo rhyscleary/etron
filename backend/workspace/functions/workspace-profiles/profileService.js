@@ -2,6 +2,7 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const {v4 : uuidv4} = require('uuid');
 
 async function createProfileInWorkspace(authUserId, workspaceId, data) {
     const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);

@@ -39,6 +39,8 @@ async function removeInviteById(workspaceId, inviteId) {
 
 // get invite by id
 async function getInviteById(workspaceId, inviteId) {
+    console.log("Fetching invite with:", { workspaceId, inviteId });
+
     const result = await dynamoDB.send(
         new GetCommand({
             TableName: tableName,
@@ -48,6 +50,7 @@ async function getInviteById(workspaceId, inviteId) {
             }
         })
     );
+    console.log("DynamoDB GetCommand result:", result);
     
     return result.Item;
 }

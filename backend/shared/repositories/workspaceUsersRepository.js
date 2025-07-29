@@ -87,7 +87,7 @@ async function updateUser(workspaceId, userId, data) {
         })
     );
 
-    return result || [];
+    return result;
 }
 
 // get user in workspace

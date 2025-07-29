@@ -4,6 +4,7 @@ const { UserType } = require("@etron/shared/constants/enums");
 const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const {v4 : uuidv4} = require('uuid');
 
 async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
     if (!data.email || !data.type) {
@@ -30,13 +31,13 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
     }
 
     // check if the user exists in the workspace
-    const user = workspaceUsersRepo.getUsersByWorkspaceIdAndEmail(workspaceId, data.email);
+    const user = await workspaceUsersRepo.getUsersByWorkspaceIdAndEmail(workspaceId, data.email);
 
     if (user?.[0]) {
         return {message: "User is already part of the workspace"};
     }
 
-    const existingInvites = workspaceInvitesRepo.getUsersByWorkspaceIdAndEmail(workspaceId, email);  
+    const existingInvites = await workspaceInvitesRepo.getInvitesByWorkspaceIdAndEmail(workspaceId, data.email);  
     if (existingInvites?.[0]) {
         return {message: "User is already invited to the workspace"};
     }

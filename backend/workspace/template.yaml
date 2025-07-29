@@ -96,7 +96,7 @@ Resources:
             Path: /workspace/invites/{email}
             Method: delete
 
-        CancelUserInvite:
+        CancelInvite:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/invites/{inviteId}
@@ -115,7 +115,50 @@ Resources:
             Method: get
 
   # User Lambda 
-  
+  WorkspaceUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-users
+      Handler: userHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        AddUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/invites/{inviteId}
+            Method: post
+
+        UpdateUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/{userId}
+            Method: put
+
+        RemoveUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/{userId}
+            Method: delete
+
+        GetUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users/{userId}
+            Method: get
+
+        GetAllUsers:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/users
+            Method: get
+        
 
   # Role Lambda 
   WorkspaceRolesFunction:

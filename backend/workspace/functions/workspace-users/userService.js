@@ -6,6 +6,7 @@ const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRep
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { getUserByEmail } = require("@etron/shared/utils/auth");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const {v4 : uuidv4} = require('uuid');
 
 async function addUserToWorkspace(workspaceId, inviteId) {
     // get invite
@@ -75,12 +76,16 @@ async function updateUserInWorkspace(authUserId, workspaceId, userId, updateData
         throw new Error("User not found");
     }
 
-    // check if the types valid
-    if (updateData.type !== undefined) {
-        const validTypes = Object.values(UserType);
-        if (!validTypes.includes(updateData.type)) {
-            throw new Error(`Invalid type of user: ${updateData.type}`);
+    if (updateData.type) {
+        // convert type to lowercase
+        const type = updateData.type.toLowerCase();
+
+        // check if the user type is valid
+        if (!Object.values(UserType).includes(type)) {
+            throw new Error(`Invalid type of user: ${type}`);
         }
+
+        updateData.type = type;
     }
 
     // check if the role exists
