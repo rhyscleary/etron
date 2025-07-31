@@ -17,32 +17,32 @@ exports.handler = async (event) => {
 
         switch (routeKey) {
             // ADD DATA SOURCE
-            case "POST /day-book/data-sources": {
-                body = await addDataSource(authUserId, requestJSON);
+            case "POST /workspace/{workspaceId}/day-book/data-sources": {
+                body = await createDataSource(authUserId, pathParams.workspaceId, requestJSON);
                 break;
             }
 
             // UPDATE DATA SOURCES
-            case "PUT /day-book/data-sources/{dataSourceId}": {
-                body = await updateDataSource(authUserId, pathParams.dataSourceId, requestJSON);
+            case "PUT /workspace/{workspaceId}/day-book/data-sources/{dataSourceId}": {
+                body = await updateDataSource(authUserId, pathParams.workspaceId, pathParams.dataSourceId, requestJSON);
                 break;
             }
 
             // GET DATA SOURCE
-            case "GET /day-book/data-sources/{dataSourceId}": {
-                body = await getDataSourceById(authUserId, pathParams.dataSourceId);
+            case "GET /workspace/{workspaceId}/day-book/data-sources/{dataSourceId}": {
+                body = await getDataSourceById(authUserId, pathParams.workspaceId, pathParams.dataSourceId);
                 break;
             }
 
             // GET ALL DATA SOURCES
-            case "GET /day-book/data-sources": {
-                body = await getDataSources(authUserId);
+            case "GET /workspace/{workspaceId}/day-book/data-sources": {
+                body = await getDataSources(authUserId, pathParams.workspaceId);
                 break;
             }
 
             // REMOVE DATA SOURCE
-            case "DELETE /day-book/data-sources/{dataSourceId}": {
-                body = await removeDataSource(authUserId, pathParams.dataSourceId);
+            case "DELETE /workspace/{workspaceId}/day-book/data-sources/{dataSourceId}": {
+                body = await removeDataSource(authUserId, pathParams.workspaceId, pathParams.dataSourceId);
                 break;
             }
 
