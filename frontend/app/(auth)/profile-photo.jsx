@@ -16,38 +16,39 @@ const changeProfilePhoto = () => {
     const [isLoadingPhoto, setIsLoadingPhoto] = useState(true);
     const [profilePhotoUri, setProfilePhotoUri] = useState(null);
 
-    // Load the profile photo URL upon component mount
-    useEffect(() => {
-        const fetchProfilePhoto = async () => {
-            try {
-                // Load the photo from local storage if possible
-                console.log("Fetching from local storage...");
-                const cachedUri = await AsyncStorage.getItem('profilePhotoUri');
-                if (cachedUri) {
-                    setProfilePhotoUri(cachedUri);
-                    console.log("Profile photo loaded from cache.");
-                    return;
-                }
-
-                // If not in local storage, then get from S3
-                console.log("Fetching from S3...")
-                const userAttributes = await fetchUserAttributes();
-                const S3Url = userAttributes.picture;
-                if (!S3Url) {
-                    console.log("Profile photo URL not found.");
-                    return;
-                }
-                const S3UrlResult = await getUrl({path: S3Url});
-                await AsyncStorage.setItem('profilePhotoUri', s3UrlResult.url.toString())
-                setProfilePhotoUri(S3UrlResult.url.toString());
-                console.log("New profile photo URL fetched and cached.");
-            } catch (error) {
-                console.log("Profile photo URL fetch unsuccessful:", error);
-            } finally {
-                setIsLoadingPhoto(false);
+    // Function to load the profile photo URL
+    const loadProfilePhoto = async () => {
+        try {
+            // Load the photo from local storage if possible
+            console.log("Fetching from local storage...");
+            const cachedUri = await AsyncStorage.getItem('profilePhotoUri');
+            if (cachedUri) {
+                setProfilePhotoUri(cachedUri);
+                console.log("Profile photo loaded from cache.");
+                return;
             }
+
+            // If not in local storage, then get from S3
+            console.log("Fetching from S3...")
+            const userAttributes = await fetchUserAttributes();
+            const S3Url = userAttributes.picture;
+            if (!S3Url) {
+                console.log("Profile photo URL not found.");
+                return;
+            }
+            const S3UrlResult = await getUrl({path: S3Url});
+            await AsyncStorage.setItem('profilePhotoUri', S3UrlResult.url.toString())
+            setProfilePhotoUri(S3UrlResult.url.toString());
+            console.log("New profile photo URL fetched and cached.");
+        } catch (error) {
+            console.log("Profile photo URL fetch unsuccessful:", error);
+        } finally {
+            setIsLoadingPhoto(false);
         }
-        fetchProfilePhoto();
+    }
+    
+    useEffect(() => {
+        loadProfilePhoto();
     }, [])
 
     // Function for uploading photo to S3
@@ -64,8 +65,8 @@ const changeProfilePhoto = () => {
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: 'images',
             allowsEditing: true,
-            //aspect: [1, 1],  //todo: check if this works, i read it but haven't tested it yet
-            quality: 0.7,  //todo: find a lower number for this that fits the tiny profile photos so we don't waste storage
+            aspect: [1, 1],  // Forces user to crop image to a square
+            quality: 0.1,  //todo: find a lower number for this that fits the tiny profile photos so we don't waste storage
         });
         if (result.canceled) {
             console.log("Photo picking failed: User cancelled image picker.");
@@ -96,11 +97,9 @@ const changeProfilePhoto = () => {
                 data: Buffer.from(fileBuffer, 'base64')
             }).result;
             console.log("Photo uploaded successfully.");
-            setProfilePhotoUri(localUri);
-            await AsyncStorage.setItem("profilePhotoUri", localUri);
-            console.log("Locally saved photo replaced.");
         } catch (error) {
             console.log("Error uploading photo:", error);
+            setIsLoadingPhoto(false);
             return;
         }
 
@@ -113,17 +112,14 @@ const changeProfilePhoto = () => {
                 }
             });
 
-            const { nextStep } = output;
-            if (nextStep.updateAttributeStep == "DONE") {
-                console.log("User details profile picture URL updated.");                
-            } else {
-                console.log("User details profile picture URL update not finished:", nextStep);
-            }
+            console.log("User details profile picture URL updated.");
+            await AsyncStorage.removeItem("profilePhotoUri");
+            await loadProfilePhoto();
         } catch (error) {
             console.log("Profile picture URL upload to user details unsuccessful:", error);
+            setIsLoadingPhoto(false);
             return;
         }
-        setIsLoadingPhoto(false);
     }
 
     return (
@@ -134,7 +130,7 @@ const changeProfilePhoto = () => {
             ) : (
                 <Image
                     source={{ uri:profilePhotoUri }}
-                    style={{ width: 100, height: 100, borderRadius: 50 }}
+                    style={{ width: 400, height: 400, borderRadius: 200 }}
                     placeholder = {"Profile photo goes here"}
                 />
             )}
