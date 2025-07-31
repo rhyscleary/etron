@@ -25,11 +25,10 @@ function SignOutButton() {
 
 async function getAuthenticatedUserDetails() {
     try {
+        console.log("Log in details")
         const { username, userId, signInDetails } = await getCurrentUser();
-        console.log(`username: ${username}`);
         console.log(`userId: ${userId}`);
         console.log(`email: ${signInDetails.loginId}`);
-        console.log(signInDetails);
 
         /*const authSession = await fetchAuthSession();
         console.log("ID Token:", authSession.tokens.idToken);
