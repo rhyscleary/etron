@@ -6,6 +6,7 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { apiGet, apiPost } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import endpoints from "../../../../utils/api/endpoints";
 
 const InviteUser = () => {
   const [workspaceId, setWorkspaceId] = useState(null);
@@ -28,12 +29,9 @@ const InviteUser = () => {
 
     const fetchRoles = async () => {
       try {
-        const result = await apiGet(
-          `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/roles`
-        );
+        const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
         console.log("Fetched roles:", result);
 
-        // Assuming result is an array of role objects
         setRoles(result || []);
       } catch (error) {
         console.error("Error fetching roles:", error);
@@ -43,28 +41,39 @@ const InviteUser = () => {
     fetchRoles();
   }, [workspaceId]);
 
-  const handleCheck = async () => {
-    if (!userEmail || !selectedRole || !workspaceId) {
-      console.warn("Missing data for invite.");
+const handleCheck = async () => {
+  if (!userEmail || !selectedRole || !workspaceId) {
+    console.warn("Missing data for invite.");
+    return;
+  }
+
+  try {
+    // Find the role object by name to get the roleId
+    const selectedRoleObj = roles.find(role => role.name === selectedRole);
+
+    if (!selectedRoleObj) {
+      console.warn("Selected role not found in roles list.");
       return;
     }
 
-    try {
-      const result = await apiPost(
-        `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/invites/create`,
-        {
-          email: userEmail,
-          type: userType,
-          role: selectedRole, // Send the roleId, not name
-        }
-      );
+    const data = {
+      email: userEmail,
+      type: userType,
+      roleId: selectedRoleObj.roleId,
+    };
 
-      console.log("Invite sent:", result);
-      // Optionally clear fields or show success message here
-    } catch (error) {
-      console.error("Error sending invite:", error);
-    }
-  };
+    const result = await apiPost(
+      endpoints.workspace.invites.create(workspaceId),
+      data
+    );
+
+    console.log("Invite sent:", result);
+    // Optionally reset form or show feedback
+  } catch (error) {
+    console.error("Error sending invite:", error);
+  }
+};
+
 
   return (
     <View style={commonStyles.screen}>

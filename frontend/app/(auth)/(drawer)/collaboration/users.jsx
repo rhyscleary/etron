@@ -6,6 +6,8 @@ import { Text, TextInput, TouchableRipple } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../../utils/api/apiClient"; // adjust path to your actual API helper
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import endpoints from "../../../../utils/api/endpoints";
+
 
 const Users = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
@@ -30,7 +32,7 @@ const Users = () => {
     async function getAllUsers() {
         try {
            const result = await apiGet(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}/users`
+                endpoints.workspace.users.getUsers(workspaceId)
             );
             console.log(workspaceId);
             console.log(result);

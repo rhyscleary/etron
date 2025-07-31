@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../utils/api/apiClient";
+import endpoints from "../../../../utils/api/endpoints";
 
 const Roles = () => {
     const [roles, setRoles] = useState([]);
@@ -18,11 +19,12 @@ const Roles = () => {
                 setWorkspaceId(id);
 
                 if (id) {
-                    const result = await apiGet(
-                        `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${id}/roles`
-                    );
-                    console.log("Fetched roles:", result);
-                    setRoles(result);
+                    const result = await apiGet(endpoints.workspace.roles.getRoles(id));
+                    //console.log("Fetched roles:", result);
+                    console.log(result[0]?.permissions[0]);
+
+                    // Ensure this matches your actual API shape
+                    setRoles(Array.isArray(result) ? result : []);
                 }
             } catch (error) {
                 console.log("Error fetching roles:", error);
@@ -43,11 +45,11 @@ const Roles = () => {
 
             <FlatList
                 data={roles}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.roleId}
                 contentContainerStyle={{ paddingVertical: 16 }}
                 renderItem={({ item }) => (
                     <Pressable
-                        onPress={() => console.log(`Tapped role: ${item.name}`)}
+                        onPress={() => router.push(`/collaboration/edit-role/${item.roleId}`)}
                         style={{
                             borderWidth: 1,
                             borderColor: '#ccc',
