@@ -16,7 +16,7 @@ function App() {
     useEffect(() => {
         console.log("(Landing page). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
-            console.log("Redirection to auth root page.")
+            console.log("Redirecting to auth root page.")
             router.replace('/(auth)/profile'); // Go to the protected root page
         } else if (authStatus === "configuring") {
         } else {
