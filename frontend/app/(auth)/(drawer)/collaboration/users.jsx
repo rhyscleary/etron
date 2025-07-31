@@ -4,10 +4,9 @@ import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { Link, router } from "expo-router";
 import { Text, TextInput, TouchableRipple } from "react-native-paper";
 import { useEffect, useState } from "react";
-import { apiGet } from "../../../../utils/api/apiClient"; // adjust path to your actual API helper
+import { apiGet } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
-
 
 const Users = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
@@ -15,44 +14,47 @@ const Users = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        fetchIdAndUsers();
+    }, []);
+
+    const fetchIdAndUsers = async () => {
+        try {
+            const id = await getWorkspaceId();
+            setWorkspaceId(id);
+            const result = await apiGet(endpoints.workspace.users.getUsers(id));
+            console.log("Fetched users for workspace:", id);
+            console.log(result);
+            setUsers(result);
+        } catch (error) {
+            console.log("Failed to fetch users:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSearchChange = (query) => {
         setSearchQuery(query);
     };
 
-    useEffect(() => {
-        fetchId();
-        getAllUsers();
-    }, []);
+    // Filters users by name or email
+    const filteredUsers = users.filter(user =>
+        (user.name || user.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
-    const fetchId = async () => {
-        const id = await getWorkspaceId();
-        setWorkspaceId(id);
-    }; 
+    // Group users by 'type' field (e.g., owner, manager, employee)
+    const roleLabels = {
+        owner: "Business Owner",
+        manager: "Manager",
+        employee: "Employee"
+    };
 
-    async function getAllUsers() {
-        try {
-           const result = await apiGet(
-                endpoints.workspace.users.getUsers(workspaceId)
-            );
-            console.log(workspaceId);
-            console.log(result);
-            setUsers(result);
-        } catch (error) {
-            console.log(error);
-        }
-    }
+    const uniqueRoles = [...new Set(filteredUsers.map(user => user.type))];
 
-    const roles = ['Business Owner', 'Manager', 'Employee'];
-
-    const groupedUsers = roles.map(role => {
-        const data = users
-            .filter(user =>
-                user.role === role &&
-                user.name.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-
-        return { title: role, data };
-    }).filter(section => section.data.length > 0);
+    const groupedUsers = uniqueRoles.map(role => {
+        const data = filteredUsers.filter(user => user.type === role);
+        return { title: roleLabels[role] || role, data };
+    });
 
     return (
         <View style={commonStyles.screen}>
@@ -72,12 +74,12 @@ const Users = () => {
                 style={{ marginVertical: 16 }}
             />
 
-            {/* Placeholder filters for search */}
+            {/* Placeholder filters for search; Will update to match the workspace log implementation */}
             <Text>Placeholder</Text>
 
             {/* Workspace Log */}
             <Link href="/collaboration/workspace-log" asChild>
-                <Pressable
+                <TouchableRipple
                     style={{
                         borderWidth: 1,
                         borderColor: '#ccc',
@@ -87,13 +89,13 @@ const Users = () => {
                     }}
                 >
                     <Text>Workspace Log</Text>
-                </Pressable>
+                </TouchableRipple>
             </Link>
 
             {/* Sectioned User List */}
             <SectionList
                 sections={groupedUsers}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.userId || item.id}
                 renderSectionHeader={({ section: { title } }) => (
                     <Text style={{ marginTop: 16, fontWeight: 'bold' }}>{title}</Text>
                 )}
@@ -106,10 +108,9 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => console.log('User tapped:', item.name)}
-                        rippleColor="rgba(0, 0, 0, .1)"
-                    >
-                        <Text>{item.name}</Text>
+                        onPress={() => console.log('User tapped:', item)}>
+                            
+                        <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>
                 )}
                 ListEmptyComponent={
