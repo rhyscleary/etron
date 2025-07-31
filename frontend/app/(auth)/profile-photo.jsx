@@ -16,6 +16,7 @@ const changeProfilePhoto = () => {
     const [isLoadingPhoto, setIsLoadingPhoto] = useState(true);
     const [profilePhotoUri, setProfilePhotoUri] = useState(null);
 
+
     // Function to load the profile photo URL
     const loadProfilePhoto = async () => {
         try {
@@ -66,7 +67,7 @@ const changeProfilePhoto = () => {
             mediaTypes: 'images',
             allowsEditing: true,
             aspect: [1, 1],  // Forces user to crop image to a square
-            quality: 0.1,  //todo: find a lower number for this that fits the tiny profile photos so we don't waste storage
+            quality: 0.1, 
         });
         if (result.canceled) {
             console.log("Photo picking failed: User cancelled image picker.");
