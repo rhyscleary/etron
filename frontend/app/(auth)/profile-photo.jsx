@@ -1,4 +1,4 @@
-import { Pressable, View, Button } from "react-native";
+import { Pressable, View, Button, ActivityIndicator } from "react-native";
 import { useState, useEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
 import { Text, Alert } from "react-native-paper";
@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 global.Buffer = global.Buffer || Buffer
 
 const changeProfilePhoto = () => {
+    const [isLoadingPhoto, setIsLoadingPhoto] = useState(true);
     const [profilePhotoUri, setProfilePhotoUri] = useState(null);
 
     // Load the profile photo URL upon component mount
@@ -42,6 +43,8 @@ const changeProfilePhoto = () => {
                 console.log("New profile photo URL fetched and cached.");
             } catch (error) {
                 console.log("Profile photo URL fetch unsuccessful:", error);
+            } finally {
+                setIsLoadingPhoto(false);
             }
         }
         fetchProfilePhoto();
@@ -68,6 +71,7 @@ const changeProfilePhoto = () => {
             console.log("Photo picking failed: User cancelled image picker.");
             return;
         }
+        setIsLoadingPhoto(true);
 
         // Get the selected photo URI from the device 
         const asset = result.assets[0];
@@ -119,17 +123,21 @@ const changeProfilePhoto = () => {
             console.log("Profile picture URL upload to user details unsuccessful:", error);
             return;
         }
+        setIsLoadingPhoto(false);
     }
 
     return (
         <View style={commonStyles.screen}>
-            <Text> Test </Text> 
             <Button title="Choose and upload photo" onPress={handleUploadPhoto} />
-            <Image
-                source={{ uri:profilePhotoUri }}
-                style={{ width: 100, height: 100, borderRadius: 50 }}
-                placeholder = {"Profile photo goes here"}
-            />
+            { isLoadingPhoto ? (
+                <ActivityIndicator />
+            ) : (
+                <Image
+                    source={{ uri:profilePhotoUri }}
+                    style={{ width: 100, height: 100, borderRadius: 50 }}
+                    placeholder = {"Profile photo goes here"}
+                />
+            )}
         </View>
     )
 }
