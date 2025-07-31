@@ -1,7 +1,7 @@
 import { Pressable, View, SectionList, Text as RNText } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { Text, TextInput, TouchableRipple } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../../utils/api/apiClient";
@@ -23,8 +23,6 @@ const Users = () => {
             const id = await getWorkspaceId();
             setWorkspaceId(id);
             const result = await apiGet(endpoints.workspace.users.getUsers(id));
-            console.log("Fetched users for workspace:", id);
-            console.log(result);
             setUsers(result);
         } catch (error) {
             console.log("Failed to fetch users:", error);
@@ -74,23 +72,22 @@ const Users = () => {
                 style={{ marginVertical: 16 }}
             />
 
-            {/* Placeholder filters for search; Will update to match the workspace log implementation */}
+            {/* Placeholder filters for search */}
             <Text>Placeholder</Text>
 
             {/* Workspace Log */}
-            <Link href="/collaboration/workspace-log" asChild>
-                <TouchableRipple
-                    style={{
-                        borderWidth: 1,
-                        borderColor: '#ccc',
-                        borderRadius: 4,
-                        padding: 16,
-                        marginVertical: 8
-                    }}
-                >
-                    <Text>Workspace Log</Text>
-                </TouchableRipple>
-            </Link>
+            <Pressable
+                onPress={() => router.push("/collaboration/workspace-log")}
+                style={{
+                    borderWidth: 1,
+                    borderColor: '#ccc',
+                    borderRadius: 4,
+                    padding: 16,
+                    marginVertical: 8
+                }}
+            >
+                <Text>Workspace Log</Text>
+            </Pressable>
 
             {/* Sectioned User List */}
             <SectionList
@@ -108,8 +105,8 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => console.log('User tapped:', item)}>
-                            
+                        onPress={() => router.push(`/collaboration/edit-user/${item.userId || item.id}`)}
+                    >
                         <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>
                 )}
