@@ -14,6 +14,15 @@
     "categories": {
       "auth": {
         "etron35cd2756": {}
+      },
+      "function": {
+        "S3Trigger2072070a": {
+          "deploymentBucketName": "amplify-etron-dev-95aa3-deployment",
+          "s3Key": "amplify-builds/S3Trigger2072070a-546b55786a6153497247-build.zip"
+        }
+      },
+      "storage": {
+        "etronProfilePhotos": {}
       }
     }
   }
