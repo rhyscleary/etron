@@ -18,7 +18,9 @@
     ]
   },
   "dependencies": {
+    "@aws-amplify/backend": "^1.16.1",
     "@aws-amplify/react-native": "^1.1.10",
+    "@aws-amplify/rtn-web-browser": "^1.1.4",
     "@aws-amplify/ui-react": "^6.11.2",
     "@aws-amplify/ui-react-native": "^2.5.3",
     "@aws-sdk/client-cognito-identity-provider": "^3.825.0",

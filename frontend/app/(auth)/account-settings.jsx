@@ -2,6 +2,12 @@ import { Redirect, useRouter, router, Link } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
+import TextField from '../../components/common/input/TextField';
+import BasicButton from '../../components/common/buttons/BasicButton';
+import { useTheme } from 'react-native-paper';
+import GoogleButton from '../../components/common/buttons/GoogleButton';
+import MicrosoftButton from '../../components/common/buttons/MicrosoftButton';
+import Divider from "../../components/layout/Divider";
 
 import { Amplify, Storage } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
@@ -13,7 +19,6 @@ import {
     updateUserAttribute,
     confirmUserAttribute
 } from 'aws-amplify/auth';
-import { saveTestWorkspaceInfo } from "../../storage/workspaceStorage";
 
 
 function SignOutButton() {
@@ -116,6 +121,14 @@ function App() {
         handleUpdateUserAttribute('email', newEmail);
     }
 
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isSignUp, setIsSignUp] = useState(false); // toggle sign in vs sign up
+    const [message, setMessage] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+
+    const router = useRouter();
+
     useEffect(() => {
         getAuthenticatedUserDetails();
     }, []);
@@ -170,4 +183,4 @@ function App() {
     );
 }
 
-export default withAuthenticator(App);
+export default App;

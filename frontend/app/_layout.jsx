@@ -8,12 +8,19 @@ import { View, Text } from 'react-native'
 import SafeView from '../components/layout/SafeView';
 import { Authenticator } from '@aws-amplify/ui-react-native';
 
+import * as Linking from 'expo-linking';
+
+Linking.addEventListener('url', (event) => { //deep linking; used for microsoft/google sign in redirects
+    console.log('App was opened with URL:', event.url);
+})
+
 const currentTheme = themes['dark'];
 
 export default function RootLayout() {
     return (    
         <PaperProvider theme={currentTheme}>
             <Authenticator.Provider>
+                {/*Wrap the drawer layout around the safe area and the slot */}
                 <SafeAreaProvider>
                     <SafeView>            
                         <Slot />

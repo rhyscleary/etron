@@ -10,8 +10,10 @@ import TextField from "../../components/common/input/TextField";
 import StackLayout from "../../components/layout/StackLayout";
 
 import { Snackbar, Text, useTheme } from "react-native-paper";
-import { apiPost } from "../../utils/api";
+import { apiPost } from "../../utils/api/apiClient";
 import MessageBar from "../../components/overlays/MessageBar";
+import endpoints from "../../utils/api/endpoints";
+import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -38,11 +40,15 @@ const CreateWorkspace = () => {
             }
 
             const result = await apiPost(
-                'https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace',
+                endpoints.workspace.create,
                 workspaceData
             );
 
+            // save workspace info to local storage
+            saveWorkspaceInfo(result);
+
             console.log('Workspace created:', result);
+
 
             // navigate to the profile
             router.push("/profile");
@@ -57,7 +63,7 @@ const CreateWorkspace = () => {
             <Header title="Create Workspace" showBack />
 
             <View>
-                <StackLayout spacing={20}> 
+                <StackLayout spacing={30}> 
                     <View>
                         <TextField 
                             label="Name *" 

@@ -35,11 +35,11 @@ export async function removeWorkspaceInfo() {
 // get values from the information stored
 export async function getWorkspaceId() {
     const workspace = await getWorkspaceInfo();
-    return workspace.id || null;
+    return workspace.workspaceId || null;
 }
 
 // TESTING
-export async function saveTestWorkspaceInfo() {
+/*export async function saveTestWorkspaceInfo() {
     const workspaceData = {
         id: "e676164b-7447-4d39-9118-babb5c97fbb3",
         name: "InSync",
@@ -48,5 +48,5 @@ export async function saveTestWorkspaceInfo() {
     };
 
     saveWorkspaceInfo(workspaceData);
-}
+}*/
 

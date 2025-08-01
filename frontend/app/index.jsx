@@ -7,28 +7,39 @@ import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-nativ
 import { Amplify } from 'aws-amplify';
 import { Storage } from '@aws-amplify/storage';
 import awsmobile from '../src/aws-exports';
+Amplify.configure({
+    ...awsmobile,
+    oauth: {
+        domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
+        scope: ['email', 'openid', 'profile'],
+        redirectSignIn: 'myapp://auth/',
+        redirectSignOut: 'myapp://signout/',
+        responseType: 'code'
+    }
+});
+console.log('Amplify configured with:', Amplify.getConfig());
 
-Amplify.configure(awsmobile);
 
 function App() {
     const { authStatus } = useAuthenticator();
 
     useEffect(() => {
-        console.log("(Landing page). Auth status:", authStatus);
+        console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
             console.log("Redirecting to auth root page.")
             router.replace('/(auth)/profile'); // Go to the protected root page
         } else if (authStatus === "configuring") {
         } else {
-            console.log("Showing base page.")
+            router.replace('landing');
         }
     }, [authStatus]);
 
     return (
         <>
-            <Text>Base empty page</Text>
+            <Text>This page shouldn't be seen.</Text>
         </>
     );
 }
 
-export default withAuthenticator(App);
+//export default withAuthenticator(App);
+export default App;

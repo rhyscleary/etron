@@ -14,7 +14,7 @@ const ModuleCard = ({
 
     return (
         <Pressable onPress={onPress}>
-            <Card mode="outlined" style={[styles.card, {backgroundColor: theme.colors.buttonBackground}]}>
+            <Card mode="elevated" style={[styles.card, {backgroundColor: theme.colors.buttonBackground}]}>
                 <Card.Content>
                     <View style={{flexDirection: "row", alignItems: "flex-start"}}>
                         {icon ? (
