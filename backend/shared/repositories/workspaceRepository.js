@@ -316,6 +316,22 @@ async function getWorkspaceById(workspaceId) {
     return result.Item || null;
 }
 
+// get workspace by ownerId
+async function getWorkspaceByOwnerId(ownerId) {
+    const result = await dynamoDB.send(
+        new QueryCommand({
+            TableName: tableName,
+            IndexName: "ownerId-index",
+            KeyConditionExpression: "ownerId = :ownerId",
+            ExpressionAttributeValues: {
+                "ownerId": ownerId
+            }
+        })
+    );
+    
+    return result.Items || null;
+}
+
 // get workspace by id
 async function updateWorkspace(workspaceId, data) {
     const updateFields = [];
@@ -494,6 +510,7 @@ module.exports = {
     addWorkspace,
     removeWorkspace,
     getWorkspaceById,
+    getWorkspaceByOwnerId,
     updateWorkspace,
     addModule,
     updateModule,
