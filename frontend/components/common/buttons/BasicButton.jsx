@@ -10,7 +10,8 @@ const BasicButton = ({
     label,
     onPress,
     fullWidth = false,
-    style
+    style,
+    disabled = false,
 }) => {
     const theme = useTheme();
     
@@ -34,6 +35,7 @@ const BasicButton = ({
                 mode="contained" 
                 textColor={textColor}  
                 buttonColor={buttonColor}
+                disabled={disabled}
                 style={[
                     styles.button,
                     fullWidth ? styles.fullWidth : styles.fixedWidth,

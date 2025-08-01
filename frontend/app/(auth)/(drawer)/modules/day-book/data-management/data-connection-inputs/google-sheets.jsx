@@ -3,16 +3,18 @@ import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import { ScrollView } from "react-native";
 import StackLayout from "../../../../../../../components/layout/StackLayout";
-import { useTheme, Text } from "react-native-paper";
+import { useTheme, Text, Searchbar } from "react-native-paper";
 import { router } from "expo-router";
 import { useState, useEffect } from "react";
 import GoogleButton from "../../../../../../../components/common/buttons/GoogleButton";
 import BasicButton from "../../../../../../../components/common/buttons/BasicButton";
 import DescriptiveButton from "../../../../../../../components/common/buttons/DescriptiveButton";
+import DataButton from "../../../../../../../components/common/buttons/dataButton";
 import Divider from "../../../../../../../components/layout/Divider";
 import { apiPost } from "../../../../../../../utils/api/apiClient"; 
 import endpoints from "../../../../../../../utils/api/endpoints";
 import AccountCard from "../../../../../../../components/cards/accountCard";
+import IconButton from "../../../../../../../components/common/buttons/IconButton";
 
 import { 
     signInWithRedirect, 
@@ -31,6 +33,8 @@ const GoogleSheets = () => {
     const [loading, setLoading] = useState(false);
     const [spreadsheetsLoading, setSpreadsheetsLoading] = useState(false);
     const [cognitoUser, setCognitoUser] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [selectedSpreadsheet, setSelectedSpreadsheet] = useState(null);
     
     useEffect(() => {
         checkAuthStatus();
@@ -195,6 +199,7 @@ const GoogleSheets = () => {
                             setIsConnected(false);
                             setConnectedAccount(null);
                             setSpreadsheets([]);
+                            setSelectedSpreadsheet(null);
                             setCognitoUser(null);
                             
                             // navigate to login/signup page
@@ -243,6 +248,7 @@ const GoogleSheets = () => {
             
             setTimeout(() => {
                 setSpreadsheets(fakeSpreadsheets);
+                setSelectedSpreadsheet(null);
                 setSpreadsheetsLoading(false);
             }, 1000);
             
@@ -253,38 +259,23 @@ const GoogleSheets = () => {
         }
     };
 
-    const handleSpreadsheetSelect = (spreadsheet) => {
-        // TODO: replace when view data page is ready and backend is ready
-        Alert.alert(
-            "Select Spreadsheet", 
-            `You selected: ${spreadsheet.name}\n\nThis would navigate to the import configuration page.`,
-            [
-                {
-                    text: "Cancel",
-                    style: "cancel"
-                },
-                {
-                    text: "Continue",
-                    onPress: () => {
-                        router.push({
-                            pathname: "/modules/day-book/data-management/data-management",
-                            params: { 
-                                type: "google-sheets",
-                                spreadsheetId: spreadsheet.id,
-                                name: spreadsheet.name,
-                                url: spreadsheet.url
-                            }
-                        });
-                    }
-                }
-            ]
-        );
+    function handleSpreadsheetSelect(spreadsheet) {  
+        if (selectedSpreadsheet?.id === spreadsheet.id) {
+            setSelectedSpreadsheet(null);
+        } else {
+            setSelectedSpreadsheet(spreadsheet);
+        }
     };
+
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString() + " " + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     };
+
+    const filteredSpreadsheets = spreadsheets.filter(sheet =>
+        sheet.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <View style={commonStyles.screen}>
@@ -298,7 +289,7 @@ const GoogleSheets = () => {
                             <Text style={[commonStyles.titleText, { textAlign: 'center' }]}>
                                 Authentication Required
                             </Text>
-                            <Text style={{ textAlign: 'center', color: theme.colors.onSurfaceVariant }}>
+                            <Text style={{ textAlign: 'center' }}>
                                 Please sign in to connect your Google account
                             </Text>
                             <BasicButton
@@ -314,7 +305,7 @@ const GoogleSheets = () => {
                             <Text style={[commonStyles.titleText, { textAlign: 'center' }]}>
                                 Connect Google Sheets
                             </Text>
-                            <Text style={{ textAlign: 'center', color: theme.colors.onSurfaceVariant }}>
+                            <Text style={{ textAlign: 'center', }}>
                                 Connect your Google account to access your spreadsheets
                             </Text>
                             <GoogleButton
@@ -336,11 +327,18 @@ const GoogleSheets = () => {
 
                     {/* Spreadsheets List Section */}
                     {cognitoUser && isConnected && (
-                        <>
+                        <StackLayout spacing={20}>
                             <Divider color={theme.colors.divider} />
+                            <Searchbar 
+                                placeholder="Search"
+                                onChangeText={setSearchQuery}
+                                value={searchQuery}
+                                style= {[commonStyles.searchBar, {
+                                    backgroundColor: theme.colors.buttonBackground,
+                                }]}
+                            />
                             
                             <StackLayout spacing={15}>
-                                <Text style={commonStyles.titleText}>Your Spreadsheets</Text>
                                 
                                 {spreadsheetsLoading ? (
                                     <View style={{ padding: 20, alignItems: 'center' }}>
@@ -348,37 +346,58 @@ const GoogleSheets = () => {
                                     </View>
                                 ) : spreadsheets.length === 0 ? (
                                     <View style={{ padding: 20, alignItems: 'center' }}>
-                                        <Text style={{ color: theme.colors.onSurfaceVariant }}>
+                                        <Text>
                                             No spreadsheets found in your Google Drive
                                         </Text>
                                     </View>
                                 ) : (
-                                    <StackLayout spacing={10}>
-                                        {spreadsheets.map((spreadsheet) => (
-                                            <DescriptiveButton
+                                    <StackLayout spacing={2}>
+                                        {filteredSpreadsheets.map((spreadsheet) => (
+                                            <DataButton
                                                 key={spreadsheet.id}
                                                 label={spreadsheet.name}
                                                 description={`Last modified: ${formatDate(spreadsheet.lastModified)}`}
                                                 icon="google-spreadsheet"
                                                 onPress={() => handleSpreadsheetSelect(spreadsheet)}
                                                 boldLabel={false}
+                                                selected={selectedSpreadsheet === spreadsheet}
                                             />
                                         ))}
                                     </StackLayout>
                                 )}
                                 
                                 {spreadsheets.length > 0 && (
-                                    <BasicButton
+                                    <IconButton
                                         label="Refresh List"
                                         onPress={fetchSpreadsheets}
                                         disabled={spreadsheetsLoading}
+                                        icon={"refresh"}
                                     />
                                 )}
                             </StackLayout>
-                        </>
+                        </StackLayout>
                     )}
                 </StackLayout>
             </ScrollView>
+             
+                <View style={commonStyles.floatingButtonContainer}>
+                <BasicButton
+                    label="Continue"
+                    disabled={!selectedSpreadsheet}
+                    onPress={() => router.push({
+                            pathname: "/modules/day-book/data-management/data-management",
+                            params: {
+                                type: "google-sheets",
+                                spreadsheetId: selected.id,
+                                name: selected.name,
+                                url: selected.url,
+                            },
+                        })
+                    }
+                    fullWidth={false}
+                />
+                </View>
+            
         </View>
     );
 };

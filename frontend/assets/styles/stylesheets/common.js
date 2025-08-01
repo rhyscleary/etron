@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { SearchBar } from "react-native-screens";
 
 export const commonStyles = StyleSheet.create({
   screen: {
@@ -13,6 +14,9 @@ export const commonStyles = StyleSheet.create({
     marginVertical: 30,
     gap: 32,
   },
+  searchBar: {
+    borderRadius: 4,
+  },
   listItemText: {
     fontSize: 16,
   },
@@ -21,5 +25,11 @@ export const commonStyles = StyleSheet.create({
   },
   titleText: {
     fontSize: 20,
+  },
+  floatingButtonContainer: {
+    position: "absolute",
+    right: 10,
+    bottom: 20,
+    zIndex: 10,
   },
 });
