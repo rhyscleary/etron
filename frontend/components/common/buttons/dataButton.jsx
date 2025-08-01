@@ -23,7 +23,7 @@ const DataButton = ({
       ]}
     >
       <Card
-        elevation={0}
+        mode={selected ? 'elevated' : 'compact'}
         style={[
           styles.card,
           selected && ({
@@ -34,7 +34,7 @@ const DataButton = ({
         <Card.Content>
           <View style={styles.innerContainer}>
             {icon ? (
-              <Icon source={icon} size={28} color={theme.colors.icon} />
+              <Icon source={icon} size={28} color={theme.colors.themeGrey} />
             ) : null}
 
             <View style={styles.textContainer}>
@@ -49,7 +49,7 @@ const DataButton = ({
               </Text>
               {description ? (
                 <Text
-                  style={[styles.descriptionText, { color: theme.colors.text }]}
+                  style={[styles.descriptionText, { color: theme.colors.themeGrey }]}
                 >
                   {description}
                 </Text>

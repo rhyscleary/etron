@@ -8,7 +8,6 @@ import { router } from "expo-router";
 import { useState, useEffect } from "react";
 import GoogleButton from "../../../../../../../components/common/buttons/GoogleButton";
 import BasicButton from "../../../../../../../components/common/buttons/BasicButton";
-import DescriptiveButton from "../../../../../../../components/common/buttons/DescriptiveButton";
 import DataButton from "../../../../../../../components/common/buttons/dataButton";
 import Divider from "../../../../../../../components/layout/Divider";
 import { apiPost } from "../../../../../../../utils/api/apiClient"; 
@@ -283,7 +282,7 @@ const GoogleSheets = () => {
             <ScrollView contentContainerStyle={commonStyles}>
                 <StackLayout spacing={20}>
                     
-                    {/* User Status */}
+                    {/* user status */}
                     {!cognitoUser && (
                         <StackLayout spacing={15}>
                             <Text style={[commonStyles.titleText, { textAlign: 'center' }]}>
@@ -299,7 +298,7 @@ const GoogleSheets = () => {
                         </StackLayout>
                     )}
 
-                    {/* Connection Status Section */}
+                    {/* connection status */}
                     {cognitoUser && !isConnected && (
                         <StackLayout spacing={15}>
                             <Text style={[commonStyles.titleText, { textAlign: 'center' }]}>
@@ -325,7 +324,7 @@ const GoogleSheets = () => {
                             />
                     )}
 
-                    {/* Spreadsheets List Section */}
+                    {/* spreadsheets list */}
                     {cognitoUser && isConnected && (
                         <StackLayout spacing={20}>
                             <Divider color={theme.colors.divider} />
@@ -333,13 +332,14 @@ const GoogleSheets = () => {
                                 placeholder="Search"
                                 onChangeText={setSearchQuery}
                                 value={searchQuery}
+                                placeholderTextColor={theme.colors.divider}
+                                iconColor={theme.colors.themeGrey}
                                 style= {[commonStyles.searchBar, {
                                     backgroundColor: theme.colors.buttonBackground,
                                 }]}
                             />
                             
                             <StackLayout spacing={15}>
-                                
                                 {spreadsheetsLoading ? (
                                     <View style={{ padding: 20, alignItems: 'center' }}>
                                         <Text>Loading spreadsheets...</Text>
@@ -365,14 +365,15 @@ const GoogleSheets = () => {
                                         ))}
                                     </StackLayout>
                                 )}
-                                
                                 {spreadsheets.length > 0 && (
-                                    <IconButton
-                                        label="Refresh List"
-                                        onPress={fetchSpreadsheets}
-                                        disabled={spreadsheetsLoading}
-                                        icon={"refresh"}
-                                    />
+                                    <View style={{ alignItems: 'flex-end' }}>
+                                        <IconButton
+                                            label={spreadsheetsLoading ?  "Loading..." : "Refresh List"}
+                                            onPress={fetchSpreadsheets}
+                                            loading={spreadsheetsLoading}
+                                            icon={"refresh"}
+                                        />
+                                    </View>
                                 )}
                             </StackLayout>
                         </StackLayout>

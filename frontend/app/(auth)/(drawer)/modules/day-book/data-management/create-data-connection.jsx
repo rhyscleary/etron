@@ -33,7 +33,7 @@ const CreateDataConnection = () => {
                 <StackLayout spacing={12}>
                     {sourceTypes.map((category, index) => (
                         <StackLayout spacing={20} key={category.heading}>
-                            <StackLayout spacing={5}>
+                            <StackLayout spacing={8}>
                                 <Text style={commonStyles.titleText}>{category.heading}</Text>
                                 {category.type.map((source) => (
                                     <StackLayout spacing={5} key={source.label}>
@@ -42,6 +42,7 @@ const CreateDataConnection = () => {
                                             icon={source.icon}
                                             onPress={source.onPress}
                                             boldLabel={false}
+                                            transparentBackground
                                         />
                                     </StackLayout>
                                 ))}

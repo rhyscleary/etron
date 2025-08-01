@@ -29,9 +29,9 @@ const AccountCard = ({
                             justifyContent: 'space-between',
                             alignItems: 'center',
                         }}>
-                            <StackLayout spacing={5}>
-                                <Text style={{ fontWeight: 'bold' }}>{name}</Text>
-                                <Text style={commonStyles.captionText}>
+                            <StackLayout spacing={2}>
+                                <Text style={[commonStyles.listItemText, { fontWeight: 'bold' }]}>{name}</Text>
+                                <Text style={[commonStyles.captionText, { color: theme.colors.themeGrey, fontStyle: 'italic' }]}>
                                     {email}
                                 </Text>
                             </StackLayout>

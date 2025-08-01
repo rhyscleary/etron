@@ -17,6 +17,7 @@ const DarkTheme = {
         //buttonBackground: '#2B2B2B', // background for cards and outlined buttons
         buttonBackgroundAlt: '#2B2B2B',
         buttonBackground: "#2C2C2C",
+        background : "rgb(29, 27, 30)",
 
         error: '#EF476F', // error messages and dangerous actions
         //error: '#EF4747', // red version
@@ -24,8 +25,9 @@ const DarkTheme = {
         divider: '#6C6C6C',
         navigationRailBackground: '#1D4364',
         themeGreen: '#06D6A0',
+        themeGrey: '#ABABAB',
 
-        altGM: '#F7F7F7'
+        altGM: '#F7F7F7',
         //surface: "#1E1E1E"
     },   
 };
