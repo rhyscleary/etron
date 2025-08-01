@@ -21,6 +21,7 @@ const DarkTheme = {
         error: '#EF476F', // error messages and dangerous actions
         //error: '#EF4747', // red version
         icon: '#F7F7F7',
+        divider: '#F7F7F7',
         navigationRailBackground: '#1D4364',
 
         altGM: '#F7F7F7'

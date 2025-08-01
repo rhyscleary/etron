@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Holly Wyatt
 
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Icon, useTheme } from 'react-native-paper';
@@ -7,7 +7,8 @@ const DescriptiveButton = ({
     icon,
     label,
     description,
-    onPress
+    onPress,
+    boldLabel = true,
 
 }) => {
     const theme = useTheme();
@@ -23,7 +24,7 @@ const DescriptiveButton = ({
                 ) : null}
 
                 <View style={styles.textContainer}>
-                    <Text style={[styles.labelText, { color: theme.colors.text }]}>{label}</Text>
+                    <Text style={[styles.labelText, { color: theme.colors.text }, !boldLabel && { fontWeight: 'normal' },]}>{label}</Text>
                     {description ? (
                         <Text style={[styles.descriptionText, { color: theme.colors.text }]}>{description}</Text> 
                     ) : null}
