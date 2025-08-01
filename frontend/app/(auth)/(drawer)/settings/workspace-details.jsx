@@ -60,7 +60,7 @@ const WorkspaceDetails = () => {
             }
 
             const result = await apiPut(
-                `https://t8mhrt9a61.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}`,
+                `https://9vwo52sbo0.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}`,
                 workspaceData
             );
 
