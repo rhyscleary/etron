@@ -1,14 +1,21 @@
-import { View, ScrollView } from 'react-native'
+import { View, ScrollView, ActivityIndicator, StyleSheet } from 'react-native'
 import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
 import Header from '../../../../../components/layout/Header';
 import StackLayout from '../../../../../components/layout/StackLayout';
 import DescriptiveButton from '../../../../../components/common/buttons/DescriptiveButton';
 import { router } from 'expo-router';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiDelete } from '../../../../../utils/api/apiClient';
 import BasicDialog from '../../../../../components/overlays/BasicDialog';
 import { useTheme } from "react-native-paper";
+import { useVerification } from '../../../../../components/layout/VerificationContext';
+import { verifyPassword } from '../../../../../utils/verifyPassword';
 
+import {
+    getCurrentUser,
+    deleteUser,
+    signIn
+} from 'aws-amplify/auth';
 
 const Account = () => {
     const theme = useTheme();
@@ -16,9 +23,25 @@ const Account = () => {
     const [dialogVisible, setDialogVisible] = useState(false);
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState(false);
+    const [email, setEmail] = useState("");
+    const [loading, setLoading] = useState(false);
+    const { verifyingPassword, setVerifyingPassword } = useVerification();
 
-
-
+    useEffect(() => {
+        setLoading(true);
+        async function loadAccountEmail() {
+            try {
+                // load the current users email from Cognito
+                const { username, userId, signInDetails } = await getCurrentUser();
+                setEmail(signInDetails.loginId);
+            } catch (error) {
+                console.log("Error loading email: ", error);
+                setEmail("Error accessing email.");
+            }
+            setLoading(false);
+        }
+        loadAccountEmail();
+    }, []);
 
     const accountSettingsButtons = [
         { label: "Personal Details", description: "Update first and last name, phone number, and avatar", onPress: () => router.push("/settings/account/personal-details")},
@@ -27,17 +50,20 @@ const Account = () => {
     ]
 
     async function handleDelete() {
-        const validPassword = await verifyPassword(password);
+        setVerifyingPassword(true); // pause any redirect behavior
 
-        if(!validPassword) {
+        const validPassword = await verifyPassword(password); // verify the password before deleting
+
+        setVerifyingPassword(false);
+
+        if (!validPassword) {
             setPasswordError(true);
             return;
         }
 
         try {
-            // TODO: replace
-            const response = await apiDelete('');
-            console.log("Account deleted successfully: ", response);
+            // delete the user from Cognito and reset the app state
+            await deleteUser();
             setDialogVisible(false);
             router.replace("/landing");
         } catch (error) {
@@ -47,13 +73,23 @@ const Account = () => {
 
     return(
         <View style={commonStyles.screen}>
-            <Header title="Manage Account" showBack></Header>
+            <Header title="Manage Account" showBack />
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer} >
                 <StackLayout spacing={127}>
-                    <DescriptiveButton
-                        key={"Profiles"}
-                        label={"Profiles"}
-                    />
+                    <View style={styles.contentContainer}>
+                        {loading ? (
+                            <View style={styles.loadingContainer}>
+                                <ActivityIndicator size="large" />
+                            </View>
+                        ) : (
+                            <DescriptiveButton
+                                key={"Accounts"}
+                                label={"Accounts"}
+                                description={email}
+                                onPress={() => router.push("/settings/account/accounts")}
+                            />
+                        )}
+                    </View>
                     <StackLayout spacing={12}>
                         {accountSettingsButtons.map((item) => (
                             <DescriptiveButton
@@ -96,4 +132,16 @@ const Account = () => {
     )
 }
 
+const styles = StyleSheet.create({
+    contentContainer: {
+        flex: 1,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center"
+    }
+})
+
 export default Account;
+

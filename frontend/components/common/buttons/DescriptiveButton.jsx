@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Holly Wyatt
 
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Icon, useTheme } from 'react-native-paper';
@@ -7,33 +7,54 @@ const DescriptiveButton = ({
     icon,
     label,
     description,
-    onPress
+    onPress,
+    focused = false
 
 }) => {
     const theme = useTheme();
 
     return (
-        <Pressable onPress={onPress} style={[styles.descriptiveButton, {borderColor: theme.colors.outline}, {backgroundColor: theme.colors.buttonBackground}]}>
-            <View 
-                mode="outlined" 
-                style={styles.innerContainer}
-            >
+        <Pressable
+            onPress={onPress}
+            style={[
+                styles.descriptiveButton,
+                focused
+                    ? { backgroundColor: theme.colors.primary, borderWidth: 0 }
+                    : {
+                          borderColor: theme.colors.outline,
+                          backgroundColor: theme.colors.buttonBackground,
+                      },
+            ]}
+        >
+            <View style={styles.innerContainer}>
                 {icon ? (
-                    <Icon source={icon} size={28} color={theme.colors.icon} />
+                    <Icon
+                        source={icon}
+                        size={28}
+                        color={theme.colors.icon}
+                    />
                 ) : null}
 
                 <View style={styles.textContainer}>
-                    <Text style={[styles.labelText, { color: theme.colors.text }]}>{label}</Text>
+                    <Text style={[styles.labelText, { color: theme.colors.text }]}>
+                        {label}
+                    </Text>
                     {description ? (
-                        <Text style={[styles.descriptionText, { color: theme.colors.text }]}>{description}</Text> 
+                        <Text style={[styles.descriptionText, { color: theme.colors.text }]}>
+                            {description}
+                        </Text>
                     ) : null}
                 </View>
 
-                <Icon source="chevron-right" size={28} color={theme.colors.icon} />
+                <Icon
+                    source="chevron-right"
+                    size={28}
+                    color={theme.colors.icon}
+                />
             </View>
         </Pressable>
     );
-}
+};
 
 const styles = StyleSheet.create({
     descriptiveButton: {
