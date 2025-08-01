@@ -29,7 +29,8 @@ async function getUserByEmail(email) {
         userId: attributes.sub, 
         email: attributes.email,
         given_name: attributes.given_name,
-        family_name: attributes.family_name
+        family_name: attributes.family_name,
+        picture: attributes.picture
     };
 }
 
@@ -56,7 +57,8 @@ async function getUserById(userId) {
         userId: attributes.sub, 
         email: attributes.email, 
         given_name: attributes.given_name,
-        family_name: attributes.family_name
+        family_name: attributes.family_name,
+        picture: attributes.picture
     };
 }
 

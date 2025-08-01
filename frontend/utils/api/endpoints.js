@@ -31,7 +31,7 @@ const endpoints = {
         },
 
         users: {
-            add: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${inviteId}`,
+            add: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/invites/${inviteId}`,
             update: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             remove: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             getUser: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
