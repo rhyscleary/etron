@@ -25,7 +25,9 @@ const awsmobile = {
     },
     "aws_cognito_verification_mechanisms": [
         "EMAIL"
-    ]
+    ],
+    "aws_user_files_s3_bucket": "etron-profile-photos95aa3-dev",
+    "aws_user_files_s3_bucket_region": "ap-southeast-2"
 };
 
 

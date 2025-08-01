@@ -47,6 +47,11 @@ const endpoints = {
         },
 
         modules: {
+            install: (workspaceId, moduleKey) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}`,
+            uninstall: (workspaceId, moduleKey) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}`,
+            toggle: (workspaceId, moduleKey) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}/toggle`,
+            getInstalledModules: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/installed`,
+            getUninstalledModules: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/uninstalled`,
             
         }
     },
