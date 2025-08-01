@@ -89,9 +89,7 @@ const WorkspaceLog = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => console.log('Tapped log:', item)}
-                        rippleColor="rgba(0, 0, 0, .1)"
-                    >
+                        onPress={() => console.log('Tapped log:', item)}>
                         <View>
                             <Text style={{ fontWeight: 'bold' }}>{item.user}</Text>
                             <Text>{item.action}</Text>

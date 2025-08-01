@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button } from "react-native-paper";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
-import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-import { apiGet, apiPost } from "../../../../utils/api/apiClient";
-import { getWorkspaceId } from "../../../../storage/workspaceStorage";
-import endpoints from "../../../../utils/api/endpoints";
+import Header from "../../../../../components/layout/Header";
+import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
+import { apiGet, apiPost } from "../../../../../utils/api/apiClient";
+import endpoints from "../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 
-const InviteUser = () => {
+const EditUser = () => {
+  const { id: userId } = useLocalSearchParams();
+  const router = useRouter();
+
   const [workspaceId, setWorkspaceId] = useState(null);
   const [userEmail, setUserEmail] = useState("");
   const [userType, setUserType] = useState("employee");
@@ -17,73 +21,61 @@ const InviteUser = () => {
   const [roleDialogVisible, setRoleDialogVisible] = useState(false);
 
   useEffect(() => {
-    const fetchId = async () => {
+    const init = async () => {
       const id = await getWorkspaceId();
       setWorkspaceId(id);
     };
-    fetchId();
+    init();
   }, []);
 
   useEffect(() => {
-    if (!workspaceId) return;
+    if (!workspaceId || !userId) return;
 
-    const fetchRoles = async () => {
+    const fetchData = async () => {
       try {
-        const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
-        console.log("Fetched roles:", result);
+        const user = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
+        setUserEmail(user.email || "");
+        setUserType(user.type || "employee");
+        setSelectedRole(user.role || "");
 
-        setRoles(result || []);
+        const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+        setRoles(fetchedRoles || []);
       } catch (error) {
-        console.error("Error fetching roles:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchRoles();
-  }, [workspaceId]);
+    fetchData();
+  }, [workspaceId, userId]);
 
-const handleCheck = async () => {
-  if (!userEmail || !selectedRole || !workspaceId) {
-    console.warn("Missing data for invite.");
-    return;
-  }
+  const handleUpdate = async () => {
+    try {
+      const data = {
+        type: userType,
+        role: selectedRole
+      };
 
-  try {
-    // Find the role object by name to get the roleId
-    const selectedRoleObj = roles.find(role => role.name === selectedRole);
+      const result = await apiPost(
+        endpoints.workspace.users.update(workspaceId, userId),
+        data
+      );
 
-    if (!selectedRoleObj) {
-      console.warn("Selected role not found in roles list.");
-      return;
+      console.log("User updated:", result);
+      router.back(); // go back after update
+    } catch (error) {
+      console.log("Update error:", error);
     }
-
-    const data = {
-      email: userEmail,
-      type: userType,
-      roleId: selectedRoleObj.roleId,
-    };
-
-    const result = await apiPost(
-      endpoints.workspace.invites.create(workspaceId),
-      data
-    );
-
-    console.log("Invite sent:", result);
-    // Optionally reset form or show feedback
-  } catch (error) {
-    console.error("Error sending invite:", error);
-  }
-};
-
+  };
 
   return (
     <View style={commonStyles.screen}>
-      <Header title="Invite User" showBack showCheck onRightIconPress={handleCheck} />
+      <Header title="Edit User" showBack showCheck onRightIconPress={handleUpdate} />
 
       <TextInput
         label="Email Address"
         value={userEmail}
-        onChangeText={setUserEmail}
         mode="outlined"
+        editable={false} // Not sure if we agreed on email address being changeable; Given that its the unique identifier im not sure
         style={{ marginVertical: 16 }}
       />
 
@@ -136,4 +128,4 @@ const handleCheck = async () => {
   );
 };
 
-export default InviteUser;
+export default EditUser;
