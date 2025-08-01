@@ -25,6 +25,10 @@ async function createWorkspace(authUserId, data) {
         throw new Error("Workspace description must be a 'string'");
     }
 
+    // check if user already owns a workspace, if so stop creation
+    const existingWorkspace = workspaceRepo.getWorkspaceByOwnerId(authUserId);
+    if (existingWorkspace) return;
+
     const workspaceId = uuidv4();
     const date = new Date().toISOString();
     
