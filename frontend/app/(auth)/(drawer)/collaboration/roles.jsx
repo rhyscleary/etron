@@ -3,12 +3,12 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
 
-const AddUser = () => {
+const Roles = () => {
     return (
         <View style={commonStyles.screen}>
-            <Header title="Add User" showBack showCheck />
+            <Header title="Roles" showBack showPlus onRightIconPress={() => router.push("")} />
         </View>
     )
 }
 
-export default AddUser;
+export default Roles;
