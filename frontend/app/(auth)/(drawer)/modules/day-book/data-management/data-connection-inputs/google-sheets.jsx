@@ -110,25 +110,6 @@ const GoogleSheets = () => {
         }
     };
 
-    const handleConnectGoogle = async () => {
-        setLoading(true);
-        try {
-            // use amplify to sign in with Google
-            await signInWithRedirect({ 
-                provider: 'Google',
-                customState: JSON.stringify({ 
-                    action: 'connect_sheets',
-                    returnUrl: '/modules/day-book/data-management/create-data-connection/google-sheets'
-                })
-            });
-            
-        } catch (error) {
-            console.error('Error connecting to Google:', error);
-            Alert.alert("Error", "Failed to connect to Google. Please try again.");
-            setLoading(false);
-        }
-    };
-
     const handleAmplifyGoogleAuth = async () => {
         setLoading(true);
         try {
@@ -279,7 +260,7 @@ const GoogleSheets = () => {
     return (
         <View style={commonStyles.screen}>
             <Header title="Google Sheets" showBack />
-            <ScrollView contentContainerStyle={commonStyles}>
+            <ScrollView contentContainerStyle={commonStyles} style={{marginBottom: 80}}>
                 <StackLayout spacing={20}>
                     
                     {/* user status */}
@@ -321,6 +302,7 @@ const GoogleSheets = () => {
                                 name={connectedAccount?.name}
                                 email={connectedAccount?.email}
                                 loading={loading}
+                                onPress={handleSwitchAccount}
                             />
                     )}
 
