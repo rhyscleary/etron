@@ -3,6 +3,7 @@
 const dataSourceRepo = require("../repositories/dataSourceRepository");
 const dataSourceSecretsRepo = require("../repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
+const { saveSourcedData } = require("@etron/shared/repositories/s3BucketRepository");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("../adapters/adapterFactory");
@@ -163,7 +164,7 @@ async function pollDataSources() {
                 const data = await startPolling(adapter, dataSource.config, secrets);
 
                 // save data to s3 bucket
-                
+                await saveSourcedData(workspace.workspaceId, dataSource.dataSourceId, data);
 
             } catch (error) {
                 // if the data source fails three polls update it's status to error

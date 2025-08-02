@@ -56,6 +56,18 @@ const endpoints = {
         }
     },
 
+    users: {
+
+    },
+
+    modules: {
+        day_book: {
+            data_sources: {
+
+            }
+        }
+    }
+
 }
 
 export default endpoints;
