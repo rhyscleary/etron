@@ -1,3 +1,4 @@
+/*
 import { Pressable, View, Button, ActivityIndicator } from "react-native";
 import { useState, useEffect } from "react";
 import * as ImagePicker from "expo-image-picker";
@@ -140,3 +141,4 @@ const changeProfilePhoto = () => {
 }
 
 export default changeProfilePhoto;
+*/

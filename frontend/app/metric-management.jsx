@@ -1,6 +1,6 @@
 import { Pressable, View } from "react-native";
-import Header from "../../../../../../components/layout/Header";
-import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
+import Header from "../components/layout/Header";
+import { commonStyles } from "../assets/styles/stylesheets/common";
 import { Link } from "expo-router";
 import { Text } from "react-native-paper";
 
