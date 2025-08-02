@@ -9,11 +9,8 @@ import GoogleButton from '../../components/common/buttons/GoogleButton';
 import MicrosoftButton from '../../components/common/buttons/MicrosoftButton';
 import Divider from "../../components/layout/Divider";
 
-import { Amplify } from 'aws-amplify';
+import { Amplify, Storage } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
-
-import awsmobile from '../../src/aws-exports';
-Amplify.configure(awsmobile);
 
 import {
     getCurrentUser,
@@ -33,11 +30,10 @@ function SignOutButton() {
 
 async function getAuthenticatedUserDetails() {
     try {
+        console.log("Log in details")
         const { username, userId, signInDetails } = await getCurrentUser();
-        console.log(`username: ${username}`);
         console.log(`userId: ${userId}`);
         console.log(`email: ${signInDetails.loginId}`);
-        console.log(signInDetails);
 
         /*const authSession = await fetchAuthSession();
         console.log("ID Token:", authSession.tokens.idToken);
@@ -176,6 +172,11 @@ function App() {
             <Link href="/profile" asChild>
                 <Pressable>
                     <Text>Go to Profile</Text>
+                </Pressable>
+            </Link>
+            <Link href="/profile-photo" asChild>
+                <Pressable>
+                    <Text>Go to change profile photo page</Text>
                 </Pressable>
             </Link>
         </>
