@@ -2,8 +2,10 @@
 
 const dataSourceRepo = require("../repositories/dataSourceRepository");
 const dataSourceSecretsRepo = require("../repositories/dataSourceSecretsRepository");
+const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
+const adapterFactory = require("../adapters/adapterFactory");
 
 async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
     const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
@@ -138,37 +140,56 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     return {message: "Data source successfully deleted"};
 }
 
-async function pollDataSource(workspaceId, dataSourceId) {
-    const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
+async function pollDataSources() {
+    const workspaces = await workspaceRepo.getAllWorkspaces();
 
-    if (!dataSource) {
-        throw new Error(`Data source "${dataSourceId}" not found`)
-    }
+    for (const workspace of workspaces) {
+        const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspace.workspaceId);
 
-    if (dataSource.status !== "operational") {
-        return;
-    }
+        for (const dataSource of dataSources) {
 
-    // get sources secrets
-    // create adapter
+            if (dataSource.status !== "operational") {
+                continue;
+            }
 
-    // try polling
-    try {
-        const result = await startPolling(adapter, dataSource.config, secrets);
+            // get sources secrets
+            const secrets = await dataSourceSecretsRepo.getSecrets(workspace.workspaceId, dataSource.dataSourceId);
 
-    } catch (error) {
-        const errorItem = {
-            status: "error",
-            errorMessage: error.message
+            // create adapter
+            const adapter = adapterFactory.getAdapter(dataSource.type);
+
+            // try polling
+            try {
+                const data = await startPolling(adapter, dataSource.config, secrets);
+
+                // save data to s3 bucket
+                
+
+            } catch (error) {
+                // if the data source fails three polls update it's status to error
+                const errorItem = {
+                    status: "error",
+                    errorMessage: error.message
+                }
+
+                await dataSourceRepo.updateDataSourceStatus(workspace.workspaceId, dataSource.dataSourceId, errorItem);
+            }
         }
+    }
+}
 
-        await dataSourceRepo.updateDataSourceStatus(workspaceId, dataSourceId, errorItem);
+async function startPolling(adapter, config, secrets) {
+    let currentError;
+
+    for (let attempt = 0; attempt <= 3; attempt++) {
+        try {
+            return await adapter.poll(config, secrets);
+        } catch (error) {
+           currentError = error;  
+        }
     }
 
-    async function startPolling(adapter, config, secrets) {
-        
-    }
-
+    throw currentError;
 }
 
 module.exports = {
@@ -177,5 +198,5 @@ module.exports = {
     getDataSourceInWorkspace,
     getDataSourcesInWorkspace,
     deleteDataSourceInWorkspace,
-    pollDataSource
+    pollDataSources
 };

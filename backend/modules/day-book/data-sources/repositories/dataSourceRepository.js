@@ -29,13 +29,13 @@ async function updateDataSource(workspaceId, dataSourceId, dataSourceItem) {
     const expressionAttributeValues = {};
     const expressionAttributeNames = {};
 
-    if (payload.name !== undefined) {
+    if (dataSourceItem.name !== undefined) {
         updateFields.push("#name = :name");
         expressionAttributeValues[":name"] = dataSourceItem.name;
         expressionAttributeNames["#name"] = "name";
     }
 
-    if (payload.config !== undefined) {
+    if (dataSourceItem.config !== undefined) {
         updateFields.push("#config = :config");
         expressionAttributeValues[":config"] = dataSourceItem.config;
         expressionAttributeNames["#config"] = "config";
@@ -60,6 +60,39 @@ async function updateDataSource(workspaceId, dataSourceId, dataSourceItem) {
     );
 
     return result;
+}
+
+// update datasource status
+async function updateDataSourceStatus(workspaceId, dataSourceId, statusItem) {
+    const updateFields = [];
+    const expressionAttributeValues = {};
+    const expressionAttributeNames = {};
+
+    updateFields.push("#status = :status");
+    expressionAttributeValues[":status"] = statusItem.status;
+    expressionAttributeNames["#status"] = "status";
+
+    updateFields.push("#error = :error");
+    expressionAttributeValues[":error"] = statusItem.errorMessage;
+    expressionAttributeNames["#error"] = "error";
+    
+
+    updateFields.push("#lastUpdate = :lastUpdate");
+    expressionAttributeValues[":lastUpdate"] = new Date().toISOString();
+    expressionAttributeNames["#lastUpdate"] = "lastUpdate";
+
+    await dynamoDB.send(
+        new UpdateCommand( {
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                dataSourceId: dataSourceId
+            },
+            UpdateExpression: "SET " + updateFields.join(", "),
+            ExpressionAttributeValues: expressionAttributeValues,
+            ExpressionAttributeNames: expressionAttributeNames,
+        })
+    );
 }
 
 // remove datasource
@@ -110,5 +143,6 @@ module.exports = {
     updateDataSource,
     removeDataSource,
     getDataSourceById,
-    getDataSourcesByWorkspaceId
+    getDataSourcesByWorkspaceId,
+    updateDataSourceStatus
 }
