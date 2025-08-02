@@ -19,6 +19,9 @@ const DarkTheme = {
         buttonBackground: "#2C2C2C",
         background : "rgb(29, 27, 30)",
 
+        lowOpacityButton: "rgba(44, 44, 44, 0.3)",
+        lowOpacityText: "rgba(247, 247, 247, 1)",
+
         error: '#EF476F', // error messages and dangerous actions
         //error: '#EF4747', // red version
         icon: '#F7F7F7',

@@ -26,6 +26,9 @@ export const commonStyles = StyleSheet.create({
   titleText: {
     fontSize: 20,
   },
+  bodyText: {
+    fontSize: 14,
+  },
   floatingButtonContainer: {
     position: "absolute",
     right: 10,

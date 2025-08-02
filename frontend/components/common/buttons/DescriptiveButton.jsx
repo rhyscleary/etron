@@ -69,7 +69,7 @@ const DescriptiveButton = ({
 const styles = StyleSheet.create({
     descriptiveButton: {
         borderRadius: 10,
-        width: '100%',
+        width: '100%',    
     },
     innerContainer: {
         flexDirection: 'row',

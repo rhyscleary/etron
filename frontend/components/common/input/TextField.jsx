@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Holly Wyatt
 
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
@@ -10,11 +10,28 @@ const TextField = ({
     placeholder,
     error,
     onChangeText,
-    secureTextEntry = false
+    secureTextEntry = false,
+    tall = false,
+    dense = false,
+    onFocus,
+    onBlur,
+    autoCapitalize = 'none'
 }) => {
     const theme = useTheme();
     const [hidePassword, setHidePassword] = useState(secureTextEntry);
+    const [focused, setFocused] = useState(false);
     const isPassword = secureTextEntry === true;
+
+    const getInputStyle = () => {
+        if (!tall) return undefined;
+
+        const baseStyle = focused ? styles.tallInputFocused : styles.tallInputClipped;
+
+        return [
+            baseStyle,
+            dense && { paddingVertical: 18 }
+        ];
+    };
 
     return (
         <View style={styles.componentContainer}>
@@ -23,13 +40,29 @@ const TextField = ({
             </View>
             <TextInput
                 mode="outlined"
+                dense={dense}
+                autoCapitalize={autoCapitalize}
                 value={value}
                 placeholder={placeholder}
+                placeholderTextColor={theme.colors.themeGrey}
                 {...(error === true ? {error: true} : {})}
                 onChangeText={onChangeText}
                 outlineStyle={{
-                    borderWidth: 2
+                    borderWidth: 1,
+                    borderColor: theme.colors.secondary,
                 }}
+                onFocus={(e) => {
+                    setFocused(true)
+                    if (onFocus) onFocus(e);
+                }}
+                onBlur={(e) => {
+                    setFocused(false)
+                    if (onBlur) onBlur(e)
+                }}
+                multiline={tall}
+                numberOfLines={tall ? 8 : 1}
+                scrollEnabled={focused}
+                style={getInputStyle()}
                 secureTextEntry={isPassword ? hidePassword : false}
                 right={
                     isPassword ? (
@@ -40,6 +73,11 @@ const TextField = ({
                     ) : null
                 }
             />
+            {typeof error === "string" && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                    {error}
+                </Text>
+            )}
         </View>
     );
 };
@@ -56,6 +94,21 @@ const styles = StyleSheet.create({
     },
     label: {
         fontSize: 14
+    },
+    tallInputFocused: {
+        minHeight: 64,
+        textAlignVertical: 'top',
+        paddingVertical: 24,
+    },
+    tallInputClipped: {
+        minHeight: 64,
+        maxHeight: 150,
+        textAlignVertical: 'top',
+        paddingVertical: 24,
+    },
+    errorText: {
+        marginTop: 4,
+        fontSize: 12,
     }
 });
 
