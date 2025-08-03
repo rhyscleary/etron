@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  eTRON data source function template
+  eTRON day book function template
 
 Globals:
   Function:
@@ -14,7 +14,7 @@ Resources:
   DataSourceFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./functions/
+      CodeUri: ./data-sources/handlers
       Handler: dataSourceHandler.handler
       Policies:
         - DynamoDBCrudPolicy:

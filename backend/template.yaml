@@ -20,6 +20,10 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./user/template.yaml
+  DayBookFunctions:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./modules/day-book/template.yaml
 
 #Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
