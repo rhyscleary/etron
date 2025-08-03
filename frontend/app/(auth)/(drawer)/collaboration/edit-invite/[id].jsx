@@ -94,6 +94,7 @@ const EditUser = () => {
           <Button
             mode="contained"
             buttonColor="#960019"
+            textColor="#fff"
             style={{ marginTop: 32 }}
             onPress={() => setDeleteDialogVisible(true)}
           >
