@@ -12,6 +12,8 @@ import { Image } from 'expo-image';
 import { uploadData, getUrl } from 'aws-amplify/storage';
 import { Buffer } from 'buffer';
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { apiPost, apiPut} from "../../../../../utils/api/apiClient";
+import endpoints from "../../../../../utils/api/endpoints";
 
 import {
     fetchUserAttributes,
@@ -106,7 +108,7 @@ const PersonalDetails = () => {
         
         // Get the destination S3 path
         const { userId } = await getCurrentUser();
-        const fileName = `${userId}/${Date.now()}.jpg`;
+        const fileName = `${userId}.jpg`;
         const S3FilePath = `public/${fileName}`;
         console.log("S3 file path created.")
 
@@ -241,20 +243,26 @@ const PersonalDetails = () => {
             const currentAttributes = await fetchUserAttributes();
             let allUpdatesSuccessful = true;
             let hasUpdates = false;
+            const data = {};
             
             // update first name if changed
             if (first.trim() !== (currentAttributes.given_name || "")) {
                 hasUpdates = true;
-                const result = await handleUpdateUserAttribute('given_name', first.trim());
-                if (result.error) allUpdatesSuccessful = false;
+                data.given_name = first.trim();
             }
 
             // update last name if changed
             if (last.trim() !== (currentAttributes.family_name || "")) {
                 hasUpdates = true;
-                const result = await handleUpdateUserAttribute('family_name', last.trim());
-                if (result.error) allUpdatesSuccessful = false;
+                data.family_name = last.trim();
             }
+
+            const { userId } = getCurrentUser();
+            result = await apiPut(
+                endpoints.user.core.updateUser(userId, AsyncStorage.getItem('workspaceId')),
+                data
+            );
+            if (result.error) allUpdatesSuccessful = false;
 
             // update phone number if changed
             if (phone.trim()) {
