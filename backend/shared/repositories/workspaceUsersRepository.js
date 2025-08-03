@@ -57,6 +57,24 @@ async function updateUser(workspaceId, userId, data) {
     const expressionAttributeValues = {};
     const expressionAttributeNames = {};
 
+    if (data.given_name !== undefined) {
+        updateFields.push("#given_name = :given_name");
+        expressionAttributeValues[":given_name"] = data.given_name;
+        expressionAttributeNames["#given_name"] = "given_name";
+    }
+
+    if (data.family_name !== undefined) {
+        updateFields.push("#family_name = :family_name");
+        expressionAttributeValues[":family_name"] = data.family_name;
+        expressionAttributeNames["#family_name"] = "family_name";
+    }
+
+    if (data.picture !== undefined) {
+        updateFields.push("#picture = :picture");
+        expressionAttributeValues[":picture"] = data.picture;
+        expressionAttributeNames["#picture"] = "picture";
+    }
+
     if (data.type !== undefined) {
         updateFields.push("#type = :type");
         expressionAttributeValues[":type"] = data.type;
