@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
+import { View, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
-import { apiGet, apiPost } from "../../../../../utils/api/apiClient";
+import { apiGet, apiPost, apiDelete } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 
@@ -19,6 +19,7 @@ const EditUser = () => {
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [roleDialogVisible, setRoleDialogVisible] = useState(false);
+  const [removeDialogVisible, setRemoveDialogVisible] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -61,9 +62,19 @@ const EditUser = () => {
       );
 
       console.log("User updated:", result);
-      router.back(); // go back after update
+      router.back();
     } catch (error) {
       console.log("Update error:", error);
+    }
+  };
+
+  const handleRemove = async () => {
+    try {
+      await apiDelete(endpoints.workspace.users.remove(workspaceId, userId));
+      // havent tested yet; add user endpoint not working atm so im just trusting it works based off collab-endpoints.jsx
+      router.back();
+    } catch (error) {
+      console.error("Remove user failed:", error);
     }
   };
 
@@ -75,7 +86,7 @@ const EditUser = () => {
         label="Email Address"
         value={userEmail}
         mode="outlined"
-        editable={false} // Not sure if we agreed on email address being changeable; Given that its the unique identifier im not sure
+        editable={false}
         style={{ marginVertical: 16 }}
       />
 
@@ -96,6 +107,17 @@ const EditUser = () => {
         />
       </TouchableOpacity>
 
+      {/* Remove User Button */}
+      <Button
+        mode="contained-tonal"
+        onPress={() => setRemoveDialogVisible(true)}
+        style={{ marginTop: 32, backgroundColor: "#960019" }}
+        textColor="#fff"
+      >
+        Remove User
+      </Button>
+
+      {/* Role Selection Dialog */}
       <Portal>
         <Dialog visible={roleDialogVisible} onDismiss={() => setRoleDialogVisible(false)}>
           <Dialog.Title>Select a Role</Dialog.Title>
@@ -121,6 +143,20 @@ const EditUser = () => {
           </Dialog.ScrollArea>
           <Dialog.Actions>
             <Button onPress={() => setRoleDialogVisible(false)}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Remove Confirmation Dialog */}
+      <Portal>
+        <Dialog visible={removeDialogVisible} onDismiss={() => setRemoveDialogVisible(false)}>
+          <Dialog.Title>Confirm Removal</Dialog.Title>
+          <Dialog.Content>
+            <Text>Are you sure you want to remove this user?</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setRemoveDialogVisible(false)}>Cancel</Button>
+            <Button onPress={handleRemove} textColor="#b00020">Remove</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
