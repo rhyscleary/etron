@@ -38,7 +38,7 @@ const Invites = () => {
 
   const renderInviteItem = ({ item }) => (
     <Pressable
-      onPress={() => router.push(`/collaboration/invite-user/${item.inviteId}`)}
+      onPress={() => router.push(`/collaboration/edit-invite/${item.inviteId}`)} // ✅ Fixed route
       style={styles.inviteBox}
     >
       <Text>Email: {item.email}</Text>
@@ -57,7 +57,9 @@ const Invites = () => {
       />
 
       {loading ? (
-          <Text style={{ textAlign: "center", marginTop: 20 }}>Loading invites...</Text>
+        <Text style={{ textAlign: "center", marginTop: 20 }}>
+          Loading invites...
+        </Text>
       ) : (
         <FlatList
           data={invites}

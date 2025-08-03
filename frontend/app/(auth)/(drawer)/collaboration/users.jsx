@@ -112,7 +112,7 @@ const Users = () => {
                 )}
                 ListEmptyComponent={
                     loading ? (
-                        <RNText style={{ textAlign: 'center', marginTop: 16 }}>
+                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
                             Loading...
                         </RNText>
                     ) : (

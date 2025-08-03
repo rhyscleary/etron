@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button } from "react-native-paper";
+import { router } from "expo-router"; // ✅ import router
 
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
@@ -41,39 +42,40 @@ const InviteUser = () => {
     fetchRoles();
   }, [workspaceId]);
 
-const handleCheck = async () => {
-  if (!userEmail || !selectedRole || !workspaceId) {
-    console.warn("Missing data for invite.");
-    return;
-  }
-
-  try {
-    // Find the role object by name to get the roleId
-    const selectedRoleObj = roles.find(role => role.name === selectedRole);
-
-    if (!selectedRoleObj) {
-      console.warn("Selected role not found in roles list.");
+  const handleCheck = async () => {
+    if (!userEmail || !selectedRole || !workspaceId) {
+      console.warn("Missing data for invite.");
       return;
     }
 
-    const data = {
-      email: userEmail,
-      type: userType,
-      roleId: selectedRoleObj.roleId,
-    };
+    try {
+      const selectedRoleObj = roles.find(role => role.name === selectedRole);
 
-    const result = await apiPost(
-      endpoints.workspace.invites.create(workspaceId),
-      data
-    );
+      if (!selectedRoleObj) {
+        console.warn("Selected role not found in roles list.");
+        return;
+      }
 
-    console.log("Invite sent:", result);
-    // Optionally reset form or show feedback
-  } catch (error) {
-    console.error("Error sending invite:", error);
-  }
-};
+      const data = {
+        email: userEmail,
+        type: userType,
+        roleId: selectedRoleObj.roleId,
+      };
 
+      const result = await apiPost(
+        endpoints.workspace.invites.create(workspaceId),
+        data
+      );
+
+      console.log("Invite sent:", result);
+
+      // ✅ Redirect to invites list after sending invite
+      router.replace("/collaboration/invites");
+
+    } catch (error) {
+      console.error("Error sending invite:", error);
+    }
+  };
 
   return (
     <View style={commonStyles.screen}>
