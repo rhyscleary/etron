@@ -1,6 +1,8 @@
 // eTRONs API endpoints
 
 const WORKSPACE_BASE_URL = "https://9vwo52sbo0.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace";
+const USER_BASE_URL = "https://19eulpomf3.execute-api.ap-southeast-2.amazonaws.com/Prod/user";
+const DATASOURCES_BASE_URL = "https://curkjf7oi6.execute-api.ap-southeast-2.amazonaws.com/Prod/day-book/data-sources";
 
 const endpoints = {
     workspace: {
@@ -31,7 +33,7 @@ const endpoints = {
         },
 
         users: {
-            add: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${inviteId}`,
+            add: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/invites/${inviteId}`,
             update: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             remove: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             getUser: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
@@ -55,6 +57,28 @@ const endpoints = {
             
         }
     },
+
+    user: {
+        core: {
+            updateUser: (userId, workspaceId) => `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
+        },
+
+        invites: {
+            getUserInvites: (userId, workspaceId) => `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
+        }
+    },
+
+    modules: {
+        day_book: {
+            data_sources: {
+                add: `${DATASOURCES_BASE_URL}`,
+                update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+                getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+                getDataSources: `${DATASOURCES_BASE_URL}`,
+                removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+            }
+        }
+    }
 
 }
 
