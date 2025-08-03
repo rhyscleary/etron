@@ -1,26 +1,25 @@
-import { View } from "react-native";
-import Header from "../../../../../../../components/layout/Header";
-import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
-import { ScrollView } from "react-native";
-import StackLayout from "../../../../../../../components/layout/StackLayout";
-import { useTheme, Text } from "react-native-paper";
-import { router, Stack } from "expo-router";
+  import React from "react";
+  import ConnectionPage from "../../../../../../../components/layout/ConnectionPage";
+  import { FtpFormSection } from "../../../../../../../components/layout/FormSelection";
 
 
-const CustomFTP = () => {
-    const theme = useTheme();
+  import { 
+    validateFtpForm, 
+    generateFtpNameFromHostname, 
+    buildFtpConnectionData 
+  } from "../../../../../../../utils/connectionValidators";
 
+  const CustomFTP = () => {
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Custom FTP" showBack />
-            <ScrollView contentContainerStyle={commonStyles}>
-                <StackLayout spacing={12}>
-                    
-                </StackLayout>
-             </ScrollView>
+      <ConnectionPage
+        connectionType="custom-ftp"
+        title="Custom FTP"
+        FormComponent={FtpFormSection}
+        formValidator={validateFtpForm}
+        connectionDataBuilder={buildFtpConnectionData}
+        nameGenerator={generateFtpNameFromHostname}
+      />
+    );
+  };
 
-        </View>
-    )
-}
-
-export default CustomFTP;
+  export default CustomFTP;

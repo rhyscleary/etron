@@ -5,26 +5,20 @@ import { ScrollView } from "react-native";
 import StackLayout from "../../../../../../components/layout/StackLayout";
 import Divider from "../../../../../../components/layout/Divider"
 import { useTheme, Text } from "react-native-paper";
-import { router, Stack } from "expo-router";
+import { router } from "expo-router";
 import DescriptiveButton from "../../../../../../components/common/buttons/DescriptiveButton";
-
+import { getAdaptersForUI } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 
 const CreateDataConnection = () => {
     const theme = useTheme();
 
-    const sourceTypes = [
-        { heading: "Spreadsheets", type: [
-            { label: "Google Sheets", icon: "google-spreadsheet", onPress: () => router.push("/modules/day-book/data-management/data-connection-inputs/google-sheets") },
-            { label: "Excel", icon: "microsoft-excel", onPress: () => router.push("/modules/day-book/data-management/data-connection-inputs/excel") },
-        ]},
-        { heading: "Custom APIs", type: [
-            { label: "Custom API", icon: "web", onPress: () => router.push("/modules/day-book/data-management/data-connection-inputs/custom-API") },
-            { label: "Custom FTP", icon: "file-upload", onPress: () => router.push("/modules/day-book/data-management/data-connection-inputs/custom-FTP") },
-        ]},
-        { heading: "Databases", type: [
-            { label: "SQL", icon: "database", onPress: () => router.push("/modules/day-book/data-management/data-connection-inputs/SQL") },
-        ]},
-    ]
+    const sourceTypes = getAdaptersForUI().map(category => ({
+        ...category,
+        type: category.adapters.map(adapter => ({
+            ...adapter,
+            onPress: () => router.push(adapter.route)
+        }))
+    }));
 
     return (
         <View style={commonStyles.screen}>
@@ -53,8 +47,7 @@ const CreateDataConnection = () => {
                         </StackLayout>
                     ))}
                 </StackLayout>
-             </ScrollView>
-
+            </ScrollView>
         </View>
     )
 }

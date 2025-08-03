@@ -10,8 +10,6 @@ const CollapsibleList = ({ items = [], canCloseFormAccordion = true }) => {
   const [expandedKey, setExpandedKey] = useState(firstExpandedKey);
 
   const handleAccordionToggle = (key) => {
-    console.log("Toggling accordion:", key);
-
     if (expandedKey === key) {
       if (key === 'form' && !canCloseFormAccordion) return;
       const otherItem = items.find(item => item.key !== key && !item.disabled);
@@ -31,9 +29,6 @@ const CollapsibleList = ({ items = [], canCloseFormAccordion = true }) => {
       {items.map(({ key, title, description, icon, disabled, content }) => {
         const isDisabled = key !== 'form' && !canCloseFormAccordion;
         const lowOpacityColor = theme.colors.lowOpacityButton || theme.colors.backdrop;
-        const defaultTitleColor = theme.colors.onSurface;
-        const defaultDescriptionColor = theme.colors.onSurfaceVariant;
-
 
         return (
           <View key={key} pointerEvents={isDisabled ? 'none' : 'auto'}>
