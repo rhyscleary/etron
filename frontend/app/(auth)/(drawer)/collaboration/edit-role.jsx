@@ -5,7 +5,7 @@ import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 const EditUser = () => {
     return (
         <View style={commonStyles.screen}>
-            <Header title="Edit User" showBack showCheck />
+            <Header title="Edit Role" showBack showCheck />
         </View>
     )
 }

@@ -1,0 +1,14 @@
+{
+  "httpMethod": "GET",
+  "resource": "/workspace/users/{userId}",
+  "requestContext": {
+    "authorizer": {
+      "claims": {
+        "sub": "696ef4d8-70d1-7086-5f9d-5f1015145edf"
+      }
+    }
+  },
+  "pathParameters": {
+    "userId": "696ef4d8-70d1-7086-5f9d-5f1015145edf"
+  }
+}
