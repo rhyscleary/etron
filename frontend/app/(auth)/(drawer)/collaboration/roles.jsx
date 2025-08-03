@@ -69,7 +69,7 @@ const Roles = () => {
                 ListEmptyComponent={
                     loading ? (
                         <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                            Loading...
+                            Loading Roles...
                         </RNText>
                     ) : (
                         <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>

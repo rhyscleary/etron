@@ -73,7 +73,7 @@ const Users = () => {
             />
 
             {/* Placeholder filters for search */}
-            <Text>Placeholder</Text>
+            <Text>Filters: Placeholder</Text>
 
             {/* Workspace Log */}
             <Pressable
@@ -113,7 +113,7 @@ const Users = () => {
                 ListEmptyComponent={
                     loading ? (
                         <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                            Loading...
+                            Loading Users...
                         </RNText>
                     ) : (
                         <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
