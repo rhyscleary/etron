@@ -47,6 +47,12 @@ const Profile = () => {
                     <Text>Go to temporary account settings UI</Text>
                 </Pressable>
             </Link>
+
+            <Link href="/graphs" asChild>
+                <Pressable>
+                    <Text>Go to Graphs</Text>
+                </Pressable>
+            </Link>
         </View>
     )
 }
