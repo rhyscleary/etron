@@ -197,7 +197,7 @@ async function getWorkspaceByWorkspaceId(workspaceId) {
 
 async function getWorkspaceByUserId(authUserId) {
     // get user data
-    const user = workspaceUsersRepo.getUserByUserId(authUserId);
+    const user = await workspaceUsersRepo.getUserByUserId(authUserId);
 
     if (!user?.[0]) {
         throw new Error("No user found");
