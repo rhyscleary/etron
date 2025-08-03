@@ -1,6 +1,7 @@
 // eTRONs API endpoints
 
 const WORKSPACE_BASE_URL = "https://9vwo52sbo0.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace";
+const USER_BASE_URL = "";
 
 const endpoints = {
     workspace: {
@@ -55,6 +56,16 @@ const endpoints = {
             
         }
     },
+
+    user: {
+        core: {
+            updateUser: (userId, workspaceId) => `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
+        },
+
+        invites: {
+            getUserInvites: (userId, workspaceId) => `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
+        }
+    }
 
 }
 

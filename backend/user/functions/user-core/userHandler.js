@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { getUserInvites } = require("./inviteService");
+const { updateUserInUserPool } = require("./userService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -9,7 +9,7 @@ exports.handler = async (event) => {
     try {
         const requestJSON = event.body ? JSON.parse(event.body) : {};
         const pathParams = event.pathParameters || {};
-        const userId = event.requestContext.authorizer.claims.sub;
+        const authUserId = event.requestContext.authorizer.claims.sub;
 
         if (!userId) {
             throw new Error("User not authenticated");
@@ -18,17 +18,21 @@ exports.handler = async (event) => {
         const routeKey = `${event.httpMethod} ${event.resource}`;
 
         switch (routeKey) {
-            // VIEW INVITES FOR USER EMAIL
-            case "GET /user/{email}/invites": {
-                if (!pathParams.email) {
+            // UPDATE USER IN THE USER POOL
+            case "PUT /user/{userId}/workspace/{workspaceId}": {
+                if (!pathParams.userId || !pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
 
-                if (typeof pathParams.email !== "string") {
-                    throw new Error("email must be a string");
+                if (typeof pathParams.userId !== "string") {
+                    throw new Error("userId must be a UUID, 'string'");
                 }
 
-                body = await getUserInvites(pathParams.email);
+                if (typeof pathParams.workspaceId !== "string") {
+                    throw new Error("workspaceId must be a UUID, 'string'");
+                }
+
+                body = await updateUserInUserPool(pathParams.userId, pathParams.workspaceId, requestJSON);
                 break;
             }
             
