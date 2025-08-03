@@ -8,10 +8,24 @@ const DescriptiveButton = ({
     label,
     description,
     onPress,
-    focused = false
-
+    focused = false,
+    boldLabel = true,
+    transparentBackground = false,
+    noBorder = false,
 }) => {
     const theme = useTheme();
+
+    const buttonStyles = {
+        backgroundColor: transparentBackground
+            ? 'transparent'
+            : theme.colors.buttonBackground,
+        borderColor: noBorder
+            ? 'transparent'
+            : transparentBackground
+            ? theme.colors.secondary
+            : theme.colors.outline,
+        borderWidth: noBorder ? 0 : 1,
+    };
 
     return (
         <Pressable
@@ -36,11 +50,22 @@ const DescriptiveButton = ({
                 ) : null}
 
                 <View style={styles.textContainer}>
-                    <Text style={[styles.labelText, { color: theme.colors.text }]}>
+                    <Text
+                        style={[
+                            styles.labelText,
+                            { color: theme.colors.text },
+                            !boldLabel && { fontWeight: 'normal' },
+                        ]}
+                    >
                         {label}
                     </Text>
                     {description ? (
-                        <Text style={[styles.descriptionText, { color: theme.colors.text }]}>
+                        <Text
+                            style={[
+                                styles.descriptionText,
+                                { color: theme.colors.text },
+                            ]}
+                        >
                             {description}
                         </Text>
                     ) : null}
@@ -49,7 +74,7 @@ const DescriptiveButton = ({
                 <Icon
                     source="chevron-right"
                     size={28}
-                    color={theme.colors.icon}
+                    color={theme.colors.themeGrey}
                 />
             </View>
         </Pressable>
@@ -59,8 +84,7 @@ const DescriptiveButton = ({
 const styles = StyleSheet.create({
     descriptiveButton: {
         borderRadius: 10,
-        width: '100%',
-        borderWidth: 2
+        width: '100%',    
     },
     innerContainer: {
         flexDirection: 'row',
@@ -72,14 +96,15 @@ const styles = StyleSheet.create({
         flex: 1,
         flexShrink: 1,
         marginLeft: 14,
-        marginRight: 14
+        marginRight: 14,
     },
     labelText: {
         fontWeight: 'bold',
         fontSize: 16,
     },
     descriptionText: {
-        fontSize: 14
+        fontSize: 14,
+        fontStyle: 'italic',
     },
 });
 

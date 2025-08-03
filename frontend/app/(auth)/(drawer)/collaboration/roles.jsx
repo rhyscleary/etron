@@ -1,4 +1,4 @@
-import { View, FlatList, Pressable } from "react-native";
+import { View, FlatList, Pressable, Text as RNText  } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { Text } from "react-native-paper";
@@ -8,9 +8,12 @@ import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 
+
 const Roles = () => {
     const [roles, setRoles] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
+    const [loading, setLoading] = useState(true);
+
 
     useEffect(() => {
         const loadWorkspaceAndRoles = async () => {
@@ -25,6 +28,7 @@ const Roles = () => {
 
                     // Ensure this matches your actual API shape
                     setRoles(Array.isArray(result) ? result : []);
+                    setLoading(false);
                 }
             } catch (error) {
                 console.log("Error fetching roles:", error);
@@ -63,9 +67,15 @@ const Roles = () => {
                     </Pressable>
                 )}
                 ListEmptyComponent={
-                    <Text style={{ textAlign: "center", marginTop: 20 }}>
-                        No roles found.
-                    </Text>
+                    loading ? (
+                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
+                            Loading Roles...
+                        </RNText>
+                    ) : (
+                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
+                            No roles found
+                        </RNText>
+                    )
                 }
             />
         </View>
