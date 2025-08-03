@@ -65,6 +65,14 @@ const endpoints = {
         invites: {
             getUserInvites: (userId, workspaceId) => `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
         }
+    },
+
+    modules: {
+        day_book: {
+            data_sources: {
+
+            }
+        }
     }
 
 }

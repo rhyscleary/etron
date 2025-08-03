@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  eTRON day book function template
+
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+Resources:
+  DataSourceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources/handlers
+      Handler: dataSourceHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+
+      Events:
+        AddDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources
+            Method: post
+
+        UpdateDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: put
+
+        GetDataSourceById:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: get
+            
+        GetDataSources:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources
+            Method: get
+
+        RemoveDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: delete
