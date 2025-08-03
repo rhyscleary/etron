@@ -1,5 +1,5 @@
 // Author(s): Rhys Cleary
-const cancelInvite = require("./services/invites/cancelInvite");
+
 const getSentInvites = require("./services/invites/getSentInvites");
 const inviteUser = require("./services/invites/inviteUser");
 const createRole = require("./services/roles/createRole");
@@ -55,8 +55,6 @@ exports.handler = async (event) => {
                 break;
             }
 
-            // TODO:
-
             // INVITE USER
             case "POST /workspace/{workspaceId}/invites/create": {
                 body = await inviteUser(userId, pathParams.workspaceId, requestJSON);
@@ -64,10 +62,10 @@ exports.handler = async (event) => {
             }
 
             // CANCEL INVITE
-            case "DELETE /workspace/{workspaceId}/invites/cancel/{email}": {
+            /*case "DELETE /workspace/{workspaceId}/invites/cancel/{email}": {
                 body = await cancelInvite(userId, pathParams.workspaceId, pathParams.email);
                 break;
-            }
+            }*/
 
             // VIEW SENT INVITES FOR WORKSPACE
             case "GET /workspace/{workspaceId}/invites": {

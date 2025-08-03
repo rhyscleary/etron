@@ -40,14 +40,14 @@ const CreateWorkspace = () => {
             }
 
             const result = await apiPost(
-                endpoints.workspace.create,
+                endpoints.workspace.core.create,
                 workspaceData
             );
 
             // save workspace info to local storage
             saveWorkspaceInfo(result);
 
-            console.log('Workspace created:', result);
+            console.log('Workspace creation response:', result);
 
 
             // navigate to the profile

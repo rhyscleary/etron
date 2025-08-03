@@ -37,6 +37,8 @@ async function createWorkspace(userId, data) {
     );
 
     // search modules and add defaults to workspace
+
+    // add owner and manager roles with permissions to workspace
     
 
     // add user as an owner of the workspace
