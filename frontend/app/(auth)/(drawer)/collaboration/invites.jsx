@@ -57,9 +57,7 @@ const Invites = () => {
       />
 
       {loading ? (
-        <View style={styles.centered}>
-          <Text>Loading invites...</Text>
-        </View>
+          <Text style={{ textAlign: "center", marginTop: 20 }}>Loading invites...</Text>
       ) : (
         <FlatList
           data={invites}
