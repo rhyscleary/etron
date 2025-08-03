@@ -46,7 +46,7 @@ const CollabEndpoints = () => {
     async function inviteUser() {
         try {
             const data = {
-                email: "bob@gmail.com",
+                email: "haw402@uowmail.edu.au",
                 type: "manager",
                 roleId: "tv"
             }
@@ -243,10 +243,10 @@ const CollabEndpoints = () => {
         try {
             const data = {
                 type: "employee",
-                role: "Cleaner"
+                roleId: "Cleaner"
             }
 
-            const result = await apiPost(
+            const result = await apiPut(
                 endpoints.workspace.users.update(workspaceId, userId),
                 data
             );

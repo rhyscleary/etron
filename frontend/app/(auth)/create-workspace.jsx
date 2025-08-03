@@ -47,7 +47,7 @@ const CreateWorkspace = () => {
             // save workspace info to local storage
             saveWorkspaceInfo(result);
 
-            console.log('Workspace created:', result);
+            console.log('Workspace creation response:', result);
 
 
             // navigate to the profile

@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  eTRON user-domain functions template
+
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+Resources:
+  
+  # User Lambda 
+  UserCoreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/user-core
+      Handler: userHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        UpdateUser:
+          Type: Api 
+          Properties:
+            Path: /user/{userId}/workspace/{workspaceId}
+            Method: put
+
+
+  # Invite Lambda 
+  UserInvitesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/user-invites
+      Handler: inviteHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+
+      Events:
+        GetInvites:
+          Type: Api 
+          Properties:
+            Path: /user/invites
+            Method: get

@@ -1,6 +1,11 @@
 // Author(s): Rhys Cleary
 
-const { CognitoIdentityProviderClient, ListUsersCommand } = require("@aws-sdk/client-cognito-identity-provider");
+const { 
+    CognitoIdentityProviderClient, 
+    ListUsersCommand, 
+    AdminUpdateUserAttributesCommand 
+} = require("@aws-sdk/client-cognito-identity-provider");
+
 const cognito = new CognitoIdentityProviderClient({region: "ap-southeast-2"});
 
 const userPoolId = "ap-southeast-2_RRTDNv40t";
@@ -29,7 +34,8 @@ async function getUserByEmail(email) {
         userId: attributes.sub, 
         email: attributes.email,
         given_name: attributes.given_name,
-        family_name: attributes.family_name
+        family_name: attributes.family_name,
+        picture: attributes.picture
     };
 }
 
@@ -56,12 +62,29 @@ async function getUserById(userId) {
         userId: attributes.sub, 
         email: attributes.email, 
         given_name: attributes.given_name,
-        family_name: attributes.family_name
+        family_name: attributes.family_name,
+        picture: attributes.picture
     };
+}
+
+async function updateUser(userId, data) {
+    const attributes = Object.entries(data).map(([key, value]) => ({
+        Name: key,
+        Value: value
+    }));
+
+    const result = await cognito.send(new AdminUpdateUserAttributesCommand({
+        UserPoolId: userPoolId,
+        Username: userId,
+        UserAttributes: attributes
+    }));
+
+    return result;
 }
 
 
 module.exports = {
     getUserByEmail,
-    getUserById
+    getUserById,
+    updateUser
 };
