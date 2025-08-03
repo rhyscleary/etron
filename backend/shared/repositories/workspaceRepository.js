@@ -324,7 +324,7 @@ async function getWorkspaceByOwnerId(ownerId) {
             IndexName: "ownerId-index",
             KeyConditionExpression: "ownerId = :ownerId",
             ExpressionAttributeValues: {
-                "ownerId": ownerId
+                ":ownerId": ownerId
             }
         })
     );
