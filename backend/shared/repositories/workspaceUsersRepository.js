@@ -131,7 +131,7 @@ async function getUser(workspaceId, userId) {
 async function getUserByUserId(userId) {
     const result = await dynamoDB.send(
         new QueryCommand({
-            TableName: workspaceUsersTable,
+            TableName: tableName,
             IndexName: "userId-index",
             KeyConditionExpression: "userId = :userId",
             ExpressionAttributeValues: {
