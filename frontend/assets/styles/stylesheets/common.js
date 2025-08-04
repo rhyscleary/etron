@@ -35,4 +35,22 @@ export const commonStyles = StyleSheet.create({
     bottom: 20,
     zIndex: 10,
   },
+  screen: {
+    flex: 1,
+  },
+  scrollableContentContainer: {
+    paddingBottom: 100,
+  },
+  inlineButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginVertical: 30,
+    gap: 32,
+  },
+  listItemText: {
+    fontSize: 16,
+  },
+  captionText: {
+    fontSize: 12,
+  },
 });

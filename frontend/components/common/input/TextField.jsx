@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary, Holly Wyatt
+// Author(s): Rhys Cleary, Holly Wyatt, Holly Wyatt
 
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
@@ -35,9 +35,19 @@ const TextField = ({
 
     return (
         <View style={styles.componentContainer}>
-            <View style={[styles.labelContainer, { backgroundColor: theme.colors.background }]}>
-                <Text style={[styles.label, {color: theme.colors.text}]}> {label} </Text>
-            </View>
+            {label ? (
+                <View
+                    style={[
+                        styles.labelContainer,
+                        { backgroundColor: theme.colors.background },
+                    ]}
+                >
+                    <Text style={[styles.label, { color: theme.colors.text }]}>
+                        {label}
+                    </Text>
+                </View>
+            ) : null}
+
             <TextInput
                 mode="outlined"
                 dense={dense}
@@ -45,7 +55,7 @@ const TextField = ({
                 value={value}
                 placeholder={placeholder}
                 placeholderTextColor={theme.colors.themeGrey}
-                {...(error === true ? {error: true} : {})}
+                {...(error === true ? { error: true } : {})}
                 onChangeText={onChangeText}
                 outlineStyle={{
                     borderWidth: 1,
@@ -69,7 +79,7 @@ const TextField = ({
                         <TextInput.Icon
                             icon={hidePassword ? "eye-off" : "eye"}
                             onPress={() => setHidePassword(!hidePassword)}
-                        />    
+                        />
                     ) : null
                 }
             />

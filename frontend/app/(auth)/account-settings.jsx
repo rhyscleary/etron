@@ -174,11 +174,6 @@ function App() {
                     <Text>Go to Profile</Text>
                 </Pressable>
             </Link>
-            <Link href="/profile-photo" asChild>
-                <Pressable>
-                    <Text>Go to change profile photo page</Text>
-                </Pressable>
-            </Link>
         </>
     );
 }

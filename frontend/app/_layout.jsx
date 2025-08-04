@@ -7,6 +7,7 @@ import { themes } from '../assets/styles/themes/themes';
 import { View, Text } from 'react-native'
 import SafeView from '../components/layout/SafeView';
 import { Authenticator } from '@aws-amplify/ui-react-native';
+import { VerificationProvider } from '../components/layout/VerificationContext'; // temp until backend
 
 import * as Linking from 'expo-linking';
 
@@ -21,11 +22,14 @@ export default function RootLayout() {
         <PaperProvider theme={currentTheme}>
             <Authenticator.Provider>
                 {/*Wrap the drawer layout around the safe area and the slot */}
-                <SafeAreaProvider>
-                    <SafeView>            
-                        <Slot />
-                    </SafeView>
-                </SafeAreaProvider>
+                {/* temp until backend */}
+                <VerificationProvider> 
+                    <SafeAreaProvider>
+                        <SafeView>            
+                            <Slot />
+                        </SafeView>
+                    </SafeAreaProvider>
+                </VerificationProvider> 
             </Authenticator.Provider>
         </PaperProvider>
     );

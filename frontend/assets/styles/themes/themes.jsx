@@ -30,6 +30,8 @@ const DarkTheme = {
         navigationRailBackground: '#1D4364',
         themeGreen: '#06D6A0',
         themeGrey: '#ABABAB',
+        textGreen: '#008663', // green text
+        focusedBackground: '#263e46', // #118AB2 at 20% opacity
 
         altGM: '#F7F7F7',
         //surface: "#1E1E1E"
