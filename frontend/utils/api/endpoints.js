@@ -3,6 +3,7 @@
 const WORKSPACE_BASE_URL = "https://9vwo52sbo0.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace";
 const USER_BASE_URL = "https://19eulpomf3.execute-api.ap-southeast-2.amazonaws.com/Prod/user";
 const DATASOURCES_BASE_URL = "https://curkjf7oi6.execute-api.ap-southeast-2.amazonaws.com/Prod/day-book/data-sources";
+const METRICS_BASE_URL = "https://curkjf7oi6.execute-api.ap-southeast-2.amazonaws.com/Prod/day-book/metrics";
 
 const endpoints = {
     workspace: {
@@ -76,6 +77,14 @@ const endpoints = {
                 getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 getDataSources: `${DATASOURCES_BASE_URL}`,
                 removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+            },
+
+            metrics: {
+                add: `${METRICS_BASE_URL}`,
+                update: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
+                getMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
+                getMetrics: `${METRICS_BASE_URL}`,
+                removeMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
             }
         }
     }

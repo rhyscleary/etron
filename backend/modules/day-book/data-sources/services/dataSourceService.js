@@ -26,7 +26,7 @@ async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
         dataSourceId: dataSourceId,
         name: name,
         type: type,
-        status: "operational",
+        status: "active",
         config: config,
         createdAt: date,
         lastUpdate: date
@@ -57,8 +57,6 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     }
 
     const { name, config, secrets } = payload;
-
-    const dataSourceId = uuidv4();
     
     // create data source item and store in repo 
     const dataSourceItem = {
@@ -106,7 +104,7 @@ async function getDataSourcesInWorkspace(authUserId, workspaceId) {
     }
 
     // get data source details by workspace id
-    const dataSources = dataSourceRepo.getDataSourcesByWorkspaceId(workspaceId);
+    const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspaceId);
 
     // get secrets for data source
     const dataSourceSecrets = await dataSourceSecretsRepo.getSecretsByWorkspaceId(workspaceId);
@@ -149,7 +147,11 @@ async function pollDataSources() {
 
         for (const dataSource of dataSources) {
 
-            if (dataSource.status !== "operational") {
+            // types of data to be polled
+            const allowedTypes = ["api"];
+
+            // check if the data source is active and an allowed type
+            if (dataSource.status !== "active" || !allowedTypes.includes(dataSource.type)) {
                 continue;
             }
 
