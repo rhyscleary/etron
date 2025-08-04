@@ -6,9 +6,19 @@ import { router } from "expo-router";
 const DropDown = ({
     title,
     items = [],
+    showRouterButton=true,
+    onSelect,
 }) => {
     const [expanded, setExpanded] = useState(true);
     const [selectedItem, setSelectedItem] = useState(null);
+
+    const handleItemSelect = (item) => {
+        setSelectedItem(item);
+        setExpanded(prev => !prev);
+        if (onSelect) {
+            onSelect(item);
+        }
+    }
 
     const theme = useTheme();
 
@@ -31,42 +41,41 @@ const DropDown = ({
                             styles.items,
                             { borderColor: theme.colors.outline }
                         ]}
-                        onPress={() => {
-                            setSelectedItem(item);
-                            setExpanded(prev => !prev);
-                        }}
+                        onPress={() => handleItemSelect(item)}
                     />
                 ))}
 
-                <TouchableOpacity
-                    style={[
-                        styles.routerButton,
-                        { borderColor: theme.colors.outline }
-                    ]}
-                    onPress={() => {
-                        router.push('/create-data-connection')
-                    }}
-                >
-                    <View
-                        style={styles.routerButtonContent}
+                {showRouterButton && (
+                    <TouchableOpacity
+                        style={[
+                            styles.routerButton,
+                            { borderColor: theme.colors.outline }
+                        ]}
+                        onPress={() => {
+                            router.push('/create-data-connection')
+                        }}
                     >
-                        <IconButton
-                            icon="plus"
-                            size={20}
-                            style={styles.routerIcon}
-                            iconColor={theme.colors.icon}
-                        />
-
-                        <Text 
-                            style={[
-                                styles.routerText,
-                                { color: theme.colors.placeholderText, } 
-                            ]}
+                        <View
+                            style={styles.routerButtonContent}
                         >
-                            New Data Source
-                        </Text>
-                    </View>
-                </TouchableOpacity>
+                            <IconButton
+                                icon="plus"
+                                size={20}
+                                style={styles.routerIcon}
+                                iconColor={theme.colors.icon}
+                            />
+
+                            <Text 
+                                style={[
+                                    styles.routerText,
+                                    { color: theme.colors.placeholderText, } 
+                                ]}
+                            >
+                                New Data Source
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                )}
             </List.Accordion>
         </List.Section>
     );
