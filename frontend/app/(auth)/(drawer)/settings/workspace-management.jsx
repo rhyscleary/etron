@@ -12,6 +12,9 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import DescriptiveButton from "../../../../components/common/buttons/DescriptiveButton";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
+import endpoints from "../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
@@ -37,12 +40,15 @@ const WorkspaceManagement = () => {
             return;
         }
 
+        const workspaceId = await AsyncStorage.getItem("workspaceId");
         try {
-            const result = await apiDelete('');
+            const result = await apiDelete(
+                endpoints.workspace.core.delete(workspaceId)
+            );
 
             console.log('Workspace deleted:', result);
             setDeleteDialogVisible(false);
-
+            
             router.replace("/index");
         } catch (error) {
             console.log("Error deleting workspace: ", error);

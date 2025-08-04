@@ -10,7 +10,8 @@ const BasicButton = ({
     label,
     onPress,
     fullWidth = false,
-    style
+    style,
+    disabled = false,
 }) => {
     const theme = useTheme();
     
@@ -18,13 +19,13 @@ const BasicButton = ({
     if (danger) {
         buttonColor = theme.colors.error;
     } else if (altBackground) {
-        buttonColor = theme.colors.buttonBackgroundAlt;
+        buttonColor = theme.colors.buttonBackground;
     } else {
         buttonColor = theme.colors.primary;
     }
 
     let textColor = altText
-        ? theme.colors.altText
+        ? theme.colors.textAlt
         : theme.colors.text;
 
     return (
@@ -34,6 +35,7 @@ const BasicButton = ({
                 mode="contained" 
                 textColor={textColor}  
                 buttonColor={buttonColor}
+                disabled={disabled}
                 style={[
                     styles.button,
                     fullWidth ? styles.fullWidth : styles.fixedWidth,

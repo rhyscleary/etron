@@ -26,8 +26,10 @@ async function createWorkspace(authUserId, data) {
     }
 
     // check if user already owns a workspace, if so stop creation
-    const existingWorkspace = workspaceRepo.getWorkspaceByOwnerId(authUserId);
-    if (existingWorkspace) return {message: "User has already created a workspace"};
+    const existingWorkspace = await workspaceRepo.getWorkspaceByOwnerId(authUserId);
+    if (existingWorkspace && existingWorkspace.length > 0) {
+        return {message: "User has already created a workspace"}
+    };
 
     const workspaceId = uuidv4();
     const date = new Date().toISOString();
@@ -195,7 +197,7 @@ async function getWorkspaceByWorkspaceId(workspaceId) {
 
 async function getWorkspaceByUserId(authUserId) {
     // get user data
-    const user = workspaceUsersRepo.getUserByUserId(authUserId);
+    const user = await workspaceUsersRepo.getUserByUserId(authUserId);
 
     if (!user?.[0]) {
         throw new Error("No user found");

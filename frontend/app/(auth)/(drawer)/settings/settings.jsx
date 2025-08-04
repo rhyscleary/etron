@@ -11,7 +11,7 @@ import { commonStyles } from '../../../../assets/styles/stylesheets/common';
 const Settings = () => { 
 
     const settingOptionButtons = [
-        { icon: "account", label: "Account", },
+        { icon: "account", label: "Account", onPress: () => router.push("/settings/account/account")},
         { icon: "briefcase-outline", label: "Workspace", onPress: () => router.push("/settings/workspace-management") },
         { icon: "palette-outline", label: "Themes", onPress: () => router.push("/settings/theme-settings") },
         { icon: "", label: "Accessibility", onPress: () => router.push("/settings/accessibility-settings") },
