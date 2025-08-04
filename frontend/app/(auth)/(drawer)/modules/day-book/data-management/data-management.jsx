@@ -104,9 +104,10 @@ const DataManagement = () => {
           label={source.name}
           height={60}
            onNavigate={() => {
+            {
           router.push(
             `/modules/day-book/data-management/select-data-source/${source.id}`
-          );
+          );}
         }}
           onSync={() => handleSyncSource(source.id)}
           onDelete={() => handleDisconnectSource(source.id, source.name)}

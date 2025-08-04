@@ -62,7 +62,7 @@ const DataConnectionButton = ({
   };
 
   return (
-    <TouchableOpacity onPress={() => onNavigate} >
+    <TouchableOpacity onPress={() => onNavigate()} >
     <Card
       mode="elevated"
       style={[
