@@ -115,11 +115,27 @@ Resources:
             Path: /day-book/metrics/{metricId}
             Method: delete
 
+  MetricUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./metrics
+      Handler: handlers/metricUpdateHandler.handler
+      Policies:
+        - S3ReadPolicy:
+            BucketName: etron-day-book-sourced-data
+  
+      Events:
+        S3PutEvent:
+          Type: S3
+          Properties:
+            Bucket: etron-day-book-sourced-data
+            Events: s3:ObjectCreated:Put
+
   DataSourcePollFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources/handlers
-      Handler: dataSourcePollHandler.handler
+      CodeUri: ./data-sources
+      Handler: handlers/dataSourcePollHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
