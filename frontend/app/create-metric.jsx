@@ -9,6 +9,7 @@ import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import TextField from '../components/common/input/TextField';
 
 //const BACKEND_BASE_URL = 'http//...';
+// SETUP HANDLER TO GET KEY TO ASSIGN TO GRAPH DATA
 
 const CreateMetric = () => {
     const router = useRouter();
