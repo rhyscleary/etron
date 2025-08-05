@@ -37,7 +37,7 @@ const EditUser = () => {
         const user = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
         setUserEmail(user.email || "");
         setUserType(user.type || "employee");
-        setSelectedRole(user.role || "");
+        setSelectedRole(user.roleId || "");
 
         const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
         setRoles(fetchedRoles || []);
@@ -53,7 +53,7 @@ const EditUser = () => {
     try {
       const data = {
         type: userType,
-        role: selectedRole
+        roleId: selectedRole
       };
 
       const result = await apiPut(
