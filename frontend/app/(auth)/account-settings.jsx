@@ -1,13 +1,16 @@
 import { Redirect, useRouter, router, Link } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
-import { Button, TextInput, View, Pressable } from 'react-native';
+import { Button, TextInput, View, Pressable, ScrollView } from 'react-native';
 import TextField from '../../components/common/input/TextField';
 import BasicButton from '../../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import GoogleButton from '../../components/common/buttons/GoogleButton';
 import MicrosoftButton from '../../components/common/buttons/MicrosoftButton';
 import Divider from "../../components/layout/Divider";
+import StackLayout from '../../components/layout/StackLayout';
+import { commonStyles } from '../../assets/styles/stylesheets/common';
+import Header from "../../components/layout/Header";
 
 import { Amplify, Storage } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
@@ -81,51 +84,31 @@ async function handleConfirmUserAttribute(userAttributeKey, confirmationCode) {
 }
 
 function App() {
-    const [newGivenName, setNewGivenName] = useState('');
-    const handleNewGivenNameInput = (text) => {
-        setNewGivenName(text);
-    }
+    const [givenName, setGivenName] = useState('');
+    const [familyName, setFamilyName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [confirmationCode, setConfirmationCode] = useState('');
+    const [email, setEmail] = useState('');
+
     const changeGivenNameButtonPressed = () => {
-        handleUpdateUserAttribute('given_name', newGivenName);
+        handleUpdateUserAttribute('given_name', givenName);
     }
 
-    const [newFamilyName, setNewFamilyName] = useState('');
-    const handleNewFamilyNameInput = (text) => {
-        setNewFamilyName(text);
-    }
     const changeFamilyNameButtonPressed = () => {
-        handleUpdateUserAttribute('family_name', newFamilyName);
+        handleUpdateUserAttribute('family_name', familyName);
     }
     
-    const [newPhoneNumber, setNewPhoneNumber] = useState('');
-    const handleNewPhoneNumberInput = (text) => {
-        setNewPhoneNumber(text);
-    }
     const changePhoneNumberButtonPressed = () => {
-        handleUpdateUserAttribute('phone_number', newPhoneNumber);
+        handleUpdateUserAttribute('phone_number', phoneNumber);
     }
 
-    const [confirmationCode, setConfirmationCode] = useState('');
-    const handleConfirmationCodeInput = (text) => {
-        setConfirmationCode(text);
-    }
     const confirmationCodeButtonPressed = () => {
         handleConfirmUserAttribute("email", confirmationCode);
     }
 
-    const [newEmail, setNewEmail] = useState('');
-    const handleNewEmailInput = (text) => {
-        setNewEmail(text);
-    }
     const changeEmailButtonPressed = () => {
-        handleUpdateUserAttribute('email', newEmail);
+        handleUpdateUserAttribute('email', email);
     }
-
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isSignUp, setIsSignUp] = useState(false); // toggle sign in vs sign up
-    const [message, setMessage] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
 
     const router = useRouter();
 
@@ -134,47 +117,66 @@ function App() {
     }, []);
 
     return ( 
-        <>
-            <View>
-                <Text>Hello</Text>
-                <SignOutButton />
-            </View>
-            <View>
-                <TextInput onChangeText={handleNewGivenNameInput}/>
-                <Button title="Change first name" onPress={(changeGivenNameButtonPressed)}/>
-            </View>
-            <View>
-                <TextInput onChangeText={handleNewFamilyNameInput}/>
-                <Button title="Change last name" onPress={(changeFamilyNameButtonPressed)}/>
-            </View>
-            <View>
-                <TextInput onChangeText={handleNewPhoneNumberInput}/>
-                <Button title="Change phone number" onPress={(changePhoneNumberButtonPressed)}/>
-            </View>
-            <View>
-                <TextInput onChangeText={handleNewEmailInput}/>
-                <Button title="Change email" onPress={(changeEmailButtonPressed)}/>
-            </View>
-            <View>
-                <TextInput onChangeText={handleConfirmationCodeInput}/>
-                <Button title="Confirmation code" onPress={(confirmationCodeButtonPressed)}/>
-            </View>
-            <Link href="/create-workspace" asChild>
-                <Pressable>
-                    <Text>Go to Create Workspace</Text>
-                </Pressable>
-            </Link>
-            <Link href="/settings/settings" asChild>
-                <Pressable>
-                    <Text>Go to Settings</Text>
-                </Pressable>
-            </Link>
-            <Link href="/profile" asChild>
-                <Pressable>
-                    <Text>Go to Profile</Text>
-                </Pressable>
-            </Link>
-        </>
+        <View>
+            <Header title="Temp Account Settings" showMenu />
+
+            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
+                <StackLayout spacing={34}>
+                    {/*Temporary redirect to profile screen*/}
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.back()}>
+                        <Pressable>
+                            <Text>Go to Profile</Text>
+                        </Pressable>
+                    </Button>
+                    <SignOutButton />
+                    <TextField
+                        label="Given Name"
+                        value={givenName}
+                        placeholder="Enter your given name"
+                        textContentType="givenName"
+                        onChangeText={(text) => setGivenName(text)}
+                    />
+                    <Button title="Change first name" onPress={(changeGivenNameButtonPressed)}/>
+                    <TextField
+                        label="Family Name"
+                        value={familyName}
+                        placeholder="Enter your family name"
+                        textContentType="familyName"
+                        onChangeText={(text) => setFamilyName(text)}
+                    />
+                    <Button title="Change last name" onPress={(changeFamilyNameButtonPressed)}/>
+                    <TextField
+                        label="Phone Number"
+                        value={phoneNumber}
+                        placeholder="Enter your phone number"
+                        textContentType="telephoneNumber"
+                        onChangeText={(text) => setPhoneNumber(text)}
+                    />
+                    <Button title="Change phone number" onPress={(changePhoneNumberButtonPressed)}/>
+                    <TextField
+                        label="Email"
+                        value={email}
+                        placeholder="Enter your email"
+                        textContentType="emailAddress"
+                        onChangeText={(text) => setEmail(text)}
+                    />
+                    <Button title="Change email" onPress={(changeEmailButtonPressed)}/>
+                    <TextField
+                        label="Confirmation Code"
+                        value={confirmationCode}
+                        placeholder="Enter confirmation code"
+                        textContentType="oneTimeCode"
+                        onChangeText={(text) => setConfirmationCode(text)}
+                    />
+                    <Button title="Send Confirmation Code" onPress={(confirmationCodeButtonPressed)}/>
+                    <Link href="/create-workspace" asChild>
+                        <Pressable>
+                            <Text>Go to Create Workspace</Text>
+                        </Pressable>
+                    </Link>
+                </StackLayout>
+            </ScrollView>
+        </View>
     );
 }
 

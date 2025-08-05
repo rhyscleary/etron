@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { View, ScrollView, Pressable } from 'react-native'
+import { View, ScrollView, Pressable, Button } from 'react-native'
 import { Link, router } from 'expo-router';
 import StackLayout from '../../../../components/layout/StackLayout';
 import { Text } from 'react-native-paper';
@@ -23,16 +23,14 @@ const Settings = () => {
     return (
         <View style={commonStyles.screen}>
             <Header title="Settings" showMenu />
-
-            {/*Temporary redirect to profile screen*/}
-            <Link href="/profile" asChild>
-                <Pressable>
-                    <Text>Go to Profile</Text>
-                </Pressable>
-            </Link>
-
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
+                    {/*Temporary redirect to profile screen*/}
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.back()}>
+                        <Pressable>
+                            <Text>Go to Profile</Text>
+                        </Pressable>
+                    </Button>
                     {settingOptionButtons.map((item) => (
                         <DescriptiveButton 
                             key={item.label}
