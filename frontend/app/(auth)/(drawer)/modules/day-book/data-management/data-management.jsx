@@ -4,9 +4,6 @@ import { RefreshControl } from "react-native";
 import { Pressable, ScrollView, View, StyleSheet, Alert } from "react-native";
 import {
   Text,
-  Card,
-  IconButton,
-  Chip,
   ActivityIndicator,
 } from "react-native-paper";
 import { Link, router } from "expo-router";
@@ -19,14 +16,9 @@ import {
 } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 import useDataSources from "../../../../../../hooks/useDataSource";
 
-import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
-import { apiPost } from "../../../../../../utils/api/apiClient";
-
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
 
 const DataManagement = () => {
-  const apiClient = { apiPost };
-  const authService = { getCurrentUser, fetchAuthSession, signOut };
   const {
     dataSources,
     loading,
@@ -36,7 +28,7 @@ const DataManagement = () => {
     testConnection,
     syncDataSource,
     refresh,
-  } = useDataSources(apiClient, authService);
+  } = useDataSources();
 
   const handleDisconnectSource = (sourceId, sourceName) => {
     Alert.alert(

@@ -116,6 +116,7 @@ const createMockData = () => ({
   },
 });
 
+// Helper functions
 const parseHeaders = (headersString) => {
   if (!headersString?.trim()) return {};
   try {
@@ -181,18 +182,12 @@ const buildApiUrl = (baseUrl, endpoint, params = {}) => {
   return url.toString();
 };
 
-export const createCustomApiAdapter = (
-  authService,
-  apiClient,
-  options = {}
-) => {
+export const createCustomApiAdapter = (options = {}) => {
   const isDemoMode =
     options.demoMode ||
     options.fallbackToDemo ||
     (typeof __DEV__ !== "undefined" ? __DEV__ : false);
   const mockData = createMockData();
-  const endpoints = options.endpoints || {};
-
   let connections = [];
   let currentConnection = null;
   let isConnected = false;
@@ -255,19 +250,6 @@ export const createCustomApiAdapter = (
         throw new Error("Connection test failed");
       }
 
-      // create the connection via API
-      // TODO: Uncomment when backend is ready
-      /*
-      const response = await apiClient.post(endpoint.create, {
-        name: connectionData.name,
-        url: connectionData.url,
-        headers: connectionData.headers,
-        authentication: connectionData.authentication,
-        testResult
-      });
-      const newConnection = await response.json();
-      */
-
       // mock response
       const newConnection = {
         id: `api_${Date.now()}`,
@@ -308,6 +290,7 @@ export const createCustomApiAdapter = (
     }
   };
 
+  // Connection testing - this stays in the adapter as it's connection-specific logic
   const testConnection = async (url, headers = "", authentication = "") => {
     if (isDemoMode) {
       await delay(2000);
@@ -345,19 +328,6 @@ export const createCustomApiAdapter = (
 
       config = applyAuthentication(config, auth);
 
-      // TODO: use when needed
-      /*
-      const response = await apiClient.request(url, config);
-      
-      return {
-        status: "success",
-        responseTime: `${response.responseTime}ms`,
-        statusCode: response.status,
-        contentType: response.headers['content-type'] || 'unknown',
-        sampleData: response.data
-      };
-      */
-
       // mock response
       await delay(2000);
       return {
@@ -375,6 +345,7 @@ export const createCustomApiAdapter = (
     }
   };
 
+  // Data source discovery - returns available endpoints/data sources
   const getDataSources = async () => {
     if (!isConnected) {
       throw new Error("Not connected to any API");
@@ -410,9 +381,8 @@ export const createCustomApiAdapter = (
     ];
   };
 
-  const getData = async (sourceId, options = {}) => {
-    validateSourceId(sourceId);
-
+  // Raw data fetching method for DataSourceService to use
+  const fetchRawData = async (endpoint = "/", method = "GET", params = {}) => {
     if (!isConnected) {
       throw new Error("Not connected to any API");
     }
@@ -420,50 +390,37 @@ export const createCustomApiAdapter = (
     if (isDemoMode) {
       await delay(800);
 
-      const [connectionId, endpointName] = sourceId.split("_");
-      const mockConnection = mockData.sampleData[connectionId];
+      const endpointName = endpoint.replace("/", "");
+      const mockConnection = mockData.sampleData[currentConnection.id];
 
       if (mockConnection) {
-        const endpoint = mockConnection.endpoints.find(
+        const mockEndpoint = mockConnection.endpoints.find(
           (ep) => ep.path.replace("/", "") === endpointName
         );
 
-        if (endpoint) {
+        if (mockEndpoint) {
           return {
-            id: sourceId,
-            name: `${mockConnection.name} - ${endpoint.path}`,
-            data: endpoint.data,
-            headers:
-              endpoint.data.length > 0 ? Object.keys(endpoint.data[0]) : [],
-            metadata: {
-              endpoint: endpoint.path,
-              method: endpoint.method,
-              lastUpdated: new Date().toISOString(),
-              isDemoData: true,
-              connectionId: currentConnection.id,
-            },
+            data: mockEndpoint.data,
+            statusCode: 200,
+            headers: { "content-type": "application/json" },
+            responseTime: 245,
           };
         }
       }
 
       return {
-        id: sourceId,
-        name: "Demo API Data",
         data: [
           { id: 1, name: "Item 1", value: 100 },
           { id: 2, name: "Item 2", value: 200 },
           { id: 3, name: "Item 3", value: 300 },
         ],
-        headers: ["id", "name", "value"],
-        metadata: {
-          lastUpdated: new Date().toISOString(),
-          isDemoData: true,
-        },
+        statusCode: 200,
+        headers: { "content-type": "application/json" },
+        responseTime: 245,
       };
     }
 
     try {
-      const { endpoint = "/", method = "GET", params = {} } = options;
       const parsedHeaders = parseHeaders(currentConnection.headers);
       const auth = parseAuthentication(currentConnection.authentication);
 
@@ -486,42 +443,13 @@ export const createCustomApiAdapter = (
 
       const url = buildApiUrl(currentConnection.url, endpoint, config.params);
 
-      // TODO: uncomment when backend is ready
-      /*
-      const response = await apiClient.request(url, config);
-      const responseData = response.data;
-      
-      // Convert response to standardized format
-      let data = [];
-      let headers = [];
-      
-      if (Array.isArray(responseData)) {
-        data = responseData;
-        headers = data.length > 0 ? Object.keys(data[0]) : [];
-      } else if (typeof responseData === 'object') {
-        data = [responseData];
-        headers = Object.keys(responseData);
-      }
-      
-      return {
-        id: sourceId,
-        name: `${currentConnection.name} - ${endpoint}`,
-        data,
-        headers,
-        metadata: {
-          endpoint,
-          method,
-          statusCode: response.status,
-          lastUpdated: new Date().toISOString(),
-          connectionId: currentConnection.id
-        }
-      };
-      */
-
-      return getData(sourceId, { ...options, demoMode: true });
+      // Fallback to demo data for now
+      return fetchRawData(endpoint, method, params);
     } catch (error) {
       console.log("Real API call failed, falling back to demo data");
-      return getData(sourceId, { ...options, demoMode: true });
+      const demoOptions = { ...options, demoMode: true };
+      const demoAdapter = createCustomApiAdapter(demoOptions);
+      return demoAdapter.fetchRawData(endpoint, method, params);
     }
   };
 
@@ -563,12 +491,6 @@ export const createCustomApiAdapter = (
       return { success: true };
     }
 
-    // TODO: backen update logic
-    /*
-    const response = await apiClient.put(`${endpoints.update}/${connectionId}`, updates);
-    return await response.json();
-    */
-
     return { success: true };
   };
 
@@ -582,12 +504,6 @@ export const createCustomApiAdapter = (
       }
       return { success: true };
     }
-
-    // TODO: backend delete logic
-    /*
-    const response = await apiClient.delete(`${endpoints.delete}/${connectionId}`);
-    return await response.json();
-    */
 
     return { success: true };
   };
@@ -605,14 +521,22 @@ export const createCustomApiAdapter = (
     connect,
     disconnect,
     testConnection,
-    getDataSources,
-    getData,
     isConnected: () => isConnected,
     getConnectionInfo,
     switchConnection,
     updateConnection,
     deleteConnection,
+
+    getDataSources,
     filterDataSources,
+
+    fetchRawData,
+
+    parseHeaders,
+    parseAuthentication,
+    applyAuthentication,
+    buildApiUrl,
+
     formatDate,
   };
 };

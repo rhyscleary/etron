@@ -15,93 +15,10 @@ import Divider from "./Divider";
 
 import { commonStyles } from "../../assets/styles/stylesheets/common";
 import useDataSources from "../../hooks/useDataSource";
+import { createDataAdapter } from "../../adapters/day-book/data-sources";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
-import { createDataAdapter } from "../../adapters/day-book/data-sources";
-
-// Streamlined hook for connection testing and creation
-const useConnectionManager = (connectionType, apiClient, authService) => {
-  const [adapter, setAdapter] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [connectionInfo, setConnectionInfo] = useState(null);
-  const [error, setError] = useState(null);
-
-  // Use the global data sources hook for persistent storage
-  const dataSources = useDataSources(apiClient, authService);
-
-  useEffect(() => {
-    try {
-      const newAdapter = createDataAdapter(connectionType, {
-        authService,
-        apiClient: { post: apiPost },
-        endpoints,
-        options: {
-          demoMode: typeof __DEV__ !== 'undefined' ? __DEV__ : true,
-          fallbackToDemo: true
-        }
-      });
-
-      if (!newAdapter) throw new Error('Failed to create adapter - adapter is null');
-      
-      setAdapter(newAdapter);
-      setConnectionInfo(newAdapter.getConnectionInfo());
-    } catch (err) {
-      setError(`Failed to create adapter: ${err.message}`);
-      console.error('Adapter creation error:', err);
-    }
-  }, [connectionType]);
-
-  const testConnection = async (connectionData) => {
-    if (!adapter) throw new Error('Adapter not initialized');
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const result = await adapter.testConnection(connectionData);
-      return result;
-    } catch (error) {
-      console.error('Test connection error:', error);
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createConnection = async (connectionData, name) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Use the global data sources service to create persistent connection
-      const newConnection = await dataSources.connectDataSource(
-        connectionType,
-        { connectionConfig: connectionData, dependencies: { authService, apiClient, endpoints } },
-        name
-      );
-
-      return { success: true, connection: newConnection };
-    } catch (error) {
-      console.error('Connection creation error:', error);
-      setError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return {
-    adapter,
-    loading: loading || dataSources.loading,
-    connectionInfo,
-    error: error || dataSources.error,
-    testConnection,
-    createConnection,
-    isConnected: () => adapter?.isConnected() || false
-  };
-};
 
 const TestConnectionSection = ({
   isTestingConnection, testResponse, connectionError,
@@ -148,33 +65,81 @@ const ConnectionPage = ({
 }) => {
   const theme = useTheme();
 
-  // Create API client and auth service
-  const apiClient = {
-    post: apiPost,
-    get: async (url) => ({ data: [] }),
-    put: async (url, data) => ({ data: {} }),
-    delete: async (url) => ({ data: {} })
-  };
-
-  const authService = { getCurrentUser, fetchAuthSession, signOut };
-
+  // Use the global data sources hook for all data source operations
   const {
-    adapter,
-    loading: adapterLoading,
-    connectionInfo,
-    error: adapterError,
-    testConnection,
-    createConnection,
-    isConnected
-  } = useConnectionManager(connectionType, apiClient, authService);
+    dataSources,
+    loading: dataSourcesLoading,
+    error: dataSourcesError,
+    connectDataSource,
+    testConnection: testDataSourceConnection,
+  } = useDataSources();
 
+  // Local form state
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [connection, setConnection] = useState(null);
   const [connectionError, setConnectionError] = useState(null);
   const [testResponse, setTestResponse] = useState(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [isCreatingConnection, setIsCreatingConnection] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [adapter, setAdapter] = useState(null);
+  const [adapterError, setAdapterError] = useState(null);
+  
+  // Accordion state management
+  const [expandedSections, setExpandedSections] = useState(new Set(['form']));
+
+  // Initialize adapter for this connection type
+  useEffect(() => {
+    try {
+      // Create API client and auth service (same as in useDataSources)
+      const apiClient = {
+        post: apiPost,
+        get: async (url) => ({ data: [] }),
+        put: async (url, data) => ({ data: {} }),
+        delete: async (url) => ({ data: {} })
+      };
+
+      const authService = { getCurrentUser, fetchAuthSession, signOut };
+
+      const newAdapter = createDataAdapter(connectionType, {
+        authService,
+        apiClient,
+        endpoints,
+        options: {
+          demoMode: typeof __DEV__ !== 'undefined' ? __DEV__ : true,
+          fallbackToDemo: true
+        }
+      });
+
+      if (!newAdapter) throw new Error('Failed to create adapter - adapter is null');
+      
+      setAdapter(newAdapter);
+      setAdapterError(null);
+    } catch (err) {
+      setAdapterError(`Failed to create adapter: ${err.message}`);
+      console.error('Adapter creation error:', err);
+    }
+  }, [connectionType]);
+
+  // Auto-expand test section when form becomes valid
+  useEffect(() => {
+    if (formIsValid && !isConnected()) {
+      setExpandedSections(prev => new Set([...prev, 'test']));
+    }
+  }, [formIsValid, isConnected]);
+
+  const handleSectionToggle = (sectionKey) => {
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionKey)) {
+        newSet.delete(sectionKey);
+      } else {
+        newSet.add(sectionKey);
+      }
+      return newSet;
+    });
+  };
 
   const generateName = () => {
     if (nameGenerator && !formData.name) {
@@ -204,6 +169,10 @@ const ConnectionPage = ({
 
   const handleTestConnection = async () => {
     if (!validateForm()) return;
+    if (!adapter) {
+      setConnectionError("Adapter not initialized");
+      return;
+    }
 
     setIsTestingConnection(true);
     setConnectionError(null);
@@ -211,7 +180,10 @@ const ConnectionPage = ({
 
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
-      const result = await testConnection(connectionData);
+      const connectionName = formData.name || generateName() || `${title} Connection`;
+      
+      // Use the testConnection from useDataSources hook
+      const result = await testDataSourceConnection(connectionType, connectionData, connectionName);
       setTestResponse(result);
       setConnectionError(null);
     } catch (error) {
@@ -227,14 +199,16 @@ const ConnectionPage = ({
   const handleContinue = async () => {
     if (!testResponse || testResponse.status !== "success") return;
 
+    setIsCreatingConnection(true);
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
       const connectionName = formData.name || generateName() || `${title} Connection`;
       
-      const result = await createConnection(connectionData, connectionName);
+      // Use the connectDataSource from useDataSources hook
+      const result = await connectDataSource(connectionType, connectionData, connectionName);
 
-      if (result.success) {
-        const dialogData = formatConnectionForDialog(result.connection, connectionType, testResponse);
+      if (result) {
+        const dialogData = formatConnectionForDialog(result, connectionType, testResponse);
         setConnection(dialogData);
         setShowSuccessDialog(true);
       } else {
@@ -243,6 +217,8 @@ const ConnectionPage = ({
     } catch (error) {
       console.error('Connection creation error:', error);
       Alert.alert("Error", `Failed to create connection: ${error.message}`);
+    } finally {
+      setIsCreatingConnection(false);
     }
   };
 
@@ -343,7 +319,13 @@ const ConnectionPage = ({
     return `${formData.name} • ${primaryInfo}`;
   };
 
+  // Check if there's an existing connection of this type
+  const existingConnection = dataSources.find(source => source.type === connectionType);
+  const isConnected = () => existingConnection?.status === 'connected';
+
   const testSectionStatus = getTestSectionStatus();
+  const isLoading = dataSourcesLoading || isTestingConnection || isCreatingConnection;
+  const hasError = adapterError || dataSourcesError;
 
   return (
     <View style={commonStyles.screen}>
@@ -353,7 +335,7 @@ const ConnectionPage = ({
         <StackLayout spacing={0}>
 
           {/* Error Display */}
-          {adapterError && (
+          {hasError && (
             <View style={{
               padding: 15,
               backgroundColor: theme.colors.errorContainer,
@@ -361,13 +343,13 @@ const ConnectionPage = ({
               marginBottom: 20
             }}>
               <Text style={{ color: theme.colors.onErrorContainer }}>
-                {adapterError}
+                {adapterError || dataSourcesError}
               </Text>
             </View>
           )}
 
           {/* Demo Mode Indicator */}
-          {connectionInfo?.isDemoMode && (
+          {adapter?.getConnectionInfo?.()?.isDemoMode && (
             <View style={{
               padding: 15,
               backgroundColor: theme.colors.secondaryContainer,
@@ -394,6 +376,8 @@ const ConnectionPage = ({
 
           <CollapsibleList
             canCloseFormAccordion={formIsValid}
+            expandedSections={expandedSections}
+            onSectionToggle={handleSectionToggle}
             items={[
               {
                 key: "form",
@@ -422,11 +406,11 @@ const ConnectionPage = ({
                 disabled: !formIsValid || isConnected(),
                 content: (
                   <TestConnectionSection
-                    isTestingConnection={isTestingConnection || adapterLoading}
+                    isTestingConnection={isTestingConnection}
                     testResponse={testResponse}
                     connectionError={connectionError}
                     onTestConnection={handleTestConnection}
-                    canTest={formIsValid}
+                    canTest={formIsValid && adapter}
                     theme={theme}
                   />
                 ),
@@ -439,9 +423,9 @@ const ConnectionPage = ({
       {/* Continue Button */}
       <View style={commonStyles.floatingButtonContainer}>
         <BasicButton
-          label={adapterLoading ? "Creating Connection..." : "Create Connection"}
+          label={isCreatingConnection ? "Creating Connection..." : "Create Connection"}
           onPress={handleContinue}
-          disabled={adapterLoading || !testResponse || testResponse.status !== "success"}
+          disabled={isLoading || !testResponse || testResponse.status !== "success"}
           fullWidth={false}
         />
       </View>
