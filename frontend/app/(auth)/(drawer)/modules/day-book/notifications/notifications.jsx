@@ -1,4 +1,4 @@
-import { Pressable, View } from "react-native";
+import { Pressable, View, Button } from "react-native";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import { Link, router } from "expo-router";
@@ -10,11 +10,7 @@ const Notifications = () => {
             <Header title="Notifications" showMenu showPlus onRightIconPress={() => router.push("/notifications/create-notification")} />
 
             {/*Temporary redirect to profile screen*/}
-            <Link href="/profile" asChild>
-                <Pressable>
-                    <Text>Go to Profile</Text>
-                </Pressable>
-            </Link>
+            <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
         </View>
     )
 }
