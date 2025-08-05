@@ -1,10 +1,10 @@
 import { Pressable, View } from "react-native";
-import Header from "../components/layout/Header.jsx";
-import { commonStyles } from "../assets/styles/stylesheets/common.js";
+import Header from "../../../../../../components/layout/Header.jsx";
+import { commonStyles } from "../../../../../../assets/styles/stylesheets/common.js";
 import { Link, useRouter } from "expo-router";
 import { Text, useTheme } from "react-native-paper";
-import SearchBar from "../components/common/input/SearchBar.jsx";
-import Divider from "../components/layout/Divider.jsx";
+import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
+import Divider from "../../../../../../components/layout/Divider.jsx";
 
 const MetricManagement = () => {
     const router = useRouter();

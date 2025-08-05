@@ -30,7 +30,7 @@ function App() {
             router.replace('/(auth)/profile'); // Go to the protected root page
         } else if (authStatus === "configuring") {
         } else {
-            router.replace('metric-management');
+            router.replace('landing');
         }
     }, [authStatus]);
 

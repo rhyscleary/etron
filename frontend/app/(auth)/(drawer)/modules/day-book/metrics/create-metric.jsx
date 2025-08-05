@@ -1,12 +1,13 @@
 import { View, StyleSheet } from 'react-native';
 import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
-import Header from "../components/layout/Header";
+import Header from "../../../../../../components/layout/Header";
 import { Text, Card } from "react-native-paper";
-import BasicButton from "../components/common/buttons/BasicButton";
-import DropDown from '../components/common/input/DropDown';
+import BasicButton from "../../../../../../components/common/buttons/BasicButton";
+import DropDown from '../../../../../../components/common/input/DropDown';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
-import TextField from '../components/common/input/TextField';
+import TextField from '../../../../../../components/common/input/TextField';
+import endpoints from '../../../../../../utils/api/endpoints';
 
 //const BACKEND_BASE_URL = 'http//...';
 // SETUP HANDLER TO GET KEY TO ASSIGN TO GRAPH DATA
@@ -24,7 +25,6 @@ const CreateMetric = () => {
     const totalSteps = 2;
 
     /*
-    STRONG FEELING THIS IS NOT ANYTHING I WILL BE ABLE TO USE
     useEffect(() => {
         fetchDataSources();
         fetchGraphData();
@@ -49,7 +49,6 @@ const CreateMetric = () => {
             console.error("Error fetching graph data:", error);
         }
     };
-
     */
 
     const handleBack = () => {
@@ -142,7 +141,7 @@ export default CreateMetric;
 
 const styles = StyleSheet.create({
     card: {
-        height: 250
+        height: 270
     },
     container: {
         flex: 1,
