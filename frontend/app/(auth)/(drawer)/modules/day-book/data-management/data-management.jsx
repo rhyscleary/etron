@@ -1,6 +1,6 @@
 // DataManagement.js
 import React from "react";
-import { RefreshControl } from "react-native";
+import { RefreshControl, Button } from "react-native";
 import { Pressable, ScrollView, View, StyleSheet, Alert } from "react-native";
 import {
   Text,
@@ -200,11 +200,8 @@ const DataManagement = () => {
           )
         }
       />
-      <Link href="/profile" asChild>
-        <Pressable style={styles.debugButton}>
-          <Text style={styles.debugText}>Go to Profile</Text>
-        </Pressable>
-      </Link>
+      {/*Temporary redirect to profile screen*/}
+      <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
 
       <ScrollView
         style={styles.container}
