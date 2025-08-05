@@ -172,7 +172,7 @@ const useDataSources = () => {
   const [stats, setStats] = useState(null);
 
   // Use the global service instance instead of creating a new one
-  const service = getDataSourceService();
+  const service = getDataSourceService({ demoMode: false }); // turn off demo mode TODO: make work for all demo components and functions
 
   // load all data sources
   const loadDataSources = useCallback(
