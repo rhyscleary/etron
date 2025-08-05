@@ -11,6 +11,11 @@ Globals:
       - x86_64
 
 Resources:
+  SourcedDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: etron-day-book-sourced-data
+
   DataSourceFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -128,7 +133,7 @@ Resources:
         S3PutEvent:
           Type: S3
           Properties:
-            Bucket: etron-day-book-sourced-data
+            Bucket: !Ref SourcedDataBucket
             Events: s3:ObjectCreated:Put
 
   DataSourcePollFunction:
