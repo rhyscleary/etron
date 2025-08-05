@@ -1,7 +1,7 @@
-import { View, FlatList, Text as RNText, Pressable } from "react-native";
+import { View, FlatList, Text as RNText } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-import { Text, TextInput, TouchableRipple } from "react-native-paper";
+import { Text, TextInput, Chip } from "react-native-paper";
 import { useState } from "react";
 
 const WorkspaceLog = () => {
@@ -45,34 +45,18 @@ const WorkspaceLog = () => {
                 style={{ marginVertical: 8 }}
             />
 
-            {/* Fixed Filter Row */}
-            <View
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    flexWrap: 'wrap',
-                    paddingVertical: 0,
-                    marginBottom: 8
-                }}
-            >
-                <RNText style={{ marginRight: 12, fontWeight: 'bold', color: '#e0e0e0' }}>
-                    Filter:
-                </RNText>
-
+            {/* Filter Chips Row */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
                 {filters.map((filter) => (
-                    <Pressable key={filter} onPress={() => handleFilterPress(filter)}>
-                        <RNText
-                            style={{
-                                marginRight: 16,
-                                fontWeight: selectedFilter === filter ? 'bold' : 'normal',
-                                textDecorationLine: selectedFilter === filter ? 'underline' : 'none',
-                                fontSize: 16,
-                                color: selectedFilter === filter ? '#007AFF' : '#e0e0e0'
-                            }}
-                        >
-                            {filter}
-                        </RNText>
-                    </Pressable>
+                    <Chip
+                        key={filter}
+                        mode="outlined"
+                        selected={selectedFilter === filter}
+                        onPress={() => handleFilterPress(filter)}
+                        style={{ borderRadius: 16 }}
+                    >
+                        {filter}
+                    </Chip>
                 ))}
             </View>
 
@@ -81,7 +65,7 @@ const WorkspaceLog = () => {
                 data={filteredLogs}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <TouchableRipple
+                    <View
                         style={{
                             borderWidth: 1,
                             borderColor: '#e0e0e0',
@@ -89,13 +73,11 @@ const WorkspaceLog = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => console.log('Tapped log:', item)}>
-                        <View>
-                            <Text style={{ fontWeight: 'bold' }}>{item.user}</Text>
-                            <Text>{item.action}</Text>
-                            <Text style={{ color: '#666', fontSize: 12 }}>{item.time}</Text>
-                        </View>
-                    </TouchableRipple>
+                    >
+                        <Text style={{ fontWeight: 'bold' }}>{item.user}</Text>
+                        <Text>{item.action}</Text>
+                        <Text style={{ color: '#666', fontSize: 12 }}>{item.time}</Text>
+                    </View>
                 )}
                 ListEmptyComponent={
                     <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
