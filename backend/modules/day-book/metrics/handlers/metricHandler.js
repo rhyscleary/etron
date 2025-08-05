@@ -41,7 +41,7 @@ exports.handler = async (event) => {
                     throw new Error("metricId must be a UUID, 'string'");
                 }
 
-                body = await updateMetricInWorkspace(authUserId, workspaceId, pathParams.dataSourceId, requestJSON);
+                body = await updateMetricInWorkspace(authUserId, workspaceId, pathParams.metricId, requestJSON);
                 break;
             }
 
@@ -55,7 +55,7 @@ exports.handler = async (event) => {
                     throw new Error("metricId must be a UUID, 'string'");
                 }
 
-                body = await getMetricInWorkspace(authUserId, workspaceId, pathParams.dataSourceId);
+                body = await getMetricInWorkspace(authUserId, workspaceId, pathParams.metricId);
                 break;
             }
 
@@ -75,7 +75,7 @@ exports.handler = async (event) => {
                     throw new Error("metricId must be a UUID, 'string'");
                 }
                 
-                body = await deleteMetricInWorkspace(authUserId, workspaceId, pathParams.dataSourceId);
+                body = await deleteMetricInWorkspace(authUserId, workspaceId, pathParams.metricId);
                 break;
             }
 
