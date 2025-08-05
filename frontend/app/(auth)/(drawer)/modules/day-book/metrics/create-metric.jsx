@@ -1,29 +1,20 @@
 import { View, StyleSheet } from 'react-native';
 import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
-import Header from "../components/layout/Header";
+import Header from "../../../../../../components/layout/Header";
 import { Text, Card } from "react-native-paper";
-import BasicButton from "../components/common/buttons/BasicButton";
-import DropDown from '../components/common/input/DropDown';
+import BasicButton from "../../../../../../components/common/buttons/BasicButton";
+import DropDown from '../../../../../../components/common/input/DropDown';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
-import TextField from '../components/common/input/TextField';
-import endpoints from '../utils/api/endpoints';
-
-//const BACKEND_BASE_URL = 'http//...';
-// SETUP HANDLER TO GET KEY TO ASSIGN TO GRAPH DATA
+import TextField from '../../../../../../components/common/input/TextField';
+import endpoints from '../../../../../../utils/api/endpoints';
+import localGraphData from './graph-data';
 
 const CreateMetric = () => {
     const router = useRouter();
     const [step, setStep] = useState(0);
-    //const dataSources = ['Data Source 1', 'Data Source 2', 'Data Source 3' ];
     const [dataSources, setDataSources] = useState([]);
-    const [graphData] = useState([
-        { value: 50 },
-        { value: 80 },
-        { value: 90 },
-        { value: 70 }
-    ]);
-    //const [graphData, setGraphData] = useState([]);
+    const [graphData, setGraphData] = useState([]);
     const [selectedMetric, setSelectedMetric] = useState(null);
     const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
 
@@ -31,6 +22,7 @@ const totalSteps = 2;
 
     useEffect(() => {
         fetchDataSources();
+        fetchGraphData();
     }, []);
 
     const fetchDataSources = async () => {
@@ -44,6 +36,15 @@ const totalSteps = 2;
             setDataSources(names);
         } catch (error) {
             console.error("Error fetching data sources:", error);
+        }
+    };
+
+    const fetchGraphData = () => {
+        try {
+            const formattedData = localGraphData.map(value => ({ value }));
+            setGraphData(formattedData);
+        } catch (error) {
+            console.error('Failed to load graph data');
         }
     };
 
