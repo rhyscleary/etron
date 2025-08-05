@@ -230,11 +230,6 @@ function LoginSignup() {
 
     return (
         <View style={commonStyles.screen}>
-            <Header
-                title={isSignUpBool ? "Sign Up" : "Login"}
-                showBack={fromAccounts === 'true'}
-                onBack={() => router.push("/settings/account/accounts")} // TODO: fix navigation problem, not important right now
-            />
             <View style={{ padding: 20, gap: 30, flex: 1, justifyContent: 'center' }}>
                 <Text style={{ fontSize: 40, textAlign: 'center' }}>
                     {isSignUpBool ? 'Welcome' : 'Welcome Back'}
