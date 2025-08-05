@@ -27,14 +27,7 @@ const Collaboration = () => {
             {/*Temporary redirect to profile screen*/}
             <Link href="/profile" asChild>
                 <Pressable>
-                    <Text>temp home page</Text>
-                </Pressable>
-            </Link>
-            
-            {/*Temporary redirect to collab/workspace join endpoints screen*/}
-            <Link href="/collaboration/collab-endpoints" asChild>
-                <Pressable>
-                    <Text>Go to Endpoints</Text>
+                    <Text>Return to Home</Text>
                 </Pressable>
             </Link>
 
