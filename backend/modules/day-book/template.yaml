@@ -11,14 +11,31 @@ Globals:
       - x86_64
 
 Resources:
+  SourcedDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: etron-day-book-sourced-data
+
   DataSourceFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources/handlers
-      Handler: dataSourceHandler.handler
+      CodeUri: ./data-sources
+      Handler: handlers/dataSourceHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
 
       Events:
         AddDataSource:
@@ -50,3 +67,97 @@ Resources:
           Properties:
             Path: /day-book/data-sources/{dataSourceId}
             Method: delete
+
+  MetricFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./metrics
+      Handler: handlers/metricHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+
+      Events:
+        AddMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics
+            Method: post
+
+        UpdateMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: put
+
+        GetMetricById:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: get
+            
+        GetMetrics:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics
+            Method: get
+
+        RemoveMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: delete
+
+  MetricUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./metrics
+      Handler: handlers/metricUpdateHandler.handler
+      Policies:
+        - S3ReadPolicy:
+            BucketName: etron-day-book-sourced-data
+  
+      Events:
+        S3PutEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref SourcedDataBucket
+            Events: s3:ObjectCreated:Put
+
+  DataSourcePollFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources
+      Handler: handlers/dataSourcePollHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - S3WritePolicy:
+            BucketName: etron-day-book-sourced-data
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+
+      Events:
+        PollEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Name: DataSourcePollSchedule

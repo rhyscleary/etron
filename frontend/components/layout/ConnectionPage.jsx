@@ -14,23 +14,26 @@ import CollapsibleList from "./CollapsibleList";
 import Divider from "./Divider";
 
 import { commonStyles } from "../../assets/styles/stylesheets/common";
+import useDataSources from "../../hooks/useDataSource";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
-
 import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
-
 import { createDataAdapter } from "../../adapters/day-book/data-sources";
 
-const useDataSource = (adapterType) => {
+// Streamlined hook for connection testing and creation
+const useConnectionManager = (connectionType, apiClient, authService) => {
   const [adapter, setAdapter] = useState(null);
   const [loading, setLoading] = useState(false);
   const [connectionInfo, setConnectionInfo] = useState(null);
   const [error, setError] = useState(null);
 
+  // Use the global data sources hook for persistent storage
+  const dataSources = useDataSources(apiClient, authService);
+
   useEffect(() => {
     try {
-      const newAdapter = createDataAdapter(adapterType, {
-        authService: { getCurrentUser, fetchAuthSession, signOut },
+      const newAdapter = createDataAdapter(connectionType, {
+        authService,
         apiClient: { post: apiPost },
         endpoints,
         options: {
@@ -39,25 +42,18 @@ const useDataSource = (adapterType) => {
         }
       });
 
-      if (newAdapter) {
-        setAdapter(newAdapter);
-        const info = newAdapter.getConnectionInfo();
-        setConnectionInfo(info);
-      } else {
-        throw new Error('Failed to create adapter - adapter is null');
-      }
+      if (!newAdapter) throw new Error('Failed to create adapter - adapter is null');
+      
+      setAdapter(newAdapter);
+      setConnectionInfo(newAdapter.getConnectionInfo());
     } catch (err) {
       setError(`Failed to create adapter: ${err.message}`);
       console.error('Adapter creation error:', err);
     }
-  }, [adapterType]);
+  }, [connectionType]);
 
   const testConnection = async (connectionData) => {
-    if (!adapter) {
-      const errorMsg = 'Adapter not initialized';
-      setError(errorMsg);
-      throw new Error(errorMsg);
-    }
+    if (!adapter) throw new Error('Adapter not initialized');
 
     setLoading(true);
     setError(null);
@@ -74,23 +70,21 @@ const useDataSource = (adapterType) => {
     }
   };
 
-  const connect = async (connectionData) => {
-    if (!adapter) {
-      const errorMsg = 'Adapter not initialized';
-      setError(errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    setLoading(true);
-    setError(null);
-
+  const createConnection = async (connectionData, name) => {
     try {
-      const result = await adapter.connect(connectionData);
-      const info = adapter.getConnectionInfo();
-      setConnectionInfo(info);
-      return result;
+      setLoading(true);
+      setError(null);
+
+      // Use the global data sources service to create persistent connection
+      const newConnection = await dataSources.connectDataSource(
+        connectionType,
+        { connectionConfig: connectionData, dependencies: { authService, apiClient, endpoints } },
+        name
+      );
+
+      return { success: true, connection: newConnection };
     } catch (error) {
-      console.error('Connection error:', error);
+      console.error('Connection creation error:', error);
       setError(error.message);
       throw error;
     } finally {
@@ -98,28 +92,13 @@ const useDataSource = (adapterType) => {
     }
   };
 
-  const disconnect = async () => {
-    if (!adapter) return;
-
-    try {
-      await adapter.disconnect();
-      setConnectionInfo(null);
-      setError(null);
-    } catch (error) {
-      console.error('Disconnect error:', error);
-      setError(error.message);
-      throw error;
-    }
-  };
-
   return {
     adapter,
-    loading,
+    loading: loading || dataSources.loading,
     connectionInfo,
-    error,
+    error: error || dataSources.error,
     testConnection,
-    connect,
-    disconnect,
+    createConnection,
     isConnected: () => adapter?.isConnected() || false
   };
 };
@@ -145,20 +124,14 @@ const TestConnectionSection = ({
       {testResponse && (
         <>
           <Divider color={theme.colors.buttonBackground} />
-          <TestResultCard
-            result={testResponse}
-            title="Test Results"
-          />
+          <TestResultCard result={testResponse} title="Test Results" />
         </>
       )}
 
       {connectionError && (
         <>
           <Divider color={theme.colors.buttonBackground} />
-          <TestResultCard
-            error={connectionError}
-            title="Connection Error"
-          />
+          <TestResultCard error={connectionError} title="Connection Error" />
         </>
       )}
     </StackLayout>
@@ -175,37 +148,42 @@ const ConnectionPage = ({
 }) => {
   const theme = useTheme();
 
+  // Create API client and auth service
+  const apiClient = {
+    post: apiPost,
+    get: async (url) => ({ data: [] }),
+    put: async (url, data) => ({ data: {} }),
+    delete: async (url) => ({ data: {} })
+  };
+
+  const authService = { getCurrentUser, fetchAuthSession, signOut };
+
   const {
     adapter,
     loading: adapterLoading,
     connectionInfo,
     error: adapterError,
-    testConnection: adapterTestConnection,
-    connect: adapterConnect,
+    testConnection,
+    createConnection,
     isConnected
-  } = useDataSource(connectionType);
+  } = useConnectionManager(connectionType, apiClient, authService);
 
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
-
   const [connection, setConnection] = useState(null);
   const [connectionError, setConnectionError] = useState(null);
-
   const [testResponse, setTestResponse] = useState(null);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
-
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  
-  const [genNameFocused, setGenNameFocused] = useState(false);
 
-  function generateName() {
-    if (nameGenerator && !formData.name ) {
+  const generateName = () => {
+    if (nameGenerator && !formData.name) {
       const generatedName = nameGenerator(formData);
       if (generatedName) {
         return generatedName;
       }
     }
-  }
+  };
 
   const formIsValid = useMemo(() => {
     return formValidator ? formValidator(formData) : true;
@@ -233,7 +211,7 @@ const ConnectionPage = ({
 
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
-      const result = await adapterTestConnection(connectionData);
+      const result = await testConnection(connectionData);
       setTestResponse(result);
       setConnectionError(null);
     } catch (error) {
@@ -251,10 +229,11 @@ const ConnectionPage = ({
 
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
-      const result = await adapterConnect(connectionData);
+      const connectionName = formData.name || generateName() || `${title} Connection`;
+      
+      const result = await createConnection(connectionData, connectionName);
 
       if (result.success) {
-        // Format connection data for dialog display
         const dialogData = formatConnectionForDialog(result.connection, connectionType, testResponse);
         setConnection(dialogData);
         setShowSuccessDialog(true);
@@ -271,70 +250,68 @@ const ConnectionPage = ({
   const formatConnectionForDialog = (connection, type, testResult) => {
     const baseData = {
       name: connection.name,
-      status: connection.status || 'active',
+      status: connection.status || 'connected',
       createdAt: connection.createdAt || new Date().toISOString(),
       testResult: testResult?.status === 'success' ? testResult.data : null,
-      // Keep original connection data for navigation
       originalConnection: connection
     };
 
-    // Add type-specific display fields
-    switch (type) {
-      case 'custom-api':
-        return {
-          ...baseData,
-          title: "API Connection Created",
-          message: "Your custom API connection has been successfully created and is ready to use.",
-          details: [
-            { label: "URL", value: connection.url },
-            { label: "Type", value: "REST API" },
-            { label: "Authentication", value: connection.authentication ? "Configured" : "None" }
-          ]
-        };
+    const formatters = {
+      'custom-api': (conn) => ({
+        ...baseData,
+        title: "API Connection Created",
+        message: "Your custom API connection has been successfully created and is ready to use.",
+        details: [
+          { label: "URL", value: conn.config?.url || formData.url },
+          { label: "Type", value: "REST API" },
+          { label: "Authentication", value: conn.config?.authentication || formData.authentication ? "Configured" : "None" }
+        ]
+      }),
 
-      case 'custom-ftp':
-        return {
-          ...baseData,
-          title: "FTP Connection Created", 
-          message: "Your FTP connection has been successfully created and is ready to use.",
-          details: [
-            { label: "Hostname", value: connection.hostname },
-            { label: "Port", value: connection.port || "21" },
-            { label: "Username", value: connection.username },
-            { label: "Directory", value: connection.directory || "/" },
-            { label: "Protocol", value: connection.keyFile ? "SFTP" : "FTP" }
-          ]
-        };
+      'custom-ftp': (conn) => ({
+        ...baseData,
+        title: "FTP Connection Created", 
+        message: "Your FTP connection has been successfully created and is ready to use.",
+        details: [
+          { label: "Hostname", value: conn.config?.hostname || formData.hostname },
+          { label: "Port", value: conn.config?.port || formData.port || "21" },
+          { label: "Username", value: conn.config?.username || formData.username },
+          { label: "Directory", value: conn.config?.directory || formData.directory || "/" },
+          { label: "Protocol", value: conn.config?.keyFile || formData.keyFile ? "SFTP" : "FTP" }
+        ]
+      }),
 
-        case 'custom-mysql': // Add MySQL case
-          return {
-            ...baseData,
-            title: "MySQL Connection Created",
-            message: "Your MySQL connection has been successfully created and is ready to use.",
-            details: [
-              { label: "Host", value: connection.host }, // Changed from hostname to host
-              { label: "Port", value: connection.port || "3306" },
-              { label: "Username", value: connection.username },
-              { label: "Database", value: connection.database },
-              { label: "SSL", value: connection.sslCA ? "Enabled" : "Disabled" }
-            ]
-          };
+      'custom-mysql': (conn) => ({
+        ...baseData,
+        title: "MySQL Connection Created",
+        message: "Your MySQL connection has been successfully created and is ready to use.",
+        details: [
+          { label: "Host", value: conn.config?.host || formData.host },
+          { label: "Port", value: conn.config?.port || formData.port || "3306" },
+          { label: "Username", value: conn.config?.username || formData.username },
+          { label: "Database", value: conn.config?.database || formData.database },
+          { label: "SSL", value: conn.config?.sslCA || formData.sslCA ? "Enabled" : "Disabled" }
+        ]
+      })
+    };
 
-      default:
-        return {
-          ...baseData,
-          title: "Connection Created",
-          message: "Your connection has been successfully created and is ready to use.",
-          details: [
-            { label: "Type", value: type },
-            { label: "Name", value: connection.name }
-          ]
-        };
+    const formatter = formatters[type];
+    if (formatter) {
+      return formatter(connection);
     }
+
+    return {
+      ...baseData,
+      title: "Connection Created",
+      message: "Your connection has been successfully created and is ready to use.",
+      details: [
+        { label: "Type", value: type },
+        { label: "Name", value: connection.name }
+      ]
+    };
   };
 
   const navigateToDataManagement = (connectionData) => {
-    // Use original connection data for navigation
     const originalConnection = connectionData.originalConnection || connectionData;
     
     router.push({
@@ -362,7 +339,7 @@ const ConnectionPage = ({
 
   const getFormDescription = () => {
     if (!formData.name) return "Configure your connection";
-    const primaryInfo = formData.url || formData.hostname || 'connection';
+    const primaryInfo = formData.url || formData.hostname || formData.host || 'connection';
     return `${formData.name} • ${primaryInfo}`;
   };
 

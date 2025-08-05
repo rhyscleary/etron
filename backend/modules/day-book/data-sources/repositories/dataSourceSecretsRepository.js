@@ -11,7 +11,7 @@ const {
 const client = new SSMClient();
 
 async function saveSecrets(workspaceId, dataSourceId, secrets) {
-    const path = `workspace/${workspaceId}/datasources`;
+    const path = `/workspace/${workspaceId}/datasources`;
     
     let dataSourceRecords = {};
     try {
@@ -39,7 +39,7 @@ async function saveSecrets(workspaceId, dataSourceId, secrets) {
 }
 
 async function getSecrets(workspaceId, dataSourceId) {
-    const path = `workspace/${workspaceId}/datasources`;
+    const path = `/workspace/${workspaceId}/datasources`;
 
     const result = await client.send(new GetParameterCommand({
         Name: path,
@@ -52,7 +52,7 @@ async function getSecrets(workspaceId, dataSourceId) {
 }
 
 async function getSecretsByWorkspaceId(workspaceId) {
-    const path = `workspace/${workspaceId}/datasources`;
+    const path = `/workspace/${workspaceId}/datasources`;
 
     const result = await client.send(new GetParameterCommand({
         Name: path,
@@ -63,7 +63,7 @@ async function getSecretsByWorkspaceId(workspaceId) {
 }
 
 async function removeSecrets(workspaceId, dataSourceId) {
-    const path = `workspace/${workspaceId}/datasources`;
+    const path = `/workspace/${workspaceId}/datasources`;
     
     const result = await client.send(new GetParameterCommand({
         Name: path,

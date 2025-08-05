@@ -52,7 +52,7 @@ const getSupportedTypes = () => [
   {
     type: "custom-api",
     name: "Custom API",
-    icon: "api",
+    icon: "web",
     description: "Connect to a custom REST API endpoint",
     requiresAuth: false,
     supportsRealtime: true,
@@ -77,10 +77,10 @@ const getSupportedTypes = () => [
     requiresAuth: true,
     supportsRealtime: false,
     supportedOperations: ["read", "write"],
-    category: "file-server",
+    category: "api",
     ui: {
       displayName: "Custom FTP",
-      categoryDisplayName: "File Servers",
+      categoryDisplayName: "File Transfer",
       route:
         "/modules/day-book/data-management/data-connection-inputs/custom-FTP",
       sortOrder: 2,
