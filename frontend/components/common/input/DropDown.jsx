@@ -52,7 +52,7 @@ const DropDown = ({
                             { borderColor: theme.colors.outline }
                         ]}
                         onPress={() => {
-                            router.push('/create-data-connection')
+                            router.push('/data-management/create-data-connection')
                         }}
                     >
                         <View

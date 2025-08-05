@@ -6,6 +6,7 @@ import { Text, Card } from "react-native-paper";
 import BasicButton from "../components/common/buttons/BasicButton";
 import DropDown from '../components/common/input/DropDown';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
+import TextField from '../components/common/input/TextField';
 
 //const BACKEND_BASE_URL = 'http//...';
 
@@ -17,12 +18,12 @@ const CreateMetric = () => {
     const graphData = [ {value: 50}, {value: 80}, {value: 90}, {value: 70} ];
     //const [graphData, setGraphData] = useState([]);
     const [selectedMetric, setSelectedMetric] = useState(null);
-    const metrics = [ 'Metric 1' , 'Metric 2', 'Metric 3' ];
+    const metrics = [ 'Bar Chart' , 'Line Chart', 'Pie Chart' ];
 
     const totalSteps = 2;
 
     /*
-
+    STRONG FEELING THIS IS NOT ANYTHING I WILL BE ABLE TO USE
     useEffect(() => {
         fetchDataSources();
         fetchGraphData();
@@ -83,15 +84,15 @@ const CreateMetric = () => {
                                 onSelect={(item) => setSelectedMetric(item)}
                             />
 
-                            <Card>
+                            <Card style={styles.card}>
                                 <Card.Content>
-                                    {selectedMetric === 'Metric 1' && (
+                                    {selectedMetric === 'Bar Chart' && (
                                         <BarChart data={graphData} />
                                     )}
-                                    {selectedMetric === 'Metric 2' && (
+                                    {selectedMetric === 'Line Chart' && (
                                         <LineChart data={graphData} />
                                     )}
-                                    {selectedMetric === 'Metric 3' && (
+                                    {selectedMetric === 'Pie Chart' && (
                                         <PieChart data={[
                                             {value: 50, color: 'red'},
                                             {value: 30, color: 'blue'},
@@ -105,7 +106,10 @@ const CreateMetric = () => {
             case 1:
                 return (
                     <View>
-                        <Text style={styles.text}>Page 2</Text>
+                        <TextField
+                            label="Metric Name"
+                            placeholder="Metric Name"
+                        />
                     </View>
                 )
             default:
@@ -136,19 +140,22 @@ const CreateMetric = () => {
 export default CreateMetric;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-  },
-  text: {
-    fontSize: 20,
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  button: {
-    marginTop: 20,
-  },
+    card: {
+        height: 250
+    },
+    container: {
+        flex: 1,
+    },
+    content: {
+        flex: 1,
+        paddingHorizontal: 24,
+    },
+    text: {
+        fontSize: 20,
+        textAlign: "center",
+        marginBottom: 20,
+    },
+    button: {
+        marginTop: 20,
+    },
 });
