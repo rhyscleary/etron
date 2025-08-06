@@ -3,9 +3,9 @@ import { ActivityIndicator, PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
 
-import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
 import { Amplify } from 'aws-amplify';
-import { Storage } from '@aws-amplify/storage';
+import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
+
 import awsmobile from '../src/aws-exports';
 Amplify.configure({
     ...awsmobile,
@@ -26,7 +26,7 @@ function App() {
     useEffect(() => {
         console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
-            console.log("Redirecting to auth root page.")
+            console.log("Redirection to auth root page.")
             router.replace('/(auth)/profile'); // Go to the protected root page
         } else if (authStatus === "configuring") {
         } else {
