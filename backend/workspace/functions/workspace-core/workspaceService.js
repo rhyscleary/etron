@@ -156,11 +156,11 @@ async function updateWorkspace(authUserId, workspaceId, data) {
 }
 
 async function deleteWorkspace(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId);
+    /*const isAuthorised = await isOwner(authUserId, workspaceId);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
-    }
+    }*/
 
     const workspace = await workspaceRepo.getWorkspaceById(workspaceId);
 

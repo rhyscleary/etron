@@ -1,10 +1,10 @@
-import { Pressable, View } from "react-native";
-import Header from "../../../../../../components/layout/Header.jsx";
-import { commonStyles } from "../../../../../../assets/styles/stylesheets/common.js";
-import { Link, useRouter } from "expo-router";
-import { Text, useTheme } from "react-native-paper";
 import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
 import Divider from "../../../../../../components/layout/Divider.jsx";
+import { Pressable, View, Button } from "react-native";
+import Header from "../../../../../../components/layout/Header";
+import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
+import { Link, useRouter } from "expo-router";
+import { Text, useTheme } from "react-native-paper";
 
 const MetricManagement = () => {
     const router = useRouter();
@@ -17,6 +17,7 @@ const MetricManagement = () => {
             
             <View>
                 <SearchBar/>
+
 
                 <View style={{ paddingHorizontal: 20, gap: 30 }}>
                     <View>
@@ -34,6 +35,9 @@ const MetricManagement = () => {
                     </View>
                 </View>
             </View>
+
+            {/*Temporary redirect to profile screen*/}
+            <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
         </View>
     )
 }

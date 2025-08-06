@@ -1,5 +1,5 @@
 import { Redirect, useRouter, router, Link } from "expo-router";
-import { PaperProvider, Text } from 'react-native-paper';
+import { ActivityIndicator, PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
 
@@ -36,7 +36,7 @@ function App() {
 
     return (
         <>
-            <Text>This page shouldn't be seen.</Text>
+            <ActivityIndicator size="large" color="#0000ff" />
         </>
     );
 }

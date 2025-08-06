@@ -2,7 +2,7 @@ import { Pressable, View, SectionList, Text as RNText } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
-import { Text, TextInput, TouchableRipple } from "react-native-paper";
+import { Text, TextInput, TouchableRipple, Chip } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { apiGet } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
@@ -13,6 +13,7 @@ const Users = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedRoles, setSelectedRoles] = useState([]);
 
     useEffect(() => {
         fetchIdAndUsers();
@@ -35,23 +36,38 @@ const Users = () => {
         setSearchQuery(query);
     };
 
-    // Filters users by name or email
-    const filteredUsers = users.filter(user =>
-        (user.name || user.email || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const handleToggleRole = (role) => {
+        setSelectedRoles(prev =>
+            prev.includes(role)
+                ? prev.filter(r => r !== role)
+                : [...prev, role]
+        );
+    };
 
-    // Group users by 'type' field (e.g., owner, manager, employee)
-    const roleLabels = {
-        owner: "Business Owner",
+    const roleFilters = {
+        owner: "Owner",
         manager: "Manager",
         employee: "Employee"
     };
+
+    const availableRoles = ["owner", "manager", "employee"];
+
+    // Apply search + filter logic
+    const filteredUsers = users.filter(user => {
+        const matchesSearch = (user.name || user.email || '')
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase());
+
+        const matchesRole = selectedRoles.length === 0 || selectedRoles.includes(user.type);
+
+        return matchesSearch && matchesRole;
+    });
 
     const uniqueRoles = [...new Set(filteredUsers.map(user => user.type))];
 
     const groupedUsers = uniqueRoles.map(role => {
         const data = filteredUsers.filter(user => user.type === role);
-        return { title: roleLabels[role] || role, data };
+        return { title: roleFilters[role] || role, data };
     });
 
     return (
@@ -72,8 +88,20 @@ const Users = () => {
                 style={{ marginVertical: 16 }}
             />
 
-            {/* Placeholder filters for search */}
-            <Text>Filters: Placeholder</Text>
+            {/* Role Filters */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                {availableRoles.map(role => (
+                    <Chip
+                        key={role}
+                        mode="outlined"
+                        selected={selectedRoles.includes(role)}
+                        onPress={() => handleToggleRole(role)}
+                        style={{ marginRight: 8, marginBottom: 8 }}
+                    >
+                        {roleFilters[role]}
+                    </Chip>
+                ))}
+            </View>
 
             {/* Workspace Log */}
             <Pressable

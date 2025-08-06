@@ -5,7 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
-import { apiGet, apiPost, apiDelete } from "../../../../../utils/api/apiClient";
+import { apiGet, apiPut, apiDelete } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 
@@ -37,7 +37,7 @@ const EditUser = () => {
         const user = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
         setUserEmail(user.email || "");
         setUserType(user.type || "employee");
-        setSelectedRole(user.role || "");
+        setSelectedRole(user.roleId || "");
 
         const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
         setRoles(fetchedRoles || []);
@@ -53,10 +53,10 @@ const EditUser = () => {
     try {
       const data = {
         type: userType,
-        role: selectedRole
+        roleId: selectedRole
       };
 
-      const result = await apiPost(
+      const result = await apiPut(
         endpoints.workspace.users.update(workspaceId, userId),
         data
       );

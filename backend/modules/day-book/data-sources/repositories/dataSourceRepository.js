@@ -59,7 +59,7 @@ async function updateDataSource(workspaceId, dataSourceId, dataSourceItem) {
         })
     );
 
-    return result;
+    return result.Attributes;
 }
 
 // update datasource status
