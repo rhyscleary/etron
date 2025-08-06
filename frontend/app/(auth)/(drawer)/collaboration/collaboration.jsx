@@ -27,7 +27,7 @@ const Collaboration = () => {
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
                     {workspaceOptionButtons.map((item) => (
                         <DescriptiveButton 
                             key={item.label}

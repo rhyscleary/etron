@@ -193,7 +193,7 @@ const DataManagement = () => {
         }
       />
       {/*Temporary redirect to profile screen*/}
-      <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
+      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
 
       <ScrollView
         style={styles.container}
