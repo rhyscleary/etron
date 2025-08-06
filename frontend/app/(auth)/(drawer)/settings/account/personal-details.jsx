@@ -35,7 +35,7 @@ const PersonalDetails = () => {
     const [message, setMessage] = useState("");
     const [confirmationCode, setConfirmationCode] = useState("");
     const [needsPhoneConfirmation, setNeedsPhoneConfirmation] = useState(false);
-    const [isLoadingPhoto, setIsLoadingPhoto] = useState(true);
+    const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
     const [profilePhotoUri, setProfilePhotoUri] = useState(null);
     const [errors, setErrors] = useState({
         first: false,
@@ -52,6 +52,7 @@ const PersonalDetails = () => {
             if (cachedUri) {
                 setProfilePhotoUri(cachedUri);
                 console.log("Profile photo loaded from cache.");
+                console.log(cachedUri);
                 return;
             }
 
@@ -153,7 +154,7 @@ const PersonalDetails = () => {
         loadPersonalDetails();
     }, []);
 
-    async function loadPersonalDetails() {
+     async function loadPersonalDetails() {
         setLoading(true);
         try {
             const userAttributes = await fetchUserAttributes();
@@ -243,26 +244,20 @@ const PersonalDetails = () => {
             const currentAttributes = await fetchUserAttributes();
             let allUpdatesSuccessful = true;
             let hasUpdates = false;
-            const data = {};
             
             // update first name if changed
             if (first.trim() !== (currentAttributes.given_name || "")) {
                 hasUpdates = true;
-                data.given_name = first.trim();
+                const result = await handleUpdateUserAttribute('given_name', first.trim());
+                if (result.error) allUpdatesSuccessful = false;
             }
 
             // update last name if changed
             if (last.trim() !== (currentAttributes.family_name || "")) {
                 hasUpdates = true;
-                data.family_name = last.trim();
+                const result = await handleUpdateUserAttribute('family_name', last.trim());
+                if (result.error) allUpdatesSuccessful = false;
             }
-
-            const { userId } = getCurrentUser();
-            result = await apiPut(
-                endpoints.user.core.updateUser(userId, AsyncStorage.getItem('workspaceId')),
-                data
-            );
-            if (result.error) allUpdatesSuccessful = false;
 
             // update phone number if changed
             if (phone.trim()) {
@@ -305,6 +300,7 @@ const PersonalDetails = () => {
         
         await handleConfirmUserAttribute("phone_number", confirmationCode);
     }
+
 
     return(
         <View style={commonStyles.screen}>

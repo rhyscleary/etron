@@ -13,12 +13,14 @@ import { loadLinkedAccounts, removeLinkedAccount } from '../../../../../storage/
 
 import {
     signOut,
+    fetchUserAttributes
 } from 'aws-amplify/auth';
 
 const Accounts = () => {
     const theme = useTheme();
     const [email, setEmail] = useState("");
     const [accounts, setAccounts] = useState([]);
+    const [attributes, setAttributes] = useState(null); 
     const [loading, setLoading] = useState(false);
     const [dialogVisible, setDialogVisible] = useState(false);
     const [accountToRemove, setAccountToRemove] = useState(null);
@@ -30,12 +32,17 @@ const Accounts = () => {
             try {
                 // TODO: update when linked accounts are added in backend
                 const { currentEmail, linkedAccounts } = await loadLinkedAccounts();
+                const userAttributes = await fetchUserAttributes(); 
                 setEmail(currentEmail);
                 setAccounts(linkedAccounts);
+                setAttributes(userAttributes);
+                console.log(linkedAccounts);
+                console.log("User attributes:", userAttributes); 
             } catch (error) {
                 console.error("Error loading accounts: ", error);
                 setEmail("Error");
                 setAccounts([]);
+                setAttributes(null);
             } finally {
                 setLoading(false);
             }
@@ -104,6 +111,16 @@ const Accounts = () => {
         return baseMessage;
     };
 
+    // Helper function to get display name - FIXED
+    const getDisplayName = () => {
+        if (!attributes) return 'Unknown User';
+        const firstName = attributes.given_name || '';
+        const lastName = attributes.family_name || '';
+        const fullName = `${firstName} ${lastName}`.trim();
+        console.log("Display name:", fullName); // Debug log
+        return fullName || 'Unknown User';
+    };
+
     return (
         <View style={commonStyles.screen}>
             <Header
@@ -119,14 +136,18 @@ const Accounts = () => {
                       </View>
                     ) : (
                       <>
-                        {accounts.map((account, index) => (
+                        {accounts.map((linkedAccount, index) => (
                           <AccountCard
                             key={index}
-                            account={account}
-                            isActive={account.email === email}
+                            account={{
+                              name: getDisplayName(),
+                              email: linkedAccount.email
+                            }}
+                            isActive={linkedAccount.email === email}
                             onSwitch={handleSwitchAccount}
                             onRemove={handleRemoveAccount}
                             totalAccounts={accounts.length}
+                            loading={loading}
                           />
                         ))}
                         

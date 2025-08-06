@@ -10,7 +10,11 @@ class DataSourceService {
     this.apiClient = apiClient;
     this.authService = authService;
     this.activeAdapters = new Map();
-    this.isDemoMode = options.demoMode || options.fallbackToDemo || (typeof __DEV__ !== "undefined" ? __DEV__ : false);
+    this.providerConnections = new Map(); // Separate storage for provider connections
+    this.isDemoMode =
+      options.demoMode ||
+      options.fallbackToDemo ||
+      (typeof __DEV__ !== "undefined" ? __DEV__ : false);
     this.demoSources = this.createMockDataSources();
   }
 
@@ -29,14 +33,14 @@ class DataSourceService {
           headers: '{"Content-Type": "application/json"}',
           authentication: "",
           isDemoMode: true,
-          defaultEndpoint: "/posts"
+          defaultEndpoint: "/posts",
         },
         testResult: {
           status: "success",
           responseTime: "245ms",
           statusCode: 200,
           contentType: "application/json",
-        }
+        },
       },
       {
         id: "demo_api_1642109200000",
@@ -48,16 +52,17 @@ class DataSourceService {
         config: {
           url: "https://api.openweathermap.org/data/2.5",
           headers: '{"Accept": "application/json"}',
-          authentication: '{"type": "query", "key": "appid", "value": "demo_key"}',
+          authentication:
+            '{"type": "query", "key": "appid", "value": "demo_key"}',
           isDemoMode: true,
-          defaultEndpoint: "/weather"
+          defaultEndpoint: "/weather",
         },
         testResult: {
           status: "success",
           responseTime: "180ms",
           statusCode: 200,
           contentType: "application/json",
-        }
+        },
       },
       {
         id: "demo_sheets_1642112800000",
@@ -69,37 +74,62 @@ class DataSourceService {
         config: {
           sheetId: "demo_budget_sheet_123",
           sheetName: "Budget 2024",
-          isDemoMode: true
-        }
-      }
+          isDemoMode: true,
+        },
+      },
     ];
   }
 
-  // Get all connected data sources from backend or demo
+  // Get all connected data sources from backend or demo (EXCLUDES provider connections)
   async getConnectedDataSources() {
     if (this.isDemoMode) {
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return [...this.demoSources];
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Filter out provider-only connections from demo sources
+      return this.demoSources.filter((source) => !source.config?.isProvider);
     }
 
     try {
       const response = await this.apiClient.get(
         endpoints.modules.day_book.data_sources.getDataSources()
       );
-      return response.data;
+      // Filter out provider-only connections from backend response
+      return response.data.filter((source) => !source.config?.isProvider);
     } catch (error) {
-      console.error("Failed to fetch connected data sources, falling back to demo mode:", error);
+      console.error(
+        "Failed to fetch connected data sources, falling back to demo mode:",
+        error
+      );
       this.isDemoMode = true;
       return this.getConnectedDataSources();
     }
   }
 
+  // Get provider connection status (separate from data sources)
+  getProviderConnection(type) {
+    if (this.isDemoMode) {
+      const demoProvider = this.demoSources.find(
+        (source) => source.type === type && source.config?.isProvider
+      );
+      return demoProvider;
+    }
+
+    return this.providerConnections.get(type);
+  }
+
+  // NEW: Check if provider is connected
+  isProviderConnected(type) {
+    const connection = this.getProviderConnection(type);
+    return connection && connection.status === "connected";
+  }
+
   // Get a specific data source configuration
   async getDataSource(sourceId) {
     if (this.isDemoMode) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const demoSource = this.demoSources.find(source => source.id === sourceId);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const demoSource = this.demoSources.find(
+        (source) => source.id === sourceId
+      );
       if (!demoSource) {
         throw new Error(`Demo data source ${sourceId} not found`);
       }
@@ -112,14 +142,17 @@ class DataSourceService {
       );
       return response.data;
     } catch (error) {
-      console.error(`Failed to fetch data source ${sourceId}, checking demo sources:`, error);
-      
+      console.error(
+        `Failed to fetch data source ${sourceId}, checking demo sources:`,
+        error
+      );
+
       // Check if it's a demo source ID
-      if (sourceId.startsWith('demo_')) {
+      if (sourceId.startsWith("demo_")) {
         this.isDemoMode = true;
         return this.getDataSource(sourceId);
       }
-      
+
       throw new Error("Unable to load data source");
     }
   }
@@ -129,17 +162,19 @@ class DataSourceService {
     try {
       // Get the data source configuration
       const dataSource = await this.getDataSource(sourceId);
-      
+
       if (!dataSource) {
         throw new Error(`Data source ${sourceId} not found`);
       }
 
       // Get or create the appropriate adapter
       const adapter = await this.getAdapter(dataSource.type, dataSource.config);
-      
+
       // Check if adapter supports raw data fetching
-      if (!adapter.fetchRawData && typeof adapter.fetchRawData !== 'function') {
-        throw new Error(`Adapter for ${dataSource.type} does not support data fetching`);
+      if (!adapter.fetchRawData && typeof adapter.fetchRawData !== "function") {
+        throw new Error(
+          `Adapter for ${dataSource.type} does not support data fetching`
+        );
       }
 
       // Extract endpoint information from options or data source config
@@ -152,29 +187,28 @@ class DataSourceService {
 
       // Fetch raw data using the adapter
       const rawResponse = await adapter.fetchRawData(endpoint, method, params);
-      
+
       // Transform raw response into standardized format
       const transformedData = this.transformRawData(rawResponse, dataSource, {
         endpoint,
         method,
-        sourceId
+        sourceId,
       });
 
       // Update last sync timestamp
       await this.updateLastSync(sourceId);
 
       return transformedData;
-
     } catch (error) {
       console.error(`Failed to fetch data from source ${sourceId}:`, error);
-      
+
       // Update data source status to error
       try {
-        await this.updateDataSourceStatus(sourceId, 'error', error.message);
+        await this.updateDataSourceStatus(sourceId, "error", error.message);
       } catch (statusError) {
-        console.warn('Failed to update data source status:', statusError);
+        console.warn("Failed to update data source status:", statusError);
       }
-      
+
       throw new Error(`Failed to fetch data: ${error.message}`);
     }
   }
@@ -183,18 +217,18 @@ class DataSourceService {
   transformRawData(rawResponse, dataSource, requestInfo) {
     let data = [];
     let headers = [];
-    
+
     // Handle different response formats
     if (Array.isArray(rawResponse.data)) {
       data = rawResponse.data;
       headers = data.length > 0 ? Object.keys(data[0]) : [];
-    } else if (rawResponse.data && typeof rawResponse.data === 'object') {
+    } else if (rawResponse.data && typeof rawResponse.data === "object") {
       data = [rawResponse.data];
       headers = Object.keys(rawResponse.data);
     } else {
       // Handle primitive responses
       data = [{ value: rawResponse.data }];
-      headers = ['value'];
+      headers = ["value"];
     }
 
     return {
@@ -210,18 +244,18 @@ class DataSourceService {
         method: requestInfo.method,
         statusCode: rawResponse.statusCode,
         responseTime: rawResponse.responseTime,
-        contentType: rawResponse.headers?.['content-type'] || 'unknown',
+        contentType: rawResponse.headers?.["content-type"] || "unknown",
         lastUpdated: new Date().toISOString(),
         recordCount: data.length,
-        isDemoData: dataSource.config?.isDemoMode || false
-      }
+        isDemoData: dataSource.config?.isDemoMode || false,
+      },
     };
   }
 
   // Get or create adapter for a data source type
   async getAdapter(type, config = {}) {
     const adapterKey = `${type}_${JSON.stringify(config)}`;
-    
+
     if (this.activeAdapters.has(adapterKey)) {
       return this.activeAdapters.get(adapterKey);
     }
@@ -232,7 +266,7 @@ class DataSourceService {
         demoMode: this.isDemoMode || config.isDemoMode,
         fallbackToDemo: true,
         apiClient: this.apiClient,
-        authService: this.authService
+        authService: this.authService,
       });
 
       if (!adapter) {
@@ -250,27 +284,27 @@ class DataSourceService {
   // Connect a new data source
   async connectDataSource(type, config, name) {
     if (this.isDemoMode) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       const newDemoSource = {
         id: `demo_${type}_${Date.now()}`,
         type,
         name: `${name} (Demo)`,
-        status: 'connected',
+        status: "connected",
         lastSync: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         config: {
           ...config,
-          isDemoMode: true
+          isDemoMode: true,
         },
         testResult: {
           status: "success",
           responseTime: "245ms",
           statusCode: 200,
           contentType: "application/json",
-        }
+        },
       };
-      
+
       this.demoSources.push(newDemoSource);
       console.log(this.demoSources);
       return newDemoSource;
@@ -287,14 +321,17 @@ class DataSourceService {
           type,
           name,
           config,
-          status: 'connected',
-          testResult: connectionData
+          status: "connected",
+          testResult: connectionData,
         }
       );
-      
+
       return response.data;
     } catch (error) {
-      console.error("Failed to connect data source, falling back to demo mode:", error);
+      console.error(
+        "Failed to connect data source, falling back to demo mode:",
+        error
+      );
       this.isDemoMode = true;
       return this.connectDataSource(type, config, name);
     }
@@ -303,14 +340,14 @@ class DataSourceService {
   // Update data source configuration
   async updateDataSource(sourceId, updates) {
     if (this.isDemoMode) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const sourceIndex = this.demoSources.findIndex(s => s.id === sourceId);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const sourceIndex = this.demoSources.findIndex((s) => s.id === sourceId);
       if (sourceIndex !== -1) {
         this.demoSources[sourceIndex] = {
           ...this.demoSources[sourceIndex],
           ...updates,
-          lastSync: new Date().toISOString()
+          lastSync: new Date().toISOString(),
         };
         return this.demoSources[sourceIndex];
       }
@@ -322,12 +359,12 @@ class DataSourceService {
         endpoints.modules.day_book.data_sources.update(sourceId),
         updates
       );
-      
+
       // Clear cached adapter if config changed
       if (updates.config) {
         this.clearAdapterCache(sourceId);
       }
-      
+
       return response.data;
     } catch (error) {
       console.error(`Failed to update data source ${sourceId}:`, error);
@@ -338,9 +375,9 @@ class DataSourceService {
   // Disconnect/delete a data source
   async disconnectDataSource(sourceId) {
     if (this.isDemoMode) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const sourceIndex = this.demoSources.findIndex(s => s.id === sourceId);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const sourceIndex = this.demoSources.findIndex((s) => s.id === sourceId);
       if (sourceIndex !== -1) {
         this.demoSources.splice(sourceIndex, 1);
         this.clearAdapterCache(sourceId);
@@ -353,10 +390,10 @@ class DataSourceService {
       await this.apiClient.delete(
         endpoints.modules.day_book.data_sources.removeDataSource(sourceId)
       );
-      
+
       // Clear cached adapter
       this.clearAdapterCache(sourceId);
-      
+
       return true;
     } catch (error) {
       console.error(`Failed to disconnect data source ${sourceId}:`, error);
@@ -373,11 +410,13 @@ class DataSourceService {
         demoMode: this.isDemoMode,
         fallbackToDemo: true,
         apiClient: this.apiClient,
-        authService: this.authService
+        authService: this.authService,
       });
 
       if (!adapter || !adapter.testConnection) {
-        throw new Error(`Adapter for ${type} does not support connection testing`);
+        throw new Error(
+          `Adapter for ${type} does not support connection testing`
+        );
       }
 
       // Test the connection
@@ -392,12 +431,12 @@ class DataSourceService {
         name,
         config: {
           ...config,
-          isDemoMode: this.isDemoMode
+          isDemoMode: this.isDemoMode,
         },
-        status: 'success',
+        status: "success",
         testResult,
         createdAt: new Date().toISOString(),
-        lastTested: new Date().toISOString()
+        lastTested: new Date().toISOString(),
       };
     } catch (error) {
       console.error(`Connection test failed:`, error);
@@ -409,7 +448,9 @@ class DataSourceService {
   async updateLastSync(sourceId) {
     try {
       if (this.isDemoMode) {
-        const sourceIndex = this.demoSources.findIndex(s => s.id === sourceId);
+        const sourceIndex = this.demoSources.findIndex(
+          (s) => s.id === sourceId
+        );
         if (sourceIndex !== -1) {
           this.demoSources[sourceIndex].lastSync = new Date().toISOString();
         }
@@ -417,7 +458,7 @@ class DataSourceService {
       }
 
       await this.updateDataSource(sourceId, {
-        lastSync: new Date().toISOString()
+        lastSync: new Date().toISOString(),
       });
     } catch (error) {
       console.warn(`Failed to update last sync for ${sourceId}:`, error);
@@ -428,7 +469,9 @@ class DataSourceService {
   async updateDataSourceStatus(sourceId, status, error = null) {
     try {
       if (this.isDemoMode) {
-        const sourceIndex = this.demoSources.findIndex(s => s.id === sourceId);
+        const sourceIndex = this.demoSources.findIndex(
+          (s) => s.id === sourceId
+        );
         if (sourceIndex !== -1) {
           this.demoSources[sourceIndex].status = status;
           if (error) {
@@ -457,7 +500,7 @@ class DataSourceService {
         keysToRemove.push(key);
       }
     }
-    keysToRemove.forEach(key => this.activeAdapters.delete(key));
+    keysToRemove.forEach((key) => this.activeAdapters.delete(key));
   }
 
   // Get statistics about connected data sources
@@ -500,25 +543,142 @@ class DataSourceService {
     try {
       const dataSource = await this.getDataSource(sourceId);
       const adapter = await this.getAdapter(dataSource.type, dataSource.config);
-      
-      if (adapter.getDataSources && typeof adapter.getDataSources === 'function') {
+
+      if (
+        adapter.getDataSources &&
+        typeof adapter.getDataSources === "function"
+      ) {
         return await adapter.getDataSources();
       }
-      
+
       // Return default if adapter doesn't support discovery
-      return [{
-        id: `${sourceId}_default`,
-        name: `${dataSource.name} - Default`,
-        type: 'default',
-        lastModified: dataSource.lastSync || dataSource.createdAt
-      }];
+      return [
+        {
+          id: `${sourceId}_default`,
+          name: `${dataSource.name} - Default`,
+          type: "default",
+          lastModified: dataSource.lastSync || dataSource.createdAt,
+        },
+      ];
     } catch (error) {
-      console.error(`Failed to get available data sources for ${sourceId}:`, error);
+      console.error(
+        `Failed to get available data sources for ${sourceId}:`,
+        error
+      );
       throw new Error("Failed to discover available data sources");
     }
   }
 
-  // Sync/refresh data from a source 
+  // Connect provider (stores separately, doesn't appear in data sources list)
+  async connectProvider(type) {
+    console.log(`Connecting provider for type: ${type}`);
+
+    try {
+      // Get the adapter instance
+      const adapter = await this.getAdapter(type);
+
+      if (!adapter || !adapter.connect) {
+        throw new Error(
+          `Adapter for ${type} does not support provider connection`
+        );
+      }
+
+      // Call the adapter's connect method for authentication
+      const connectionResult = await adapter.connect();
+      console.log(`${type} adapter connection result:`, connectionResult);
+
+      // Create a provider connection entry (NOT a data source)
+      const providerConnection = {
+        id: `provider_${type}_${Date.now()}`,
+        type: type,
+        name: `${this.getDisplayName(type)} Provider`,
+        status: "connected",
+        lastSync: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        config: {
+          isProvider: true, // Mark this as a provider connection
+          connectionResult: connectionResult,
+          isDemoMode: this.isDemoMode,
+        },
+        testResult: {
+          status: "success",
+          responseTime: "200ms",
+          statusCode: 200,
+          contentType: "application/json",
+        },
+      };
+
+      if (this.isDemoMode) {
+        // Add to demo sources but mark as provider
+        this.demoSources.push(providerConnection);
+        console.log("Added provider to demo sources:", providerConnection.id);
+      } else {
+        // Store in separate provider connections map instead of main data sources
+        this.providerConnections.set(type, providerConnection);
+        console.log("Stored provider connection:", providerConnection.id);
+
+        // Optionally save to backend with a different endpoint for providers
+        try {
+          // You might want to create a separate endpoint for provider connections
+          // const response = await this.apiClient.post(
+          //   endpoints.modules.day_book.providers.add(),
+          //   providerConnection
+          // );
+        } catch (error) {
+          console.warn("Failed to save provider connection to backend:", error);
+        }
+      }
+
+      return providerConnection;
+    } catch (error) {
+      console.error(`Failed to connect ${type} provider:`, error);
+      throw new Error(`Failed to connect ${type} provider: ${error.message}`);
+    }
+  }
+
+  //  Disconnect a provider (separate from disconnecting data sources)
+  async disconnectProvider(type) {
+    try {
+      if (this.isDemoMode) {
+        // Remove from demo sources
+        const sourceIndex = this.demoSources.findIndex(
+          (s) => s.type === type && s.config?.isProvider
+        );
+        if (sourceIndex !== -1) {
+          this.demoSources.splice(sourceIndex, 1);
+        }
+      } else {
+        // Remove from provider connections
+        this.providerConnections.delete(type);
+
+        // Optionally remove from backend
+        // await this.apiClient.delete(endpoints.modules.day_book.providers.remove(type));
+      }
+
+      // Clear any cached adapters for this type
+      this.clearAdapterCacheByType(type);
+
+      return true;
+    } catch (error) {
+      console.error(`Failed to disconnect ${type} provider:`, error);
+      throw new Error(
+        `Failed to disconnect ${type} provider: ${error.message}`
+      );
+    }
+  }
+
+  // Clear cached adapters by type
+  clearAdapterCacheByType(type) {
+    const keysToRemove = [];
+    for (const key of this.activeAdapters.keys()) {
+      if (key.startsWith(type)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => this.activeAdapters.delete(key));
+  }
+
+  // Sync/refresh data from a source
   async syncDataSource(sourceId, options = {}) {
     return this.fetchDataFromSource(sourceId, options);
   }
@@ -537,9 +697,28 @@ class DataSourceService {
   getDemoModeInfo() {
     return {
       isDemoMode: this.isDemoMode,
-      demoSourceCount: this.demoSources.length,
-      availableDemoTypes: [...new Set(this.demoSources.map(s => s.type))]
+      demoSourceCount: this.demoSources.filter((s) => !s.config?.isProvider)
+        .length,
+      availableDemoTypes: [
+        ...new Set(
+          this.demoSources
+            .filter((s) => !s.config?.isProvider)
+            .map((s) => s.type)
+        ),
+      ],
     };
+  }
+
+  getDisplayName(type) {
+    const displayNames = {
+      "google-sheets": "Google Sheets",
+      "google-drive": "Google Drive",
+      "microsoft-excel": "Microsoft Excel",
+      onedrive: "OneDrive",
+      dropbox: "Dropbox",
+      "custom-api": "Custom API",
+    };
+    return displayNames[type] || type;
   }
 }
 

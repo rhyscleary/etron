@@ -144,7 +144,6 @@ const createAuthService = () => ({
   },
 });
 
-
 //Singleton !!!!!!!!!
 // Global service instance - this is the key change
 let globalDataSourceService = null;
@@ -153,13 +152,14 @@ const getDataSourceService = () => {
   if (!globalDataSourceService) {
     const apiClient = createApiClient();
     const authService = createAuthService();
-    console.log('Creating new DataSourceService instance');
-    globalDataSourceService = new DataSourceService(apiClient, authService, { demoMode: true });
+    console.log("Creating new DataSourceService instance");
+    globalDataSourceService = new DataSourceService(apiClient, authService, {
+      demoMode: true,
+    });
   }
   return globalDataSourceService;
 };
 
-// Optional: Reset function for testing or logout scenarios
 export const resetDataSourceService = () => {
   globalDataSourceService = null;
 };
@@ -181,9 +181,13 @@ const useDataSources = () => {
         if (showLoading) setLoading(true);
         setError(null);
 
-        console.log('Loading data sources...');
+        console.log("Loading data sources...");
         const sources = await service.getConnectedDataSources();
-        console.log('Loaded sources:', sources.length, sources.map(s => s.id));
+        console.log(
+          "Loaded sources:",
+          sources.length,
+          sources.map((s) => s.id)
+        );
         setDataSources(sources);
 
         const sourceStats = await service.getDataSourceStats();
@@ -199,153 +203,247 @@ const useDataSources = () => {
   );
 
   // connect a new data source
-  const connectDataSource = useCallback(async (type, config, name) => {
-    try {
-      setError(null);
-      console.log("Before connecting - current sources:", dataSources.length);
-      
-      const newSource = await service.connectDataSource(type, config, name);
-      console.log("New source created:", newSource.id);
-      
-      // Immediately reload all sources to ensure state is in sync
-      await loadDataSources(false); // false = don't show loading spinner
-      
-      console.log("After connecting - reloaded sources");
-      
-      return newSource;
-    } catch (err) {
-      console.error("Failed to connect data source:", err);
-      setError(err.message);
-      throw err;
-    }
-  }, [service, dataSources.length, loadDataSources]);
+  const connectDataSource = useCallback(
+    async (type, config, name) => {
+      try {
+        setError(null);
+        console.log("Before connecting - current sources:", dataSources.length);
 
-  const disconnectDataSource = useCallback(async (sourceId) => {
-    try {
-      setError(null);
-      console.log("Disconnecting source:", sourceId);
-      
-      await service.disconnectDataSource(sourceId);
-      
-      // Reload all sources instead of manual state update
-      await loadDataSources(false);
-      
-      console.log("Source disconnected and list reloaded");
-    } catch (err) {
-      console.error("Failed to disconnect data source:", err);
-      setError(err.message);
-      throw err;
-    }
-  }, [service, loadDataSources]);
+        const newSource = await service.connectDataSource(type, config, name);
+        console.log("New source created:", newSource.id);
 
-  const updateDataSource = useCallback(async (sourceId, updates) => {
-    try {
-      setError(null);
-      const updated = await service.updateDataSource(sourceId, updates);
-      
-      // Reload all sources to ensure consistency
-      await loadDataSources(false);
-      
-      return updated;
-    } catch (err) {
-      console.error("Failed to update data source:", err);
-      setError(err.message);
-      throw err;
-    }
-  }, [service, loadDataSources]);
+        // Immediately reload all sources to ensure state is in sync
+        await loadDataSources(false); // false = don't show loading spinner
 
-  const testConnection = useCallback(async (type, config, name) => {
-    try {
-      setError(null);
-      return await service.testConnection(type, config, name);
-    } catch (err) {
-      console.error("Connection test failed:", err);
-      setError(err.message);
-      throw err;
-    }
-  }, [service]);
+        console.log("After connecting - reloaded sources");
 
-  const syncDataSource = useCallback(async (sourceId) => {
-    try {
-      setError(null);
-      
-      const updatedSource = await service.getDataSource(sourceId);
-      
-      // Update the specific source in state
-      setDataSources((prev) =>
-        prev.map((source) =>
-          source.id === sourceId ? { ...source, ...updatedSource } : source
-        )
-      );
-      
-      return updatedSource;
-    } catch (err) {
-      console.error("Sync failed:", err);
-      setError(err.message);
-      throw err;
-    }
-  }, [service]);
+        return newSource;
+      } catch (err) {
+        console.error("Failed to connect data source:", err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service, dataSources.length, loadDataSources]
+  );
 
-  const getDataSource = useCallback(async (sourceId) => {
-    try {
-      return await service.getDataSource(sourceId);
-    } catch (err) {
-      console.error("Failed to get data source:", err);
-      setError(err.message);
-      throw err;
-    }
-  }, [service]);
+  const disconnectDataSource = useCallback(
+    async (sourceId) => {
+      try {
+        setError(null);
+        console.log("Disconnecting source:", sourceId);
+
+        await service.disconnectDataSource(sourceId);
+
+        // Reload all sources instead of manual state update
+        await loadDataSources(false);
+
+        console.log("Source disconnected and list reloaded");
+      } catch (err) {
+        console.error("Failed to disconnect data source:", err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service, loadDataSources]
+  );
+
+  const updateDataSource = useCallback(
+    async (sourceId, updates) => {
+      try {
+        setError(null);
+        const updated = await service.updateDataSource(sourceId, updates);
+
+        // Reload all sources to ensure consistency
+        await loadDataSources(false);
+
+        return updated;
+      } catch (err) {
+        console.error("Failed to update data source:", err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service, loadDataSources]
+  );
+
+  // Connect provider (doesn't add to data sources list)
+  const connectProvider = useCallback(
+    async (adapterType) => {
+      try {
+        setError(null);
+        console.log(`Starting provider connection for: ${adapterType}`);
+
+        // Call the service's connectProvider method (stores separately from data sources)
+        const result = await service.connectProvider(adapterType);
+        console.log(`${adapterType} provider connected:`, result);
+
+        // No need to reload data sources since provider connections are separate
+        console.log(
+          "Provider connection complete, no data source list update needed"
+        );
+        return result;
+      } catch (err) {
+        console.error(`Failed to connect ${adapterType} provider:`, err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service]
+  );
+
+  // Disconnect provider (separate from data sources)
+  const disconnectProvider = useCallback(
+    async (adapterType) => {
+      try {
+        setError(null);
+        console.log(`Disconnecting ${adapterType} provider...`);
+
+        await service.disconnectProvider(adapterType);
+        console.log(`${adapterType} provider disconnected`);
+
+        return true;
+      } catch (err) {
+        console.error(`Failed to disconnect ${adapterType} provider:`, err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service]
+  );
+
+  // Check if a provider is connected
+  const isProviderConnected = useCallback(
+    (adapterType) => {
+      return service.isProviderConnected(adapterType);
+    },
+    [service]
+  );
+
+  // Get provider connection info
+  const getProviderConnection = useCallback(
+    (adapterType) => {
+      return service.getProviderConnection(adapterType);
+    },
+    [service]
+  );
+
+  const testConnection = useCallback(
+    async (type, config, name) => {
+      try {
+        setError(null);
+        return await service.testConnection(type, config, name);
+      } catch (err) {
+        console.error("Connection test failed:", err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service]
+  );
+
+  const syncDataSource = useCallback(
+    async (sourceId) => {
+      try {
+        setError(null);
+
+        const updatedSource = await service.getDataSource(sourceId);
+
+        // Update the specific source in state
+        setDataSources((prev) =>
+          prev.map((source) =>
+            source.id === sourceId ? { ...source, ...updatedSource } : source
+          )
+        );
+
+        return updatedSource;
+      } catch (err) {
+        console.error("Sync failed:", err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service]
+  );
+
+  const getDataSource = useCallback(
+    async (sourceId) => {
+      try {
+        return await service.getDataSource(sourceId);
+      } catch (err) {
+        console.error("Failed to get data source:", err);
+        setError(err.message);
+        throw err;
+      }
+    },
+    [service]
+  );
 
   const refresh = useCallback(() => {
-    console.log('Manual refresh triggered');
+    console.log("Manual refresh triggered");
     return loadDataSources(true);
   }, [loadDataSources]);
 
   // Load data sources on mount
   useEffect(() => {
-    console.log('useDataSources mounted, loading initial data');
+    console.log("useDataSources mounted, loading initial data");
     loadDataSources();
   }, [loadDataSources]);
 
   // Helper functions
-  const getSourcesByStatus = useCallback(status =>
-    dataSources.filter(s => s.status === status), [dataSources]);
+  const getSourcesByStatus = useCallback(
+    (status) => dataSources.filter((s) => s.status === status),
+    [dataSources]
+  );
 
-  const getSourcesByType = useCallback(type =>
-    dataSources.filter(s => s.type === type), [dataSources]);
+  const getSourcesByType = useCallback(
+    (type) => dataSources.filter((s) => s.type === type),
+    [dataSources]
+  );
 
-  const getSourcesByCategory = useCallback(category =>
-    dataSources.filter(source => {
-      const info = getAdapterInfo(source.type);
-      return info?.category === category;
-    }), [dataSources]);
+  const getSourcesByCategory = useCallback(
+    (category) =>
+      dataSources.filter((source) => {
+        const info = getAdapterInfo(source.type);
+        return info?.category === category;
+      }),
+    [dataSources]
+  );
 
-    
-    const getAdapterFilterOptions = useCallback((type) => {
-      try {
-        const info = getAdapterInfo(type);
-        if (info && typeof info.getFilterOptions === "function") {
-          return info.getFilterOptions();
-        }
-        return [];
-      } catch (err) {
-        console.error("Failed to get adapter filter options:", err);
-        return [];
+  const getAdapterFilterOptions = useCallback((type) => {
+    try {
+      const info = getAdapterInfo(type);
+      if (info && typeof info.getFilterOptions === "function") {
+        return info.getFilterOptions();
       }
-    }, []);
+      return [];
+    } catch (err) {
+      console.error("Failed to get adapter filter options:", err);
+      return [];
+    }
+  }, []);
 
   // Debug function to check current state
   const debugState = useCallback(() => {
-    console.log('=== DEBUG STATE ===');
-    console.log('dataSources state:', dataSources.length, dataSources.map(s => ({ id: s.id, name: s.name })));
-    console.log('service demo sources:', service.getDemoSourcesCount ? service.getDemoSourcesCount() : 'method not available');
+    console.log("=== DEBUG STATE ===");
+    console.log(
+      "dataSources state:",
+      dataSources.length,
+      dataSources.map((s) => ({ id: s.id, name: s.name }))
+    );
+    console.log(
+      "service demo sources:",
+      service.getDemoSourcesCount
+        ? service.getDemoSourcesCount()
+        : "method not available"
+    );
     if (service.logDemoSources) service.logDemoSources();
-    console.log('==================');
+    console.log("==================");
   }, [dataSources, service]);
 
   const isDemoModeActive = useCallback(() => {
     return service.isDemoModeActive();
-  })
+  }, [service]);
 
   return {
     dataSources,
@@ -353,6 +451,7 @@ const useDataSources = () => {
     error,
     stats,
 
+    // Data source operations
     loadDataSources,
     connectDataSource,
     disconnectDataSource,
@@ -362,12 +461,20 @@ const useDataSources = () => {
     getDataSource,
     refresh,
 
+    // Provider operations (separate from data sources)
+    connectProvider,
+    disconnectProvider,
+    isProviderConnected,
+    getProviderConnection,
+
+    // Helper functions
     getSourcesByStatus,
     getSourcesByType,
     getSourcesByCategory,
     isDemoModeActive,
     getAdapterFilterOptions,
 
+    // Computed values
     connectedSources: dataSources.filter((s) => s.status === "connected"),
     errorSources: dataSources.filter((s) => s.status === "error"),
     totalSources: dataSources.length,

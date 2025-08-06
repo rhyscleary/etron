@@ -13,7 +13,7 @@ const createMockData = () => ({
       headers: '{"Content-Type": "application/json"}',
       authentication: "",
       testResult: {
-        status: "success",
+        status: "connected",
         responseTime: "245ms",
         statusCode: 200,
         contentType: "application/json",
@@ -29,7 +29,7 @@ const createMockData = () => ({
       headers: '{"Accept": "application/json"}',
       authentication: '{"type": "query", "key": "appid", "value": "demo_key"}',
       testResult: {
-        status: "success",
+        status: "connected",
         responseTime: "180ms",
         statusCode: 200,
         contentType: "application/json",
@@ -209,7 +209,7 @@ export const createCustomApiAdapter = (options = {}) => {
       headers: connectionData.headers || "{}",
       authentication: connectionData.authentication || "",
       testResult: {
-        status: "success",
+        status: "connected",
         responseTime: "245ms",
         statusCode: 200,
         contentType: "application/json",
@@ -224,7 +224,7 @@ export const createCustomApiAdapter = (options = {}) => {
     isConnected = true;
 
     return {
-      success: true,
+      connected: true,
       connection: currentConnection,
       isDemoMode: true,
     };
@@ -246,7 +246,7 @@ export const createCustomApiAdapter = (options = {}) => {
         connectionData.authentication
       );
 
-      if (testResult.status !== "success") {
+      if (testResult.status !== "connected") {
         throw new Error("Connection test failed");
       }
 
@@ -268,7 +268,7 @@ export const createCustomApiAdapter = (options = {}) => {
       isConnected = true;
 
       return {
-        success: true,
+        connected: true,
         connection: currentConnection,
       };
     } catch (error) {
@@ -284,7 +284,7 @@ export const createCustomApiAdapter = (options = {}) => {
       connections = [];
       isConnected = false;
 
-      return { success: true };
+      return { connected: true };
     } catch (error) {
       throw new Error(`Failed to disconnect: ${error.message}`);
     }
@@ -294,16 +294,16 @@ export const createCustomApiAdapter = (options = {}) => {
   const testConnection = async (url, headers = "", authentication = "") => {
     if (isDemoMode) {
       await delay(2000);
-      const isSuccess = Math.random() > 0.2; // fake success rate
+      const isconnected = Math.random() > 0.2; // fake connected rate
 
-      if (isSuccess) {
+      if (isconnected) {
         return {
-          status: "success",
+          status: "connected",
           responseTime: `${Math.floor(Math.random() * 300 + 100)}ms`,
           statusCode: 200,
           contentType: "application/json",
           sampleData: {
-            message: "API connection successful",
+            message: "API connection connectedful",
             timestamp: new Date().toISOString(),
             endpoints: ["/data", "/users", "/status"],
           },
@@ -331,12 +331,12 @@ export const createCustomApiAdapter = (options = {}) => {
       // mock response
       await delay(2000);
       return {
-        status: "success",
+        status: "connected",
         responseTime: "245ms",
         statusCode: 200,
         contentType: "application/json",
         sampleData: {
-          message: "API connection successful",
+          message: "API connection connectedful",
           timestamp: new Date().toISOString(),
         },
       };
@@ -470,7 +470,7 @@ export const createCustomApiAdapter = (options = {}) => {
     currentConnection = connection;
     isConnected = true;
 
-    return { success: true, connection };
+    return { connected: true, connection };
   };
 
   const updateConnection = async (connectionId, updates) => {
@@ -488,10 +488,10 @@ export const createCustomApiAdapter = (options = {}) => {
           currentConnection = connections[connectionIndex];
         }
       }
-      return { success: true };
+      return { connected: true };
     }
 
-    return { success: true };
+    return { connected: true };
   };
 
   const deleteConnection = async (connectionId) => {
@@ -502,10 +502,10 @@ export const createCustomApiAdapter = (options = {}) => {
         currentConnection = null;
         isConnected = false;
       }
-      return { success: true };
+      return { connected: true };
     }
 
-    return { success: true };
+    return { connected: true };
   };
 
   const filterDataSources = (query, dataSources = []) => {

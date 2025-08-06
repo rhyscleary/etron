@@ -3,7 +3,7 @@ import ConnectionDataSourceLayout from "../../../../../../../components/layout/C
 
 const GoogleSheets = () => {
     const getItemDescription = (dataSource, formatDate) => {
-        return `Status: ${dataSource.status} • Connected: ${formatDate(dataSource.createdAt)}`;
+        return `Status: ${dataSource.status} • Last Modified: ${formatDate(dataSource.lastModified)}`;
     };
 
     const getItemIcon = () => "google-spreadsheet";
