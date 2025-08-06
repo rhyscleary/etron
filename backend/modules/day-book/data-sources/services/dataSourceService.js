@@ -50,7 +50,7 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
         throw new Error("User does not have permission to perform action");
     }
 
-    const dataSource = await dataSourceRepo.getDataSourceById(dataSourceId);
+    const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
     if (!dataSource) {
         throw new Error("The data source does not exist");

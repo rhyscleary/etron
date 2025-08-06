@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View, Button } from "react-native";
 import { Link, router, useRouter } from "expo-router";
 import { Text, useTheme } from "react-native-paper";
 import Header from "../../../../components/layout/Header";
@@ -24,22 +24,10 @@ const Collaboration = () => {
         <View style={commonStyles.screen}>
             <Header title="Collaboration" showMenu />
 
-            {/*Temporary redirect to profile screen*/}
-            <Link href="/profile" asChild>
-                <Pressable>
-                    <Text>temp home page</Text>
-                </Pressable>
-            </Link>
-            
-            {/*Temporary redirect to collab/workspace join endpoints screen*/}
-            <Link href="/collaboration/collab-endpoints" asChild>
-                <Pressable>
-                    <Text>Go to Endpoints</Text>
-                </Pressable>
-            </Link>
-
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
+                    {/*Temporary redirect to profile screen*/}
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
                     {workspaceOptionButtons.map((item) => (
                         <DescriptiveButton 
                             key={item.label}
