@@ -123,7 +123,7 @@ function App() {
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={34}>
                     {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
                     <SignOutButton />
                     <TextField
                         label="Given Name"

@@ -10,7 +10,7 @@ const Notifications = () => {
             <Header title="Notifications" showMenu showPlus onRightIconPress={() => router.push("/notifications/create-notification")} />
 
             {/*Temporary redirect to profile screen*/}
-            <Button title="Temporary - Back to Dashboard" onPress={() => router.back()} />
+            <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
         </View>
     )
 }
