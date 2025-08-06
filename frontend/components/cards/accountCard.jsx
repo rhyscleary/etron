@@ -6,8 +6,7 @@ import BasicButton from "../common/buttons/BasicButton";
 
 const AccountCard = ({
     onPress,
-    name = "",
-    email = "",
+    account,
     loading = false,
 }) => {
     const theme = useTheme();
@@ -30,9 +29,9 @@ const AccountCard = ({
                             alignItems: 'center',
                         }}>
                             <StackLayout spacing={2}>
-                                <Text style={[commonStyles.listItemText, { fontWeight: 'bold' }]}>{name}</Text>
+                                <Text style={[commonStyles.listItemText, { fontWeight: 'bold' }]}>{account.name}</Text>
                                 <Text style={[commonStyles.captionText, { color: theme.colors.themeGrey, fontStyle: 'italic' }]}>
-                                    {email}
+                                    {account.email}
                                 </Text>
                             </StackLayout>
                             <BasicButton
