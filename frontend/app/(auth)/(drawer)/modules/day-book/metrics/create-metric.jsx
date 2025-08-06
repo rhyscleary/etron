@@ -8,7 +8,7 @@ import DropDown from '../../../../../../components/common/input/DropDown';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import TextField from '../../../../../../components/common/input/TextField';
 import endpoints from '../../../../../../utils/api/endpoints';
-import localGraphData from './graph-data';
+import graphDataBySource from './graph-data';
 
 const CreateMetric = () => {
     const router = useRouter();
@@ -16,36 +16,20 @@ const CreateMetric = () => {
     const [dataSources, setDataSources] = useState([]);
     const [graphData, setGraphData] = useState([]);
     const [selectedMetric, setSelectedMetric] = useState(null);
+    const [selectedDataSource, setSelectedDataSource] = useState(null);
     const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
 
 const totalSteps = 2;
 
     useEffect(() => {
-        fetchDataSources();
-        fetchGraphData();
+        const sources = Object.keys(graphDataBySource);
+        setDataSources(sources);
     }, []);
 
-    const fetchDataSources = async () => {
-        try {
-            const response = await fetch(endpoints.modules.day_book.data_sources.getDataSources);
-            const json = await response.json();
-            const names = Array.isArray(json)
-                ? json.map(item => item.name || item.title || "Unnamed")
-                : [];
-
-            setDataSources(names);
-        } catch (error) {
-            console.error("Error fetching data sources:", error);
-        }
-    };
-
-    const fetchGraphData = () => {
-        try {
-            const formattedData = localGraphData.map(value => ({ value }));
-            setGraphData(formattedData);
-        } catch (error) {
-            console.error('Failed to load graph data');
-        }
+    const handleDataSourceSelect = (source) => {
+        setSelectedDataSource(source);
+        const formattedData = graphDataBySource[source]?.map(value => ({ value })) || [];
+        setGraphData(formattedData);
     };
 
     const handleBack = () => {
@@ -73,6 +57,7 @@ const totalSteps = 2;
                             <DropDown
                                 title = "Select Data Source"
                                 items = {dataSources}
+                                onSelect={handleDataSourceSelect}
                             />
 
                             <DropDown
