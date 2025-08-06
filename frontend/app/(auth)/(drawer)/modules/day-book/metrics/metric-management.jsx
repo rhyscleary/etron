@@ -13,7 +13,7 @@ const MetricManagement = () => {
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.push("/create-metric")}/>
+            <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.push("/modules/day-book/metrics/create-metric")}/>
             
             <View>
                 <SearchBar/>
