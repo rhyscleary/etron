@@ -1,3 +1,5 @@
+// Author(s): Matthew Parkinson
+
 import React, { useState, useEffect } from 'react';
 import { Redirect, useRouter, router, Link } from "expo-router";
 import { View, Image, ImageBackground, StyleSheet } from 'react-native';

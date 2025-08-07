@@ -1,3 +1,5 @@
+// Author(s): Matthew Page
+
 import React, { useEffect, useState } from "react";
 import { View, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";

@@ -1,3 +1,5 @@
+// Author(s): Matthew Page
+
 import { View, ScrollView } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";

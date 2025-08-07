@@ -1,3 +1,5 @@
+// Author(s): Holly Wyatt
+
 import { View, ScrollView, ActivityIndicator, StyleSheet } from 'react-native'
 import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
 import Header from '../../../../../components/layout/Header';

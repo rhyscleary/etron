@@ -1,3 +1,5 @@
+// Author(s): Matthew Page
+
 import { View, FlatList, Pressable, Text as RNText  } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";

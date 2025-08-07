@@ -1,3 +1,5 @@
+// Matthew Parkinson
+
 import React, { useState, useEffect } from 'react';
 import { View, Image } from 'react-native';
 import { PaperProvider, Text } from 'react-native-paper';

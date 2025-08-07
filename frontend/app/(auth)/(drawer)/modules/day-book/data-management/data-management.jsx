@@ -1,3 +1,5 @@
+// Author(s): Holly Wyatt
+
 // DataManagement.js
 import React from "react";
 import { RefreshControl, Button } from "react-native";

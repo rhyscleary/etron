@@ -1,3 +1,5 @@
+// Author(s): Rhys Cleary
+
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Header from "../../../../components/layout/Header";
 import TextField from "../../../../components/common/input/TextField";

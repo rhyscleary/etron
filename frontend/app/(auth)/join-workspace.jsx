@@ -1,3 +1,5 @@
+// Author(s): Rhys Cleary
+
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 import { PaperProvider, Text } from 'react-native-paper';
 import Header from "../../components/layout/Header";

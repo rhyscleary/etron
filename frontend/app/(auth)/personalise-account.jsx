@@ -1,3 +1,5 @@
+// Noah Bradley
+
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, Image, TouchableOpacity, Modal, StyleSheet } from 'react-native';
 import { PaperProvider, Text } from 'react-native-paper';

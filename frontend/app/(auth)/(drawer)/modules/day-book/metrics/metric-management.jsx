@@ -1,3 +1,5 @@
+// Author(s): Matthew Parkinson
+
 import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
 import Divider from "../../../../../../components/layout/Divider.jsx";
 import { Pressable, View, Button } from "react-native";

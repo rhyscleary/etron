@@ -1,3 +1,5 @@
+// Author(s): Matthew Page
+
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button } from "react-native-paper";

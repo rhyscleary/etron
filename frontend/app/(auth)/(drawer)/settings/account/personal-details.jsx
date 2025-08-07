@@ -1,3 +1,5 @@
+// Author(s): Holly Wyatt, Noah Bradley
+
 import { useEffect, useState } from "react";
 import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
 import Header from '../../../../../components/layout/Header';

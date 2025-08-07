@@ -1,3 +1,5 @@
+// Author(s): Matthew Page
+
 import React, { useEffect, useState } from "react";
 import { View, FlatList, Pressable, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
