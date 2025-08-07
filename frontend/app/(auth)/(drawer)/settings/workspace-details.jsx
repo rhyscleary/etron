@@ -12,6 +12,7 @@ import { apiPut } from "../../../../utils/api/apiClient";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
 import TextField from "../../../../components/common/input/TextField";
 import { getWorkspaceId, getWorkspaceInfo } from "../../../../storage/workspaceStorage";
+import endpoints from "../../../../utils/api/endpoints";
 
 
 const WorkspaceDetails = () => {
@@ -60,7 +61,7 @@ const WorkspaceDetails = () => {
             }
 
             const result = await apiPut(
-                `https://9vwo52sbo0.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace/${workspaceId}`,
+                endpoints.workspace.core.update(workspaceId),
                 workspaceData
             );
 
