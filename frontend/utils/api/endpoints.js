@@ -1,9 +1,9 @@
 // eTRONs API endpoints
 
-const WORKSPACE_BASE_URL = "https://9vwo52sbo0.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace";
-const USER_BASE_URL = "https://19eulpomf3.execute-api.ap-southeast-2.amazonaws.com/Prod/user";
-const DATASOURCES_BASE_URL = "https://curkjf7oi6.execute-api.ap-southeast-2.amazonaws.com/Prod/day-book/data-sources";
-const METRICS_BASE_URL = "https://curkjf7oi6.execute-api.ap-southeast-2.amazonaws.com/Prod/day-book/metrics";
+const WORKSPACE_BASE_URL = "https://4lmi4ly433.execute-api.ap-southeast-2.amazonaws.com/Prod/workspace";
+const USER_BASE_URL = "https://fdu8nk6p24.execute-api.ap-southeast-2.amazonaws.com/Prod/user";
+const DATASOURCES_BASE_URL = "https://k8do28j3u3.execute-api.ap-southeast-2.amazonaws.com/Prod/day-book/data-sources";
+const METRICS_BASE_URL = "https://k8do28j3u3.execute-api.ap-southeast-2.amazonaws.com/Prod/day-book/metrics";
 
 const endpoints = {
     workspace: {
