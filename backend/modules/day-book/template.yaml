@@ -1,0 +1,163 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  eTRON day book function template
+
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+Resources:
+  SourcedDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: etron-day-book-sourced-data
+
+  DataSourceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources
+      Handler: handlers/dataSourceHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+
+      Events:
+        AddDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources
+            Method: post
+
+        UpdateDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: put
+
+        GetDataSourceById:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: get
+            
+        GetDataSources:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources
+            Method: get
+
+        RemoveDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: delete
+
+  MetricFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./metrics
+      Handler: handlers/metricHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+
+      Events:
+        AddMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics
+            Method: post
+
+        UpdateMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: put
+
+        GetMetricById:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: get
+            
+        GetMetrics:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics
+            Method: get
+
+        RemoveMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: delete
+
+  MetricUpdateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./metrics
+      Handler: handlers/metricUpdateHandler.handler
+      Policies:
+        - S3ReadPolicy:
+            BucketName: etron-day-book-sourced-data
+  
+      Events:
+        S3PutEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref SourcedDataBucket
+            Events: s3:ObjectCreated:Put
+
+  DataSourcePollFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources
+      Handler: handlers/dataSourcePollHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - S3WritePolicy:
+            BucketName: etron-day-book-sourced-data
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+
+      Events:
+        PollEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Name: DataSourcePollSchedule

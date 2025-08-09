@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  eTRON module functions template
+
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+
+Resources:
+  ModuleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/
+      Handler: moduleHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+      Events:
+        GetAvailableModules:
+          Type: Api 
+          Properties:
+            Path: /modules
+            Method: get
+
+        AddModuleToWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules/{moduleId}
+            Method: put
+
+        RemoveModuleFromWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules/{moduleId}
+            Method: delete
+            
+        GetModulesInWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/modules
+            Method: get
