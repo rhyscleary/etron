@@ -1,18 +1,14 @@
 {
   "resourceName": "etronProfilePhotos",
-  "policyUUID": "56bf0de4",
-  "bucketName": "etron-profile-photos",
-  "storageAccess": "authAndGuest",
-  "guestAccess": [
-    "CREATE_AND_UPDATE",
-    "READ",
-    "DELETE"
-  ],
+  "policyUUID": "f2c6cc1a",
+  "bucketName": "etronprofilephotos",
+  "storageAccess": "auth",
+  "guestAccess": [],
   "authAccess": [
     "CREATE_AND_UPDATE",
     "READ",
     "DELETE"
   ],
-  "triggerFunction": "S3Trigger2072070a",
+  "triggerFunction": "S3Triggera1814310",
   "groupAccess": {}
 }

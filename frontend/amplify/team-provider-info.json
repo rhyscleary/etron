@@ -1,24 +1,24 @@
 {
   "dev": {
     "awscloudformation": {
-      "AuthRoleName": "amplify-etron-dev-95aa3-authRole",
-      "UnauthRoleArn": "arn:aws:iam::201810768226:role/amplify-etron-dev-95aa3-unauthRole",
-      "AuthRoleArn": "arn:aws:iam::201810768226:role/amplify-etron-dev-95aa3-authRole",
+      "AuthRoleName": "amplify-etron-dev-1858d-authRole",
+      "UnauthRoleArn": "arn:aws:iam::841196398222:role/amplify-etron-dev-1858d-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::841196398222:role/amplify-etron-dev-1858d-authRole",
       "Region": "ap-southeast-2",
-      "DeploymentBucketName": "amplify-etron-dev-95aa3-deployment",
-      "UnauthRoleName": "amplify-etron-dev-95aa3-unauthRole",
-      "StackName": "amplify-etron-dev-95aa3",
-      "StackId": "arn:aws:cloudformation:ap-southeast-2:201810768226:stack/amplify-etron-dev-95aa3/45031ff0-46ab-11f0-bdaa-066cf71d13c5",
-      "AmplifyAppId": "d1m02awypu4g3b"
+      "DeploymentBucketName": "amplify-etron-dev-1858d-deployment",
+      "UnauthRoleName": "amplify-etron-dev-1858d-unauthRole",
+      "StackName": "amplify-etron-dev-1858d",
+      "StackId": "arn:aws:cloudformation:ap-southeast-2:841196398222:stack/amplify-etron-dev-1858d/b36d9830-75e5-11f0-bdc5-024aafa1c2d3",
+      "AmplifyAppId": "dia3idbzugiqz"
     },
     "categories": {
       "auth": {
-        "etron35cd2756": {}
+        "etron": {}
       },
       "function": {
-        "S3Trigger2072070a": {
-          "deploymentBucketName": "amplify-etron-dev-95aa3-deployment",
-          "s3Key": "amplify-builds/S3Trigger2072070a-546b55786a6153497247-build.zip"
+        "S3Triggera1814310": {
+          "deploymentBucketName": "amplify-etron-dev-1858d-deployment",
+          "s3Key": "amplify-builds/S3Triggera1814310-5431594b6d396c75345a-build.zip"
         }
       },
       "storage": {

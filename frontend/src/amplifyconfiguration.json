@@ -1,9 +1,9 @@
 {
   "aws_project_region": "ap-southeast-2",
-  "aws_cognito_identity_pool_id": "ap-southeast-2:d29b72e2-e77d-49c7-bd7f-960777d640db",
+  "aws_cognito_identity_pool_id": "ap-southeast-2:787e4270-7cc7-4f54-85fc-be2be29c3ee2",
   "aws_cognito_region": "ap-southeast-2",
-  "aws_user_pools_id": "ap-southeast-2_RRTDNv40t",
-  "aws_user_pools_web_client_id": "7do8hu17d33eo7imn4d3kvd1ui",
+  "aws_user_pools_id": "ap-southeast-2_v6f4XS4Ez",
+  "aws_user_pools_web_client_id": "3qmmvc71ig5qejjqr3u47dhiqe",
   "oauth": {},
   "aws_cognito_username_attributes": [
     "EMAIL"
@@ -18,11 +18,15 @@
   ],
   "aws_cognito_password_protection_settings": {
     "passwordPolicyMinLength": 8,
-    "passwordPolicyCharacters": []
+    "passwordPolicyCharacters": [
+      "REQUIRES_UPPERCASE",
+      "REQUIRES_NUMBERS",
+      "REQUIRES_SYMBOLS"
+    ]
   },
   "aws_cognito_verification_mechanisms": [
     "EMAIL"
   ],
-  "aws_user_files_s3_bucket": "etron-profile-photos95aa3-dev",
+  "aws_user_files_s3_bucket": "etronprofilephotos1858d-dev",
   "aws_user_files_s3_bucket_region": "ap-southeast-2"
 }

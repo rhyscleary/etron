@@ -1,7 +1,5 @@
 {
-  "providers": [
-    "awscloudformation"
-  ],
+  "whyContinueWithGen1": "Prefer not to answer",
   "projectName": "etron",
   "version": "3.1",
   "frontend": "javascript",
@@ -13,5 +11,8 @@
       "BuildCommand": "npm.cmd run-script build",
       "StartCommand": "npm.cmd run-script start"
     }
-  }
+  },
+  "providers": [
+    "awscloudformation"
+  ]
 }

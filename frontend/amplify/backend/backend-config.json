@@ -1,6 +1,6 @@
 {
   "auth": {
-    "etron35cd2756": {
+    "etron": {
       "customAuth": false,
       "dependsOn": [],
       "frontendAuthConfig": {
@@ -9,7 +9,11 @@
           "SMS"
         ],
         "passwordProtectionSettings": {
-          "passwordPolicyCharacters": [],
+          "passwordPolicyCharacters": [
+            "REQUIRES_UPPERCASE",
+            "REQUIRES_NUMBERS",
+            "REQUIRES_SYMBOLS"
+          ],
           "passwordPolicyMinLength": 8
         },
         "signupAttributes": [
@@ -28,26 +32,26 @@
     }
   },
   "function": {
-    "S3Trigger2072070a": {
+    "S3Triggera1814310": {
       "build": true,
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     }
   },
   "parameters": {
-    "AMPLIFY_function_S3Trigger2072070a_deploymentBucketName": {
+    "AMPLIFY_function_S3Triggera1814310_deploymentBucketName": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "S3Trigger2072070a"
+          "resourceName": "S3Triggera1814310"
         }
       ]
     },
-    "AMPLIFY_function_S3Trigger2072070a_s3Key": {
+    "AMPLIFY_function_S3Triggera1814310_s3Key": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "S3Trigger2072070a"
+          "resourceName": "S3Triggera1814310"
         }
       ]
     }
@@ -62,7 +66,7 @@
             "LambdaExecutionRole"
           ],
           "category": "function",
-          "resourceName": "S3Trigger2072070a"
+          "resourceName": "S3Triggera1814310"
         }
       ],
       "providerPlugin": "awscloudformation",
