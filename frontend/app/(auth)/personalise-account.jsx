@@ -1,4 +1,4 @@
-// Noah Bradley
+// Author(s): Noah Bradley, Rhys Cleary
 
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, Button, Image, TouchableOpacity, Modal, StyleSheet } from 'react-native';
@@ -10,12 +10,15 @@ import { router } from 'expo-router';
 import Header from '../../components/layout/Header';
 import { commonStyles } from '../../assets/styles/stylesheets/common';
 import StackLayout from '../../components/layout/StackLayout';
+import {
+  updateUserAttribute
+} from 'aws-amplify/auth';
 
 //import * as ImagePicker from 'expo-image-picker';
 
 const PersonaliseAccount = () => {
-  const [displayName, setDisplayName] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [showWorkspaceModal, setWorkspaceModal] = useState(false);
   //const [profilePicture, setProfilePicture] = useState(null);
@@ -33,13 +36,23 @@ const PersonaliseAccount = () => {
     }
   };
 */
-  const handleSave = async () => {
+  async function handleSaveUserAttributes() {
+    try {
+      const output = await updateUserAttribute
+    } catch (error) {
+
+    }
+  }
+
+  async function handleContinue() {
     console.log({
-      displayName,
-      fullName,
+      given_name,
+      family_name,
       phoneNumber,
       //profilePicture
     });
+    //await handleSaveUserAttributes();
+
     // BACKEND CONNECTION HERE FOR SAVING DETAILS TO ACCOUNT
     setWorkspaceModal(true);
   };
@@ -57,17 +70,17 @@ const PersonaliseAccount = () => {
 
         <StackLayout spacing={30}>
           <TextField
-            label="Display Name"
-            placeholder="Display Name"
-            value={displayName}
-            onChangeText={setDisplayName}
+            label="First Name"
+            placeholder="First Name"
+            value={firstName}
+            onChangeText={setFirstName}
           />
 
           <TextField
-              label="Full Name (Optional)"
-              placeholder="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
+              label="Last Name"
+              placeholder="Last Name"
+              value={lastName}
+              onChangeText={setLastName}
           />
 
           <TextField
@@ -81,7 +94,7 @@ const PersonaliseAccount = () => {
         <View style={{ alignItems: 'flex-end' }}>
           <BasicButton
             label='Continue'
-            onPress={handleSave}
+            onPress={handleContinue}
           />
         </View>
 

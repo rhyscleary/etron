@@ -85,7 +85,7 @@ const WorkspaceDetails = () => {
                     <View>
                         <StackLayout spacing={30}> 
                             <TextField 
-                                label="Name *" 
+                                label="Name" 
                                 value={name} 
                                 placeholder="Name"
                                 error={nameError}

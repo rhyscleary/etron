@@ -101,7 +101,7 @@ function LoginSignup() {
         setMessage('');
         try {
             await signIn({ username: email, password });
-            router.push("(auth)/profile"); // always push to profile after sign in
+            router.push("(auth)/personalise-account"); // always push to profile after sign in
         } catch (error) {
             console.log('Error signing in:', error);
             setMessage(`Error: ${error.message}`);

@@ -15,6 +15,7 @@ const Profile = () => {
         { icon: "", label: "Collaboration", onPress: () => router.push("/collaboration/collaboration") },
         { icon: "", label: "Testing - Account Settings", onPress: () => router.push("/account-settings") },
         { icon: "", label: "Testing - Example Graph Display", onPress: () => router.push("/graphs") },
+        { icon: "", label: "Testing - Endpoints", onPress: () => router.push("/test-endpoints/endpoints") },
     ];
     
     return (
