@@ -3,18 +3,38 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   eTRON day book function template
 
+Parameters:
+  PermissionsBucketName:
+    Type: String
+
 Globals:
   Function:
     Timeout: 5
     Runtime: nodejs22.x
     Architectures:
       - x86_64
+    Environment:
+      Variables:
+        PERMISSIONS_BUCKET: !Ref PermissionsBucketName
 
 Resources:
+
+  eTRONApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
+            Identity:
+              Header: Authorization
+
   SourcedDataBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: etron-day-book-sourced-data
+      BucketName: etron-day-book-sourced-data-4jr4jk
 
   DataSourceFunction:
     Type: AWS::Serverless::Function
@@ -36,6 +56,18 @@ Resources:
                 - ssm:DeleteParameter
                 - ssm:GetParameters
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
 
       Events:
         AddDataSource:
@@ -43,30 +75,35 @@ Resources:
           Properties:
             Path: /day-book/data-sources
             Method: post
+            RestApiId: !Ref eTRONApi
 
         UpdateDataSource:
           Type: Api 
           Properties:
             Path: /day-book/data-sources/{dataSourceId}
             Method: put
+            RestApiId: !Ref eTRONApi
 
         GetDataSourceById:
           Type: Api 
           Properties:
             Path: /day-book/data-sources/{dataSourceId}
             Method: get
+            RestApiId: !Ref eTRONApi
             
         GetDataSources:
           Type: Api 
           Properties:
             Path: /day-book/data-sources
             Method: get
+            RestApiId: !Ref eTRONApi
 
         RemoveDataSource:
           Type: Api 
           Properties:
             Path: /day-book/data-sources/{dataSourceId}
             Method: delete
+            RestApiId: !Ref eTRONApi
 
   MetricFunction:
     Type: AWS::Serverless::Function
@@ -88,6 +125,18 @@ Resources:
                 - ssm:DeleteParameter
                 - ssm:GetParameters
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
 
       Events:
         AddMetric:
@@ -95,30 +144,35 @@ Resources:
           Properties:
             Path: /day-book/metrics
             Method: post
+            RestApiId: !Ref eTRONApi
 
         UpdateMetric:
           Type: Api 
           Properties:
             Path: /day-book/metrics/{metricId}
             Method: put
+            RestApiId: !Ref eTRONApi
 
         GetMetricById:
           Type: Api 
           Properties:
             Path: /day-book/metrics/{metricId}
             Method: get
+            RestApiId: !Ref eTRONApi
             
         GetMetrics:
           Type: Api 
           Properties:
             Path: /day-book/metrics
             Method: get
+            RestApiId: !Ref eTRONApi
 
         RemoveMetric:
           Type: Api 
           Properties:
             Path: /day-book/metrics/{metricId}
             Method: delete
+            RestApiId: !Ref eTRONApi
 
   MetricUpdateFunction:
     Type: AWS::Serverless::Function

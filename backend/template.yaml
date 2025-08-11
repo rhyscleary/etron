@@ -12,29 +12,27 @@ Globals:
       - x86_64
 
 Resources:
+
+  PermissionsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub etron-permissions-bucket-${AWS::AccountId}-${AWS::Region}
+
   WorkspaceDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./workspace/template.yaml
+      Parameters:
+        PermissionsBucketName: !Ref PermissionsBucket
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./user/template.yaml
+      Parameters:
+        PermissionsBucketName: !Ref PermissionsBucket
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./modules/day-book/template.yaml
-
-#Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
- #HelloWorldApi:
-    #Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    #Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  #HelloWorldFunction:
-    #Description: "Hello World Lambda Function ARN"
-    #Value: !GetAtt HelloWorldFunction.Arn
-  #HelloWorldFunctionIamRole:
-    #Description: "Implicit IAM Role created for Hello World function"
-    #Value: !GetAtt HelloWorldFunctionRole.Arn
+      Parameters:
+        PermissionsBucketName: !Ref PermissionsBucket

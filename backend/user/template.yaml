@@ -3,14 +3,33 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   eTRON user-domain functions template
 
+Parameters:
+  PermissionsBucketName:
+    Type: String
+
 Globals:
   Function:
     Timeout: 5
     Runtime: nodejs22.x
     Architectures:
       - x86_64
+    Environment:
+      Variables:
+        PERMISSIONS_BUCKET: !Ref PermissionsBucketName
 
 Resources:
+
+  eTRONApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
+            Identity:
+              Header: Authorization
   
   # User Lambda 
   UserCoreFunction:
@@ -25,6 +44,19 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
 
       Events:
         UpdateUser:
@@ -32,6 +64,7 @@ Resources:
           Properties:
             Path: /user/{userId}/workspace/{workspaceId}
             Method: put
+            RestApiId: !Ref eTRONApi
 
 
   # Invite Lambda 
@@ -47,6 +80,19 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
 
       Events:
         GetInvites:
@@ -54,3 +100,4 @@ Resources:
           Properties:
             Path: /user/invites
             Method: get
+            RestApiId: !Ref eTRONApi

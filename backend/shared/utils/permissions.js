@@ -34,8 +34,8 @@ async function isOwner(userId, workspaceId) {
 
 // get permissions from s3
 async function getDefaultPermissions() {
-    const bucketName = "etron-default-permissions";
-    const key = "default-permissions.json"
+    const bucketName = process.env.PERMISSIONS_BUCKET;
+    const key = "default-permissions.json";
     try {
         const response = await s3Client.send(
             new GetObjectCommand({
