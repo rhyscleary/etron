@@ -22,13 +22,18 @@ import {
     signInWithRedirect, 
     getCurrentUser, 
     signOut,
+    updateUserAttributes,
+    fetchUserAttributes
 } from 'aws-amplify/auth';
 
 import awsmobile from '../src/aws-exports';
+import { apiGet } from "../utils/api/apiClient";
+import endpoints from "../utils/api/endpoints";
+import { saveWorkspaceInfo } from "../storage/workspaceStorage";
 Amplify.configure(awsmobile);
 
 function LoginSignup() {
-    const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
+    const { email: emailParam, isSignUp, link } = useLocalSearchParams();
     const isSignUpBool = isSignUp === 'true';
     const isLinking = link === 'true';
 
@@ -74,7 +79,7 @@ function LoginSignup() {
                             const user = await getCurrentUser();
                             console.log('Social sign-in successful:', user);
                             // navigate to profile page (or consider back to accounts page again)
-                            router.push("(auth)/profile");
+                            router.navigate("(auth)/profile");
                         } catch (error) {
                             console.log('No authenticated user found after social sign-in');
                             setMessage("Social sign-in was cancelled or failed");
@@ -96,12 +101,84 @@ function LoginSignup() {
         return () => subscription?.remove();
     }, []);
 
+    const setHasWorkspaceAttribute = async (value) => {
+        try {
+            await updateUserAttributes({
+                userAttributes: {
+                    'custom:has_workspace': value ? 'true' : 'false'
+                }
+            });
+        } catch (error) {
+            console.error("Unable to update user attribute has_workspace:", error);
+        }
+    }
+
+    const checkWorkspaceExists = async () => {
+        try {
+            const user = await getCurrentUser();
+            const userAttributes = await fetchUserAttributes();
+
+            let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
+
+            // if the attribute doesn't exist set it to false
+            if (hasWorkspaceAttribute == null) {
+                await setHasWorkspaceAttribute(false);
+                router.navigate("(auth)/personalise-account");
+                return;
+            }
+
+            const hasWorkspace = hasWorkspaceAttribute === "true";
+
+            if (!hasWorkspace) {
+                const hasGivenName = Boolean(userAttributes["given_name"]);
+                const hasFamilyName = Boolean(userAttributes["family_name"]);
+
+                if (!hasGivenName || !hasFamilyName) {
+                    router.navigate("(auth)/personalise-account");
+                } else {
+                    router.navigate("(auth)/workspace-choice");
+                }
+                return;
+            }
+
+            const result = await apiGet(
+                endpoints.workspace.core.getByUserId(user.userId)
+            );
+            console.log(result);
+            
+            if (!result.ok) {
+                throw new Error("Failed to fetch the workspace");
+            }
+
+            if (!result.workspace) {
+                // api doesn't return workspace then change cognito attribute 
+                await setHasWorkspaceAttribute(false);
+                
+                const hasGivenName = Boolean(userAttributes["given_name"]);
+                const hasFamilyName = Boolean(userAttributes["family_name"]);
+
+                if (!hasGivenName || !hasFamilyName) {
+                    router.navigate("(auth)/personalise-account");
+                } else {
+                    router.navigate("(auth)/workspace-choice");
+                }
+            } else {
+                // store workspace details
+                await saveWorkspaceInfo(result.workspace);
+                router.navigate("(auth)/profile");
+            }
+        } catch (error) {
+            console.error("Error fetching workspace:", error);
+            setMessage("Unable to locate workspace. Please try again.")
+        }
+    }
+
     const handleSignIn = async () => {
         setLoading(true);
         setMessage('');
         try {
             await signIn({ username: email, password });
-            router.push("(auth)/personalise-account"); // always push to profile after sign in
+            await checkWorkspaceExists();
         } catch (error) {
             console.log('Error signing in:', error);
             setMessage(`Error: ${error.message}`);
@@ -123,7 +200,8 @@ function LoginSignup() {
                 password,
                 options: {
                     userAttributes: {
-                        email
+                        email,
+                        'custom:has_workspace': `false`
                     }
                 }
             });
@@ -223,7 +301,8 @@ function LoginSignup() {
             console.log("Confirmation successful! Please personalize your account.");
 
             // sign in the user
-            await handleSignIn();
+            await signIn({ username: email, password });
+            router.navigate("(auth)/personalise-account"); // navigate to personalise account after sign up
         } catch (error) {
             console.log('Error confirming code:', error);
             setMessage(`Error: ${error.message}`);

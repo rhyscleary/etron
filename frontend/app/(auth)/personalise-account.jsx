@@ -13,6 +13,7 @@ import StackLayout from '../../components/layout/StackLayout';
 import {
   updateUserAttribute
 } from 'aws-amplify/auth';
+import AvatarButton from '../../components/common/buttons/AvatarButton';
 
 //import * as ImagePicker from 'expo-image-picker';
 
@@ -69,6 +70,10 @@ const PersonaliseAccount = () => {
         </Text>
 
         <StackLayout spacing={30}>
+          <View style={{ alignItems: "center"}}>
+            <AvatarButton badgeType='plus' />
+          </View>
+
           <TextField
             label="First Name"
             placeholder="First Name"
