@@ -11,6 +11,7 @@ import * as FileSystem from 'expo-file-system';
 const LocalCSV = () => {
     const [fileUri, setFileUri] = useState(null);
     const [fileName, setName] = useState('');
+    const [uploadProgress, setUploadProgress] = useState(0);
 
     const pickDocument = async () => {
         try {
@@ -35,7 +36,7 @@ const LocalCSV = () => {
     };
 
     const handleUploadDocument = async () => {
-        console.log('Uploading document...');
+        console.log('Beginning upload process...');
         if (!fileUri) {
             console.error('No file selected to upload');
             return;
@@ -55,6 +56,14 @@ const LocalCSV = () => {
             const result = await uploadData({
                 path: S3FilePath,
                 data: binary,
+                options: {
+                    bucket: 'etron-day-book-sourced-data-4jr4jk',
+                    onProgress: ({ transferredBytes, totalBytes }) => {
+                        if (totalBytes) {
+                            setUploadProgress(Math.round((transferredBytes / totalBytes) * 100));
+                        } // for some reason, transferredBytes goes to double totalBytes
+                    }
+                }
             }).result;
             console.log('File uploaded successfully:', result);
         } catch (error) {
@@ -74,6 +83,9 @@ const LocalCSV = () => {
             <Pressable onPress={handleUploadDocument}>
                 <Text style={{ color: 'blue' }}>Upload File</Text>
             </Pressable>
+            <Text>
+                Progress: {uploadProgress}%
+            </Text>
         </>
     );
 }
