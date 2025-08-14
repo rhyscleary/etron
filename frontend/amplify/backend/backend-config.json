@@ -71,6 +71,21 @@
       ],
       "providerPlugin": "awscloudformation",
       "service": "S3"
+    },
+    "workspaceStoredData": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "LambdaExecutionRole"
+          ],
+          "category": "function",
+          "resourceName": "S3Triggera1814310"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "S3"
     }
   }
 }

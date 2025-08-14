@@ -25,7 +25,7 @@ import {
 } from 'aws-amplify/auth';
 
 import awsmobile from '../src/aws-exports';
-Amplify.configure(awsmobile);
+//Amplify.configure(awsmobile);
 
 function LoginSignup() {
     const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();

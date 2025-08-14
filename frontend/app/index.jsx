@@ -8,19 +8,6 @@ import { Button, TextInput, View, Pressable } from 'react-native';
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
 
-import awsmobile from '../src/aws-exports';
-Amplify.configure({
-    ...awsmobile,
-    oauth: {
-        domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
-        scope: ['email', 'openid', 'profile'],
-        redirectSignIn: 'myapp://auth/',
-        redirectSignOut: 'myapp://signout/',
-        responseType: 'code'
-    }
-});
-console.log('Amplify configured with:', Amplify.getConfig());
-
 
 function App() {
     const { authStatus } = useAuthenticator();

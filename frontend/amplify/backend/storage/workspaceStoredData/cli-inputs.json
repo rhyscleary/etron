@@ -1,0 +1,14 @@
+{
+  "resourceName": "workspaceStoredData",
+  "policyUUID": "f2c6cc1a",
+  "bucketName": "workspace-stored-data",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ],
+  "triggerFunction": "S3Triggera1814310",
+  "groupAccess": {}
+}

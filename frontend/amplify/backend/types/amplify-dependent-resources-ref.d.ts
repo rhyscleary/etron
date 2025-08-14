@@ -23,6 +23,10 @@ export type AmplifyDependentResourcesAttributes = {
     "etronProfilePhotos": {
       "BucketName": "string",
       "Region": "string"
+    },
+    "workspaceStoredData": {
+      "BucketName": "string",
+      "Region": "string"
     }
   }
 }

@@ -1,4 +1,4 @@
-// Author(s): Matthew Parkinson
+// Author(s): Matthew Parkinson, Noah Bradley
 
 import { View, StyleSheet } from 'react-native';
 import React, { useState, useEffect } from "react";
@@ -12,7 +12,11 @@ import TextField from '../../../../../../components/common/input/TextField';
 import endpoints from '../../../../../../utils/api/endpoints';
 import graphDataBySource from './graph-data';
 
+import { list } from 'aws-amplify/storage';
+import awsmobile from '../../../../../../src/aws-exports';
+
 const CreateMetric = () => {
+    
     const router = useRouter();
     const [step, setStep] = useState(0);
     const [dataSources, setDataSources] = useState([]);
@@ -21,18 +25,38 @@ const CreateMetric = () => {
     const [selectedDataSource, setSelectedDataSource] = useState(null);
     const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
 
-const totalSteps = 2;
+    const totalSteps = 2;
 
-    useEffect(() => {
+    /*useEffect(() => {
         const sources = Object.keys(graphDataBySource);
         setDataSources(sources);
-    }, []);
+    }, []);*/
 
     const handleDataSourceSelect = (source) => {
         setSelectedDataSource(source);
         const formattedData = graphDataBySource[source]?.map(value => ({ value })) || [];
         setGraphData(formattedData);
     };
+
+    useEffect(() => {
+        async function initialiseStoredData() {
+            const result = await list ({
+                path: "public/",
+                options: {
+                    bucket: {
+                        bucketName: 'workspace-stored-data1858d-dev',
+                        region: awsmobile.aws_project_region,
+                    }
+                }
+            })
+            console.log('Data sources retrieved:', result.items.map(item => item.path));
+            sources = result.items.map(item => item.path);
+            setDataSources(sources);
+            console.log(dataSources.map(item => item.split('/').at(-1)))
+        }
+            
+        initialiseStoredData();
+    }, []);
 
     const handleBack = () => {
         if (step === 0) {
@@ -58,7 +82,7 @@ const totalSteps = 2;
                         <View>
                             <DropDown
                                 title = "Select Data Source"
-                                items = {dataSources}
+                                items = {dataSources.map(item => item.split('/').at(-1))}
                                 onSelect={handleDataSourceSelect}
                             />
 
@@ -80,6 +104,9 @@ const totalSteps = 2;
                                     {selectedMetric === 'Pie Chart' && (
                                         <PieChart data={graphData} />
                                     )}
+                                    {!selectedMetric && (
+                                        <Text>Show file preview here</Text>
+                                    )}
                                 </Card.Content>
                             </Card>
                         </View>
@@ -95,8 +122,8 @@ const totalSteps = 2;
                 )
             default:
                 return null;
-    }
-  };
+        }
+    };
 
     return (
         <View style={styles.container}>
