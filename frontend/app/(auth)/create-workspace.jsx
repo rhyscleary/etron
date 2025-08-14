@@ -8,10 +8,8 @@ import { useState } from "react";
 import BasicButton from "../../components/common/buttons/BasicButton";
 import TextField from "../../components/common/input/TextField";
 import StackLayout from "../../components/layout/StackLayout";
-
-import { Snackbar, Text, useTheme } from "react-native-paper";
+import { Text, useTheme } from "react-native-paper";
 import { apiPost } from "../../utils/api/apiClient";
-import MessageBar from "../../components/overlays/MessageBar";
 import endpoints from "../../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
 
@@ -22,21 +20,27 @@ const CreateWorkspace = () => {
     const [name, setName] = useState("");
     const [location, setLocation] = useState("");
     const [description, setDescription] = useState("");
-    const [nameError, setNameError] = useState(false);
-    const [snackbarVisible, setSnackbarVisible] = useState(false);
+    const [errors, setErrors] = useState(false);
+    const [creating, setCreating] = useState(false);
 
     async function handleCreate() {
+        setCreating(true);
 
-        if (!name.trim()) {
-            setNameError(true);
+        const newErrors = {
+            name: !name.trim(),
+        };
+        setErrors(newErrors);
+
+        if (Object.values(newErrors).some(Boolean)) {
+            setCreating(false);
             return;
         }
 
         try {
             const workspaceData = {
-                name,
-                location: location || null,
-                description: description || null
+                name: name.trim(),
+                location: location.trim() || null,
+                description: description.trim() || null
             }
 
             const result = await apiPost(
@@ -48,13 +52,14 @@ const CreateWorkspace = () => {
             saveWorkspaceInfo(result);
 
             console.log('Workspace creation response:', result);
+            setCreating(false);
 
 
             // navigate to the profile
             router.push("/profile");
         } catch (error) {
+            setCreating(false);
             console.log("Error creating workspace: ", error);
-            setSnackbarVisible(true)
         }
     }
 
@@ -72,11 +77,11 @@ const CreateWorkspace = () => {
                             onChangeText={(text) => {
                                 setName(text);
                                 if (text.trim()) {
-                                    setNameError(false);
+                                    setErrors((prev) => ({...prev, name: false}))
                                 }
                             }} 
                         />
-                        {nameError && (
+                        {errors.name && (
                             <Text style={{color: theme.colors.error}}>Please enter a name.</Text>
                         )}
                     </View>
@@ -85,15 +90,13 @@ const CreateWorkspace = () => {
                 </StackLayout>
 
                 <View style={commonStyles.inlineButtonContainer}>
-                    <BasicButton label="Create" onPress={handleCreate} disabled={!name.trim()} />
+                    <BasicButton 
+                        label={creating ? "Creating..." : "Create"} 
+                        onPress={handleCreate}
+                        disabled={creating} 
+                    />
                 </View>
             </View>
-
-            <MessageBar 
-                visible={snackbarVisible} 
-                message="An error has occured. Please try again."
-                onDismiss={() => setSnackbarVisible(false)} 
-            />
         </View>
     )
 }

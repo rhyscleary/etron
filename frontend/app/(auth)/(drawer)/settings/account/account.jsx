@@ -18,6 +18,7 @@ import {
     deleteUser,
     signIn
 } from 'aws-amplify/auth';
+import BasicButton from '../../../../../components/common/buttons/BasicButton';
 
 const Account = () => {
     const theme = useTheme();
@@ -103,6 +104,7 @@ const Account = () => {
                         ))}
                     </StackLayout>
                 </StackLayout>
+                
             </ScrollView>
             <BasicDialog
                 visible={dialogVisible}

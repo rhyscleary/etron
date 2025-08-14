@@ -65,7 +65,7 @@ const endpoints = {
         },
 
         invites: {
-            getUserInvites: (userId, workspaceId) => `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
+            getUserInvites: `${USER_BASE_URL}/invites`,
         }
     },
 

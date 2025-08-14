@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { View, StyleSheet, Pressable} from 'react-native';
+import { View, StyleSheet, Pressable, TouchableOpacity} from 'react-native';
 import { Avatar, Badge, Button, Icon, useTheme } from 'react-native-paper';
 
 const AvatarButton = ({
@@ -29,22 +29,22 @@ const AvatarButton = ({
     const renderAvatar = () => {
         switch (type) {
             case "image":
-                return <Avatar.Image size={size} source={imageSource} />;
+                return <Avatar.Image size={size} source={imageSource} style={[{backgroundColor: theme.colors.buttonBackground}]}/>;
             case "text":
-                return <Avatar.Text size={size} label={getInitials()} />;
+                return <Avatar.Text size={size} label={getInitials()} style={[{backgroundColor: '#008663'}]}/>;
             default:
-                return <Avatar.Icon size={size} icon="account" />;
+                return <Avatar.Icon size={size} icon="account" style={[{backgroundColor: '#F7F7F7'}]}/>;
         }
     }
     return (
-        <Pressable onPress={onPress}>
+        <TouchableOpacity onPress={onPress}>
             <View style={styles.container}>
                 {renderAvatar()}
-                <Badge size={24} style={[styles.badge, { backgroundColor: theme.colors.badgeBackgroundColor }]}>
-                    <Icon source={badgeIcons[badgeType] || "plus"} size={16} color="white" />
+                <Badge size={24} style={[styles.badge, { backgroundColor: "white" }]}>
+                    <Icon source={badgeIcons[badgeType] || "plus"} size={16} color="black" />
                 </Badge> 
             </View>
-        </Pressable>
+        </TouchableOpacity>
     );
 }
 

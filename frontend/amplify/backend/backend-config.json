@@ -36,6 +36,11 @@
       "build": true,
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
+    },
+    "S3Triggerd7c64153": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
     }
   },
   "parameters": {
@@ -54,6 +59,22 @@
           "resourceName": "S3Triggera1814310"
         }
       ]
+    },
+    "AMPLIFY_function_S3Triggerd7c64153_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "S3Triggerd7c64153"
+        }
+      ]
+    },
+    "AMPLIFY_function_S3Triggerd7c64153_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "S3Triggerd7c64153"
+        }
+      ]
     }
   },
   "storage": {
@@ -66,7 +87,7 @@
             "LambdaExecutionRole"
           ],
           "category": "function",
-          "resourceName": "S3Triggera1814310"
+          "resourceName": "S3Triggerd7c64153"
         }
       ],
       "providerPlugin": "awscloudformation",

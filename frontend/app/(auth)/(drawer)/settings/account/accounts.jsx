@@ -12,6 +12,7 @@ import { useTheme } from "react-native-paper";
 import AccountCard from '../../../../../components/cards/accountCard';
 import BasicButton from '../../../../../components/common/buttons/BasicButton';
 import { loadLinkedAccounts, removeLinkedAccount } from '../../../../../storage/linkedAccountStorage';
+import { useAuthenticator } from '@aws-amplify/ui-react-native';
 
 import {
     signOut,
@@ -27,6 +28,7 @@ const Accounts = () => {
     const [dialogVisible, setDialogVisible] = useState(false);
     const [accountToRemove, setAccountToRemove] = useState(null);
     const router = useRouter();
+    const { signOut: amplifySignOut } = useAuthenticator();
 
     useEffect(() => {
         async function loadAccountsData() {
@@ -123,6 +125,12 @@ const Accounts = () => {
         return fullName || 'Unknown User';
     };
 
+    // sign out. Separate function in case more logic required later
+    const handleSignOut = () => {
+        // sign out from app
+        amplifySignOut();
+    } 
+
     return (
         <View style={commonStyles.screen}>
             <Header
@@ -153,17 +161,22 @@ const Accounts = () => {
                           />
                         ))}
                         
-                        <BasicButton
-                            label="Link Another Account"
-                            onPress={() => {
-                                router.push({
-                                    pathname: '/login-signup',
-                                    params: { link: 'true' }
-                                });
-                            }}
-                            fullWidth
-                            style={{ marginTop: 20 }}
-                        />
+                        <StackLayout spacing={172}>
+                            <BasicButton
+                                label="Link Another Account"
+                                onPress={() => {
+                                    router.push({
+                                        pathname: '/login-signup',
+                                        params: { link: 'true' }
+                                    });
+                                }}
+                                fullWidth
+                                style={{ marginTop: 20 }}
+                            />
+
+                            <BasicButton label="Sign Out" fullWidth onPress={handleSignOut} />
+                        </StackLayout>
+                        
                       </>
                     )}
                 </View>

@@ -13,6 +13,7 @@ import BasicButton from "../../../../components/common/buttons/BasicButton";
 import TextField from "../../../../components/common/input/TextField";
 import { getWorkspaceId, getWorkspaceInfo } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
+import UnsavedChangesDialog from "../../../../components/overlays/UnsavedChangesDialog";
 
 
 const WorkspaceDetails = () => {
@@ -21,8 +22,12 @@ const WorkspaceDetails = () => {
     const [name, setName] = useState("");
     const [location, setLocation] = useState("");
     const [description, setDescription] = useState("");
-    const [nameError, setNameError] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [originalData, setOriginalData] = useState({});
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
     useEffect(() => {
         async function loadWorkspaceDetails() {
@@ -34,6 +39,13 @@ const WorkspaceDetails = () => {
                     setName(workspace.name || "");
                     setDescription(workspace.description || "");
                     setLocation(workspace.location || "");
+
+                    // set original values 
+                    setOriginalData({
+                        name: workspace.name || "",
+                        location: workspace.location || "",
+                        description: workspace.description || ""
+                    });
                 }
             } catch (error) {
                 console.log("Error loading workspace details: ", error);
@@ -43,10 +55,24 @@ const WorkspaceDetails = () => {
         loadWorkspaceDetails();
     }, []);
 
+    useEffect(() => {
+        const changed =
+            name.trim() !== originalData.name ||
+            location.trim() !== originalData.location ||
+            description.trim() !== originalData.description;
+        setHasUnsavedChanges(changed);
+    }, [name, location, description]);
+
     async function handleUpdate() {
-    
-        if (!name.trim()) {
-            setNameError(true);
+        setUpdating(true);
+
+        const newErrors = {
+            name: !name.trim(),
+        };
+        setErrors(newErrors);
+        
+        if (Object.values(newErrors).some(Boolean)) {
+            setUpdating(false);
             return;
         }
 
@@ -55,9 +81,9 @@ const WorkspaceDetails = () => {
             const workspaceId = await getWorkspaceId();
 
             const workspaceData = {
-                name,
-                location: location || null,
-                description: description || null
+                name: name.trim(),
+                location: location.trim() || null,
+                description: description.trim() || null
             }
 
             const result = await apiPut(
@@ -66,15 +92,37 @@ const WorkspaceDetails = () => {
             );
 
             console.log('Workspace details updated:', result);
+            
+            setOriginalData({
+                name,
+                location,
+                description
+            });
 
         } catch (error) {
+            setUpdating(false);
             console.log("Error updating workspace details: ", error);
         }
+
+        setUpdating(false);
+    }
+
+    function handleBackPress() {
+        if (hasUnsavedChanges) {
+            setShowUnsavedDialog(true);
+        } else {
+            router.back();
+        }
+    }
+
+    function handleDiscardChanges() {
+        setShowUnsavedDialog(false);
+        router.back();
     }
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Workspace Details" showBack />
+            <Header title="Workspace Details" showBack onBackPress={handleBackPress}/>
 
             <View style={styles.contentContainer}>
                 {loading ? (
@@ -88,27 +136,39 @@ const WorkspaceDetails = () => {
                                 label="Name" 
                                 value={name} 
                                 placeholder="Name"
-                                error={nameError}
+                                error={errors.name}
                                 onChangeText={(text) => {
                                     setName(text);
                                     if (text.trim()) {
-                                        setNameError(false);
+                                        setErrors((prev) => ({...prev, name: false}))
                                     }
                                 }}  
                             />
-                            {nameError && (
+                            {errors.name && (
                                 <Text style={{color: theme.colors.error}}>Please enter a name.</Text>
                             )}
+
                             <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
                             <TextField label="Description (Optional)" value={description} placeholder="Description" onChangeText={setDescription} />
                         </StackLayout>
 
                         <View style={commonStyles.inlineButtonContainer}>
-                            <BasicButton label="Save" onPress={handleUpdate} />
+                            <BasicButton 
+                                label={updating ? "Updating..." : "Update"}
+                                onPress={handleUpdate}
+                                disabled={updating} 
+                            />
                         </View>
                     </View>
                 )}
             </View>
+
+            <UnsavedChangesDialog
+                visible={showUnsavedDialog}
+                onDismiss={() => setShowUnsavedDialog(false)}
+                handleLeftAction={handleDiscardChanges}
+                handleRightAction={() => setShowUnsavedDialog(false)}
+            />
         </View>
     )
 }
