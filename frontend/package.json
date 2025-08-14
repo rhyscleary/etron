@@ -32,6 +32,7 @@
     "@react-navigation/native": "^7.1.6",
     "aws-amplify": "^6.15.0",
     "axios": "^1.10.0",
+    "csvtojson": "^2.0.10",
     "expo": "53.0.19",
     "expo-auth-session": "~6.2.1",
     "expo-blur": "~14.1.5",
