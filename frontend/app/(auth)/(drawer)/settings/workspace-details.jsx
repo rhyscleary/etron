@@ -66,7 +66,7 @@ const WorkspaceDetails = () => {
             location.trim() !== originalData.location ||
             description.trim() !== originalData.description;
         setHasUnsavedChanges(changed);
-    }, [name, location, description]);
+    }, [name, location, description, originalData]);
 
     async function handleUpdate() {
         setUpdating(true);
@@ -82,18 +82,26 @@ const WorkspaceDetails = () => {
         }
 
         try {
+            const updateData = {};
+
+            if (name.trim() !== originalData.name) {
+                updateData.name = name.trim();
+            }
+
+            if (location.trim() !== originalData.location) {
+                updateData.location = location.trim();
+            }
+
+            if (description.trim() !== originalData.description) {
+                updateData.description = description.trim();
+            }
+
             // get workspace id from local storage
             const workspaceId = await getWorkspaceId();
 
-            const workspaceData = {
-                name: name.trim(),
-                location: location.trim() || null,
-                description: description.trim() || null
-            }
-
             const result = await apiPut(
                 endpoints.workspace.core.update(workspaceId),
-                workspaceData
+                updateData
             );
 
             console.log('Workspace details updated:', result);
@@ -133,6 +141,7 @@ const WorkspaceDetails = () => {
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" />
+                        <Text>Loading details...</Text>
                     </View>
                 ) : (
                     <View>

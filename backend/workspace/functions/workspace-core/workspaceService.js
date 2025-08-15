@@ -141,18 +141,7 @@ async function updateWorkspace(authUserId, workspaceId, data) {
         throw new Error("Workspace not found");
     }
 
-    const updatedWorkspaceItem = workspaceRepo.updateWorkspace(workspaceId, data);
-
-    return {
-        workspaceId: workspaceId,
-        name: updatedWorkspaceItem.name,
-        location: updatedWorkspaceItem.location || null,
-        description: updatedWorkspaceItem.description || null,
-        ownerId: updateWorkspace.ownerId,
-        createdAt: updateWorkspace.createdAt,
-        updatedAt: updateWorkspace.updatedAt
-    };
-
+    return workspaceRepo.updateWorkspace(workspaceId, data);
 }
 
 async function deleteWorkspace(authUserId, workspaceId) {
