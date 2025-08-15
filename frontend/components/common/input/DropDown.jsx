@@ -9,12 +9,12 @@ const DropDown = ({
     showRouterButton=true,
     onSelect,
 }) => {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
 
     const handleItemSelect = (item) => {
         setSelectedItem(item);
-        setExpanded(prev => !prev);
+        setExpanded(false);
         if (onSelect) {
             onSelect(item);
         }
@@ -26,24 +26,28 @@ const DropDown = ({
         <List.Section>
             <List.Accordion
                 title={selectedItem || title}
-                expanded={!expanded}
+                expanded={expanded}
                 onPress={() => setExpanded(prev => !prev)}
                 style={[
-                    styles.container,
+                    expanded ? styles.containerExpanded : styles.containerCollapsed,
                     { borderColor: theme.colors.outline }
                 ]}
             >
-                {items.map((item, index) => (    
-                    <List.Item 
-                        key={index}
-                        title={item}
-                        style={[
-                            styles.items,
-                            { borderColor: theme.colors.outline }
-                        ]}
-                        onPress={() => handleItemSelect(item)}
-                    />
-                ))}
+                {items.map((item, index) => {
+                    const isLastItem = index === items.length - 1 && !showRouterButton;
+                    return (
+                        <List.Item 
+                            key={index}
+                            title={item}
+                            style={[
+                                styles.items,
+                                isLastItem && styles.lastItem,
+                                { borderColor: theme.colors.outline }
+                            ]}
+                            onPress={() => handleItemSelect(item)}
+                        />                        
+                    );
+                })}
 
                 {showRouterButton && (
                     <TouchableOpacity
@@ -84,13 +88,21 @@ const DropDown = ({
 export default DropDown;
 
 const styles = StyleSheet.create({
-    container: {
+    containerCollapsed: {
+        borderWidth: 1,
+        borderRadius: 10
+    },
+    containerExpanded: {
         borderWidth: 1,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
     },
     items: {
         borderWidth: 1,
+    },
+    lastItem: {
+        borderBottomLeftRadius: 10,
+        borderBottomRightRadius: 10,
     },
     routerButton: {
         height: 50,
