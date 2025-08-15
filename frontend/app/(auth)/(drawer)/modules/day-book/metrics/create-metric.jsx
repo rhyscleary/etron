@@ -1,7 +1,7 @@
 // Author(s): Matthew Parkinson, Noah Bradley
 
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
 import { Text, Card, ActivityIndicator, DataTable } from "react-native-paper";
@@ -35,6 +35,33 @@ const CreateMetric = () => {
 
     const totalSteps = 2;
 
+    const [rowLimit, setRowLimit] = useState(5);
+    const headerRows = useMemo(() => storedData?.[0] ?? [], [storedData]);
+    const allRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);
+    const displayedRows = useMemo(() => allRows.slice(0, rowLimit), [allRows, rowLimit]);
+    const [loadingMoreRows, setLoadingMoreRows] = useState(false);
+
+    const renderRow = useCallback(({ item }) => (
+        <View style={{ flexDirection: 'row' }}>
+            {item.map((cell, index) => (
+                <Text key={index} style={{ width: 100 }} numberOfLines={1}>
+                    {String(cell)}
+                </Text>
+            ))}
+        </View>
+    ), []);
+
+    const onBottomReached = useCallback(() => {
+        if (loadingMoreRows) return;
+        if (allRows.length <= rowLimit) return;
+
+        setLoadingMoreRows(true);
+        requestAnimationFrame(() => {
+            setRowLimit((prev) => Math.min(prev + 10, allRows.length));
+            setLoadingMoreRows(false);
+        });
+    }, [allRows.length, rowLimit, loadingMoreRows]);
+
     /*useEffect(() => {
         const sources = Object.keys(graphDataBySource);
         setDataSources(sources);
@@ -49,6 +76,7 @@ const CreateMetric = () => {
     useEffect(() => {
         if (storedData) {
             console.log("Stored data updated. Length:", storedData.length);
+            console.log("Displayed rows:", displayedRows);
         }
     }, [storedData]);
 
@@ -176,53 +204,43 @@ const CreateMetric = () => {
                                     <ScrollView horizontal
                                         showsHorizontalScrollIndicator
                                     >
-                                        <ScrollView
-                                            nestedScrollEnabled
-                                            showsVerticalScrollIndicator
-                                            style={{ maxHeight: 260 }}  //shouldn't be hardcoded like this, but fit to the screen
-                                        >
-                                            {/*<FlatList
-                                                data = {storedData}
-                                                numColumns = {storedData.length}
-                                                keyExtractor={(item, index) => index.toString()}
-                                                renderItem={({ item }) => (
-                                                    <View>
-                                                        {item.map((cell, cellIndex) => (
-                                                            <Text key={cellIndex}>
-                                                                {cell}
-                                                            </Text>
-                                                        ))}
-                                                    </View>
-                                                )}
-                                            />*/}
+                                        <View style={{ minWidth: (headerRows?.length ?? 0) * 100 }}>
                                             <DataTable>
                                                 <DataTable.Header>
-                                                    {(storedData[0] ?? []).map((header, index) => (
-                                                        <DataTable.Title key={index}
-                                                            numberOfLines={1}
-                                                            style={{width: 100}}  //shouldn't be hardcoded like this, but fit to the screen
-                                                        >
+                                                    {headerRows.map((header, index) => (
+                                                        <DataTable.Title key={index} numberOfLines={1}>
                                                             {String(header)}
                                                         </DataTable.Title>
                                                     ))}
                                                 </DataTable.Header>
-                                                {(storedData.slice(1) ?? []).map((row, index) => (
-                                                    <DataTable.Row key = {index}>
-                                                        {row.map((cell, cellIndex) => (
-                                                            <DataTable.Cell key={cellIndex}
-                                                                numberOfLines={1}
-                                                                style={{width: 100}}  //shouldn't be hardcoded like this, but fit to the screen
-                                                            >
-                                                                {String(cell)}
-                                                            </DataTable.Cell>
-                                                        ))}
-                                                    </DataTable.Row>
-                                                ))}
+                                                <FlatList
+                                                    data={displayedRows}
+                                                    renderItem={({ item }) => (
+                                                        <DataTable.Row>
+                                                            {item.map((cell, index) => (
+                                                                <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
+                                                                    {String(cell)}
+                                                                </DataTable.Cell>
+                                                            ))}
+                                                        </DataTable.Row>
+                                                    )}
+                                                    nestedScrollEnabled={true}
+                                                    style={{ maxHeight: 180 /*shouldn't be hardcoded*/}}
+                                                    initialNumToRender={5}
+                                                    windowSize={10}
+                                                    removeClippedSubviews={true}
+                                                    onEndReached={onBottomReached}
+                                                    onEndReachedThreshold={0.1} 
+                                                    ListFooterComponent={
+                                                        loadingMoreRows ? (
+                                                            <ActivityIndicator size="small" color="#0000ff" />
+                                                        ) : null
+                                                    }
+                                                />
                                             </DataTable>
-                                        </ScrollView>
+                                        </View>
                                     </ScrollView>
                                 )}
-
                             </Card.Content>
                         </Card>
                     </View>
