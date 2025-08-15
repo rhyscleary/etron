@@ -9,6 +9,8 @@ import InviteCard from "../../components/cards/inviteCard";
 import BasicButton from "../../components/common/buttons/BasicButton";
 import { apiGet, apiPost, apiPut } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
+import { fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
+import formatTTLDate from "../../utils/format/formatTTLDate";
 
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
@@ -21,14 +23,36 @@ const JoinWorkspace = () => {
         async function loadInvites() {
             setLoading(true);
             try {
-                const invites = await apiGet(
-                    endpoints.user.invites.getUserInvites
-                )
-                if (invites) {
-                    setInvites(invites);
+                const userAttributes = await fetchUserAttributes();
+                console.log(userAttributes);
+                const email = userAttributes.email;
+                console.log(email);
+
+                const inviteResult = await apiGet(
+                    endpoints.user.invites.getUserInvites,
+                    { email }
+                );
+                console.log(inviteResult);
+                if (inviteResult && inviteResult.length > 0) {
+                    const processedInvites = await Promise.all(inviteResult.map(async invite => {
+                        const expireAt = formatTTLDate(invite.expireAt);
+                        console.log(invite.workspaceId);
+                        const workspace = await apiGet(
+                            endpoints.workspace.core.getWorkspace(invite.workspaceId)
+                        );
+
+                        return {
+                            ...invite,
+                            expireAt,
+                            workspaceName: workspace.name,
+                            workspaceDescription: workspace.description
+                        };
+                    }));
+
+                    setInvites(processedInvites);
                 }
             } catch (error) {
-                console.log("Error loading workspace invites ", error);
+                console.log("Error loading workspace invites:", error);
             }
             setLoading(false);
         }
@@ -38,6 +62,7 @@ const JoinWorkspace = () => {
     const renderInvites = ({item}) => (
         <InviteCard 
             invite={item}
+            selected={selectedInvite?.inviteId === item.inviteId}
             onSelect={setSelectedInvite}
         />
     );
@@ -46,10 +71,12 @@ const JoinWorkspace = () => {
         setJoining(true);
 
         try {
+            const workspaceId = selectedInvite.workspaceId;
+            const inviteId = selectedInvite.inviteId;
 
             // try adding user to the workspace
             await apiPost(
-                endpoints.workspace.users.add(selectedInvite.workspaceId, selectedInvite.inviteId)
+                endpoints.workspace.users.add(workspaceId, inviteId)
             )
 
             // if successful store workspace info
@@ -76,7 +103,7 @@ const JoinWorkspace = () => {
         <View style={commonStyles.screen}>
             <Header title="Join Workspace" showBack />
 
-            <Text style={{ fontSize: 16 }}>
+            <Text style={{ fontSize: 16, marginBottom: 12 }}>
               You have the following options:
             </Text>
 
@@ -84,11 +111,12 @@ const JoinWorkspace = () => {
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" />
+                        <Text>Loading invites...</Text>
                     </View>
                 ) : invites.length === 0 ? (
-                    <View styles={styles.noInvitesContainer}>
+                    <View style={styles.noInvitesContainer}>
                         <Text style={{ fontSize: 16, textAlign: "center"}}>
-                            You currently have no workspace invites.
+                            You currently have no pending invites.
                         </Text>
                     </View>
                 ): (

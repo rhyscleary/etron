@@ -8,10 +8,10 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import StackLayout from "../../../../components/layout/StackLayout";
 import { Text, useTheme } from "react-native-paper";
-import { apiPut } from "../../../../utils/api/apiClient";
+import { apiGet, apiPut } from "../../../../utils/api/apiClient";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
 import TextField from "../../../../components/common/input/TextField";
-import { getWorkspaceId, getWorkspaceInfo } from "../../../../storage/workspaceStorage";
+import { getWorkspaceId, getWorkspaceInfo, saveWorkspaceInfo } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
 import UnsavedChangesDialog from "../../../../components/overlays/UnsavedChangesDialog";
 
@@ -33,7 +33,12 @@ const WorkspaceDetails = () => {
         async function loadWorkspaceDetails() {
             setLoading(true);
             try {
-                const workspace = await getWorkspaceInfo();
+                const workspaceId = await getWorkspaceId();
+
+                const workspace = await apiGet(
+                    endpoints.workspace.core.getWorkspace(workspaceId)
+                );
+
                 if (workspace) {
                     // set values for workspace details
                     setName(workspace.name || "");

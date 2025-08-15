@@ -71,17 +71,17 @@ async function createWorkspace(authUserId, data) {
         updatedAt: date
     };
 
-    const managerRoleItem = {
+    /*const managerRoleItem = {
         workspaceId: workspaceId,
         roleId: managerRoleId,
         name: "Manager",
         permissions: managerPerms,
         createdAt: date,
         updatedAt: date
-    };
+    };*/
 
     await workspaceRepo.addRole(ownerRoleItem);
-    await workspaceRepo.addRole(managerRoleItem);
+    //await workspaceRepo.addRole(managerRoleItem);
 
     // add user as an owner of the workspace. Get cognito user by sub
     const userProfile = await getUserById(authUserId);
