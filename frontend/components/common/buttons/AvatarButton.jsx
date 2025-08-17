@@ -33,7 +33,7 @@ const AvatarButton = ({
             case "text":
                 return <Avatar.Text size={size} label={getInitials()} style={[{backgroundColor: '#008663'}]}/>;
             default:
-                return <Avatar.Icon size={size} icon="account" style={[{backgroundColor: '#F7F7F7'}]}/>;
+                return <Avatar.Icon size={size} icon="account" style={[{backgroundColor: '#ccc'}]}/>; //#F7F7F7
         }
     }
     return (

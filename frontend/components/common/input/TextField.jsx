@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary, Holly Wyatt, Holly Wyatt
+// Author(s): Rhys Cleary, Holly Wyatt
 
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";

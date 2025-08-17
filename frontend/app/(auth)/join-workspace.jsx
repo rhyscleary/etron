@@ -9,7 +9,7 @@ import InviteCard from "../../components/cards/inviteCard";
 import BasicButton from "../../components/common/buttons/BasicButton";
 import { apiGet, apiPost, apiPut } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
-import { fetchUserAttributes, getCurrentUser } from "aws-amplify/auth";
+import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-amplify/auth";
 import formatTTLDate from "../../utils/format/formatTTLDate";
 
 const JoinWorkspace = () => {
@@ -59,6 +59,39 @@ const JoinWorkspace = () => {
         loadInvites();
     }, []);
 
+    // updates user attributes in cognito
+    async function handleUpdateUserAttribute(attributeKey, value) {
+        try {
+            const output = await updateUserAttribute({
+                userAttribute: {
+                    attributeKey,
+                    value
+                }
+            });
+
+            const { nextStep } = output;
+
+            switch (nextStep.updateAttributeStep) {
+                case 'CONFIRM_ATTRIBUTE_WITH_CODE':
+                    const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+                    console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
+                    return { needsConfirmation: true };
+                case 'DONE':
+                    const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    console.log(`${fieldName} updated successfully`);
+                    return { needsConfirmation: false };
+                default:
+                    console.log(`${attributeKey.replace('_', ' ')} update completed`);
+                    return { needsConfirmation: false };
+            }
+        } catch (error) {
+            console.log("Error updating user attribute:", error);
+            const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            setMessage(`Error updating ${fieldName}: ${error.message}`);
+            return { needsConfirmation: false, error: true };
+        }
+    }
+
     const renderInvites = ({item}) => (
         <InviteCard 
             invite={item}
@@ -86,6 +119,9 @@ const JoinWorkspace = () => {
 
             // save workspace info to local storage
             saveWorkspaceInfo(workspace);
+
+            // update user attribute to be in a workspace
+            await handleUpdateUserAttribute('custom:has_workspace', "true");
 
             console.log('Join response:', workspace);
             setJoining(false);

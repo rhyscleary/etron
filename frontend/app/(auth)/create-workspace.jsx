@@ -12,6 +12,7 @@ import { Text, useTheme } from "react-native-paper";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
+import { updateUserAttribute } from "aws-amplify/auth";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -22,6 +23,39 @@ const CreateWorkspace = () => {
     const [description, setDescription] = useState("");
     const [errors, setErrors] = useState(false);
     const [creating, setCreating] = useState(false);
+
+    // updates user attributes in cognito
+    async function handleUpdateUserAttribute(attributeKey, value) {
+        try {
+            const output = await updateUserAttribute({
+                userAttribute: {
+                    attributeKey,
+                    value
+                }
+            });
+
+            const { nextStep } = output;
+
+            switch (nextStep.updateAttributeStep) {
+                case 'CONFIRM_ATTRIBUTE_WITH_CODE':
+                    const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+                    console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
+                    return { needsConfirmation: true };
+                case 'DONE':
+                    const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    console.log(`${fieldName} updated successfully`);
+                    return { needsConfirmation: false };
+                default:
+                    console.log(`${attributeKey.replace('_', ' ')} update completed`);
+                    return { needsConfirmation: false };
+            }
+        } catch (error) {
+            console.log("Error updating user attribute:", error);
+            const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            setMessage(`Error updating ${fieldName}: ${error.message}`);
+            return { needsConfirmation: false, error: true };
+        }
+    }
 
     async function handleCreate() {
         setCreating(true);
@@ -50,6 +84,9 @@ const CreateWorkspace = () => {
 
             // save workspace info to local storage
             saveWorkspaceInfo(result);
+
+            // update user attribute to be in a workspace
+            await handleUpdateUserAttribute('custom:has_workspace', "true");
 
             console.log('Workspace creation response:', result);
             setCreating(false);

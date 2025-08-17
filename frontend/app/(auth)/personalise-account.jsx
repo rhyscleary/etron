@@ -14,6 +14,7 @@ import { Auth } from 'aws-amplify';
 import AvatarButton from '../../components/common/buttons/AvatarButton';
 import { uploadProfilePhotoFromDevice, uploadProfilePhotoToS3 } from '../../utils/profilePhoto';
 import { getCurrentUser, updateUserAttribute, updateUserAttributes } from 'aws-amplify/auth';
+import WorkspaceDialog from '../../components/overlays/WorkspaceDialog';
 
 //import * as ImagePicker from 'expo-image-picker';
 
@@ -207,65 +208,13 @@ const PersonaliseAccount = () => {
           />
         </View>
 
-        <Modal
+        <WorkspaceDialog
           visible={showWorkspaceModal}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-          }}>
-            <View style={{
-            backgroundColor: theme.colors.background,
-            padding: 10,
-            borderRadius: 10,
-            width: '65%',
-            alignItems: 'center'
-          }}>
-
-            <Text style={{ fontSize: 24, marginBottom: 20 }}>
-              Workspace
-            </Text>
-
-            <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center' }}>
-              Are you creating your own workspace or joining an existing one?
-            </Text>
-
-          <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            marginBottom: 20
-          }}>
-            <BasicButton
-              label="Creating"
-              fullWidth={true}
-              onPress={() => {
-                setWorkspaceModal(false);
-                router.push('/(auth)/create-workspace');
-              }}
-              style={{ marginRight: 50 }}
-            />
-            <BasicButton
-              label="Joining"
-              fullWidth={true}
-              onPress={() => {
-                setWorkspaceModal(false);
-                router.push('/(auth)/join-workspace');
-              }}
-              style={{ marginRight: 50 }}
-            />
-          </View>
-              
-          <TouchableOpacity onPress={() => setWorkspaceModal(false)}>
-            <Text>Go back</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-        </Modal>
+          onDismiss={() => setWorkspaceModal(false)}
+          setWorkspaceModal={setWorkspaceModal}
+          router={router}
+          showGoBack={true}
+        />
 
       </View>
     </View>

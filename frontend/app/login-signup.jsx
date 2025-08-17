@@ -23,13 +23,15 @@ import {
     getCurrentUser, 
     signOut,
     updateUserAttributes,
-    fetchUserAttributes
+    fetchUserAttributes,
+    resendSignUpCode
 } from 'aws-amplify/auth';
 
 import awsmobile from '../src/aws-exports';
 import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../storage/workspaceStorage";
+import VerificationDialog from "../components/overlays/VerificationDialog";
 Amplify.configure(awsmobile);
 
 function LoginSignup() {
@@ -46,9 +48,26 @@ function LoginSignup() {
     const [loading, setLoading] = useState(false);
     const [socialLoading, setSocialLoading] = useState({ google: false, microsoft: false });
     const [signedOutForLinking, setSignedOutForLinking] = useState(!isLinking); // true if not linking
+    const [resendCooldown, setResendCooldown] = useState(0);
 
     const router = useRouter();
     const theme = useTheme();
+
+    useEffect(() => {
+        let interval;
+        if (resendCooldown > 0) {
+            interval = setInterval(() => {
+                setResendCooldown(current => current - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [resendCooldown]);
+
+    useEffect(() => {
+        if (showVerificationModal && email && resendCooldown === 0) {
+            handleResend();
+        }
+    }, [showVerificationModal]);
 
     useEffect(() => {
         if (isLinking && !signedOutForLinking) {
@@ -173,14 +192,31 @@ function LoginSignup() {
         }
     }
 
+    const handleResend = async () => {
+        try {
+            await resendSignUpCode({username: email});
+            setResendCooldown(60);
+        } catch (error) {
+            console.error("Error resending the code", error);
+        }
+    }
+
     const handleSignIn = async () => {
         setLoading(true);
         setMessage('');
         try {
-            await signIn({ username: email, password });
-            await checkWorkspaceExists();
+            const { isSignedIn, nextStep } = await signIn({ username: email, password });
+            
+            // check if not fully signed up
+            if (!isSignedIn && nextStep.signInStep === "CONFIRM_SIGN_UP") {
+                setShowVerificationModal(true);
+                return;
+            }
+
+            if (isSignedIn) {
+                await checkWorkspaceExists();
+            }
         } catch (error) {
-            console.log('Error signing in:', error);
             setMessage(`Error: ${error.message}`);
         } finally {
             setLoading(false);
@@ -391,7 +427,7 @@ function LoginSignup() {
                     label={isSignUpBool ? 'Already have an account? Log In'
                         : "Don't have an account? Sign Up"}
                     onPress={() => {
-                        router.push({
+                        router.replace({
                             pathname: '/login-signup',
                             params: { isSignUp: (!isSignUpBool).toString() },
                         });
@@ -412,60 +448,16 @@ function LoginSignup() {
                     </Text>
                 )}
 
-                <Modal
+                <VerificationDialog
                     visible={showVerificationModal}
-                    animationType="slide"
-                    transparent={true}
-                >
-                    <View style={{
-                        flex: 1,
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        backgroundColor: 'rgba(0,0,0,0.5)'
-                    }}>
-                        <View style={{
-                            backgroundColor: theme.colors.background,
-                            padding: 10,
-                            borderRadius: 10,
-                            width: '65%',
-                            alignItems: 'center'
-                        }}>
-                            <Text style={{ fontSize: 24, marginBottom: 20 }}>
-                                Enter Verification Code
-                            </Text>
-
-                            <TextInput
-                                placeholder="Code"
-                                value={verificationCode}
-                                onChangeText={setVerificationCode}
-                                keyboardType="numeric"
-                                style={{ borderWidth: 1, padding: 10, marginBottom: 20 }}
-                            />
-
-                            <View style={{
-                                flexDirection: 'row',
-                                justifyContent: 'space-between',
-                                width: '100%',
-                                marginBottom: 20
-                            }}>
-                                <BasicButton
-                                    label="Cancel"
-                                    fullWidth='true'
-                                    danger="true"
-                                    onPress={() => setShowVerificationModal(false)}
-                                    style={{ marginRight: 50 }}
-                                />
-
-                                <BasicButton
-                                    label="Confirm"
-                                    fullWidth='true'
-                                    onPress={handleConfirmCode}
-                                    style={{ marginRight: 50 }}
-                                />
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
+                    code={verificationCode}
+                    setCode={setVerificationCode}
+                    onConfirm={handleConfirmCode}
+                    onResend={handleResend}
+                    resendCooldown={resendCooldown}
+                    onLater={() => setShowVerificationModal(false)}
+                />
+                
             </View>
         </View>
     );
