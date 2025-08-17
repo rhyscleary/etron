@@ -18,7 +18,7 @@ const CreateDataConnection = () => {
         ...category,
         type: category.adapters.map(adapter => ({
             ...adapter,
-            onPress: () => router.push(adapter.route)
+            onPress: () => router.navigate(adapter.route)
         }))
     }));
 

@@ -17,6 +17,7 @@ export default function AuthLayout() {
         } else {
             if (!verifyingPassword) {  // temp until backend
                 console.log("Redirecting to root page.")
+                if (router.canDismiss()) router.dismissAll();
                 router.replace('/');
             } else {
                 console.log("Paused redirect due to verifying password.");

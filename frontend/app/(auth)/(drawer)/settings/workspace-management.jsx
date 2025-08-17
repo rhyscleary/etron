@@ -27,9 +27,9 @@ const WorkspaceManagement = () => {
 
     // container for different workspace management options
     const workspaceOptionButtons = [
-            { label: "Workspace Details", description: "Update name, location and description", onPress: () => router.push("/settings/workspace-details") },
-            { label: "Module Management", description: "Add and remove modules from the workspace", onPress: () => router.push("/settings/module-management") },
-            { label: "Profile Management", description: "Edit profiles within the workspace", onPress: () => router.push("/settings/profile-management") },
+            { label: "Workspace Details", description: "Update name, location and description", onPress: () => router.navigate("/settings/workspace-details") },
+            { label: "Module Management", description: "Add and remove modules from the workspace", onPress: () => router.navigate("/settings/module-management") },
+            { label: "Profile Management", description: "Edit profiles within the workspace", onPress: () => router.navigate("/settings/profile-management") },
     ];
 
     async function handleConfirmDeletion() {
@@ -48,8 +48,8 @@ const WorkspaceManagement = () => {
 
             console.log('Workspace deleted:', result);
             setDeleteDialogVisible(false);
-            
-            router.replace("/index");
+            router.dismissAll();
+            router.replace("/index"); //TODO: SHOULD REDIRECT YOU TO A BASE PAGE ASKING YOU TO JOIN OR CREATE A WORKSPACE
         } catch (error) {
             console.log("Error deleting workspace: ", error);
             

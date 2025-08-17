@@ -74,7 +74,8 @@ function LoginSignup() {
                             const user = await getCurrentUser();
                             console.log('Social sign-in successful:', user);
                             // navigate to profile page (or consider back to accounts page again)
-                            router.push("(auth)/profile");
+                            router.dismissAll()
+                            router.replace("(auth)/profile");
                         } catch (error) {
                             console.log('No authenticated user found after social sign-in');
                             setMessage("Social sign-in was cancelled or failed");
@@ -101,7 +102,8 @@ function LoginSignup() {
         setMessage('');
         try {
             await signIn({ username: email, password });
-            router.push("(auth)/profile"); // always push to profile after sign in
+            router.dismissAll();
+            router.replace("(auth)/profile"); // always push to profile after sign in
         } catch (error) {
             console.log('Error signing in:', error);
             setMessage(`Error: ${error.message}`);
@@ -312,7 +314,7 @@ function LoginSignup() {
                     label={isSignUpBool ? 'Already have an account? Log In'
                         : "Don't have an account? Sign Up"}
                     onPress={() => {
-                        router.push({
+                        router.replace({
                             pathname: '/login-signup',
                             params: { isSignUp: (!isSignUpBool).toString() },
                         });

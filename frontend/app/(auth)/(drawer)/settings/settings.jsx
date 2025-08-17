@@ -11,11 +11,11 @@ import { commonStyles } from '../../../../assets/styles/stylesheets/common';
 const Settings = () => { 
 
     const settingOptionButtons = [
-        { icon: "account", label: "Account", onPress: () => router.push("/settings/account/account")},
-        { icon: "briefcase-outline", label: "Workspace", onPress: () => router.push("/settings/workspace-management") },
-        { icon: "palette-outline", label: "Themes", onPress: () => router.push("/settings/theme-settings") },
-        { icon: "", label: "Accessibility", onPress: () => router.push("/settings/accessibility-settings") },
-        { icon: "information-outline", label: "Support", onPress: () => router.push("/settings/support-settings") },
+        { icon: "account", label: "Account", onPress: () => router.navigate("/settings/account/account")},
+        { icon: "briefcase-outline", label: "Workspace", onPress: () => router.navigate("/settings/workspace-management") },
+        { icon: "palette-outline", label: "Themes", onPress: () => router.navigate("/settings/theme-settings") },
+        { icon: "", label: "Accessibility", onPress: () => router.navigate("/settings/accessibility-settings") },
+        { icon: "information-outline", label: "Support", onPress: () => router.navigate("/settings/support-settings") },
         { icon: "", label: "Privacy Policy", },
         { icon: "file-document-multiple-outline", label: "Terms and Conditions",},
     ];
@@ -26,7 +26,7 @@ const Settings = () => {
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")}>
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")}>
                         <Pressable>
                             <Text>Go to Profile</Text>
                         </Pressable>

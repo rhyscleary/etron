@@ -78,7 +78,7 @@ const Users = () => {
                 title="Users"
                 showBack
                 showPlus
-                onRightIconPress={() => router.push("/collaboration/invite-user")}
+                onRightIconPress={() => router.navigate("/collaboration/invite-user")}
             />
 
             {/* Search Box */}
@@ -107,7 +107,7 @@ const Users = () => {
 
             {/* Workspace Log */}
             <Pressable
-                onPress={() => router.push("/collaboration/workspace-log")}
+                onPress={() => router.navigate("/collaboration/workspace-log")}
                 style={{
                     borderWidth: 1,
                     borderColor: '#ccc',
@@ -135,7 +135,7 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => router.push(`/collaboration/edit-user/${item.userId || item.id}`)}
+                        onPress={() => router.navigate(`/collaboration/edit-user/${item.userId || item.id}`)}
                     >
                         <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>

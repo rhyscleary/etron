@@ -18,7 +18,8 @@ const ResetPassword = () => {
         //Save selected invite as chosen workspace
     });
     // BACKEND CONNECTION HERE FOR SAVING CHOICE
-    router.push('/login-signup');
+    router.dismissAll();
+    router.navigate('/login-signup');
   };
 
   const theme = useTheme();

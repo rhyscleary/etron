@@ -1,3 +1,4 @@
+//TEMP FILE; REMOVE WHEN FUNCTIONALITY IS IMPLEMENTED ELSEWHERE
 // Noah Bradley
 
 import React, { useState, useEffect } from 'react';
@@ -123,7 +124,7 @@ const PersonaliseAccount = () => {
               fullWidth='true'
               onPress={() => {
                 setWorkspaceModal(false);
-                router.push('/(auth)/create-workspace');
+                router.navigate('/(auth)/create-workspace');
               }}
               style={{ marginRight: 50 }}
             />
@@ -132,7 +133,7 @@ const PersonaliseAccount = () => {
               fullWidth='true'
               onPress={() => {
                 setWorkspaceModal(false);
-                router.push('/(auth)/join-workspace');
+                router.navigate('/(auth)/join-workspace');
               }}
               style={{ marginRight: 50 }}
             />

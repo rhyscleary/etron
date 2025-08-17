@@ -62,7 +62,7 @@ const CreateRole = () => {
             );
 
             console.log("Created role:", result);
-            router.push("/collaboration/roles"); // ✅ Redirect to the role list
+            router.navigate("/collaboration/roles"); // ✅ Redirect to the role list
         } catch (error) {
             console.error("Failed to create role:", error);
         } finally {

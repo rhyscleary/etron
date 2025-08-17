@@ -75,7 +75,7 @@ const SelectDataSource = () => {
   }, [ids, getDataSource]);
 
   const handleSelect = (adapterType) => {
-    router.push(
+    router.navigate(
       `/modules/day-book/data-management/configure-adapter/${adapterType}?sourceId=${ids || ""}`
     );
   };
