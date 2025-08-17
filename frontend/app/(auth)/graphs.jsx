@@ -1,3 +1,5 @@
+//TEMP FILE; REMOVE WHEN FUNCTIONALITY IS IMPLEMENTED ELSEWHERE
+
 import { Button, Text, View, ScrollView } from 'react-native';
 import { commonStyles } from '../../assets/styles/stylesheets/common';
 import { router } from "expo-router";
@@ -16,7 +18,7 @@ const graphs = () => {
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={34}>
                     {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
                     <BarChart data = {data} />
                     <LineChart data = {data} />
                     <PieChart data = {data} />

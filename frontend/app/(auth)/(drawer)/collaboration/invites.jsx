@@ -40,7 +40,7 @@ const Invites = () => {
 
   const renderInviteItem = ({ item }) => (
     <Pressable
-      onPress={() => router.push(`/collaboration/edit-invite/${item.inviteId}`)} // ✅ Fixed route
+      onPress={() => router.navigate(`/collaboration/edit-invite/${item.inviteId}`)} // ✅ Fixed route
       style={styles.inviteBox}
     >
       <Text>Email: {item.email}</Text>
@@ -55,7 +55,7 @@ const Invites = () => {
         title="Invites"
         showBack
         showPlus
-        onRightIconPress={() => router.push("/collaboration/invite-user")}
+        onRightIconPress={() => router.navigate("/collaboration/invite-user")}
       />
 
       {loading ? (

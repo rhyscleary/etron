@@ -14,10 +14,10 @@ const Collaboration = () => {
 
     // container for different collaboration options
     const workspaceOptionButtons = [
-            { label: "Users", description: "Manage users in the workspace", onPress: () => router.push("collaboration/users") },
-            { label: "Roles", description: "Add and remove modules from the workspace", onPress: () => router.push("collaboration/roles") },
-            { label: "Invites", description: "Manage invites to the workspace", onPress: () => router.push("collaboration/invites") },
-            { label: "Workspace Log", description: "Audit log of actions within the workspace", onPress: () => router.push("collaboration/workspace-log") }
+            { label: "Users", description: "Manage users in the workspace", onPress: () => router.navigate("collaboration/users") },
+            { label: "Roles", description: "Add and remove modules from the workspace", onPress: () => router.navigate("collaboration/roles") },
+            { label: "Invites", description: "Manage invites to the workspace", onPress: () => router.navigate("collaboration/invites") },
+            { label: "Workspace Log", description: "Audit log of actions within the workspace", onPress: () => router.navigate("collaboration/workspace-log") }
     ];
 
     return (
@@ -27,7 +27,7 @@ const Collaboration = () => {
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
                     {workspaceOptionButtons.map((item) => (
                         <DescriptiveButton 
                             key={item.label}

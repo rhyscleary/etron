@@ -53,7 +53,7 @@ const EditUser = () => {
       };
 
       await apiPut(endpoints.workspace.invites.update(workspaceId, id), payload);
-      router.replace("/collaboration/invites");
+      router.navigate("/collaboration/invites");
     } catch (error) {
       console.error("Failed to update invite:", error);
     }
@@ -63,7 +63,7 @@ const EditUser = () => {
     try {
       await apiDelete(endpoints.workspace.invites.cancelInvite(workspaceId, id));
       setDeleteDialogVisible(false);
-      router.replace("/collaboration/invites");
+      router.navigate("/collaboration/invites");
     } catch (error) {
       console.error("Failed to delete invite:", error);
     }

@@ -56,7 +56,8 @@ const Accounts = () => {
     const handleSwitchAccount = async (targetEmail) => {
         try {
             await signOut();
-            router.push({
+            router.dismissAll(); //TODO: MAKE SURE THIS REDIRECT WORKS; IT MIGHT CAUSE BUGS AS IS
+            router.replace({
                 pathname: '/login-signup',
                 params: { email: targetEmail, fromAccounts: 'true' },
             });
@@ -80,7 +81,8 @@ const Accounts = () => {
             if (accountToRemove === email) {
                 // if removing current account then sign out and reset email
                 setEmail("");
-                router.replace('/login-signup');
+                router.dismissAll();
+                router.replace('/login-signup'); //TODO: SHOULD REDIRECT YOU TO A BASE PAGE ASKING YOU TO JOIN OR CREATE A WORKSPACE
             } else {
                 // update state with remaining accounts
                 setAccounts(updatedAccounts);
@@ -156,7 +158,8 @@ const Accounts = () => {
                         <BasicButton
                             label="Link Another Account"
                             onPress={() => {
-                                router.push({
+                                router.dismissAll();
+                                router.replace({
                                     pathname: '/login-signup',
                                     params: { link: 'true' }
                                 });
