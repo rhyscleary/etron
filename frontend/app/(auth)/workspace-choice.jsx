@@ -19,6 +19,7 @@ const WorkspaceChoice = () => {
           setWorkspaceModal={setWorkspaceModal}
           router={router}
           showGoBack={false}
+          showSignOut={true}
         />
 
     </View>

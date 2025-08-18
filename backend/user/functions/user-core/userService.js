@@ -11,7 +11,8 @@ async function updateUserInUserPool(userId, workspaceId, updateData) {
 
     const userData = {
         given_name: updatedUser.given_name,
-        family_name: updateUser.family_name,
+        family_name: updatedUser.family_name,
+        phone_number: updatedUser.phone_number,
         picture: updatedUser.picture
     }
 

@@ -2,7 +2,7 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
-const { getUserById } = require("@etron/shared/utils/auth");
+const { getUserById, updateUser } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
 const { isOwner, isManager, getDefaultPermissions } = require("@etron/shared/utils/permissions");
 
@@ -161,6 +161,14 @@ async function deleteWorkspace(authUserId, workspaceId) {
         throw new Error("Unauthorised user");
     }
 
+    // get all users in workspace
+    const users = await workspaceUsersRepo.getUsersByWorkspaceId(workspaceId);
+
+    // set has_workspace to false
+    for (const user of users) {
+        await updateUser(user.userId, { "custom:has_workspace": "false" });
+    }
+
     await workspaceRepo.removeWorkspace(workspaceId);
 
     return {message: "Workspace successfully deleted"};
@@ -184,16 +192,16 @@ async function getWorkspaceByWorkspaceId(workspaceId) {
     };
 }
 
-async function getWorkspaceByUserId(authUserId) {
+async function getWorkspaceByUserId(userId) {
     // get user data
-    const user = await workspaceUsersRepo.getUserByUserId(authUserId);
+    const user = await workspaceUsersRepo.getUserByUserId(userId);
 
     if (!user?.[0]) {
         throw new Error("No user found");
     }
 
-    // get workspace data
-    const workspace = await workspaceRepo.getWorkspaceById(user.workspaceId);
+    // get workspace data  
+    const workspace = await workspaceRepo.getWorkspaceById(user[0].workspaceId);
 
     if (!workspace) {
         throw new Error("Workspace not found");

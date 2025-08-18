@@ -40,18 +40,43 @@ export default function AuthLayout() {
         }
     }
 
+    const checkPersonalDetailsExists = async () => {
+        try {
+            const userAttributes = await fetchUserAttributes();
+
+            const hasGivenName = userAttributes["given_name"];
+            const hasFamilyName = userAttributes["family_name"];
+
+            // if the name attributes don't exist return false
+            if (!hasGivenName || !hasFamilyName) {
+                return false;
+            }
+    
+            return true;
+        } catch (error) {
+            console.error("Error fetching user attributes:", error);
+        }
+    }
+
     useEffect(() => {
         const loadLayout = async () => {
             console.log("(AuthLayout) Auth status:", authStatus);
 
             if (authStatus === 'authenticated') {
                 const workspaceExists = await checkWorkspaceExists();
-                if (workspaceExists) {
-                    console.log("Showing authenticated page.");
-                } else {
+                const personalDetailsExists = await checkPersonalDetailsExists();
+
+                if (!workspaceExists && !personalDetailsExists) {
+                    console.log("User authenticated but no workspace or personal details found. Redirecting..");
+                    router.replace("/(auth)/personalise-account");
+                } else if (!workspaceExists) {
                     console.log("User authenticated but no workspace found. Redirecting..");
                     router.replace("/(auth)/workspace-choice");
+                } else {
+                    console.log("Showing authenticated profile page.");
                 }
+            } else if (authStatus === `configuring`) {
+                
             } else {
                 if (!verifyingPassword) {  // temp until backend
                     console.log("Redirecting to root page.")

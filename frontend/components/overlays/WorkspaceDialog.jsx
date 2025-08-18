@@ -3,6 +3,7 @@
 import { Dialog, Portal, Text, useTheme } from "react-native-paper";
 import BasicButton from "../common/buttons/BasicButton";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { signOut } from "aws-amplify/auth";
 
 
 const WorkspaceDialog = ({
@@ -10,7 +11,8 @@ const WorkspaceDialog = ({
     onDismiss,
     setWorkspaceModal,
     router,
-    showGoBack = false
+    showGoBack = false,
+    showSignOut = false
 }) => {
     const theme = useTheme();
 
@@ -43,9 +45,23 @@ const WorkspaceDialog = ({
                 </Dialog.Actions>
 
                 {showGoBack && (
-                    <View style={styles.goBackContainer}>
+                    <View style={styles.bottomActionContainer}>
                         <TouchableOpacity onPress={() => setWorkspaceModal(false)}>
                             <Text>Go back</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
+                {showSignOut && (
+                    <View style={styles.bottomActionContainer}>
+                        <TouchableOpacity onPress={async () => {
+                            try {
+                                await signOut();
+                                router.navigate('landing');
+                            } catch (error) {
+                                console.error(`Error signing out:`, error);
+                            }
+                        }}>
+                            <Text>Sign Out</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -71,7 +87,7 @@ const styles = StyleSheet.create({
     actions: {
         justifyContent: "space-between"
     },
-    goBackContainer: {
+    bottomActionContainer: {
         alignItems: "center",
         marginBottom: 20
     }

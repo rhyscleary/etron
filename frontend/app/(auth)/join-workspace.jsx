@@ -11,6 +11,7 @@ import { apiGet, apiPost, apiPut } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-amplify/auth";
 import formatTTLDate from "../../utils/format/formatTTLDate";
+import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
 
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);

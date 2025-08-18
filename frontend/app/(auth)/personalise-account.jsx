@@ -12,8 +12,8 @@ import { commonStyles } from '../../assets/styles/stylesheets/common';
 import StackLayout from '../../components/layout/StackLayout';
 import { Auth } from 'aws-amplify';
 import AvatarButton from '../../components/common/buttons/AvatarButton';
-import { uploadProfilePhotoFromDevice, uploadProfilePhotoToS3 } from '../../utils/profilePhoto';
-import { getCurrentUser, updateUserAttribute, updateUserAttributes } from 'aws-amplify/auth';
+import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhotoFromDevice, uploadProfilePhotoToS3 } from '../../utils/profilePhoto';
+import { fetchUserAttributes, getCurrentUser, updateUserAttribute, updateUserAttributes } from 'aws-amplify/auth';
 import WorkspaceDialog from '../../components/overlays/WorkspaceDialog';
 
 //import * as ImagePicker from 'expo-image-picker';
@@ -24,7 +24,9 @@ const PersonaliseAccount = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [profilePicture, setProfilePicture] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showWorkspaceModal, setWorkspaceModal] = useState(false);
+  const [pictureChanged, setPictureChanged] = useState(false);
   const [needsPhoneConfirmation, setNeedsPhoneConfirmation] = useState(false);
   const [errors, setErrors] = useState({
         firstName: false,
@@ -36,6 +38,7 @@ const PersonaliseAccount = () => {
     try {
       const uri = await uploadProfilePhotoFromDevice();
       setProfilePicture(uri);
+      setPictureChanged(true);
     } catch (error) {
       console.log(error.message);
     }
@@ -43,7 +46,36 @@ const PersonaliseAccount = () => {
 
   const handleRemovePhoto = () => {
       setProfilePicture(null);
+      setPictureChanged(true);
   };
+
+  useEffect(() => {
+      loadProfileData();
+  }, []);
+
+  async function loadProfileData() {
+    setLoading(true);
+    try {
+        const userAttributes = await fetchUserAttributes();
+        console.log("User Attributes:", userAttributes);
+        
+        setFirstName(userAttributes.given_name || "");
+        setLastName(userAttributes.family_name || "");
+        // remove country code from phone number
+        const phoneNumber = userAttributes.phone_number || "";
+        const cleanPhone = phoneNumber.startsWith('+61') ? 
+            phoneNumber.substring(3) : phoneNumber;
+        setPhoneNumber(cleanPhone);
+
+        const profilePhotoUri = await loadProfilePhoto();
+        setProfilePicture(profilePhotoUri || null);
+        
+    } catch (error) {
+        console.log("Error loading personal details: ", error);
+        setMessage("Error loading personal details");
+    }
+    setLoading(false);
+  }
 
   // updates user details, including verification code if needed (shouldn't be) 
   async function handleUpdateUserAttribute(attributeKey, value) {
@@ -98,10 +130,15 @@ const PersonaliseAccount = () => {
         await handleUpdateUserAttribute('phone_number', formattedPhone);
       };
 
-      if (profilePicture) {
-        const s3Url = await uploadProfilePhotoToS3(profilePicture);
-        if (s3Url) {
-          await handleUpdateUserAttribute('picture', s3Url);
+      if (pictureChanged) {
+        if (profilePicture) {
+          const s3Url = await uploadProfilePhotoToS3(profilePicture);
+          if (s3Url) {
+            await handleUpdateUserAttribute('picture', s3Url);
+          }
+        } else {
+          await handleUpdateUserAttribute('picture', "");
+          await removeProfilePhotoFromLocalStorage();
         }
       }
 

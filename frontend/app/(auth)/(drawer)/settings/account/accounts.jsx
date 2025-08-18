@@ -128,7 +128,7 @@ const Accounts = () => {
 
     // sign out. Separate function in case more logic required later
     const handleSignOut = () => {
-        removeWorkspaceInfo(); // temp fix to remove workspace info
+        //removeWorkspaceInfo(); // temp fix to remove workspace info
         // sign out from app
         amplifySignOut();
     } 

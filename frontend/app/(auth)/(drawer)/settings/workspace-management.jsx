@@ -83,6 +83,7 @@ const WorkspaceManagement = () => {
 
                 console.log('Workspace deleted:', result);
                 setDeleteDialogVisible(false);
+
             
                 // sign out the user
                 await signOut();

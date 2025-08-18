@@ -52,16 +52,7 @@ const PersonalDetails = () => {
         firstName: false,
         lastName: false,
         phoneNumber: false,
-    });
-    
-    /*useEffect(() => {
-        (async () => {
-            setIsLoadingPhoto(true);
-            const uri = await loadProfilePhoto();
-            setProfilePhotoUri(uri);
-            setIsLoadingPhoto(false);
-        })();
-    }, []);*/
+    })
 
     // Function for uploading photo to S3
     const handleUploadPhoto = async () => {
@@ -126,44 +117,6 @@ const PersonalDetails = () => {
     }, [firstName, lastName, phoneNumber, profilePhotoUri, originalData]);
 
 
-
-
-    // updates user details, including verification code if needed (shouldn't be) 
-    /*async function handleUpdateUserAttribute(attributeKey, value) {
-        try {
-            const output = await updateUserAttribute({
-                userAttribute: {
-                    attributeKey,
-                    value
-                }
-            });
-
-            const { nextStep } = output;
-
-            switch (nextStep.updateAttributeStep) {
-                case 'CONFIRM_ATTRIBUTE_WITH_CODE':
-                    const codeDeliveryDetails = nextStep.codeDeliveryDetails;
-                    setMessage(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
-                    if (attributeKey === 'phone_number') {
-                        setNeedsPhoneConfirmation(true);
-                    }
-                    return { needsConfirmation: true };
-                case 'DONE':
-                    const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    setMessage(`${fieldName} updated successfully`);
-                    return { needsConfirmation: false };
-                default:
-                    setMessage(`${attributeKey.replace('_', ' ')} update completed`);
-                    return { needsConfirmation: false };
-            }
-        } catch (error) {
-            console.log("Error updating user attribute:", error);
-            const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-            setMessage(`Error updating ${fieldName}: ${error.message}`);
-            return { needsConfirmation: false, error: true };
-        }
-    }*/
-
     // TODO: change this to whatever toast/alert method we're using
     /*async function handleConfirmPhoneNumber(userAttributeKey, confirmationCode) {
         try {
@@ -197,17 +150,17 @@ const PersonalDetails = () => {
             const updateData = {};
 
             if (firstName.trim() !== originalData.firstName) {
-                updateData.firstName = firstName.trim();
+                updateData.given_name = firstName.trim();
             }
 
             if (lastName.trim() !== originalData.lastName) {
-                updateData.lastName = lastName.trim();
+                updateData.family_name = lastName.trim();
             }
 
             if (phoneNumber.trim() !== originalData.phoneNumber) {
                 // adds country code for australia (do we need to handle other countries?)
                 const formattedPhone = phoneNumber.startsWith('+61') ? phoneNumber : `+61${phoneNumber}`;
-                updateData.phoneNumber = formattedPhone.trim();
+                updateData.phone_number = formattedPhone.trim();
             }
 
             if (photoChanged) {
@@ -215,13 +168,14 @@ const PersonalDetails = () => {
                     const s3Url = await uploadProfilePhotoToS3(profilePhotoUri);
                     updateData.picture = s3Url;
                 } else {
-                    updateData.picture = null;
+                    updateData.picture = "";
                     await removeProfilePhotoFromLocalStorage();
                 }
             }
 
             let workspaceId = getWorkspaceId();
             let { userId } = await getCurrentUser();
+            
             const result = await apiPut(
                 endpoints.user.core.updateUser(userId, workspaceId),
                 updateData

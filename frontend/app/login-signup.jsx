@@ -132,67 +132,6 @@ function LoginSignup() {
         }
     }
 
-    const checkWorkspaceExists = async () => {
-        try {
-            const user = await getCurrentUser();
-            console.log(user);
-            const userAttributes = await fetchUserAttributes();
-
-            let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
-
-            // if the attribute doesn't exist set it to false
-            if (hasWorkspaceAttribute == null) {
-                await setHasWorkspaceAttribute(false);
-                router.navigate("(auth)/personalise-account");
-                return;
-            }
-
-            const hasWorkspace = hasWorkspaceAttribute === "true";
-
-            if (!hasWorkspace) {
-                const hasGivenName = Boolean(userAttributes["given_name"]);
-                const hasFamilyName = Boolean(userAttributes["family_name"]);
-
-                if (!hasGivenName || !hasFamilyName) {
-                    router.navigate("(auth)/personalise-account");
-                } else {
-                    router.navigate("(auth)/workspace-choice");
-                }
-                return;
-            }
-
-            const result = await apiGet(
-                endpoints.workspace.core.getByUserId(user.userId)
-            );
-            console.log(result);
-            
-            if (!result.ok) {
-                throw new Error("Failed to fetch the workspace");
-            }
-
-            if (!result.workspace) {
-                // api doesn't return workspace then change cognito attribute 
-                await setHasWorkspaceAttribute(false);
-                
-                const hasGivenName = Boolean(userAttributes["given_name"]);
-                const hasFamilyName = Boolean(userAttributes["family_name"]);
-
-                if (!hasGivenName || !hasFamilyName) {
-                    router.navigate("(auth)/personalise-account");
-                } else {
-                    router.navigate("(auth)/workspace-choice");
-                }
-            } else {
-                // store workspace details
-                await saveWorkspaceInfo(result.workspace);
-                router.navigate("(auth)/profile");
-            }
-        } catch (error) {
-            console.error("Error fetching workspace:", error);
-            setMessage("Unable to locate workspace. Please try again.")
-        }
-    }
-
     const handleResend = async () => {
         try {
             await resendSignUpCode({username: email});
@@ -206,6 +145,17 @@ function LoginSignup() {
         setLoading(true);
         setMessage('');
         try {
+
+            try {
+                const currentUser = await getCurrentUser();
+                if (currentUser) {
+                    console.log("User is already signed in. Signing out..");
+                    await signOut();
+                }
+            } catch {
+                console.log("Unable to retrieve signed in user");
+            }
+
             const { isSignedIn, nextStep } = await signIn({ username: email, password });
             
             // check if not fully signed up
@@ -215,10 +165,58 @@ function LoginSignup() {
             }
 
             if (isSignedIn) {
-                await checkWorkspaceExists();
+                const user = await getCurrentUser();
+                console.log(user);
+                console.log(user.userId);
+                const userAttributes = await fetchUserAttributes();
+
+                const hasGivenName = userAttributes["given_name"];
+                const hasFamilyName = userAttributes["family_name"];
+                let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
+
+                // if the attribute doesn't exist set it to false
+                if (hasWorkspaceAttribute == null) {
+                    await setHasWorkspaceAttribute(false);
+                    hasWorkspaceAttribute = "false";
+                }
+
+                const hasWorkspace = hasWorkspaceAttribute === "true";
+
+                if (!hasWorkspace) {
+                    if (!hasGivenName || !hasFamilyName) {
+                        router.navigate("(auth)/personalise-account");
+                        return;
+                    } else {
+                        router.navigate("(auth)/workspace-choice");
+                        return;
+                    }
+                } else {
+                    // fetch the workspace
+                    try {
+                        const workspace = await apiGet(
+                            endpoints.workspace.core.getByUserId(user.userId)
+                        );
+
+                        if (!workspace || !workspace.workspaceId) {
+                            // clear attribute and redirect to choose workspace
+                            await setHasWorkspaceAttribute(false);
+                            router.navigate("(auth)/workspace-choice");
+                            return;
+                        }
+
+                        // save locally and go to profile screen
+                        await saveWorkspaceInfo(workspace);
+                        router.navigate("(auth)/profile");
+                    } catch (error) {
+                        console.error("Error fetching workspace:", error);
+                        setMessage("Unable to locate workspace. Please try again."); 
+                    }
+                }
             }
         } catch (error) {
+            console.error("Sign in error:", error);
             setMessage(`Error: ${error.message}`);
+            await signOut();
         } finally {
             setLoading(false);
         }
