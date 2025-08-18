@@ -135,6 +135,7 @@ function LoginSignup() {
     const checkWorkspaceExists = async () => {
         try {
             const user = await getCurrentUser();
+            console.log(user);
             const userAttributes = await fetchUserAttributes();
 
             let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];

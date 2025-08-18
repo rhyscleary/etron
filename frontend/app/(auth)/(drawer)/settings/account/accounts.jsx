@@ -18,6 +18,7 @@ import {
     signOut,
     fetchUserAttributes
 } from 'aws-amplify/auth';
+import { removeWorkspaceInfo } from '../../../../../storage/workspaceStorage';
 
 const Accounts = () => {
     const theme = useTheme();
@@ -127,6 +128,7 @@ const Accounts = () => {
 
     // sign out. Separate function in case more logic required later
     const handleSignOut = () => {
+        removeWorkspaceInfo(); // temp fix to remove workspace info
         // sign out from app
         amplifySignOut();
     } 

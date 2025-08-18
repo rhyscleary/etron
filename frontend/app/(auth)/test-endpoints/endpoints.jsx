@@ -46,7 +46,7 @@ const Endpoints = () => {
     async function inviteUser() {
         try {
             const data = {
-                email: "haw402@uowmail.edu.au",
+                email: "rcc937@uowmail.edu.au",
                 type: "manager",
                 roleId: "tv"
             }
