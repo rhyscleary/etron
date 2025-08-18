@@ -25,7 +25,7 @@ const BasicDialog = ({
     inputError = false,
     inputErrorMessage = "",
     secureTextEntry = false,
-    children
+    children,
 }) => {
     const theme = useTheme();
 

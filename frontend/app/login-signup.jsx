@@ -1,4 +1,4 @@
-// Author(s): Matthew Parkinson, Holly Wyatt
+// Author(s): Matthew Parkinson, Holly Wyatt, Rhys Cleary
 
 import { Redirect, useRouter, router, Link, useLocalSearchParams } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
