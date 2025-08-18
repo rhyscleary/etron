@@ -44,15 +44,14 @@ export default function AuthLayout() {
         const loadLayout = async () => {
             console.log("(AuthLayout) Auth status:", authStatus);
 
-            const workspaceExists = await checkWorkspaceExists();
-
-            if (authStatus === 'authenticated' && workspaceExists) {
-                console.log("Showing authenticated page.")
-            } else if (authStatus === 'authenticated' && !workspaceExists) {
-                console.log("User authenticated but no workspace found. Redirecting..");
-                router.replace("/(auth)/workspace-choice");
-
-            
+            if (authStatus === 'authenticated') {
+                const workspaceExists = await checkWorkspaceExists();
+                if (workspaceExists) {
+                    console.log("Showing authenticated page.");
+                } else {
+                    console.log("User authenticated but no workspace found. Redirecting..");
+                    router.replace("/(auth)/workspace-choice");
+                }
             } else {
                 if (!verifyingPassword) {  // temp until backend
                     console.log("Redirecting to root page.")
