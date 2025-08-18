@@ -13,7 +13,7 @@ import Divider from "../components/layout/Divider";
 import Header from "../components/layout/Header";
 import { commonStyles } from "../assets/styles/stylesheets/common";
 import accountService from '../services/AccountService';
-import { useAccount } from '../hooks/useAccount';
+import { useApp } from "../contexts/AppContext";
 
 function LoginSignup() {
     const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
@@ -32,9 +32,8 @@ function LoginSignup() {
 
     const router = useRouter();
     const theme = useTheme();
-    
-    // Use the account hook for account management
-    const { handleAuthSuccess } = useAccount();
+
+    const { user, actions } = useApp();
 
     // Setup AccountService callbacks
     useEffect(() => {
@@ -53,11 +52,11 @@ function LoginSignup() {
                 }
             },
             onAuthSuccess: async (provider) => {
-                // This will update the account storage and refresh linked accounts
-                await handleAuthSuccess(provider);
+                // Use the unified login action from context
+                await actions.login(provider);
             }
         });
-    }, [router, handleAuthSuccess]);
+    }, [router, actions.login]);
 
     // Handle sign out for linking
     useEffect(() => {

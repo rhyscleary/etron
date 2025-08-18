@@ -7,8 +7,8 @@ import { themes } from '../assets/styles/themes/themes';
 import { View, Text } from 'react-native'
 import SafeView from '../components/layout/SafeView';
 import { Authenticator } from '@aws-amplify/ui-react-native';
-import { VerificationProvider } from '../components/layout/VerificationContext'; // temp until backend
-
+import { VerificationProvider } from '../contexts/VerificationContext'; // temp until backend
+import { AppProvider } from '../contexts/AppContext';
 import * as Linking from 'expo-linking';
 
 Linking.addEventListener('url', (event) => { //deep linking; used for microsoft/google sign in redirects
@@ -23,13 +23,15 @@ export default function RootLayout() {
             <Authenticator.Provider>
                 {/*Wrap the drawer layout around the safe area and the slot */}
                 {/* temp until backend */}
-                <VerificationProvider> 
-                    <SafeAreaProvider>
-                        <SafeView>            
-                            <Slot />
-                        </SafeView>
-                    </SafeAreaProvider>
-                </VerificationProvider> 
+                <AppProvider>
+                    <VerificationProvider> 
+                        <SafeAreaProvider>
+                            <SafeView>            
+                                <Slot />
+                            </SafeView>
+                        </SafeAreaProvider>
+                    </VerificationProvider>
+                </AppProvider>
             </Authenticator.Provider>
         </PaperProvider>
     );

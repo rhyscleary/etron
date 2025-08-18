@@ -4,13 +4,14 @@ import {
   getSupportedTypes,
 } from "../adapters/day-book/data-sources/DataAdapterFactory";
 import endpoints from "../utils/api/endpoints";
+import { AccountStorage } from "../storage/accountStorage";
+import AuthService from "./AuthService";
 
 class DataSourceService {
-  constructor(apiClient, authService, options = {}) {
+  constructor(apiClient, options = {}) {
     this.apiClient = apiClient;
-    this.authService = authService;
     this.activeAdapters = new Map();
-    this.providerConnections = new Map(); // Separate storage for provider connections
+    this.providerConnections = new Map();
     this.isDemoMode =
       options.demoMode ||
       options.fallbackToDemo ||
@@ -78,6 +79,11 @@ class DataSourceService {
         },
       },
     ];
+  }
+
+  // get auth service
+  async getAuthService() {
+    return await AuthService.createAuthServiceObject();
   }
 
   // Get all connected data sources from backend or demo (EXCLUDES provider connections)
@@ -261,12 +267,15 @@ class DataSourceService {
     }
 
     try {
+      // Get the auth service using AccountStorage
+      const authService = await this.getAuthService();
+      
       const adapter = createDataAdapter(type, {
         ...config,
         demoMode: this.isDemoMode || config.isDemoMode,
         fallbackToDemo: true,
         apiClient: this.apiClient,
-        authService: this.authService,
+        authService: authService,
       });
 
       if (!adapter) {
@@ -404,13 +413,16 @@ class DataSourceService {
   // Test connection to a data source
   async testConnection(type, config, name) {
     try {
+      // Get the auth service using AccountStorage
+      const authService = await this.getAuthService();
+      
       // Create temporary adapter for testing
       const adapter = createDataAdapter(type, {
         ...config,
         demoMode: this.isDemoMode,
         fallbackToDemo: true,
         apiClient: this.apiClient,
-        authService: this.authService,
+        authService: authService,
       });
 
       if (!adapter || !adapter.testConnection) {

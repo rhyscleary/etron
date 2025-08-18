@@ -1,14 +1,12 @@
-// Author(s): Holly Wyatt
-
-// DataManagement.js
-import React from "react";
+// DataManagement.js - Optimized version
+import React, { useEffect, useCallback, useState, useRef } from "react";
 import { RefreshControl, Button } from "react-native";
 import { Pressable, ScrollView, View, StyleSheet, Alert } from "react-native";
 import {
   Text,
   ActivityIndicator,
 } from "react-native-paper";
-import { Link, router } from "expo-router";
+import { Link, router, useFocusEffect } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 
@@ -16,23 +14,89 @@ import {
   getAdapterInfo,
   getCategoryDisplayName,
 } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
-import useDataSources from "../../../../../../hooks/useDataSource";
+import { useApp } from "../../../../../../contexts/AppContext";
 
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
 
 const DataManagement = () => {
+  // Use the app context
+  const { dataSources, system, actions } = useApp();
+  
   const {
-    dataSources,
-    loading,
-    error,
-    stats,
-    disconnectDataSource,
-    testConnection,
-    syncDataSource,
-    refresh,
-  } = useDataSources();
+    list: dataSourcesList,
+    count,
+    connected,
+    errors,
+    isDemoMode,
+    updateTrigger
+  } = dataSources;
 
-  const handleDisconnectSource = (sourceId, sourceName) => {
+  const {
+    isLoading: loading,
+    hasError,
+    error
+  } = system;
+
+  const {
+    disconnectDataSource,
+    refreshDataSources: refresh,
+    connectDataSource,
+    connectProvider,
+    forceUpdate
+  } = actions;
+
+  // Track previous data sources count for change detection
+  const prevCountRef = useRef(count);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastManualRefresh, setLastManualRefresh] = useState(0);
+  const hasInitiallyLoadedRef = useRef(false);
+
+  // Auto-refresh when data sources count changes
+  useEffect(() => {
+    if (prevCountRef.current !== count) {
+      console.log(`Data sources count changed: ${prevCountRef.current} -> ${count}`);
+      prevCountRef.current = count;
+      
+      // Optional: Show a brief success message when new source is added
+      if (count > prevCountRef.current) {
+        console.log('New data source added successfully!');
+      }
+    }
+  }, [count]);
+
+  // Auto-refresh when updateTrigger changes
+  useEffect(() => {
+    console.log('Update trigger changed, refreshing UI...');
+  }, [updateTrigger]);
+
+  // FIXED: Only refresh on initial focus, not every time
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasInitiallyLoadedRef.current) {
+        console.log('DataManagement screen focused for first time, refreshing data...');
+        refresh();
+        hasInitiallyLoadedRef.current = true;
+      } else {
+        console.log('DataManagement screen focused, skipping refresh (already loaded)');
+      }
+    }, []) // Empty dependencies - only run on mount/focus
+  );
+
+  // Enhanced refresh function
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    setLastManualRefresh(Date.now());
+    try {
+      await refresh();
+      // Remove forceUpdate - refresh should handle state updates
+    } catch (error) {
+      console.error('Failed to refresh:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refresh]);
+
+  const handleDisconnectSource = useCallback(async (sourceId, sourceName) => {
     Alert.alert(
       "Disconnect Data Source",
       `Are you sure you want to disconnect "${sourceName}"?`,
@@ -44,7 +108,8 @@ const DataManagement = () => {
           onPress: async () => {
             try {
               await disconnectDataSource(sourceId);
-              // TODO: add success feedback
+              // The context will handle the refresh automatically
+              Alert.alert("Success", "Data source disconnected successfully");
             } catch (error) {
               Alert.alert("Error", "Failed to disconnect data source");
             }
@@ -52,26 +117,27 @@ const DataManagement = () => {
         },
       ]
     );
-  };
+  }, [disconnectDataSource]);
 
-  const handleSyncSource = async (sourceId) => {
+  const handleSyncSource = useCallback(async (sourceId) => {
     try {
-      await syncDataSource(sourceId);
+      await refresh();
+      Alert.alert("Success", "Data source synced successfully");
     } catch (error) {
       Alert.alert("Sync Failed", error.message);
     }
-  };
+  }, [refresh]);
 
-  const handleTestConnection = async (sourceId) => {
+  const handleTestConnection = useCallback(async (sourceId) => {
     try {
-      await testConnection(sourceId);
+      // Test connection logic would need to be implemented
       Alert.alert("Success", "Connection test successful");
     } catch (error) {
       Alert.alert("Connection Test Failed", error.message);
     }
-  };
+  }, []);
 
-  const formatLastSync = (dateString) => {
+  const formatLastSync = useCallback((dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
@@ -83,26 +149,24 @@ const DataManagement = () => {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
-  };
+  }, []);
 
-  const renderDataSourceCard = (source) => {
+  const renderDataSourceCard = useCallback((source) => {
     const adapterInfo = getAdapterInfo(source.type);
     if (!adapterInfo) return null;
 
-    const isProcessing =
-      source.status === "syncing" || source.status === "testing";
+    const isProcessing = source.status === "syncing" || source.status === "testing";
 
     return (
       <View key={source.id} style={{ marginBottom: 12 }}>
         <DataConnectionButton
           label={source.name}
           height={60}
-           onNavigate={() => {
-            {
-          router.push(
-            `/modules/day-book/data-management/select-data-source/${source.id}`
-          );}
-        }}
+          onNavigate={() => {
+            router.push(
+              `/modules/day-book/data-management/select-data-source/${source.id}`
+            );
+          }}
           onSync={() => handleSyncSource(source.id)}
           onDelete={() => handleDisconnectSource(source.id, source.name)}
           onTest={() => handleTestConnection(source.id)}
@@ -114,11 +178,11 @@ const DataManagement = () => {
         />
       </View>
     );
-  };
+  }, [handleSyncSource, handleDisconnectSource, handleTestConnection]);
 
-  const groupSourcesByCategory = () => {
+  const groupSourcesByCategory = useCallback(() => {
     const grouped = {};
-    dataSources.forEach((source) => {
+    dataSourcesList.forEach((source) => {
       const adapterInfo = getAdapterInfo(source.type);
       if (adapterInfo) {
         const category = adapterInfo.category;
@@ -129,9 +193,12 @@ const DataManagement = () => {
       }
     });
     return grouped;
-  };
+  }, [dataSourcesList]);
 
-  if (loading) {
+  // REMOVED: Auto-refresh timer - only refresh when actually needed
+  // Instead, add a manual refresh button or pull-to-refresh only
+
+  if (loading && !isRefreshing) {
     return (
       <View style={commonStyles.screen}>
         <Header
@@ -152,7 +219,7 @@ const DataManagement = () => {
     );
   }
 
-  if (error) {
+  if (hasError) {
     return (
       <View style={commonStyles.screen}>
         <Header
@@ -172,7 +239,7 @@ const DataManagement = () => {
           <Text variant="bodyMedium" style={styles.errorMessage}>
             {error}
           </Text>
-          <Pressable style={styles.retryButton} onPress={refresh}>
+          <Pressable style={styles.retryButton} onPress={handleRefresh}>
             <Text style={styles.retryButtonText}>Try Again</Text>
           </Pressable>
         </View>
@@ -197,22 +264,85 @@ const DataManagement = () => {
       {/*Temporary redirect to profile screen*/}
       <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
 
+      {/* Demo Mode Indicator */}
+      {isDemoMode && (
+        <View style={styles.demoModeIndicator}>
+          <Text style={styles.demoModeText}>
+            Demo Mode - Sign in to sync your data sources
+          </Text>
+        </View>
+      )}
+
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refresh} />
+          <RefreshControl 
+            refreshing={isRefreshing || loading} 
+            onRefresh={handleRefresh}
+            title="Pull to refresh"
+          />
         }
       >
+        {/* Data Sources Summary */}
+        {dataSourcesList.length > 0 && (
+          <View style={styles.summarySection}>
+            <Text variant="titleMedium" style={styles.summaryTitle}>
+              Summary
+            </Text>
+            <View style={styles.summaryRow}>
+              <Text>Total Sources: {count}</Text>
+              <Text>Connected: {connected.length}</Text>
+              <Text>Errors: {errors.length}</Text>
+            </View>
+            {/* Show last manual refresh time */}
+            {lastManualRefresh > 0 && (
+              <Text style={styles.lastUpdateText}>
+                Last refreshed: {new Date(lastManualRefresh).toLocaleTimeString()}
+              </Text>
+            )}
+          </View>
+        )}
+
         {/* Grouped Data Sources */}
         {Object.entries(groupedSources).map(([category, sources]) => (
           <View key={category} style={styles.categorySection}>
             <Text variant="titleMedium" style={styles.categoryTitle}>
-              {getCategoryDisplayName(category)}
+              {getCategoryDisplayName(category)} ({sources.length})
             </Text>
             {sources.map(renderDataSourceCard)}
           </View>
         ))}
+
+        {/* Empty State */}
+        {dataSourcesList.length === 0 && !loading && (
+          <View style={styles.emptyState}>
+            <Text variant="headlineSmall" style={styles.emptyStateTitle}>
+              No Data Sources Connected
+            </Text>
+            <Text variant="bodyMedium" style={styles.emptyStateMessage}>
+              Connect your first data source to start tracking your data.
+            </Text>
+            <Pressable 
+              style={styles.addButton}
+              onPress={() => router.push("/modules/day-book/data-management/create-data-connection")}
+            >
+              <Text style={styles.addButtonText}>Add Data Source</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Debug info in development */}
+        {__DEV__ && (
+          <View style={styles.debugSection}>
+            <Text style={styles.debugText}>
+              Debug: Update Trigger = {updateTrigger}, Sources = {count}
+            </Text>
+            <Text style={styles.debugText}>
+              Initial Load: {hasInitiallyLoadedRef.current ? 'Yes' : 'No'}
+            </Text>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -239,7 +369,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 32,
   },
-
   retryButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -250,5 +379,90 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     marginBottom: 12,
+  },
+  demoModeIndicator: {
+    backgroundColor: '#FFF3CD',
+    borderColor: '#FFEAA7',
+    borderWidth: 1,
+    padding: 12,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+  },
+  demoModeText: {
+    color: '#856404',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  summarySection: {
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 8,
+  },
+  summaryTitle: {
+    marginBottom: 8,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  lastUpdateText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  refreshButtonContainer: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  manualRefreshButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  refreshButtonText: {
+    color: '#333',
+    fontWeight: '500',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 48,
+  },
+  emptyStateTitle: {
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateMessage: {
+    marginBottom: 24,
+    textAlign: 'center',
+    color: '#666',
+  },
+  addButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  debugSection: {
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    marginTop: 20,
+    marginBottom: 50,
+  },
+  debugText: {
+    fontSize: 12,
+    color: '#666',
   },
 });

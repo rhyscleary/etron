@@ -12,6 +12,7 @@ import {
 import { Linking } from 'react-native';
 import { AccountStorage } from '../storage/accountStorage';
 import awsmobile from '../src/aws-exports';
+import AuthService from './AuthService';
 
 // Configure Amplify
 Amplify.configure(awsmobile);
@@ -57,27 +58,32 @@ class AccountService {
 
     // Helper method to handle authentication success
     async handleAuthSuccess(provider = 'Cognito') {
+    try {
+      if (this.callbacks.onAuthSuccess) {
+        await this.callbacks.onAuthSuccess(provider);
+      }
+      
+      // If we were linking, add the account to storage
+      if (this.isLinking) {
         try {
-            if (this.callbacks.onAuthSuccess) {
-                await this.callbacks.onAuthSuccess(provider);
-            }
-            
-            // If we were linking, add the account to storage
-            if (this.isLinking) {
-                const userInfo = await AccountStorage.getCurrentUserInfo();
-                if (userInfo.email) {
-                    // Add to linked accounts with user attributes
-                    await AccountStorage.addLinkedAccount(userInfo.email, provider, userInfo.attributes);
-                    console.log(`Successfully linked account: ${userInfo.email}`);
-                    this.showMessage(`Successfully linked ${userInfo.email}`);
-                }
-                this.isLinking = false;
-            }
-        } catch (error) {
-            console.error('Error handling auth success:', error);
-            this.showMessage('Authentication successful but failed to update account info', true);
+          const userInfo = await AuthService.getCurrentUserInfo();
+          if (userInfo.email) {
+            // Add to linked accounts with user attributes
+            await AccountStorage.addLinkedAccount(userInfo.email, provider, userInfo.attributes);
+            console.log(`Successfully linked account: ${userInfo.email}`);
+            this.showMessage(`Successfully linked ${userInfo.email}`);
+          }
+        } catch (storageError) {
+          console.error('Failed to store linked account:', storageError);
+          this.showMessage('Account linked but failed to save locally', true);
         }
+        this.isLinking = false;
+      }
+    } catch (error) {
+      console.error('Error handling auth success:', error);
+      this.showMessage('Authentication successful but failed to update account info', true);
     }
+  }
 
     // Sign out user (useful for linking accounts)
     async signOutUser() {

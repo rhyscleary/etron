@@ -3,12 +3,12 @@ import { useEffect } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { View, Text } from 'react-native';
-import { useVerification } from '../../components/layout/VerificationContext'; // temp until backend
+import { useVerification } from '../../contexts/VerificationContext'; // temp until backend
 
 export default function AuthLayout() {
 
     const { authStatus } = useAuthenticator();
-    const { verifyingPassword } = useVerification();// temp until backend
+    const { verifyingPassword } = useVerification(); // temp until backend
 
     useEffect(() => {
         console.log("(AuthLayout) Auth status:", authStatus);
