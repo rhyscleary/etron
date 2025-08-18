@@ -49,6 +49,7 @@ function LoginSignup() {
     const [socialLoading, setSocialLoading] = useState({ google: false, microsoft: false });
     const [signedOutForLinking, setSignedOutForLinking] = useState(!isLinking); // true if not linking
     const [resendCooldown, setResendCooldown] = useState(0);
+    const [verificationError, setVerificationError] = useState('');
 
     const router = useRouter();
     const theme = useTheme();
@@ -330,6 +331,7 @@ function LoginSignup() {
     };
 
     const handleConfirmCode = async () => {
+        setVerificationError('');
         try {
             await confirmSignUp({ username: email, confirmationCode: verificationCode });
             setShowVerificationModal(false);
@@ -341,6 +343,7 @@ function LoginSignup() {
         } catch (error) {
             console.log('Error confirming code:', error);
             setMessage(`Error: ${error.message}`);
+            setVerificationError(error.message);
         }
     };
 
