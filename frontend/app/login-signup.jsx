@@ -32,7 +32,7 @@ import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../storage/workspaceStorage";
 import VerificationDialog from "../components/overlays/VerificationDialog";
-Amplify.configure(awsmobile);
+//Amplify.configure(awsmobile);
 
 function LoginSignup() {
     const { email: emailParam, isSignUp, link } = useLocalSearchParams();
