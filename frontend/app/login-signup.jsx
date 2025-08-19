@@ -99,7 +99,10 @@ function LoginSignup() {
                             const user = await getCurrentUser();
                             console.log('Social sign-in successful:', user);
                             // navigate to profile page (or consider back to accounts page again)
-                            router.navigate("(auth)/profile");
+
+                            router.dismissAll()
+                            router.replace("(auth)/profile");
+
                         } catch (error) {
                             console.log('No authenticated user found after social sign-in');
                             setMessage("Social sign-in was cancelled or failed");
@@ -185,10 +188,12 @@ function LoginSignup() {
 
                 if (!hasWorkspace) {
                     if (!hasGivenName || !hasFamilyName) {
-                        router.navigate("(auth)/personalise-account");
+                        router.dismissAll();
+                        router.replace("(auth)/personalise-account");
                         return;
                     } else {
-                        router.navigate("(auth)/workspace-choice");
+                        router.dismissAll();
+                        router.replace("(auth)/workspace-choice");
                         return;
                     }
                 } else {
@@ -201,13 +206,15 @@ function LoginSignup() {
                         if (!workspace || !workspace.workspaceId) {
                             // clear attribute and redirect to choose workspace
                             await setHasWorkspaceAttribute(false);
-                            router.navigate("(auth)/workspace-choice");
+                            router.dismissAll();
+                            router.replace("(auth)/workspace-choice");
                             return;
                         }
 
                         // save locally and go to profile screen
                         await saveWorkspaceInfo(workspace);
-                        router.navigate("(auth)/profile");
+                        router.dismissAll();
+                        router.replace("(auth)/profile");
                     } catch (error) {
                         console.error("Error fetching workspace:", error);
                         setMessage("Unable to locate workspace. Please try again."); 

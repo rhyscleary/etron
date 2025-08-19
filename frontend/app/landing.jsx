@@ -49,14 +49,14 @@ const Landing = () => {
                     <View>
                         <BasicButton
                             label='Login'
-                            onPress={() => router.push('/login-signup?isSignUp=false')}
+                            onPress={() => router.navigate('/login-signup?isSignUp=false')}
                         />
                     </View>
 
                     <View style={{ alignItems: 'flex-end' }}>
                         <BasicButton
                             label='Sign Up'
-                            onPress={() => router.push('/login-signup?isSignUp=true')}
+                            onPress={() => router.navigate('/login-signup?isSignUp=true')}
                         />
                     </View>
                 </View>

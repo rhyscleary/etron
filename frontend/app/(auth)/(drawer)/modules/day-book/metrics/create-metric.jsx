@@ -47,7 +47,7 @@ const totalSteps = 2;
             setStep((prev) => prev + 1);
         } else {
             console.log("Form completed");
-            router.push("/modules/day-book/metrics/metric-management");
+            router.navigate("/modules/day-book/metrics/metric-management");
         }
     };
 

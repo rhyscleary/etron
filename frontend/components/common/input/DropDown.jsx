@@ -56,7 +56,7 @@ const DropDown = ({
                             { borderColor: theme.colors.outline }
                         ]}
                         onPress={() => {
-                            router.push('/modules/day-book/data-management/create-data-connection')
+                            router.navigate('/modules/day-book/data-management/create-data-connection')
                         }}
                     >
                         <View
@@ -193,7 +193,7 @@ const DropDown = ({
                     onPress={() => {
                         setMenuVisible(false);
                         setSearchQuery('');
-                        router.push('/create-data-connection')
+                        router.navigate('/create-data-connection')
                     }}
                 >
                     <Text style={{ color: theme.colors.placeholderText, textAlignVertical: 'center' }}>

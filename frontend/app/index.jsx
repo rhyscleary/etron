@@ -8,6 +8,8 @@ import { Button, TextInput, View, Pressable } from 'react-native';
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
 
+// TOOD: make sure all app-wide initialisations are in here
+
 import awsmobile from '../src/aws-exports';
 import { fetchUserAttributes, updateUserAttributes } from "aws-amplify/auth";
 Amplify.configure({
@@ -42,6 +44,7 @@ function App() {
     useEffect(() => {
         console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
+            //if (router.canDismiss()) router.dismissAll();
             console.log("Redirection to auth root page.");
             setTarget("/(auth)/profile")
             //router.replace('/(auth)/profile');

@@ -36,9 +36,9 @@ const WorkspaceManagement = () => {
 
     // container for different workspace management options
     const workspaceOptionButtons = [
-            { label: "Workspace Details", description: "Update name, location and description", onPress: () => router.push("/settings/workspace-details") },
-            { label: "Module Management", description: "Add and remove modules from the workspace", onPress: () => router.push("/settings/module-management") },
-            { label: "Profile Management", description: "Edit profiles within the workspace", onPress: () => router.push("/settings/profile-management") },
+            { label: "Workspace Details", description: "Update name, location and description", onPress: () => router.navigate("/settings/workspace-details") },
+            { label: "Module Management", description: "Add and remove modules from the workspace", onPress: () => router.navigate("/settings/module-management") },
+            { label: "Profile Management", description: "Edit profiles within the workspace", onPress: () => router.navigate("/settings/profile-management") },
     ];
 
     useEffect(() => {
@@ -83,11 +83,9 @@ const WorkspaceManagement = () => {
 
                 console.log('Workspace deleted:', result);
                 setDeleteDialogVisible(false);
-
             
                 // sign out the user
                 await signOut();
-
 
             } catch (error) {
                 console.log("Error deleting workspace: ", error);

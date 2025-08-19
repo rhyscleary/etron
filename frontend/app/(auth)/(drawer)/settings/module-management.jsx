@@ -17,7 +17,7 @@ const ModuleManagement = () => {
     
     return (
         <View style={commonStyles.screen}>
-            <Header title="Modules" showBack showPlus onRightIconPress={() => router.push("/settings/add-modules")} />
+            <Header title="Modules" showBack showPlus onRightIconPress={() => router.navigate("/settings/add-modules")} />
 
             <View style={styles.contentContainer}>
                 
