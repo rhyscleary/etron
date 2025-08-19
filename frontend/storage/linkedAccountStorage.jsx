@@ -56,6 +56,7 @@ export async function removeLinkedAccount(emailToRemove, currentEmail) {
     try {
         if (emailToRemove === currentEmail) {
             await signOut();
+            router.dismissAll();
             router.replace('/login-signup');
         }
 

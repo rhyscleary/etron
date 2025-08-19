@@ -23,7 +23,7 @@ const PasswordSecurity = () => {
                     <DescriptiveButton 
                         key={"Update Password"}
                         label={"Update Password"}
-                        onPress={ () => router.push("/settings/account/update-password")}
+                        onPress={ () => router.navigate("/settings/account/update-password")}
                         focused={true}
                     />
                 </StackLayout>

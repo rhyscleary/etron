@@ -19,7 +19,7 @@ const ForgotPassword = () => {
         //Save selected invite as chosen workspace
     });
     // BACKEND CONNECTION HERE FOR SAVING CHOICE
-    router.push('/reset-password');
+    router.navigate('/reset-password');
   };
 
   const theme = useTheme();

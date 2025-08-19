@@ -46,7 +46,7 @@ const Roles = () => {
                 title="Roles"
                 showBack
                 showPlus
-                onRightIconPress={() => router.push("/collaboration/create-role")}
+                onRightIconPress={() => router.navigate("/collaboration/create-role")}
             />
 
             <FlatList
@@ -55,7 +55,7 @@ const Roles = () => {
                 contentContainerStyle={{ paddingVertical: 16 }}
                 renderItem={({ item }) => (
                     <Pressable
-                        onPress={() => router.push(`/collaboration/edit-role/${item.roleId}`)}
+                        onPress={() => router.navigate(`/collaboration/edit-role/${item.roleId}`)}
                         style={{
                             borderWidth: 1,
                             borderColor: '#ccc',

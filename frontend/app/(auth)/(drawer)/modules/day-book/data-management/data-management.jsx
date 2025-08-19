@@ -99,7 +99,7 @@ const DataManagement = () => {
           height={60}
            onNavigate={() => {
             {
-          router.push(
+          router.navigate(
             `/modules/day-book/data-management/select-data-source/${source.id}`
           );}
         }}
@@ -107,7 +107,7 @@ const DataManagement = () => {
           onDelete={() => handleDisconnectSource(source.id, source.name)}
           onTest={() => handleTestConnection(source.id)}
           onSettings={() =>
-            router.push(
+            router.navigate(
               `/modules/day-book/data-management/update-data-source/${source.id}`
             )
           }
@@ -139,7 +139,7 @@ const DataManagement = () => {
           showMenu
           showPlus
           onRightIconPress={() =>
-            router.push(
+            router.navigate(
               "/modules/day-book/data-management/create-data-connection"
             )
           }
@@ -162,7 +162,7 @@ const DataManagement = () => {
           showMenu
           showPlus
           onRightIconPress={() =>
-            router.push(
+            router.navigate(
               "/modules/day-book/data-management/create-data-connection"
             )
           }
@@ -193,15 +193,15 @@ const DataManagement = () => {
         showMenu
         showPlus
         onRightIconPress={() =>
-          router.push(
+          router.navigate(
             "/modules/day-book/data-management/create-data-connection"
           )
         }
       />
 
       {/*Temporary redirect to profile screen*/}
-      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
-    
+      <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
+
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}

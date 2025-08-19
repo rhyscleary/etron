@@ -72,7 +72,7 @@ const InviteUser = () => {
       console.log("Invite sent:", result);
 
       // ✅ Redirect to invites list after sending invite
-      router.replace("/collaboration/invites");
+      router.navigate("/collaboration/invites");
 
     } catch (error) {
       console.error("Error sending invite:", error);

@@ -7,10 +7,10 @@ import { Text } from "react-native-paper";
 const Notifications = () => {
     return (
         <View style={commonStyles.screen}>
-            <Header title="Notifications" showMenu showPlus onRightIconPress={() => router.push("/notifications/create-notification")} />
+            <Header title="Notifications" showMenu showPlus onRightIconPress={() => router.navigate("/notifications/create-notification")} />
 
             {/*Temporary redirect to profile screen*/}
-            <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+            <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
         </View>
     )
 }

@@ -225,7 +225,7 @@ const ConnectionDataSourceLayout = ({
         params: navigationParams,
       };
 
-      router.push(navigationData);
+      router.navigate(navigationData);
     } catch (error) {
       console.error("Error connecting data source:", error);
       Alert.alert(
@@ -409,7 +409,7 @@ const ConnectionDataSourceLayout = ({
                       onPress: () => {
                         handleDisconnect();
                         // Optionally navigate to login or re-trigger connection
-                        // router.push('/login-signup');
+                        // router.navigate('/login-signup');
                       },
                     },
                   ]

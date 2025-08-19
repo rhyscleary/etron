@@ -69,7 +69,7 @@ const EditRole = () => {
       };
 
       await apiPut(endpoints.workspace.roles.update(workspaceId, roleId), data);
-      router.push("/collaboration/roles");
+      router.navigate("/collaboration/roles");
     } catch (error) {
       console.error("Failed to update role:", error);
     } finally {
@@ -81,7 +81,7 @@ const EditRole = () => {
     try {
       await apiDelete(endpoints.workspace.roles.delete(workspaceId, roleId));
       setShowDeleteDialog(false);
-      router.push("/collaboration/roles");
+      router.navigate("/collaboration/roles");
     } catch (error) {
       console.error("Failed to delete role:", error);
     }

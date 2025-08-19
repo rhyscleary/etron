@@ -8,6 +8,21 @@ import { Button, TextInput, View, Pressable } from 'react-native';
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
 
+// TOOD: make sure all app-wide initialisations are in here
+
+import awsmobile from '../src/aws-exports';
+Amplify.configure({
+    ...awsmobile,
+    oauth: {
+        domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
+        scope: ['email', 'openid', 'profile'],
+        redirectSignIn: 'myapp://auth/',
+        redirectSignOut: 'myapp://signout/',
+        responseType: 'code'
+    }
+});
+console.log('Amplify configured with:', Amplify.getConfig());
+
 
 function App() {
     const { authStatus } = useAuthenticator();
@@ -15,6 +30,7 @@ function App() {
     useEffect(() => {
         console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
+            if (router.canDismiss()) router.dismissAll();
             console.log("Redirecting to auth root page.")
             router.replace('/(auth)/profile'); // Go to the protected root page
         } else if (authStatus === "configuring") {
