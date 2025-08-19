@@ -144,6 +144,8 @@ const DataManagement = () => {
             )
           }
         />
+        {/*Temporary redirect to profile screen*/}
+        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <Text style={styles.loadingText}>Loading data sources...</Text>
@@ -165,6 +167,8 @@ const DataManagement = () => {
             )
           }
         />
+        {/*Temporary redirect to profile screen*/}
+        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
         <View style={styles.errorContainer}>
           <Text variant="headlineSmall" style={styles.errorTitle}>
             Unable to Load Data Sources
@@ -194,6 +198,7 @@ const DataManagement = () => {
           )
         }
       />
+
       {/*Temporary redirect to profile screen*/}
       <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
 

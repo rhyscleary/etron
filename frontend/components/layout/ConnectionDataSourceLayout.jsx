@@ -364,7 +364,7 @@ const ConnectionDataSourceLayout = ({
               backgroundColor={theme.colors.secondaryContainer}
               textColor={theme.colors.onSecondaryContainer}
             >
-              🚀 Demo Mode Active{"\n"}
+              Demo Mode Active{"\n"}
               {demoModeMessage ||
                 `Using sample ${serviceDisplayName} data for development`}
             </StatusCard>
