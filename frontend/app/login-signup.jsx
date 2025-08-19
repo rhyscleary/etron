@@ -381,7 +381,7 @@ function LoginSignup() {
 
                         {!isSignUpBool && (
                             <View style={{ marginTop: 10 }}>
-                                <Link href="/forgot-password">
+                                <Link href="/reset-password">
                                     <Text style={{
                                         textDecorationLine: 'underline'
                                     }}>
