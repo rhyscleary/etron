@@ -11,6 +11,7 @@ import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-nativ
 // TOOD: make sure all app-wide initialisations are in here
 
 import awsmobile from '../src/aws-exports';
+import { fetchUserAttributes, updateUserAttributes } from "aws-amplify/auth";
 Amplify.configure({
     ...awsmobile,
     oauth: {
@@ -26,24 +27,41 @@ console.log('Amplify configured with:', Amplify.getConfig());
 
 function App() {
     const { authStatus } = useAuthenticator();
+    const [target, setTarget] = useState(null);
+
+    const setHasWorkspaceAttribute = async (value) => {
+        try {
+            await updateUserAttributes({
+                userAttributes: {
+                    'custom:has_workspace': value
+                }
+            });
+        } catch (error) {
+            console.error("Unable to update user attribute has_workspace:", error);
+        }
+    }
 
     useEffect(() => {
         console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
-            if (router.canDismiss()) router.dismissAll();
-            console.log("Redirecting to auth root page.")
-            router.replace('/(auth)/profile'); // Go to the protected root page
-        } else if (authStatus === "configuring") {
+            //if (router.canDismiss()) router.dismissAll();
+            console.log("Redirection to auth root page.");
+            setTarget("/(auth)/profile")
+            //router.replace('/(auth)/profile');
+        } else if (authStatus === `configuring`) {
+
         } else {
-            router.replace('landing');
+            //router.replace('landing');
+            setTarget("landing")
         }
     }, [authStatus]);
 
-    return (
-        <>
-            <ActivityIndicator size="large" color="#0000ff" />
-        </>
-    );
+    if (target) {
+        return <Redirect href={target} />;
+    }
+
+    return <ActivityIndicator size="large" color="#0000ff" />;
+
 }
 
 //export default withAuthenticator(App);

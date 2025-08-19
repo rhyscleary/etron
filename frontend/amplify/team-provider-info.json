@@ -19,6 +19,10 @@
         "S3Triggera1814310": {
           "deploymentBucketName": "amplify-etron-dev-1858d-deployment",
           "s3Key": "amplify-builds/S3Triggera1814310-5431594b6d396c75345a-build.zip"
+        },
+        "S3Triggerd7c64153": {
+          "deploymentBucketName": "amplify-etron-dev-1858d-deployment",
+          "s3Key": "amplify-builds/S3Triggerd7c64153-6972544e764c78494865-build.zip"
         }
       },
       "storage": {

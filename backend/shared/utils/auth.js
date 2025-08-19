@@ -73,13 +73,18 @@ async function updateUser(userId, data) {
         Value: value
     }));
 
-    const result = await cognito.send(new AdminUpdateUserAttributesCommand({
-        UserPoolId: userPoolId,
-        Username: userId,
-        UserAttributes: attributes
-    }));
+    try {
+        const result = await cognito.send(new AdminUpdateUserAttributesCommand({
+            UserPoolId: userPoolId,
+            Username: userId,
+            UserAttributes: attributes
+        }));
+        return result;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
 
-    return result;
 }
 
 

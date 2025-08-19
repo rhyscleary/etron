@@ -9,6 +9,6 @@
     "READ",
     "DELETE"
   ],
-  "triggerFunction": "S3Triggera1814310",
+  "triggerFunction": "S3Triggerd7c64153",
   "groupAccess": {}
 }

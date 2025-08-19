@@ -4,8 +4,8 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useRouter } from "expo-router";
 import StackLayout from "../../../../components/layout/StackLayout";
 import BasicDialog from "../../../../components/overlays/BasicDialog";
-import { useState } from "react";
-import { apiDelete } from "../../../../utils/api/apiClient";
+import { useEffect, useState } from "react";
+import { apiDelete, apiGet } from "../../../../utils/api/apiClient";
 import { useTheme } from "react-native-paper";
 import { verifyPassword } from "../../../../utils/verifyPassword";
 import Header from "../../../../components/layout/Header";
@@ -15,14 +15,23 @@ import BasicButton from "../../../../components/common/buttons/BasicButton";
 import endpoints from "../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuthenticator } from "@aws-amplify/ui-react-native";
+import {
+    getCurrentUser,
+    signOut
+} from 'aws-amplify/auth';
+import DropDown from "../../../../components/common/input/DropDown";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
     const theme = useTheme();
 
     const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+    const [transferDialogVisible, setTransferDialogVisible] = useState(false);
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState(false);
+    const [selectedUser, setSelectedUser] = useState("");
+    const [usersNames, setUsersNames] = useState([]);
 
 
     // container for different workspace management options
@@ -32,6 +41,31 @@ const WorkspaceManagement = () => {
             { label: "Profile Management", description: "Edit profiles within the workspace", onPress: () => router.navigate("/settings/profile-management") },
     ];
 
+    useEffect(() => {
+        async function loadWorkspaceUsers() {
+            try {
+                const currentUser = await getCurrentUser();
+                const currentUserId = currentUser.userId;
+
+                const workspaceId = getWorkspaceId();
+
+                const users = await apiGet(
+                    endpoints.workspace.users.getUsers(workspaceId)
+                );
+
+                console.log(users);
+
+                const filteredList = users.filter(user => user.userId !== currentUserId);
+
+                setUsersNames(filteredList.map(user => user.firstName + " " + user.lastName));
+
+            } catch (error) {
+                console.error("Error loading users:", error);
+            }
+        }
+        loadWorkspaceUsers();
+    }, []);
+
     async function handleConfirmDeletion() {
         const validPassword = await verifyPassword(password);
         
@@ -40,20 +74,27 @@ const WorkspaceManagement = () => {
             return;
         }
 
-        const workspaceId = await AsyncStorage.getItem("workspaceId");
-        try {
-            const result = await apiDelete(
-                endpoints.workspace.core.delete(workspaceId)
-            );
+        const workspaceId = await getWorkspaceId();
+        if (workspaceId) {
+            try {
+                const result = await apiDelete(
+                    endpoints.workspace.core.delete(workspaceId)
+                );
 
-            console.log('Workspace deleted:', result);
-            setDeleteDialogVisible(false);
-            router.dismissAll();
-            router.replace("/index"); //TODO: SHOULD REDIRECT YOU TO A BASE PAGE ASKING YOU TO JOIN OR CREATE A WORKSPACE
-        } catch (error) {
-            console.log("Error deleting workspace: ", error);
+                console.log('Workspace deleted:', result);
+                setDeleteDialogVisible(false);
             
+                // sign out the user
+                await signOut();
+
+            } catch (error) {
+                console.log("Error deleting workspace: ", error);
+            }
         }
+    }
+
+    async function handleConfirmTransfer() {
+
     }
 
     return (
@@ -74,7 +115,7 @@ const WorkspaceManagement = () => {
                 </StackLayout>
 
                 <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
-                    <BasicButton label="Transfer Ownership" danger />
+                    <BasicButton label="Transfer Ownership" danger onPress={() => setTransferDialogVisible(true)}/>
                     <BasicButton label="Delete Workspace" danger onPress={() => setDeleteDialogVisible(true)}/>
                 </View>
 
@@ -107,6 +148,28 @@ const WorkspaceManagement = () => {
                 rightDanger
                 handleRightAction={handleConfirmDeletion}
             />
+
+            <BasicDialog
+                visible={transferDialogVisible}
+                title="Transfer Ownership"
+                message="Select a user to transfer ownership of this workspace. Once transferred this cannot be undone."
+                leftActionLabel="Cancel"
+                handleLeftAction={() => {
+                    setTransferDialogVisible(false);
+                    setPassword("");
+                    setPasswordError(false);
+                }}
+                rightActionLabel="Transfer"
+                rightDanger
+                handleRightAction={handleConfirmTransfer}
+            >
+                <DropDown 
+                    title="Select User"
+                    items={usersNames}
+                    showRouterButton={false}
+                    onSelect={(user) => setSelectedUser(user)}
+                />
+            </BasicDialog>
         </View>
     )
 }

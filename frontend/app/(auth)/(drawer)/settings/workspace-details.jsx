@@ -8,11 +8,12 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import StackLayout from "../../../../components/layout/StackLayout";
 import { Text, useTheme } from "react-native-paper";
-import { apiPut } from "../../../../utils/api/apiClient";
+import { apiGet, apiPut } from "../../../../utils/api/apiClient";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
 import TextField from "../../../../components/common/input/TextField";
-import { getWorkspaceId, getWorkspaceInfo } from "../../../../storage/workspaceStorage";
+import { getWorkspaceId, getWorkspaceInfo, saveWorkspaceInfo } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
+import UnsavedChangesDialog from "../../../../components/overlays/UnsavedChangesDialog";
 
 
 const WorkspaceDetails = () => {
@@ -21,19 +22,35 @@ const WorkspaceDetails = () => {
     const [name, setName] = useState("");
     const [location, setLocation] = useState("");
     const [description, setDescription] = useState("");
-    const [nameError, setNameError] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [originalData, setOriginalData] = useState({});
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
     useEffect(() => {
         async function loadWorkspaceDetails() {
             setLoading(true);
             try {
-                const workspace = await getWorkspaceInfo();
+                const workspaceId = await getWorkspaceId();
+
+                const workspace = await apiGet(
+                    endpoints.workspace.core.getWorkspace(workspaceId)
+                );
+
                 if (workspace) {
                     // set values for workspace details
                     setName(workspace.name || "");
                     setDescription(workspace.description || "");
                     setLocation(workspace.location || "");
+
+                    // set original values 
+                    setOriginalData({
+                        name: workspace.name || "",
+                        location: workspace.location || "",
+                        description: workspace.description || ""
+                    });
                 }
             } catch (error) {
                 console.log("Error loading workspace details: ", error);
@@ -43,72 +60,129 @@ const WorkspaceDetails = () => {
         loadWorkspaceDetails();
     }, []);
 
+    useEffect(() => {
+        const changed =
+            name.trim() !== originalData.name ||
+            location.trim() !== originalData.location ||
+            description.trim() !== originalData.description;
+        setHasUnsavedChanges(changed);
+    }, [name, location, description, originalData]);
+
     async function handleUpdate() {
-    
-        if (!name.trim()) {
-            setNameError(true);
+        setUpdating(true);
+
+        const newErrors = {
+            name: !name.trim(),
+        };
+        setErrors(newErrors);
+        
+        if (Object.values(newErrors).some(Boolean)) {
+            setUpdating(false);
             return;
         }
 
         try {
+            const updateData = {};
+
+            if (name.trim() !== originalData.name) {
+                updateData.name = name.trim();
+            }
+
+            if (location.trim() !== originalData.location) {
+                updateData.location = location.trim();
+            }
+
+            if (description.trim() !== originalData.description) {
+                updateData.description = description.trim();
+            }
+
             // get workspace id from local storage
             const workspaceId = await getWorkspaceId();
 
-            const workspaceData = {
-                name,
-                location: location || null,
-                description: description || null
-            }
-
             const result = await apiPut(
                 endpoints.workspace.core.update(workspaceId),
-                workspaceData
+                updateData
             );
 
             console.log('Workspace details updated:', result);
+            
+            setOriginalData({
+                name,
+                location,
+                description
+            });
 
         } catch (error) {
+            setUpdating(false);
             console.log("Error updating workspace details: ", error);
         }
+
+        setUpdating(false);
+    }
+
+    function handleBackPress() {
+        if (hasUnsavedChanges) {
+            setShowUnsavedDialog(true);
+        } else {
+            router.back();
+        }
+    }
+
+    function handleDiscardChanges() {
+        setShowUnsavedDialog(false);
+        router.back();
     }
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Workspace Details" showBack />
+            <Header title="Workspace Details" showBack onBackPress={handleBackPress}/>
 
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" />
+                        <Text>Loading details...</Text>
                     </View>
                 ) : (
                     <View>
                         <StackLayout spacing={30}> 
                             <TextField 
-                                label="Name *" 
+                                label="Name" 
                                 value={name} 
                                 placeholder="Name"
-                                error={nameError}
+                                error={errors.name}
                                 onChangeText={(text) => {
                                     setName(text);
                                     if (text.trim()) {
-                                        setNameError(false);
+                                        setErrors((prev) => ({...prev, name: false}))
                                     }
                                 }}  
                             />
-                            {nameError && (
+                            {errors.name && (
                                 <Text style={{color: theme.colors.error}}>Please enter a name.</Text>
                             )}
+
                             <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
                             <TextField label="Description (Optional)" value={description} placeholder="Description" onChangeText={setDescription} />
                         </StackLayout>
 
                         <View style={commonStyles.inlineButtonContainer}>
-                            <BasicButton label="Save" onPress={handleUpdate} />
+                            <BasicButton 
+                                label={updating ? "Updating..." : "Update"}
+                                onPress={handleUpdate}
+                                disabled={updating} 
+                            />
                         </View>
                     </View>
                 )}
             </View>
+
+            <UnsavedChangesDialog
+                visible={showUnsavedDialog}
+                onDismiss={() => setShowUnsavedDialog(false)}
+                handleLeftAction={handleDiscardChanges}
+                handleRightAction={() => setShowUnsavedDialog(false)}
+            />
         </View>
     )
 }
