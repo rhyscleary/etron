@@ -266,10 +266,12 @@ function LoginSignup() {
             
             // TODO: backend please set up the Google OAuth provider in Cognito
             
-            await signInWithRedirect({
+            /*await signInWithRedirect({
                 provider: 'Google',
                 customState: isLinking ? 'linking' : 'signin'
-            });
+            });*/
+
+            await signInWithRedirect({ provider: 'Google' });
             
         } catch (error) {
             console.log('Error with Google sign-in:', error);
