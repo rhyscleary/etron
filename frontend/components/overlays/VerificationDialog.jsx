@@ -14,6 +14,7 @@ const VerificationDialog = ({
     onResend,
     onLater,
     resendCooldown = 0,
+    error
 }) => {
     const theme = useTheme();
 
@@ -33,18 +34,26 @@ const VerificationDialog = ({
                             value={code}
                             onChangeText={setCode}
                             keyboardType="numeric"
+                            error={!!error}
+                            contentStyle={{ textAlign: "center" }}
                         />
                     </View>
+
+                    {error ? (
+                        <Text style={{color: theme.colors.error, marginTop: 10, textAlign: "center"}}>
+                            {error}
+                        </Text>
+                    ) : null}
                 </Dialog.Content>
 
                 <Dialog.Actions style={styles.actions}>
                     <BasicButton 
-                        label="Confirm" 
-                        onPress={onConfirm}
-                    />
-                    <BasicButton 
                         label="Do this later" 
                         onPress={onLater}
+                    />
+                    <BasicButton 
+                        label="Confirm" 
+                        onPress={onConfirm}
                     />
                 </Dialog.Actions>
 

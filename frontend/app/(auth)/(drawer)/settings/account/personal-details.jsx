@@ -132,6 +132,7 @@ const PersonalDetails = () => {
 
     async function handleUpdate() {
         setMessage("");
+        setUpdating(true);
         
         const newErrors = {
             firstName: !firstName.trim(),
@@ -141,10 +142,9 @@ const PersonalDetails = () => {
         setErrors(newErrors);
 
         if (Object.values(newErrors).some(Boolean)) {
+            setUpdating(false);
             return;
         }
-
-        setUpdating(true);
         
         try {
             const updateData = {};
@@ -173,6 +173,13 @@ const PersonalDetails = () => {
                 }
             }
 
+            // if there are no changed fields don't send anything
+            if (Object.keys(updateData).length === 0) {
+                setMessage("There are no changed fields to update");
+                setUpdating(false);
+                return;
+            }
+
             let workspaceId = getWorkspaceId();
             let { userId } = await getCurrentUser();
             
@@ -189,14 +196,14 @@ const PersonalDetails = () => {
                 phoneNumber,
                 profilePhotoUri
             });
+            setPhotoChanged(false);
+            setMessage("Personal details updated successfully");
 
         } catch (error) {
             console.log("Error updating personal details: ", error);
             setMessage(`Error updating personal details: ${error.message}`);
         }
 
-        setPhotoChanged(false);
-        setMessage("Personal details updated successfully");
         setUpdating(false);
     }
 

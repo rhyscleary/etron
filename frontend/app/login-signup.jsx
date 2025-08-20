@@ -381,7 +381,7 @@ function LoginSignup() {
 
                         {!isSignUpBool && (
                             <View style={{ marginTop: 10 }}>
-                                <Link href="/forgot-password">
+                                <Link href="/reset-password">
                                     <Text style={{
                                         textDecorationLine: 'underline'
                                     }}>
@@ -466,6 +466,7 @@ function LoginSignup() {
                     onResend={handleResend}
                     resendCooldown={resendCooldown}
                     onLater={() => setShowVerificationModal(false)}
+                    error={verificationError}
                 />
                 
             </View>
