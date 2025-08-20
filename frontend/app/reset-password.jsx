@@ -28,8 +28,19 @@ const ResetPassword = () => {
         passwordInvalid: false,
         passwordMatch: false,
   });
+  const [updating, setUpdating] = useState(false);
+  const [notMatching, setNotMatching] = useState(false);
+  const [globalError, setGlobalError] = useState("");
 
   const theme = useTheme();
+
+  useEffect(() => {
+      if (newPassword && confirmPassword) {
+          setNotMatching(newPassword !== confirmPassword);
+      } else {
+          setNotMatching(false); // reset if one is empty
+      }
+  }, [newPassword, confirmPassword]);
 
   const headerTitle = !codeSent ? "Forgot Password" : "Reset Password";
 
@@ -53,24 +64,41 @@ const ResetPassword = () => {
     } catch (error) {
       console.error("Error sending code:", error);
 
-      if (error.code === "UserNotFoundException") {
-        setErrors((prev) => ({ ...prev, enterField: true}));
+      let errorMessage = "There was an error sending the reset code";
+
+      switch (error.name) {
+        case "UserNotFoundException":
+          errorMessage = "No account found with that email or phone number";
+          break;
+        case "LimitExceededException":
+          errorMessage = "Too many attempts. Try again later";
+          break;
+        case "InvalidParameterException":
+          errorMessage = "The provided email or phone number is invalid";
+          break;
+        default:
+          errorMessage = error.message || "There was an error sending the reset code";
       }
+
+      setGlobalError(errorMessage);
     }
   };
 
   const validatePassword = (password) => {
-    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/;
+    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
     return regex.test(password);
   };
 
   const handleChange = async () => {
+    setUpdating(true);
+
     setErrors((prev) => ({
       ...prev,
       passwordInvalid: false,
       passwordMatch: false,
       invalidCode: false
     }));
+    setGlobalError("");
 
     if (newPassword !== confirmPassword) {
       console.log("Passwords do not match");
@@ -103,8 +131,35 @@ const ResetPassword = () => {
         pathname: '/login-signup',
         params: { isSignUp: "false" },
       });
+
+      setUpdating(false);
     } catch (error) {
       console.error("Error confirming password reset:", error);
+
+      let errorMessage = "There was an error changing your password";
+
+      switch (error.name) {
+          case "CodeMismatchException": 
+            errorMessage = "The confirmation code is incorrect";
+            break;
+          case 'NotAuthorizedException':
+            errorMessage = "Current password is incorrect";
+            break;
+          case 'InvalidPasswordException':
+            errorMessage = "New password does not meet requirements";
+            break;
+          case 'LimitExceededException':
+            errorMessage = "Too many attempts. Please try again later";
+            break;
+          case 'InvalidParameterException':
+            errorMessage = "Password format is invalid";
+            break;
+          default:
+            errorMessage = error.message || "There was an error changing your password";
+      }
+
+      setGlobalError(errorMessage);
+      setUpdating(false);
     }
   }
 
@@ -153,6 +208,12 @@ const ResetPassword = () => {
               <Text style={{ color: theme.colors.error }}>Enter a email or phone number.</Text>
             )}
 
+            {globalError ? (
+              <Text style={{ color: theme.colors.error, textAlign: "center" }}>
+                {globalError}
+              </Text>
+            ) : null}
+
             <View>
               <BasicButton
                 label='Send Password Reset Code'
@@ -166,7 +227,7 @@ const ResetPassword = () => {
         ) : (
           <>
             <Text style={{ fontSize: 16, textAlign: 'center' }}>
-              Password must be at least 12 characters long, with 1 uppercase letter, 1 number and 1 symbol.
+              Password must be at least 8 characters and include a uppercase letter, number and symbol.
             </Text>
 
             <StackLayout spacing={30}>
@@ -207,11 +268,18 @@ const ResetPassword = () => {
               )}
             </StackLayout>
 
+            {globalError ? (
+              <Text style={{ color: theme.colors.error, textAlign: "center" }}>
+                {globalError}
+              </Text>
+            ) : null}
+
             <View>
               <BasicButton
-                label='Change Password'
+                label={updating? "Updating..." : "Change Password"}
                 onPress={handleChange}
-                fullWidth='true'
+                fullWidth={true}
+                disabled={updating || notMatching}
               />
             </View>
           </>
@@ -226,7 +294,10 @@ const ResetPassword = () => {
                 </Dialog.Content>
 
                 <Dialog.Actions style={styles.actions}>
-                    <BasicButton label="Continue" onPress={handleContinue} />
+                    <BasicButton 
+                      label="Continue" 
+                      onPress={handleContinue} 
+                    />
                 </Dialog.Actions>
             </Dialog>
         </Portal>

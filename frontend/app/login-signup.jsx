@@ -466,6 +466,7 @@ function LoginSignup() {
                     onResend={handleResend}
                     resendCooldown={resendCooldown}
                     onLater={() => setShowVerificationModal(false)}
+                    error={verificationError}
                 />
                 
             </View>
