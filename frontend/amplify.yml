@@ -1,0 +1,26 @@
+version: 1
+backend:
+  phases:
+    build:
+      commands:
+        # Deploy backend using Amplify Gen 2 CLI
+        - npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID
+  artifacts:
+    baseDirectory: .
+    files:
+      - '**/*'
+  cache:
+    paths: []
+
+frontend:
+  phases:
+    preBuild:
+      commands: []
+    build:
+      commands: []
+  artifacts:
+    baseDirectory: .
+    files:
+      - '**/*'
+  cache:
+    paths: []
