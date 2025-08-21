@@ -10,9 +10,10 @@ import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-nativ
 
 // TOOD: make sure all app-wide initialisations are in here
 
-import awsmobile from '../src/aws-exports';
+//import awsmobile from '../src/aws-exports';
+import amplifyOutputs from '../amplify_outputs.json'
 import { fetchUserAttributes, updateUserAttributes } from "aws-amplify/auth";
-Amplify.configure({
+/*Amplify.configure({
     ...awsmobile,
     oauth: {
         domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
@@ -20,8 +21,8 @@ Amplify.configure({
         redirectSignIn: 'myapp://auth/',
         redirectSignOut: 'myapp://signout/',
         responseType: 'code'
-    }
-});
+});*/
+Amplify.configure(amplifyOutputs);
 console.log('Amplify configured with:', Amplify.getConfig());
 
 
