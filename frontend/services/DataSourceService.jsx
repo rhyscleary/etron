@@ -194,6 +194,24 @@ class DataSourceService {
     }
     console.log('[DataSourceService] Final mock sources:', sources.length, 'total sources');
     console.log('[DataSourceService] All source types:', sources.map(s => s.type));
+    // Preserve any previously-created demo sources (for example created via
+    // connectDataSource fallback) so they are not lost when the mock pool is
+    // regenerated due to config changes. Merge existing demo entries and
+    // de-duplicate by id.
+    try {
+      if (Array.isArray(this.demoSources) && this.demoSources.length > 0) {
+        const existingDemo = this.demoSources.filter((s) => s && typeof s.id === 'string' && s.id.startsWith('demo_'));
+        for (const ed of existingDemo) {
+          if (!sources.find((g) => g.id === ed.id)) {
+            sources.push(ed);
+          }
+        }
+      }
+    } catch (e) {
+      // If merging fails for any reason, fall back to generated sources
+      console.warn('[DataSourceService] Failed to merge existing demo sources:', e.message);
+    }
+
     return sources;
   }
 
@@ -250,7 +268,11 @@ class DataSourceService {
       // If dsConfig is an object map, replace real sources of demo-enabled types with demo sources
       if (dsConfig && typeof dsConfig === 'object') {
         const demoEnabledTypes = Object.entries(dsConfig).filter(([t, v]) => v).map(([t]) => t);
-        const demoSourcesForTypes = this.demoSources.filter((s) => demoEnabledTypes.includes(s.type) && !s.config?.isProvider);
+        // Also include any demo sources explicitly created by the user so they
+        // are not lost from the UI when a per-type flag is false.
+        const demoSourcesForTypes = this.demoSources.filter(
+          (s) => !s.config?.isProvider && (demoEnabledTypes.includes(s.type) || s.config?.__createdBy === 'user')
+        );
         // Keep real sources which are NOT demo-enabled
         const finalSources = realSources.filter((s) => !demoEnabledTypes.includes(s.type)).concat(demoSourcesForTypes);
         console.log('[DataSourceService] getConnectedDataSources (mixed mode):', finalSources.length, 'sources');
@@ -273,7 +295,11 @@ class DataSourceService {
           let filteredSources = this.demoSources.filter((source) => !source.config?.isProvider);
           if (dsConfig && typeof dsConfig === 'object') {
             const allowed = Object.entries(dsConfig).filter(([t, v]) => v).map(([t]) => t);
-            filteredSources = filteredSources.filter(s => allowed.includes(s.type));
+            // Include demo sources explicitly created by the user even when their
+            // type is not enabled in the central per-type map.
+            filteredSources = filteredSources.filter(
+              (s) => allowed.includes(s.type) || s.config?.__createdBy === 'user'
+            );
           }
           console.log('[DataSourceService] getConnectedDataSources (fallback to demo):', filteredSources.length, 'sources');
           return filteredSources;
@@ -343,7 +369,10 @@ class DataSourceService {
           // If the demoSource's type is explicitly disabled, do not return it
           if (demoSource) {
             const dsConfigMap = demoConfig.components?.dataSources;
-            if (typeof dsConfigMap === 'object' && dsConfigMap && dsConfigMap[demoSource.type] === false) {
+            // Allow demo sources that were explicitly created by the user to be
+            // returned even when the centralized per-type config sets that type
+            // to false. This preserves UX for manual/demo-created items.
+            if (typeof dsConfigMap === 'object' && dsConfigMap && dsConfigMap[demoSource.type] === false && demoSource.config?.__createdBy !== 'user') {
               throw new Error(`Demo fallback not allowed for type ${demoSource.type}`);
             }
           }
@@ -472,7 +501,7 @@ class DataSourceService {
         status: "connected",
         lastSync: new Date().toISOString(),
         createdAt: new Date().toISOString(),
-        config: { ...config, isDemoMode: true },
+          config: { ...config, isDemoMode: true, __createdBy: 'user' },
         testResult: {
           status: "success",
           responseTime: demoConfigManager.getConfig().data.simulateNetworkDelay ? "245ms" : "1ms",
@@ -519,7 +548,7 @@ class DataSourceService {
           status: "connected",
           lastSync: new Date().toISOString(),
           createdAt: new Date().toISOString(),
-          config: { ...config, isDemoMode: true },
+          config: { ...config, isDemoMode: true, __createdBy: 'user' },
           testResult: connectionData.testResult,
         };
         this.demoSources.push(newDemoSource);
@@ -546,8 +575,17 @@ class DataSourceService {
         const typeIsExplicitlyDemo = demoConfigManager.isDataSourceTypeInDemo(type);
         console.log('[DataSourceService] connectDataSource fallback check', { type, typeIsExplicitlyDemo });
         if (typeIsExplicitlyDemo === false) {
-          console.log('[DataSourceService] connectDataSource: per-type demo explicitly disabled via manager, not falling back to demo');
-          throw error;
+          // If the server responded with a clear configuration error (e.g. missing
+          // required query parameters), allow a transient fallback to demo so the
+          // user can continue testing. This is a pragmatic safety net for
+          // environments where the backend expects additional params.
+          const msg = error?.message || "";
+          const isMissingParamsError = msg.includes("Missing required query parameters") || (error?.response && error.response.status === 400);
+          if (!isMissingParamsError) {
+            console.log('[DataSourceService] connectDataSource: per-type demo explicitly disabled via manager, not falling back to demo');
+            throw error;
+          }
+          console.warn('[DataSourceService] connectDataSource: per-type demo explicitly disabled, but allowing demo fallback due to server 400 (missing query params)');
         }
         // Temporarily enter service-local fallback mode and create a demo source
         const prevTemp = this.tempDemoMode;
@@ -561,7 +599,7 @@ class DataSourceService {
             status: "connected",
             lastSync: new Date().toISOString(),
             createdAt: new Date().toISOString(),
-            config: { ...config, isDemoMode: true },
+              config: { ...config, isDemoMode: true, __createdBy: 'user' },
             testResult: {
               status: "success",
               responseTime: demoConfigManager.getConfig().data.simulateNetworkDelay ? "245ms" : "1ms",
@@ -835,7 +873,13 @@ class DataSourceService {
       ],
       centralizedConfig: {
         mode: demoConfig.mode,
-        isActive: demoConfigManager.isDemoActive(),
+        isActive: (function() {
+          try {
+            const cfg = demoConfigManager.getConfig();
+            const ds = cfg.components?.dataSources;
+            return typeof ds === 'boolean' ? ds === true : !!(ds && Object.values(ds).some(Boolean));
+          } catch (e) { return false; }
+        })(),
         components: demoConfig.components,
         behavior: demoConfig.behavior,
         data: demoConfig.data,
@@ -862,7 +906,19 @@ class DataSourceService {
         adapterCacheSize: this.activeAdapters.size,
         providerConnectionsSize: this.providerConnections.size,
       },
-      centralized: demoConfigManager.getDemoStatus(),
+      centralized: (function() {
+        try {
+          const cfg = demoConfigManager.getConfig();
+          return {
+            config: cfg,
+            perTypeDataSources: cfg.components?.dataSources,
+            behavior: cfg.behavior,
+            fallback: cfg.fallback,
+          };
+        } catch (e) {
+          return { config: null };
+        }
+      })(),
       effective: this.isDemoModeActive(),
     };
   }

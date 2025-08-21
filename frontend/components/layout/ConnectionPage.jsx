@@ -92,13 +92,14 @@ const ConnectionPage = ({
         put: async () => ({ data: {} }),
         delete: async () => ({ data: {} })
       };
-      const authService = demoStatus.activeComponents.includes('authentication')
-        ? {
-            getCurrentUser: () => Promise.resolve({ username: 'demo_user' }),
-            fetchAuthSession: () => Promise.resolve({ tokens: { accessToken: 'demo_token' } }),
-            signOut: () => Promise.resolve()
-          }
-        : { getCurrentUser, fetchAuthSession, signOut };
+      const authService =
+        Array.isArray(demoStatus?.activeComponents) && demoStatus.activeComponents.includes('authentication')
+          ? {
+              getCurrentUser: () => Promise.resolve({ username: 'demo_user' }),
+              fetchAuthSession: () => Promise.resolve({ tokens: { accessToken: 'demo_token' } }),
+              signOut: () => Promise.resolve(),
+            }
+          : { getCurrentUser, fetchAuthSession, signOut };
     const newAdapter = createDataAdapter(connectionType, {
         authService,
         apiClient,

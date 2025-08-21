@@ -282,13 +282,23 @@ export const createCustomApiAdapter = (
         connection: currentConnection,
       };
     } catch (error) {
-      // Fallback to demo mode if enabled
-      if (demoConfig.fallback.enableOnApiFailure) {
-        console.log(
-          "Custom API connection failed, falling back to demo mode",
-          error.message
-        );
-        return connectDemo(connectionData);
+      // Fallback to demo mode only when the centralized config allows it
+      // and the caller allowed fallback via options.fallbackToDemo.
+      try {
+        const dsCfg = demoConfigManager.getConfig().components?.dataSources;
+        const perType = demoConfigManager.isDataSourceTypeInDemo("custom-api");
+        const allowFallback =
+          options.fallbackToDemo !== false &&
+          (typeof dsCfg === "boolean" ? dsCfg === true : perType !== false);
+        if (allowFallback) {
+          console.log(
+            "Custom API connection failed, falling back to demo mode",
+            error.message
+          );
+          return connectDemo(connectionData);
+        }
+      } catch (e) {
+        // If reading centralized config fails, don't silently fallback to demo
       }
       throw error;
     }
@@ -371,31 +381,41 @@ export const createCustomApiAdapter = (
         },
       };
     } catch (error) {
-      // Fallback to demo mode if enabled
-      if (demoConfig.fallback.enableOnApiFailure) {
-        console.log(
-          "Real connection test failed, falling back to demo",
-          error.message
-        );
-        // Return a demo-style successful test result instead of recursing
-        try {
-          await simulateDelay("test");
-          maybeSimulateError("test");
-          return {
-            status: "connected",
-            responseTime: getRandomResponseTime(demoConfig),
-            statusCode: 200,
-            contentType: "application/json",
-            sampleData: {
-              message: "Demo API connection successful (fallback)",
-              timestamp: new Date().toISOString(),
-              endpoints: ["/data", "/users", "/status"],
-              demoMode: true,
-            },
-          };
-        } catch (demoErr) {
-          throw new Error(`Demo fallback failed: ${demoErr.message}`);
+      // Fallback to demo mode only when the centralized config allows it
+      // and the caller allowed fallback via options.fallbackToDemo.
+      try {
+        const dsCfg = demoConfigManager.getConfig().components?.dataSources;
+        const perType = demoConfigManager.isDataSourceTypeInDemo("custom-api");
+        const allowFallback =
+          options.fallbackToDemo !== false &&
+          (typeof dsCfg === "boolean" ? dsCfg === true : perType !== false);
+        if (allowFallback) {
+          console.log(
+            "Real connection test failed, falling back to demo",
+            error.message
+          );
+          // Return a demo-style successful test result instead of recursing
+          try {
+            await simulateDelay("test");
+            maybeSimulateError("test");
+            return {
+              status: "connected",
+              responseTime: getRandomResponseTime(demoConfig),
+              statusCode: 200,
+              contentType: "application/json",
+              sampleData: {
+                message: "Demo API connection successful (fallback)",
+                timestamp: new Date().toISOString(),
+                endpoints: ["/data", "/users", "/status"],
+                demoMode: true,
+              },
+            };
+          } catch (demoErr) {
+            throw new Error(`Demo fallback failed: ${demoErr.message}`);
+          }
         }
+      } catch (e) {
+        // If reading centralized config fails, don't silently fallback to demo
       }
       throw new Error(`Connection test failed: ${error.message}`);
     }

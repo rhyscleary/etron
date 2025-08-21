@@ -33,7 +33,9 @@ export const AppProvider = ({
     const forceUpdate = useCallback(() => setUpdateTrigger((p) => p + 1), []);
 
     useEffect(() => {
-        demoConfigManager.updateConfig(initialDemoConfig);
+        // Initialize centralized demo config manager with provided initial config
+        // Use public setter to replace config and notify listeners
+        demoConfigManager.setConfig(JSON.parse(JSON.stringify(initialDemoConfig)));
         const unsubscribe = demoConfigManager.addListener((newConfig, oldConfig) => {
             setDemoConfig(newConfig);
             try {
@@ -49,7 +51,7 @@ export const AppProvider = ({
             }
             forceUpdate();
         });
-        return unsubscribe;
+    return unsubscribe;
     }, [initialDemoConfig, forceUpdate]);
 
     const account = useAccount();
@@ -107,43 +109,42 @@ export const AppProvider = ({
 
     const demoModeControls = useMemo(
         () => ({
-            getStatus: () => demoConfigManager.getDemoStatus(),
-            setMode: (mode) => demoConfigManager.setMode(mode),
-            setComponentDemo: (component, enabled) =>
-                demoConfigManager.setComponentDemo(component, enabled),
-                // Set demo for a specific data source type (testing helper)
-                setDataSourceDemo: (type, enabled) => demoConfigManager.setDataSourceDemo(type, enabled),
-                // Query whether a specific data source type is in demo mode
-                isDataSourceTypeInDemo: (type) => demoConfigManager.isDataSourceTypeInDemo(type),
-            toggleAuthentication: () =>
-                demoConfigManager.setComponentDemo(
-                    'authentication',
-                    !demoConfig.components.authentication
-                ),
-            toggleDataSources: () => demoConfigManager.setComponentDemo('dataSources', !isDataSourcesDemo),
-            toggleApiConnections: () =>
-                demoConfigManager.setComponentDemo(
-                    'apiConnections',
-                    !demoConfig.components.apiConnections
-                ),
-            toggleFileStorage: () =>
-                demoConfigManager.setComponentDemo(
-                    'fileStorage',
-                    !demoConfig.components.fileStorage
-                ),
-            enableAllDemo: () => demoConfigManager.setMode(DEMO_MODES.FULL_DEMO),
-            disableAllDemo: () => demoConfigManager.setMode(DEMO_MODES.DISABLED),
-            enableDataSourcesOnly: () =>
-                demoConfigManager.setMode(DEMO_MODES.DATA_SOURCES_ONLY),
-            updateBehavior: (behaviorUpdates) =>
-                demoConfigManager.updateConfig({ behavior: behaviorUpdates }),
-            updateDataSettings: (dataUpdates) =>
-                demoConfigManager.updateConfig({ data: dataUpdates }),
-            reset: () => demoConfigManager.reset(),
+            // Return the full centralized demo config snapshot
+            getStatus: () => ({
+                config: demoConfigManager.getConfig(),
+                perTypeDataSources: demoConfigManager.getConfig().components?.dataSources,
+            }),
+            // Set demo globally for all dataSources (boolean)
+            setGlobalDataSources: (enabled) => demoConfigManager.setGlobalDataSources(enabled),
+            // Set demo for a specific data source type
+            setDataSourceDemo: (type, enabled) => demoConfigManager.setDataSourceDemo(type, enabled),
+            // Query whether a specific data source type is in demo mode
+            isDataSourceTypeInDemo: (type) => demoConfigManager.isDataSourceTypeInDemo(type),
+            // Toggle helpers mapped to available manager APIs
+            toggleAuthentication: () => demoConfigManager.setDataSourceDemo('authentication', !demoConfig.components.authentication),
+            toggleDataSources: () => {
+                const cfg = demoConfig.components.dataSources;
+                if (typeof cfg === 'boolean') {
+                    demoConfigManager.setGlobalDataSources(!cfg);
+                } else {
+                    // If map, flip each type to the inverse of current any-true state
+                    const any = !!(cfg && Object.values(cfg).some(Boolean));
+                    demoConfigManager.setGlobalDataSources(!any);
+                }
+            },
+            toggleApiConnections: () => demoConfigManager.setDataSourceDemo('apiConnections', !demoConfig.components.apiConnections),
+            toggleFileStorage: () => demoConfigManager.setDataSourceDemo('fileStorage', !demoConfig.components.fileStorage),
+            updateBehavior: (behaviorUpdates) => {
+                const cfg = demoConfigManager.getConfig();
+                demoConfigManager.updateBehavior(behaviorUpdates);
+            },
+            updateDataSettings: (dataUpdates) => {
+                demoConfigManager.updateData(dataUpdates);
+            },
+            reset: () => {
+                demoConfigManager.reset();
+            },
             getConfig: () => demoConfigManager.getConfig(),
-            isComponentInDemo: (component) =>
-                demoConfigManager.isComponentInDemo(component),
-            isAnyDemoActive: () => demoConfigManager.isDemoActive(),
         }),
         [demoConfig]
     );
