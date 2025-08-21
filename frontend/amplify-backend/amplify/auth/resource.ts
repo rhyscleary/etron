@@ -10,7 +10,11 @@ export const auth = defineAuth({
     externalProviders: {
       google: {
         clientId: secret('GOOGLE_CLIENT_ID'),
-        clientSecret: secret('GOOGLE_CLIENT_SECRET')
+        clientSecret: secret('GOOGLE_CLIENT_SECRET'),
+
+        attributeMapping: {
+          email: 'email'
+        }
       },
       callbackUrls: ["myapp://callback"],
       logoutUrls: ["myapp://signout/"],
