@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-2_KWlSFlZDW",
+    "user_pool_id": "ap-southeast-2_eLuM2F4x9",
     "aws_region": "ap-southeast-2",
-    "user_pool_client_id": "1r5sc0ctmh2cf9seltls4sljhm",
-    "identity_pool_id": "ap-southeast-2:5fd8b143-cb39-4a96-8d9d-cf0263aa1d0e",
+    "user_pool_client_id": "24o5n5rf1l309l06r5echsdlmd",
+    "identity_pool_id": "ap-southeast-2:2995f9c8-850b-472a-b41d-4c110d740204",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -23,10 +23,30 @@
       "require_symbols": true,
       "require_uppercase": true
     },
+    "oauth": {
+      "identity_providers": [
+        "GOOGLE"
+      ],
+      "redirect_sign_in_uri": [
+        "myapp://callback/"
+      ],
+      "redirect_sign_out_uri": [
+        "myapp://signout/"
+      ],
+      "response_type": "code",
+      "scopes": [
+        "phone",
+        "email",
+        "openid",
+        "profile",
+        "aws.cognito.signin.user.admin"
+      ],
+      "domain": "3e36469e7ce0ab188213.auth.ap-southeast-2.amazoncognito.com"
+    },
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://rqm7rmqonvhy3bfsicop53navy.appsync-api.ap-southeast-2.amazonaws.com/graphql",
+    "url": "https://vwv4pxqlurhffafmuef6a4oxi4.appsync-api.ap-southeast-2.amazonaws.com/graphql",
     "aws_region": "ap-southeast-2",
     "default_authorization_type": "AWS_IAM",
     "authorization_types": [

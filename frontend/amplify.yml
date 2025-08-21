@@ -24,4 +24,3 @@ frontend:
       - '**/*'
   cache:
     paths: []
-    
