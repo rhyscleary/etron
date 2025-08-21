@@ -41,7 +41,8 @@ Amplify.configure({
 
             defaultAccessLevel: 'public', //should probably change this in future to make privacy levels correct
         },
-    },*/
+    },
+    */
 });
 console.log('Amplify configured with:', Amplify.getConfig());
 
