@@ -78,8 +78,13 @@ const DataManagement = () => {
         hasInitiallyLoadedRef.current = true;
       } else {
         console.log('DataManagement screen focused, skipping refresh (already loaded)');
+        console.log('[DataManagement] Current data sources on focus:', dataSourcesList.length, 'total');
+        console.log('[DataManagement] Data sources on screen focus:');
+        dataSourcesList.forEach((source, index) => {
+          console.log(`  [${index + 1}] ID: ${source.id}, Type: ${source.type}, Name: ${source.name}, Status: ${source.status}`);
+        });
       }
-    }, []) // Empty dependencies - only run on mount/focus
+    }, [dataSourcesList]) // Include dataSourcesList to log current state
   );
 
   // Enhanced refresh function
@@ -87,7 +92,14 @@ const DataManagement = () => {
     setIsRefreshing(true);
     setLastManualRefresh(Date.now());
     try {
+      console.log('[DataManagement] Manual refresh triggered');
       await refresh();
+      // Log all data sources after refresh
+      console.log('[DataManagement] Data sources after refresh:', dataSourcesList.length, 'total');
+      console.log('[DataManagement] All data sources in data-management page:');
+      dataSourcesList.forEach((source, index) => {
+        console.log(`  [${index + 1}] ID: ${source.id}, Type: ${source.type}, Name: ${source.name}, Status: ${source.status}`);
+      });
       // Remove forceUpdate - refresh should handle state updates
     } catch (error) {
       console.error('Failed to refresh:', error);

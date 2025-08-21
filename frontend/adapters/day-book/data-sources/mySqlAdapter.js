@@ -1,124 +1,6 @@
 import { delay, validateSourceId, formatDate } from "./baseAdapter";
+import { mockDataManager } from "./mockDataManager";
 
-// mock data for demo mode
-const createMockData = () => ({
-  connections: [
-    {
-      id: "mysql_1642105600000",
-      name: "Local MySQL",
-      host: "localhost",
-      port: 3306,
-      username: "root",
-      database: "demo_db",
-      status: "active",
-      createdAt: "2024-01-15T10:30:00Z",
-      lastTested: "2024-01-15T10:30:00Z",
-      password: "",
-      testResult: {
-        status: "success",
-        responseTime: "120ms",
-        statusCode: 200,
-        contentType: "mysql",
-      },
-    },
-    {
-      id: "mysql_1642109200000",
-      name: "Remote MySQL",
-      host: "remote.example.com",
-      port: 3306,
-      username: "admin",
-      database: "weather_db",
-      status: "active",
-      createdAt: "2024-01-16T11:30:00Z",
-      lastTested: "2024-01-16T11:30:00Z",
-      password: "",
-      testResult: {
-        status: "success",
-        responseTime: "180ms",
-        statusCode: 200,
-        contentType: "mysql",
-      },
-    },
-  ],
-  sampleData: {
-    mysql_1642105600000: {
-      name: "Local MySQL",
-      tables: [
-        {
-          name: "posts",
-          columns: ["id", "title", "body", "userId"],
-          rows: [
-            {
-              id: 1,
-              title: "Sample Post 1",
-              body: "Sample content 1",
-              userId: 1,
-            },
-            {
-              id: 2,
-              title: "Sample Post 2",
-              body: "Sample content 2",
-              userId: 1,
-            },
-            {
-              id: 3,
-              title: "Sample Post 3",
-              body: "Sample content 3",
-              userId: 2,
-            },
-          ],
-        },
-        {
-          name: "users",
-          columns: ["id", "name", "email", "username"],
-          rows: [
-            {
-              id: 1,
-              name: "John Doe",
-              email: "john@example.com",
-              username: "johndoe",
-            },
-            {
-              id: 2,
-              name: "Jane Smith",
-              email: "jane@example.com",
-              username: "janesmith",
-            },
-          ],
-        },
-      ],
-    },
-    mysql_1642109200000: {
-      name: "Remote MySQL",
-      tables: [
-        {
-          name: "weather",
-          columns: ["city", "temperature", "humidity", "description"],
-          rows: [
-            {
-              city: "London",
-              temperature: 15,
-              humidity: 65,
-              description: "Cloudy",
-            },
-            {
-              city: "New York",
-              temperature: 22,
-              humidity: 45,
-              description: "Sunny",
-            },
-            {
-              city: "Tokyo",
-              temperature: 18,
-              humidity: 70,
-              description: "Rainy",
-            },
-          ],
-        },
-      ],
-    },
-  },
-});
 
 const parseConnectionConfig = (config) => {
   if (!config) return {};
@@ -136,7 +18,7 @@ export const createMySqlAdapter = (authService, apiClient, options = {}) => {
     options.demoMode ||
     options.fallbackToDemo ||
     (typeof __DEV__ !== "undefined" ? __DEV__ : false);
-  const mockData = createMockData();
+  const mockData = mockDataManager.getMockData("mysql");
   const endpoints = options.endpoints || {};
 
   let connections = [];

@@ -1,143 +1,8 @@
 import { delay, validateSourceId, formatDate } from "./baseAdapter";
+import { mockDataManager } from "./mockDataManager";
 
-// mock data for demo
-const createMockData = () => ({
-  connections: [
-    {
-      id: "ftp_1642105600000",
-      name: "Demo FTP Server",
-      hostname: "ftp.demo.com",
-      port: "21",
-      username: "demo_user",
-      directory: "/data",
-      status: "connected",
-      createdAt: "2024-01-15T10:30:00Z",
-      lastConnected: "2024-01-15T10:30:00Z",
-      testResult: {
-        status: "success",
-        responseTime: "350ms",
-        features: ["read", "write", "list"],
-        serverType: "Demo FTP Server",
-      },
-    },
-    {
-      id: "ftp_1642109200000",
-      name: "Production FTP",
-      hostname: "ftp.production.com",
-      port: "22",
-      username: "prod_user",
-      directory: "/uploads",
-      status: "connected",
-      createdAt: "2024-01-16T11:30:00Z",
-      lastConnected: "2024-01-16T11:30:00Z",
-      testResult: {
-        status: "success",
-        responseTime: "180ms",
-        features: ["read", "write", "list", "sftp"],
-        serverType: "SFTP Server",
-      },
-    },
-  ],
-  files: [
-    {
-      name: "sales_data.csv",
-      path: "/data/sales_data.csv",
-      size: 1024,
-      modified: "2024-01-15T10:30:00Z",
-      type: "file",
-    },
-    {
-      name: "inventory.json",
-      path: "/data/inventory.json",
-      size: 2048,
-      modified: "2024-01-14T15:20:00Z",
-      type: "file",
-    },
-    {
-      name: "customer_data.xlsx",
-      path: "/data/customer_data.xlsx",
-      size: 4096,
-      modified: "2024-01-13T14:10:00Z",
-      type: "file",
-    },
-    {
-      name: "reports",
-      path: "/data/reports",
-      size: 0,
-      modified: "2024-01-13T09:15:00Z",
-      type: "directory",
-    },
-  ],
-  sampleData: {
-    ftp_1642105600000: {
-      name: "Demo FTP Server",
-      files: [
-        {
-          path: "/data/sales_data.csv",
-          name: "Sales Data",
-          data: [
-            {
-              date: "2024-01-01",
-              product: "Widget A",
-              quantity: 10,
-              revenue: 1000,
-            },
-            {
-              date: "2024-01-02",
-              product: "Widget B",
-              quantity: 15,
-              revenue: 1500,
-            },
-            {
-              date: "2024-01-03",
-              product: "Widget A",
-              quantity: 8,
-              revenue: 800,
-            },
-          ],
-        },
-        {
-          path: "/data/inventory.json",
-          name: "Inventory Data",
-          data: [
-            { id: 1, item: "Widget A", stock: 100, location: "Warehouse A" },
-            { id: 2, item: "Widget B", stock: 75, location: "Warehouse B" },
-            { id: 3, item: "Widget C", stock: 50, location: "Warehouse A" },
-          ],
-        },
-      ],
-    },
-    ftp_1642109200000: {
-      name: "Production FTP",
-      files: [
-        {
-          path: "/uploads/customer_data.xlsx",
-          name: "Customer Data",
-          data: [
-            {
-              id: 1,
-              name: "John Doe",
-              email: "john@example.com",
-              city: "New York",
-            },
-            {
-              id: 2,
-              name: "Jane Smith",
-              email: "jane@example.com",
-              city: "Los Angeles",
-            },
-            {
-              id: 3,
-              name: "Bob Johnson",
-              email: "bob@example.com",
-              city: "Chicago",
-            },
-          ],
-        },
-      ],
-    },
-  },
-});
+// Get mock data from centralized manager
+const getMockData = () => mockDataManager.getMockData("custom-ftp");
 
 // Helper functions
 const parseConnectionData = (connectionData) => {
@@ -169,7 +34,6 @@ export const createCustomFtpAdapter = (options = {}) => {
     options.demoMode ||
     options.fallbackToDemo ||
     (typeof __DEV__ !== "undefined" ? __DEV__ : false);
-  const mockData = createMockData();
   let connections = [];
   let currentConnection = null;
   let isConnected = false;
@@ -177,6 +41,7 @@ export const createCustomFtpAdapter = (options = {}) => {
   const connectDemo = async (connectionData) => {
     await delay(1500);
 
+    const mockData = getMockData();
     const parsed = parseConnectionData(connectionData);
 
     // find or create a demo connection

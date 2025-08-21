@@ -357,6 +357,10 @@ const validateOptions = (type, options = {}) => {
 
 export const createDataAdapter = (type, dependencies) => {
   try {
+    console.log("[DataAdapterFactory] createDataAdapter entry", {
+      type,
+      dependenciesKeys: Object.keys(dependencies || {}),
+    });
     const {
       authService,
       apiClient,
@@ -364,7 +368,25 @@ export const createDataAdapter = (type, dependencies) => {
       dbConnection,
       endpoints,
       options = {},
+      // allow callers to provide some adapter options at top-level for convenience
+      demoMode: topLevelDemoMode,
+      fallbackToDemo: topLevelFallback,
+      endpoints: topLevelEndpoints,
     } = dependencies;
+
+    // Merge top-level convenience fields into options so adapters receive them
+    const finalOptions = {
+      ...options,
+      // NOTE: demoMode is intentionally NOT carried from caller-provided
+      // options or top-level convenience fields. Demo mode MUST come from
+      // the centralized demoConfigManager (AppContext or demo config).
+      fallbackToDemo:
+        options.fallbackToDemo !== undefined
+          ? options.fallbackToDemo
+          : topLevelFallback,
+      endpoints:
+        options.endpoints !== undefined ? options.endpoints : topLevelEndpoints,
+    };
 
     if (!isTypeSupported(type)) {
       throw new Error(
@@ -378,50 +400,103 @@ export const createDataAdapter = (type, dependencies) => {
 
     validateOptions(type, options);
 
+    // Determine demo mode with clear rules:
+    // - If the service signalled a transient fallback (fallbackTriggered), prefer true
+    // - Otherwise, resolve from centralized per-type flag (if available)
+    // - Default to false
+    let perTypeFlag;
+    try {
+      // eslint-disable-next-line global-require
+      const { demoConfigManager } = require("../../../config/demoConfig");
+      if (
+        demoConfigManager &&
+        typeof demoConfigManager.isDataSourceTypeInDemo === "function"
+      ) {
+        perTypeFlag = demoConfigManager.isDataSourceTypeInDemo(type);
+      }
+    } catch (e) {
+      perTypeFlag = undefined;
+    }
+
+    // If the service indicated a fallback, respect that locally (do not mutate central config)
+    const fallbackTriggered = !!dependencies.fallbackTriggered;
+    // Important: if central per-type config explicitly disables demo for this type
+    // (perTypeFlag === false), do NOT allow a transient fallback to override it.
+    let resolvedDemoMode;
+    if (perTypeFlag === false) {
+      resolvedDemoMode = false;
+    } else if (fallbackTriggered) {
+      resolvedDemoMode = true;
+    } else {
+      resolvedDemoMode = perTypeFlag !== undefined ? !!perTypeFlag : false;
+    }
+    console.log("[DataAdapterFactory] demo resolution", {
+      dsCfg: dependencies.options?.demoConfig ? true : undefined,
+      perTypeFlag,
+      fallbackTriggered,
+      resolvedDemoMode,
+      type,
+    });
+
     switch (type) {
       case "google-sheets":
         return createGoogleSheetsAdapter(authService, apiClient, {
-          ...options,
-          endpoints: endpoints?.googleSheets || endpoints,
+          ...finalOptions,
+          demoMode: resolvedDemoMode,
+          endpoints:
+            finalOptions.endpoints || endpoints?.googleSheets || endpoints,
         });
 
       case "microsoft-excel":
         return createExcelAdapter(authService, apiClient, {
-          ...options,
-          endpoints: endpoints?.microsoftExcel || endpoints,
-          scopes: options.scopes || [
+          ...finalOptions,
+          demoMode: resolvedDemoMode,
+          endpoints:
+            finalOptions.endpoints || endpoints?.microsoftExcel || endpoints,
+          scopes: finalOptions.scopes || [
             "https://graph.microsoft.com/Files.Read",
             "https://graph.microsoft.com/Sites.Read.All",
             "https://graph.microsoft.com/User.Read",
           ],
-          locations: options.locations || ["OneDrive", "SharePoint"],
+          locations: finalOptions.locations || ["OneDrive", "SharePoint"],
         });
 
       case "custom-api":
+        console.log("[DataAdapterFactory] creating custom-api adapter", {
+          resolvedDemoMode,
+          options: {
+            ...finalOptions,
+            endpoints:
+              finalOptions.endpoints || endpoints?.customAPI || endpoints,
+          },
+        });
         return createCustomApiAdapter(authService, apiClient, {
-          ...options,
-          endpoints: endpoints?.customAPI || endpoints,
-          timeout: options.timeout || 30000,
-          retryAttempts: options.retryAttempts || 3,
-          fallbackToDemo: options.fallbackToDemo !== false,
+          ...finalOptions,
+          demoMode: resolvedDemoMode,
+          endpoints:
+            finalOptions.endpoints || endpoints?.customAPI || endpoints,
+          timeout: finalOptions.timeout || 30000,
+          retryAttempts: finalOptions.retryAttempts || 3,
+          fallbackToDemo: finalOptions.fallbackToDemo !== false,
         });
 
       case "custom-ftp":
         return createCustomFtpAdapter(authService, apiClient, {
-          ...options,
-          endpoints: endpoints?.customFTP || endpoints,
-          timeout: options.timeout || 30000,
-          maxConnections: options.maxConnections || 5,
-          fallbackToDemo: options.fallbackToDemo !== false,
+          ...finalOptions,
+          endpoints:
+            finalOptions.endpoints || endpoints?.customFTP || endpoints,
+          timeout: finalOptions.timeout || 30000,
+          maxConnections: finalOptions.maxConnections || 5,
+          fallbackToDemo: finalOptions.fallbackToDemo !== false,
         });
 
       case "mysql":
         return createMySqlAdapter(authService, apiClient, {
-          ...options,
-          endpoints: endpoints?.mysql || endpoints,
-          poolSize: options.poolSize || 10,
-          connectionTimeout: options.connectionTimeout || 30000,
-          fallbackToDemo: options.fallbackToDemo !== false,
+          ...finalOptions,
+          endpoints: finalOptions.endpoints || endpoints?.mysql || endpoints,
+          poolSize: finalOptions.poolSize || 10,
+          connectionTimeout: finalOptions.connectionTimeout || 30000,
+          fallbackToDemo: finalOptions.fallbackToDemo !== false,
         });
       default:
         throw new Error(`Adapter creation not implemented for type: ${type}`);

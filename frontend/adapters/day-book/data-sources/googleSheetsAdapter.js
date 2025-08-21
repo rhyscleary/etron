@@ -1,69 +1,6 @@
 import { delay, validateSourceId, formatDate } from "./baseAdapter";
+import { mockDataManager } from "./mockDataManager";
 
-// mock data for demo mode
-const createMockData = () => ({
-  account: {
-    email: "demo@gmail.com",
-    name: "Demo User",
-    avatar: null,
-    accessToken: "DEMO_ACCESS_TOKEN",
-    provider: "Google Sheets",
-  },
-  spreadsheets: [
-    {
-      id: "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
-      name: "Budget 2024",
-      lastModified: "2024-01-15T10:30:00Z",
-      url:
-        "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
-      type: "spreadsheet",
-    },
-    {
-      id: "2CyjOWt1YSB6oGNeL",
-      name: "Sales Data Q1",
-      lastModified: "2024-01-10T14:22:00Z",
-      url: "https://docs.google.com/spreadsheets/d/2CyjOWt1YSB6oGNeL",
-      type: "spreadsheet",
-    },
-    {
-      id: "3DzkPXu2ZTC7pHOfM",
-      name: "Employee Database",
-      lastModified: "2024-01-20T09:15:00Z",
-      url: "https://docs.google.com/spreadsheets/d/3DzkPXu2ZTC7pHOfM",
-      type: "spreadsheet",
-    },
-  ],
-  sampleData: {
-    "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms": {
-      name: "Budget 2024",
-      headers: ["Category", "Planned", "Actual", "Variance"],
-      values: [
-        ["Housing", "2000", "1950", "-50"],
-        ["Food", "800", "750", "-50"],
-        ["Transportation", "500", "550", "50"],
-        ["Entertainment", "300", "280", "-20"],
-      ],
-    },
-    "2CyjOWt1YSB6oGNeL": {
-      name: "Sales Data Q1",
-      headers: ["Month", "Revenue", "Units Sold", "Avg Price"],
-      values: [
-        ["January", "50000", "100", "500"],
-        ["February", "60000", "120", "500"],
-        ["March", "75000", "150", "500"],
-      ],
-    },
-    "3DzkPXu2ZTC7pHOfM": {
-      name: "Employee Database",
-      headers: ["Name", "Department", "Salary", "Start Date"],
-      values: [
-        ["John Doe", "Engineering", "75000", "2023-01-15"],
-        ["Jane Smith", "Marketing", "65000", "2023-03-01"],
-        ["Bob Johnson", "Sales", "60000", "2023-02-10"],
-      ],
-    },
-  },
-});
 
 export const createGoogleSheetsAdapter = (
   authService,
@@ -74,7 +11,7 @@ export const createGoogleSheetsAdapter = (
     options.demoMode || options.fallbackToDemo || typeof __DEV__ !== "undefined"
       ? __DEV__
       : false;
-  const mockData = createMockData();
+  const mockData = mockDataManager.getMockData("google-sheets");
 
   let connectedAccount = null;
   let accessToken = null;

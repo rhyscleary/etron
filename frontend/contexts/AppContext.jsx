@@ -1,383 +1,461 @@
-import React, { createContext, useContext, useEffect, useCallback, useState } from 'react';
+import React, {
+    createContext,
+    useContext,
+    useEffect,
+    useCallback,
+    useState,
+    useMemo,
+} from 'react';
 import { useAccount } from '../hooks/useAccount';
 import useDataSources from '../hooks/useDataSource';
+import {
+    demoConfigManager,
+    DEMO_MODES,
+    DEFAULT_DEMO_CONFIG,
+} from '../config/demoConfig';
 
 const AppContext = createContext();
 
-// hook to use context
 export const useApp = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within an AppProvider');
-  }
-  return context;
+    const context = useContext(AppContext);
+    if (!context) throw new Error('useApp must be used within an AppProvider');
+    return context;
 };
 
-// context provider
-export const AppProvider = ({ children }) => {
-  // Add state to force re-renders when data changes
-  const [updateTrigger, setUpdateTrigger] = useState(0);
-  
-  // Force update function - only use when absolutely necessary
-  const forceUpdate = useCallback(() => {
-    setUpdateTrigger(prev => prev + 1);
-  }, []);
+export const AppProvider = ({
+    children,
+    initialDemoConfig = DEFAULT_DEMO_CONFIG,
+}) => {
+    const [demoConfig, setDemoConfig] = useState(initialDemoConfig);
+    const [showDemoNotification, setShowDemoNotification] = useState(false);
+    const [updateTrigger, setUpdateTrigger] = useState(0);
 
-  // account hook and data sources hook
-  const account = useAccount();
-  const dataSources = useDataSources({ demoMode: true }); // demo mode
-  
-  const {
-    currentEmail,
-    currentProvider,
-    linkedAccounts,
-    loading: accountLoading,
-    error: accountError,
-    handleAuthSuccess,
-    handleSwitchAccount,
-    refreshAccounts,
-    linkCurrentUser,
-  } = account;
+    const forceUpdate = useCallback(() => setUpdateTrigger((p) => p + 1), []);
 
-  const {
-    dataSources: dataSourcesList,
-    loading: dataSourcesLoading,
-    error: dataSourcesError,
-    authenticationStatus,
-    handleAuthenticationChange,
-    connectDataSource: originalConnectDataSource,
-    disconnectDataSource: originalDisconnectDataSource,
-    connectProvider: originalConnectProvider,
-    disconnectProvider,
-    isProviderConnected,
-    loadDataSources,
-    refresh: originalRefreshDataSources,
-  } = dataSources;
+    useEffect(() => {
+        demoConfigManager.updateConfig(initialDemoConfig);
+        const unsubscribe = demoConfigManager.addListener((newConfig, oldConfig) => {
+            setDemoConfig(newConfig);
+            try {
+                const oldDS = oldConfig?.components?.dataSources;
+                const newDS = newConfig?.components?.dataSources;
+                const oldEnabled = typeof oldDS === 'boolean' ? oldDS : !!(oldDS && Object.values(oldDS).some(Boolean));
+                const newEnabled = typeof newDS === 'boolean' ? newDS : !!(newDS && Object.values(newDS).some(Boolean));
+                if (newConfig.fallback.notifyUserOnFallback && !oldEnabled && newEnabled) {
+                    setShowDemoNotification(true);
+                }
+            } catch (e) {
+                // ignore
+            }
+            forceUpdate();
+        });
+        return unsubscribe;
+    }, [initialDemoConfig, forceUpdate]);
 
-  // combined loading state
-  const isLoading = accountLoading || dataSourcesLoading;
+    const account = useAccount();
+    
+    // dataSources can be a boolean (global) or an object map (per-type).
+    // Pass only the global boolean into useDataSources to avoid forcing the service
+    // into full-demo when only some types are demo-enabled.
+    const dataSourcesGlobalDemo = useMemo(() => {
+        const cfg = demoConfig.components.dataSources;
+        return typeof cfg === 'boolean' ? cfg : false;
+    }, [demoConfig.components.dataSources]);
 
-  // combined error state
-  const hasError = accountError || dataSourcesError;
-  const combinedError = accountError || dataSourcesError;
+    const dataSourcesAnyTypeDemo = useMemo(() => {
+        const cfg = demoConfig.components.dataSources;
+        return typeof cfg === 'boolean' ? cfg : !!(cfg && Object.values(cfg).some(Boolean));
+    }, [demoConfig.components.dataSources]);
 
-  // sync authentication states between account and data sources
-  useEffect(() => {
-    const syncAuthenticationStatus = async () => {
-      if (currentEmail && authenticationStatus !== 'authenticated') {
-        console.log('User is logged in, syncing data sources authentication...');
-        await handleAuthenticationChange(true);
-      } else if (!currentEmail && authenticationStatus === 'authenticated') {
-        console.log('User is logged out, syncing data sources authentication...');
-        await handleAuthenticationChange(false);
-      }
-    };
+    const dataSourcesOptions = useMemo(() => ({
+        demoMode: dataSourcesGlobalDemo,
+        stableKey: 'app-context-data-sources',
+    }), [dataSourcesGlobalDemo]);
 
-    // sync if not loading
-    if (!accountLoading && authenticationStatus !== 'checking') {
-      syncAuthenticationStatus();
-    }
-  }, [currentEmail, authenticationStatus, accountLoading, handleAuthenticationChange]);
+    const dataSources = useDataSources(dataSourcesOptions);
 
-  // Enhanced connect data source - REDUCED forceUpdate calls
-  const connectDataSource = useCallback(async (type, config, name) => {
-    try {
-      console.log('Connecting data source via context...');
-      const result = await originalConnectDataSource(type, config, name);
-      
-      // Only force update if the operation was successful
-      // The underlying hook should handle most state updates
-      console.log('Data source connected successfully');
-      
-      return result;
-    } catch (error) {
-      console.error('Failed to connect data source:', error);
-      throw error;
-    }
-  }, [originalConnectDataSource]);
+    const {
+        currentEmail,
+        currentProvider,
+        linkedAccounts,
+        loading: accountLoading,
+        error: accountError,
+        handleAuthSuccess,
+        handleSwitchAccount,
+        refreshAccounts,
+        linkCurrentUser,
+    } = account;
 
-  // Enhanced disconnect data source - REDUCED forceUpdate calls
-  const disconnectDataSource = useCallback(async (sourceId) => {
-    try {
-      console.log('Disconnecting data source via context...');
-      const result = await originalDisconnectDataSource(sourceId);
-      
-      // Only force update if the operation was successful
-      console.log('Data source disconnected successfully');
-      
-      return result;
-    } catch (error) {
-      console.error('Failed to disconnect data source:', error);
-      throw error;
-    }
-  }, [originalDisconnectDataSource]);
+    const {
+        dataSources: dataSourcesList,
+        loading: dataSourcesLoading,
+        error: dataSourcesError,
+        authenticationStatus,
+        handleAuthenticationChange,
+        connectDataSource: originalConnectDataSource,
+        disconnectDataSource: originalDisconnectDataSource,
+        connectProvider: originalConnectProvider,
+        disconnectProvider,
+        isProviderConnected,
+        loadDataSources,
+        refresh: originalRefreshDataSources,
+    } = dataSources;
 
-  // Enhanced connect provider - REDUCED forceUpdate calls
-  const connectProvider = useCallback(async (providerType) => {
-    try {
-      console.log(`Connecting ${providerType} provider via context...`);
-      
-      if (!currentEmail) {
-        console.log('No user logged in, connecting in demo mode');
-      }
-      
-      const result = await originalConnectProvider(providerType);
-      
-      console.log(`${providerType} provider connected successfully`);
-      return result;
-    } catch (error) {
-      console.error(`Failed to connect ${providerType} provider:`, error);
-      throw error;
-    }
-  }, [originalConnectProvider, currentEmail]);
+    const isLoading = accountLoading || dataSourcesLoading;
+    const hasError = accountError || dataSourcesError;
+    const combinedError = accountError || dataSourcesError;
 
-  // Enhanced refresh - no automatic forceUpdate
-  const refreshDataSources = useCallback(async () => {
-    try {
-      console.log('Refreshing data sources via context...');
-      await originalRefreshDataSources();
-      // Let the underlying hook manage state updates
-      console.log('Data sources refreshed successfully');
-    } catch (error) {
-      console.error('Failed to refresh data sources:', error);
-      throw error;
-    }
-  }, [originalRefreshDataSources]);
+    const demoModeControls = useMemo(
+        () => ({
+            getStatus: () => demoConfigManager.getDemoStatus(),
+            setMode: (mode) => demoConfigManager.setMode(mode),
+            setComponentDemo: (component, enabled) =>
+                demoConfigManager.setComponentDemo(component, enabled),
+                // Set demo for a specific data source type (testing helper)
+                setDataSourceDemo: (type, enabled) => demoConfigManager.setDataSourceDemo(type, enabled),
+                // Query whether a specific data source type is in demo mode
+                isDataSourceTypeInDemo: (type) => demoConfigManager.isDataSourceTypeInDemo(type),
+            toggleAuthentication: () =>
+                demoConfigManager.setComponentDemo(
+                    'authentication',
+                    !demoConfig.components.authentication
+                ),
+            toggleDataSources: () => demoConfigManager.setComponentDemo('dataSources', !isDataSourcesDemo),
+            toggleApiConnections: () =>
+                demoConfigManager.setComponentDemo(
+                    'apiConnections',
+                    !demoConfig.components.apiConnections
+                ),
+            toggleFileStorage: () =>
+                demoConfigManager.setComponentDemo(
+                    'fileStorage',
+                    !demoConfig.components.fileStorage
+                ),
+            enableAllDemo: () => demoConfigManager.setMode(DEMO_MODES.FULL_DEMO),
+            disableAllDemo: () => demoConfigManager.setMode(DEMO_MODES.DISABLED),
+            enableDataSourcesOnly: () =>
+                demoConfigManager.setMode(DEMO_MODES.DATA_SOURCES_ONLY),
+            updateBehavior: (behaviorUpdates) =>
+                demoConfigManager.updateConfig({ behavior: behaviorUpdates }),
+            updateDataSettings: (dataUpdates) =>
+                demoConfigManager.updateConfig({ data: dataUpdates }),
+            reset: () => demoConfigManager.reset(),
+            getConfig: () => demoConfigManager.getConfig(),
+            isComponentInDemo: (component) =>
+                demoConfigManager.isComponentInDemo(component),
+            isAnyDemoActive: () => demoConfigManager.isDemoActive(),
+        }),
+        [demoConfig]
+    );
 
-  // combined authentication handler
-  const handleFullAuthentication = useCallback(async (provider = 'Cognito') => {
-    try {
-      console.log('Starting full authentication process...');
-      
-      // handle account authentication
-      await handleAuthSuccess(provider);
-      
-      // handle data sources authentication
-      await handleAuthenticationChange(true);
-      
-      console.log('Full authentication completed successfully');
-      return true;
-    } catch (error) {
-      console.error('Full authentication failed:', error);
-      throw error;
-    }
-  }, [handleAuthSuccess, handleAuthenticationChange]);
+    useEffect(() => {
+        const syncAuthenticationStatus = async () => {
+            if (demoConfig.components.authentication) return;
+            if (currentEmail && authenticationStatus !== 'authenticated') {
+                await handleAuthenticationChange(true);
+            } else if (!currentEmail && authenticationStatus === 'authenticated') {
+                await handleAuthenticationChange(false);
+            }
+        };
+        if (!accountLoading && authenticationStatus !== 'checking') {
+            syncAuthenticationStatus();
+        }
+    }, [
+        currentEmail,
+        authenticationStatus,
+        accountLoading,
+        handleAuthenticationChange,
+        demoConfig.components.authentication,
+    ]);
 
-  // combined logout handler
-  const handleFullLogout = useCallback(async () => {
-    try {
-      console.log('Starting full logout process...');
-      
-      // switch data sources to demo mode first
-      await handleAuthenticationChange(false);
-      
-      console.log('Full logout completed successfully');
-      return true;
-    } catch (error) {
-      console.error('Full logout failed:', error);
-      throw error;
-    }
-  }, [handleAuthenticationChange]);
+    const connectDataSource = useCallback(
+        async (type, config, name) => {
+            try {
+                console.log('[AppContext] connectDataSource forwarded', { type, name });
+                return await originalConnectDataSource(type, config, name);
+            } catch (error) {
+                throw error;
+            }
+        },
+        [originalConnectDataSource, demoConfig.components.dataSources]
+    );
 
-  // account switching
-  const handleFullAccountSwitch = useCallback(async (targetEmail) => {
-    try {
-      console.log(`Switching to account: ${targetEmail}`);
-      
-      // switch data sources to demo mode during transition
-      await handleAuthenticationChange(false);
-      
-      // switch account (+ navigate to login)
-      await handleSwitchAccount(targetEmail);
-      
-      console.log('Account switch initiated');
-    } catch (error) {
-      console.error('Account switch failed:', error);
-      throw error;
-    }
-  }, [handleSwitchAccount, handleAuthenticationChange]);
+    const disconnectDataSource = useCallback(
+        async (sourceId) => {
+            try {
+                return await originalDisconnectDataSource(sourceId);
+            } catch (error) {
+                throw error;
+            }
+        },
+        [originalDisconnectDataSource, demoConfig.components.dataSources]
+    );
 
-  // refresh everything - OPTIMIZED to not force update unnecessarily
-  const refreshAll = useCallback(async () => {
-    try {
-      console.log('Refreshing all data...');
-      
-      // refresh accounts
-      await refreshAccounts(currentProvider);
-      
-      // refresh data sources
-      await refreshDataSources();
-      
-      console.log('All data refreshed successfully');
-    } catch (error) {
-      console.error('Failed to refresh all data:', error);
-      throw error;
-    }
-  }, [refreshAccounts, refreshDataSources, currentProvider]);
+    const connectProvider = useCallback(
+        async (providerType) => {
+            try {
+                if (!currentEmail && !demoConfig.components.authentication) {
+                    throw new Error('Authentication required to connect provider');
+                }
+                return await originalConnectProvider(providerType);
+            } catch (error) {
+                throw error;
+            }
+        },
+        [
+            originalConnectProvider,
+            currentEmail,
+            demoConfig.components.authentication,
+            demoConfig.components.apiConnections,
+        ]
+    );
 
-  // get app state - MEMOIZED better
-  const getAppState = useCallback(() => {
-    return {
-      user: {
-        isAuthenticated: !!currentEmail,
-        email: currentEmail,
-        provider: currentProvider,
-        linkedAccountsCount: linkedAccounts.length,
-      },
-      dataSources: {
-        count: dataSourcesList.length,
-        connected: dataSourcesList.filter(ds => ds.status === 'connected').length,
-        errors: dataSourcesList.filter(ds => ds.status === 'error').length,
-        isDemoMode: authenticationStatus !== 'authenticated',
-      },
-      system: {
+    const refreshDataSources = useCallback(
+        async () => {
+            try {
+                await originalRefreshDataSources();
+            } catch (error) {
+                throw error;
+            }
+        },
+        [originalRefreshDataSources, demoConfig.components.dataSources]
+    );
+
+    const handleFullAuthentication = useCallback(
+        async (provider = 'Cognito') => {
+            try {
+                if (!demoConfig.components.authentication) {
+                    await handleAuthSuccess(provider);
+                }
+                await handleAuthenticationChange(true);
+                return true;
+            } catch (error) {
+                throw error;
+            }
+        },
+        [handleAuthSuccess, handleAuthenticationChange, demoConfig.components.authentication]
+    );
+
+    const handleFullLogout = useCallback(
+        async () => {
+            try {
+                if (demoConfig.fallback.enableOnAuthFailure) {
+                    await handleAuthenticationChange(false);
+                }
+                return true;
+            } catch (error) {
+                throw error;
+            }
+        },
+        [handleAuthenticationChange, demoConfig.fallback.enableOnAuthFailure]
+    );
+
+    const handleFullAccountSwitch = useCallback(
+        async (targetEmail) => {
+            try {
+                if (demoConfig.fallback.enableOnAuthFailure) {
+                    await handleAuthenticationChange(false);
+                }
+                if (!demoConfig.components.authentication) {
+                    await handleSwitchAccount(targetEmail);
+                }
+            } catch (error) {
+                throw error;
+            }
+        },
+        [
+            handleSwitchAccount,
+            handleAuthenticationChange,
+            demoConfig.components.authentication,
+            demoConfig.fallback.enableOnAuthFailure,
+        ]
+    );
+
+    const refreshAll = useCallback(
+        async () => {
+            try {
+                if (!demoConfig.components.authentication) {
+                    await refreshAccounts(currentProvider);
+                }
+                await refreshDataSources();
+            } catch (error) {
+                throw error;
+            }
+        },
+        [
+            refreshAccounts,
+            refreshDataSources,
+            currentProvider,
+            demoConfig.components.authentication,
+            demoConfig.components.dataSources,
+        ]
+    );
+
+    const getAppState = useCallback(() => {
+        const demoStatus = demoModeControls.getStatus();
+        return {
+            user: {
+                isAuthenticated: !!currentEmail || demoConfig.components.authentication,
+                email:
+                    currentEmail ||
+                    (demoConfig.components.authentication ? 'demo@example.com' : null),
+                provider:
+                    currentProvider ||
+                    (demoConfig.components.authentication ? 'Demo' : null),
+                linkedAccountsCount: linkedAccounts.length,
+                isDemoAuth: demoConfig.components.authentication,
+            },
+            dataSources: {
+                count: dataSourcesList.length,
+                connected: dataSourcesList.filter((ds) => ds.status === 'connected')
+                    .length,
+                errors: dataSourcesList.filter((ds) => ds.status === 'error').length,
+                isDemoMode: dataSourcesAnyTypeDemo,
+                demoSourceCount: dataSourcesAnyTypeDemo ? dataSourcesList.length : 0,
+            },
+            demo: {
+                mode: demoConfig.mode,
+                isActive: demoStatus.isActive,
+                activeComponents: demoStatus.activeComponents,
+                showIndicators: demoConfig.behavior.showDemoIndicators,
+                config: demoConfig,
+            },
+            system: {
+                isLoading,
+                hasError,
+                error: combinedError,
+                authenticationStatus: demoConfig.components.authentication
+                    ? 'demo'
+                    : authenticationStatus,
+            },
+        };
+    }, [
+        currentEmail,
+        currentProvider,
+        linkedAccounts.length,
+        dataSourcesList,
+        authenticationStatus,
         isLoading,
         hasError,
-        error: combinedError,
-      }
-    };
-  }, [
-    currentEmail,
-    currentProvider,
-    linkedAccounts.length, // Use .length instead of full array
-    dataSourcesList.length, // Use .length instead of full array
-    dataSourcesList, // Still need full array for filtering
-    authenticationStatus,
-    isLoading,
-    hasError,
-    combinedError,
-  ]);
+        combinedError,
+        demoConfig,
+        demoModeControls,
+    ]);
 
-  // debug helper
-  const debugAppState = useCallback(() => {
-    const state = getAppState();
-    console.log('=== APP STATE DEBUG ===');
-    console.log('User:', state.user);
-    console.log('Data Sources:', state.dataSources);
-    console.log('System:', state.system);
-    console.log('Update Trigger:', updateTrigger);
-    console.log('Raw Account Data:', {
-      currentEmail,
-      currentProvider,
-      linkedAccounts: linkedAccounts.length,
-      accountLoading,
-      accountError
-    });
-    console.log('Raw Data Sources:', {
-      count: dataSourcesList.length,
-      authStatus: authenticationStatus,
-      dataSourcesLoading,
-      dataSourcesError
-    });
-    console.log('======================');
-  }, [getAppState, currentEmail, currentProvider, linkedAccounts.length, accountLoading, accountError, dataSourcesList.length, authenticationStatus, dataSourcesLoading, dataSourcesError, updateTrigger]);
+    const dismissDemoNotification = useCallback(
+        () => setShowDemoNotification(false),
+        []
+    );
 
-  // OPTIMIZED: Only log significant changes
-  useEffect(() => {
-    console.log('Data sources list length changed:', dataSourcesList.length);
-  }, [dataSourcesList.length]); // Only trigger on count change, not full array change
+    const debugAppState = useCallback(() => {
+        const state = getAppState();
+        // eslint-disable-next-line no-console
+        console.log('=== APP STATE DEBUG ===', state, {
+            updateTrigger,
+            showDemoNotification,
+        });
+    }, [getAppState, updateTrigger, showDemoNotification]);
 
-  // context value - MEMOIZED to prevent unnecessary re-renders
-  const contextValue = React.useMemo(() => ({
-    // USER DATA
-    user: {
-      currentEmail,
-      currentProvider,
-      linkedAccounts,
-      isAuthenticated: !!currentEmail,
-    },
+    const contextValue = useMemo(
+        () => ({
+                user: {
+                    email: currentEmail,
+                    provider: currentProvider,
+                    accounts: demoConfig.components.authentication
+                        ? []
+                        : linkedAccounts,
+                    isAuthenticated: !!currentEmail || demoConfig.components.authentication,
+                    isDemoAuth: demoConfig.components.authentication,
+                },
+                dataSources: {
+                    list: dataSourcesList,
+                count: dataSourcesList.length,
+                connected: dataSourcesList.filter((ds) => ds.status === 'connected'),
+                errors: dataSourcesList.filter((ds) => ds.status === 'error'),
+                // expose a boolean global demo flag to consumers; per-type behavior
+                // is handled by demoConfigManager directly in services/adapters
+                isDemoMode: dataSourcesGlobalDemo,
+                updateTrigger,
+            },
+            demo: {
+                controls: demoModeControls,
+                config: demoConfig,
+                notification: {
+                    show: showDemoNotification,
+                    dismiss: dismissDemoNotification,
+                },
+                status: demoModeControls.getStatus(),
+            },
+            system: {
+                isLoading,
+                hasError,
+                error: combinedError,
+                authenticationStatus: demoConfig.components.authentication
+                    ? 'demo'
+                    : authenticationStatus,
+            },
+            actions: {
+                login: handleFullAuthentication,
+                logout: handleFullLogout,
+                switchAccount: handleFullAccountSwitch,
+                connectDataSource,
+                disconnectDataSource,
+                connectProvider,
+                disconnectProvider,
+                isProviderConnected,
+                refreshAll,
+                refreshAccounts: () =>
+                    demoConfig.components.authentication
+                        ? Promise.resolve()
+                        : refreshAccounts(currentProvider),
+                refreshDataSources,
+                getAppState,
+                debugAppState,
+                linkCurrentUser: demoConfig.components.authentication
+                    ? () => Promise.resolve()
+                    : linkCurrentUser,
+                forceUpdate,
+            },
+            hooks: {
+                account,
+                dataSources,
+            },
+        }),
+        [
+            currentEmail,
+            currentProvider,
+            linkedAccounts,
+            dataSourcesList,
+            authenticationStatus,
+            updateTrigger,
+            demoConfig,
+            demoModeControls,
+            showDemoNotification,
+            dismissDemoNotification,
+            isLoading,
+            hasError,
+            combinedError,
+            handleFullAuthentication,
+            handleFullLogout,
+            handleFullAccountSwitch,
+            connectDataSource,
+            disconnectDataSource,
+            connectProvider,
+            disconnectProvider,
+            isProviderConnected,
+            refreshAll,
+            refreshAccounts,
+            refreshDataSources,
+            getAppState,
+            debugAppState,
+            linkCurrentUser,
+            forceUpdate,
+            account,
+            dataSources,
+        ]
+    );
 
-    // DATA SOURCES DATA - optimized computation
-    dataSources: {
-      list: dataSourcesList,
-      count: dataSourcesList.length,
-      connected: dataSourcesList.filter(ds => ds.status === 'connected'),
-      errors: dataSourcesList.filter(ds => ds.status === 'error'),
-      isDemoMode: authenticationStatus !== 'authenticated',
-      updateTrigger,
-    },
-
-    // SYSTEM STATE
-    system: {
-      isLoading,
-      hasError,
-      error: combinedError,
-      authenticationStatus,
-    },
-
-    // UNIFIED ACTIONS
-    actions: {
-      // Authentication
-      login: handleFullAuthentication,
-      logout: handleFullLogout,
-      switchAccount: handleFullAccountSwitch,
-      
-      // DATA SOURCES (enhanced versions)
-      connectDataSource,
-      disconnectDataSource,
-      connectProvider,
-      disconnectProvider,
-      isProviderConnected,
-      
-      // REFRESH
-      refreshAll,
-      refreshAccounts: () => refreshAccounts(currentProvider),
-      refreshDataSources,
-      
-      // UTILITIES
-      getAppState,
-      debugAppState,
-      linkCurrentUser,
-      forceUpdate, // Keep but use sparingly
-    },
-
-    // TODO: remove
-    // === ORIGINAL HOOKS (for backward compatibility) ===
-    hooks: {
-      account,
-      dataSources,
-    }
-  }), [
-    // User dependencies
-    currentEmail,
-    currentProvider,
-    linkedAccounts,
-    
-    // Data sources dependencies
-    dataSourcesList,
-    authenticationStatus,
-    updateTrigger,
-    
-    // System dependencies
-    isLoading,
-    hasError,
-    combinedError,
-    
-    // Action dependencies
-    handleFullAuthentication,
-    handleFullLogout,
-    handleFullAccountSwitch,
-    connectDataSource,
-    disconnectDataSource,
-    connectProvider,
-    disconnectProvider,
-    isProviderConnected,
-    refreshAll,
-    refreshAccounts,
-    refreshDataSources,
-    getAppState,
-    debugAppState,
-    linkCurrentUser,
-    forceUpdate,
-    
-    // Original hooks
-    account,
-    dataSources,
-  ]);
-
-  return (
-    <AppContext.Provider value={contextValue}>
-      {children}
-    </AppContext.Provider>
-  );
+    return (
+        <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
+    );
 };
