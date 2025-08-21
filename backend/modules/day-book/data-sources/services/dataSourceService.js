@@ -139,6 +139,31 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     return {message: "Data source successfully deleted"};
 }
 
+async function testConnection(authUserId, payload) {
+    const { type, config, secrets } = payload;
+
+    // try polling
+    try {
+        // create adapter
+        const adapter = adapterFactory.getAdapter(type);
+
+        const data = await adapter.poll(config, secrets);
+
+        // return the data from the endpoint
+        return { status: "success", data: data };
+
+    } catch (error) {
+        // if the data source fails polling return error
+        const errorItem = {
+            status: "error",
+            errorMessage: error.message
+        }
+
+        return errorItem;
+    }
+
+}
+
 async function pollDataSources() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
 
@@ -201,5 +226,6 @@ module.exports = {
     getDataSourceInWorkspace,
     getDataSourcesInWorkspace,
     deleteDataSourceInWorkspace,
-    pollDataSources
+    pollDataSources,
+    testConnection
 };
