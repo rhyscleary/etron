@@ -7,11 +7,11 @@ import SearchBar from "../../../../../../components/common/input/SearchBar";
 
 const Templates = () => {
     const handleSearch = (query) => {
-        console.log("Searching exports for:", query);
+        console.log("Searching templates for:", query);
     };
 
     const handleFilterChange = (filter) => {
-        console.log("Export filter changed to:", filter);
+        console.log("Templates filter changed to:", filter);
     };
 
     return (
