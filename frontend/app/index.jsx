@@ -1,6 +1,6 @@
 // Author(s): Noah Bradley
 
-import { Redirect, useRouter, router, Link } from "expo-router";
+import { Redirect, useRouter, router, Link, Slot } from "expo-router";
 import { ActivityIndicator, PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
@@ -27,20 +27,9 @@ console.log('Amplify configured with:', Amplify.getConfig());
 
 
 function App() {
+
     const { authStatus } = useAuthenticator();
     const [target, setTarget] = useState(null);
-
-    const setHasWorkspaceAttribute = async (value) => {
-        try {
-            await updateUserAttributes({
-                userAttributes: {
-                    'custom:has_workspace': value
-                }
-            });
-        } catch (error) {
-            console.error("Unable to update user attribute has_workspace:", error);
-        }
-    }
 
     useEffect(() => {
         console.log("(index.jsx). Auth status:", authStatus);
