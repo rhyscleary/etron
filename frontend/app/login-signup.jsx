@@ -92,7 +92,7 @@ function LoginSignup() {
             console.log('Deep link received:', url);
             
             // check if the URL is a valid social sign-in callback
-            if (url && (url.includes('oauth/callback') || url.includes('auth/callback'))) {
+            if (url && (url.includes('callback'))) {
                 try {
                     // wait to ensure the sign-in process completes
                     setTimeout(async () => {
