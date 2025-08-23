@@ -16,7 +16,7 @@ const DropDown = ({
         setSelectedItem(item);
         setExpanded(false);
         if (onSelect) {
-            onSelect(item);
+            onSelect(item.value);
         }
     }
 
@@ -25,7 +25,7 @@ const DropDown = ({
     return (
         <List.Section>
             <List.Accordion
-                title={selectedItem || title}
+                title={selectedItem ? selectedItem.label : title}
                 expanded={expanded}
                 onPress={() => setExpanded(prev => !prev)}
                 style={[
@@ -37,8 +37,8 @@ const DropDown = ({
                     const isLastItem = index === items.length - 1 && !showRouterButton;
                     return (
                         <List.Item 
-                            key={index}
-                            title={item}
+                            key={item.value}
+                            title={item.label}
                             style={[
                                 styles.items,
                                 isLastItem && styles.lastItem,

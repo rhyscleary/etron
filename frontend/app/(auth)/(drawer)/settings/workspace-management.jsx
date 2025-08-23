@@ -5,7 +5,7 @@ import { router, useRouter } from "expo-router";
 import StackLayout from "../../../../components/layout/StackLayout";
 import BasicDialog from "../../../../components/overlays/BasicDialog";
 import { useEffect, useState } from "react";
-import { apiDelete, apiGet } from "../../../../utils/api/apiClient";
+import { apiDelete, apiGet, apiPut } from "../../../../utils/api/apiClient";
 import { useTheme } from "react-native-paper";
 import { verifyPassword } from "../../../../utils/verifyPassword";
 import Header from "../../../../components/layout/Header";
@@ -31,7 +31,9 @@ const WorkspaceManagement = () => {
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState(false);
     const [selectedUser, setSelectedUser] = useState("");
-    const [usersNames, setUsersNames] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [workspaceId, setWorkspaceId] = useState(null);
+    const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
 
 
     // container for different workspace management options
@@ -42,39 +44,45 @@ const WorkspaceManagement = () => {
     ];
 
     useEffect(() => {
-        async function loadWorkspaceUsers() {
+        async function fetchData() {
+            const workspaceId = await getWorkspaceId();
+            setWorkspaceId(workspaceId);
+
             try {
                 const currentUser = await getCurrentUser();
                 const currentUserId = currentUser.userId;
-
-                const workspaceId = getWorkspaceId();
 
                 const users = await apiGet(
                     endpoints.workspace.users.getUsers(workspaceId)
                 );
 
-                console.log(users);
-
+                // filter out the current user (expected to be the current owner)
                 const filteredList = users.filter(user => user.userId !== currentUserId);
 
-                setUsersNames(filteredList.map(user => user.firstName + " " + user.lastName));
+                setUsers(filteredList);
 
             } catch (error) {
                 console.error("Error loading users:", error);
             }
         }
-        loadWorkspaceUsers();
+        fetchData();
     }, []);
 
     async function handleConfirmDeletion() {
-        const validPassword = await verifyPassword(password);
-        
-        if (!validPassword) {
+        if (!password) {
+            setPasswordErrorMessage("Please enter your password.");
             setPasswordError(true);
             return;
         }
 
-        const workspaceId = await getWorkspaceId();
+        const validPassword = await verifyPassword(password);
+        
+        if (!validPassword) {
+            setPasswordErrorMessage("The password entered is invalid.");
+            setPasswordError(true);
+            return;
+        }
+
         if (workspaceId) {
             try {
                 const result = await apiDelete(
@@ -91,10 +99,45 @@ const WorkspaceManagement = () => {
                 console.log("Error deleting workspace: ", error);
             }
         }
+
+        setPassword("");
+        setPasswordError(false);
     }
 
     async function handleConfirmTransfer() {
+        if (!password) {
+            setPasswordErrorMessage("Please enter your password.");
+            setPasswordError(true);
+            return;
+        }
 
+        // validate password
+        const validPassword = await verifyPassword(password);
+        
+        if (!validPassword) {
+            setPasswordErrorMessage("The password entered is invalid.");
+            setPasswordError(true);
+            return;
+        }
+
+        if (workspaceId && selectedUser) {
+            try {
+                // transfer ownership
+                console.log(selectedUser);
+
+                const result = apiPut(
+                    endpoints.workspace.core.transfer(workspaceId, selectedUser)
+                );
+
+                console.log("Ownership transferred:", result);
+                setTransferDialogVisible(false);
+            } catch (error) {
+                console.log("Error transfering ownership: ", error);
+            }
+        }
+        
+        setPassword("");
+        setPasswordError(false);
     }
 
     return (
@@ -136,7 +179,7 @@ const WorkspaceManagement = () => {
                     }
                 }}
                 inputError={passwordError}
-                inputErrorMessage="The password entered is invalid."
+                inputErrorMessage={passwordErrorMessage}
                 secureTextEntry={true}
                 leftActionLabel="Cancel"
                 handleLeftAction={() => {
@@ -153,6 +196,19 @@ const WorkspaceManagement = () => {
                 visible={transferDialogVisible}
                 title="Transfer Ownership"
                 message="Select a user to transfer ownership of this workspace. Once transferred this cannot be undone."
+                showInput
+                inputLabel="Password"
+                inputPlaceholder="Enter your password"
+                inputValue={password}
+                inputOnChangeText={(text) => {
+                    setPassword(text);
+                    if (text) {
+                        setPasswordError(false);
+                    }
+                }}
+                inputError={passwordError}
+                inputErrorMessage={passwordErrorMessage}
+                secureTextEntry={true}
                 leftActionLabel="Cancel"
                 handleLeftAction={() => {
                     setTransferDialogVisible(false);
@@ -165,9 +221,12 @@ const WorkspaceManagement = () => {
             >
                 <DropDown 
                     title="Select User"
-                    items={usersNames}
+                    items={users.map(user => ({
+                        label: `${user.given_name} ${user.family_name}`,
+                        value: user.userId
+                    }))}
                     showRouterButton={false}
-                    onSelect={(user) => setSelectedUser(user)}
+                    onSelect={(userId) => setSelectedUser(userId)}
                 />
             </BasicDialog>
         </View>

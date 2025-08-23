@@ -7,7 +7,8 @@ import { Button } from 'react-native';
 import { uploadData } from 'aws-amplify/storage';
 import { getCurrentUser } from 'aws-amplify/auth';
 import * as FileSystem from 'expo-file-system';
-import awsmobile from '../../../../../../../src/aws-exports';
+//import awsmobile from '../../../../../../../src/aws-exports';
+import amplifyOutputs from '../../../../../../../amplify_outputs.json'
 
 const LocalCSV = () => {
     const [fileUri, setFileUri] = useState(null);
@@ -66,7 +67,7 @@ const LocalCSV = () => {
                 options: {
                     bucket: {
                         bucketName: 'workspace-stored-data1858d-dev',
-                        region: awsmobile.aws_project_region,
+                        region: amplifyOutputs.storage.aws_region,
                     },
                     contentType: 'text/csv',
                     onProgress: ({ transferredBytes, totalBytes }) => {
