@@ -23,7 +23,7 @@ export const auth = defineAuth({
           familyName: 'family_name',
         }
       },
-      callbackUrls: ["myapp://oauth/callback"],
+      callbackUrls: ["myapp://callback"],
       logoutUrls: ["myapp://signout"],
     }
   },
