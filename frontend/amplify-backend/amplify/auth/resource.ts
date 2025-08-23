@@ -23,8 +23,8 @@ export const auth = defineAuth({
           familyName: 'family_name',
         }
       },
-      callbackUrls: ["etron://oauth/callback"],
-      logoutUrls: ["etron://signout"],
+      callbackUrls: ["myapp://oauth/callback"],
+      logoutUrls: ["myapp://signout"],
     }
   },
 
