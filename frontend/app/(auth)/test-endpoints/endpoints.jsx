@@ -1,15 +1,15 @@
 import { Button, Pressable, View } from "react-native";
-import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
+import Header from "../../../components/layout/Header"
+import { commonStyles } from "../../../assets/styles/stylesheets/common";
 import { Link, router } from "expo-router";
 import { Text, TextInput } from "react-native-paper";
-import { apiDelete, apiGet, apiPost, apiPut } from "../../../../utils/api/apiClient";
+import { apiDelete, apiGet, apiPost, apiPut } from "../../../utils/api/apiClient";
 import { useState } from "react";
-import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import { getWorkspaceId } from "../../../storage/workspaceStorage";
 import { useEffect } from "react";
-import endpoints from "../../../../utils/api/endpoints";
+import endpoints from "../../../utils/api/endpoints"
 
-const CollabEndpoints = () => {
+const Endpoints = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
     const email = "rhysjcleary@gmail.com";
     const [inviteId, setInviteId] = useState("");
@@ -46,7 +46,7 @@ const CollabEndpoints = () => {
     async function inviteUser() {
         try {
             const data = {
-                email: "haw402@uowmail.edu.au",
+                email: "rcc937@uowmail.edu.au",
                 type: "manager",
                 roleId: "tv"
             }
@@ -371,4 +371,4 @@ const CollabEndpoints = () => {
     )
 }
 
-export default CollabEndpoints;
+export default Endpoints;

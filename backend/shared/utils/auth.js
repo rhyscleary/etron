@@ -8,7 +8,7 @@ const {
 
 const cognito = new CognitoIdentityProviderClient({region: "ap-southeast-2"});
 
-const userPoolId = "ap-southeast-2_v6f4XS4Ez";
+const userPoolId = "ap-southeast-2_Q4EgaQS86";
 
 async function getUserByEmail(email) {
 
@@ -73,13 +73,18 @@ async function updateUser(userId, data) {
         Value: value
     }));
 
-    const result = await cognito.send(new AdminUpdateUserAttributesCommand({
-        UserPoolId: userPoolId,
-        Username: userId,
-        UserAttributes: attributes
-    }));
+    try {
+        const result = await cognito.send(new AdminUpdateUserAttributesCommand({
+            UserPoolId: userPoolId,
+            Username: userId,
+            UserAttributes: attributes
+        }));
+        return result;
+    } catch (error) {
+        console.log(error);
+        throw error;
+    }
 
-    return result;
 }
 
 

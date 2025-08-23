@@ -9,6 +9,25 @@ import { createMySqlAdapter } from "./mySqlAdapter";
 // supported adapters with their config
 const getSupportedTypes = () => [
   {
+    type: "local-csv",
+    name: "Local CSV",
+    icon: "file",
+    description: "Upload a local CSV from the device",
+    requiresAuth: false,
+    supportsRealtime: false,
+    supportedOperations: ["read"],
+    category: "file",
+    ui: {
+      displayName: "Local CSV",
+      categoryDisplayName: "Files",
+      route: "/modules/day-book/data-management/data-connection-inputs/local-csv",
+      sortOrder: 0,
+      isEnabled: true,
+      helpText: "Upload a CSV file from your device",
+      requirements: ["CSV file"],
+    }
+  },
+  {
     type: "google-sheets",
     name: "Google Sheets",
     icon: "google-spreadsheet",

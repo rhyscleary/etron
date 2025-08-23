@@ -8,6 +8,7 @@ import DescriptiveButton from "../../../components/common/buttons/DescriptiveBut
 
 const Profile = () => {
     const settingOptionButtons = [
+
         { icon: "", label: "Settings", onPress: () => router.navigate("/settings/settings")},
         { icon: "", label: "Data Sources", onPress: () => router.navigate("/modules/day-book/data-management/data-management") },
         { icon: "", label: "Metrics", onPress: () => router.navigate("/modules/day-book/metrics/metric-management") },
@@ -16,6 +17,10 @@ const Profile = () => {
         { icon: "", label: "Testing - Account Settings", onPress: () => router.navigate("/account-settings") },
         { icon: "", label: "Testing - Example Graph Display", onPress: () => router.navigate("/graphs") },
         { icon: "", label: "Reports", onPress:() => router.navigate("/modules/day-book/reports/report-management") },
+        { icon: "", label: "Testing - Endpoints", onPress: () => router.navigate("/test-endpoints/endpoints") },
+        { icon: "", label: "Testing - Create Workspace", onPress: () => router.navigate("../create-workspace") },
+        { icon: "", label: "Testing - Join Workspace", onPress: () => router.navigate("../join-workspace") },
+
     ];
     
     return (

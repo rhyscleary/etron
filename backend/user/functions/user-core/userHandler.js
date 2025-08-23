@@ -11,7 +11,7 @@ exports.handler = async (event) => {
         const pathParams = event.pathParameters || {};
         const authUserId = event.requestContext.authorizer.claims.sub;
 
-        if (!userId) {
+        if (!authUserId) {
             throw new Error("User not authenticated");
         }
 

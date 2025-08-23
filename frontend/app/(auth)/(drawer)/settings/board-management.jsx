@@ -2,12 +2,12 @@ import { View } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 
-const ProfileManagement = () => {
+const BoardManagement = () => {
     return (
         <View style={commonStyles.screen}>
-            <Header title="Profiles" showBack showPlus />
+            <Header title="Boards" showBack showPlus />
         </View>
     )
 }
 
-export default ProfileManagement;
+export default BoardManagement;

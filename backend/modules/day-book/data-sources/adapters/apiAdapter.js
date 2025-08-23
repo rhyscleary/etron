@@ -21,7 +21,13 @@ function constructHeader(authType, secrets) {
         case "apiKey":
             return {Authorization: `${secrets.apiKey}`};
         case "bearer":
+        case "jwt":
             return {Authorization: `Bearer ${secrets.token}`};
+        case "basic": {
+            const credentials = `${secrets.username}:${secrets.password}`;
+            const encoded = Buffer.from(credentials).toString("base64");
+            return { Authorization: `Basic ${encoded}` };
+        }
         default:
             return {}; 
     }
