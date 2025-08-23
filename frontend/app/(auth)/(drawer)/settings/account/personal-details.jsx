@@ -180,7 +180,7 @@ const PersonalDetails = () => {
                 return;
             }
 
-            let workspaceId = getWorkspaceId();
+            let workspaceId = await getWorkspaceId();
             let { userId } = await getCurrentUser();
             
             const result = await apiPut(

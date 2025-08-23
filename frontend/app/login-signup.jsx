@@ -27,7 +27,6 @@ import {
     resendSignUpCode
 } from 'aws-amplify/auth';
 
-import awsmobile from '../src/aws-exports';
 import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../storage/workspaceStorage";
