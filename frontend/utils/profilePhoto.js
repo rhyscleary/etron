@@ -80,7 +80,7 @@ export async function uploadProfilePhotoToS3(profilePhotoUri) {
             path: S3FilePath,
             data: Buffer.from(fileBuffer, 'base64'),
             options: {
-                bucket: "profilePicturesStorage"
+                bucket: "profilePictures"
             }
         }).result;
         console.log("Photo uploaded successfully.");
