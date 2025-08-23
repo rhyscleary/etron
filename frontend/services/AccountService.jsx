@@ -11,11 +11,9 @@ import {
 } from 'aws-amplify/auth';
 import { Linking } from 'react-native';
 import { AccountStorage } from '../storage/accountStorage';
-import awsmobile from '../src/aws-exports';
 import AuthService from './AuthService';
-
-// Configure Amplify
-Amplify.configure(awsmobile);
+import { removeWorkspaceInfo } from '../storage/workspaceStorage';
+import workspaceService from './WorkspaceService';
 
 class AccountService {
     constructor() {
@@ -57,11 +55,17 @@ class AccountService {
     }
 
     // Helper method to handle authentication success
-    async handleAuthSuccess(provider = 'Cognito') {
+        async handleAuthSuccess(provider = 'Cognito') {
     try {
       if (this.callbacks.onAuthSuccess) {
         await this.callbacks.onAuthSuccess(provider);
       }
+            // After app-level auth success, fetch and store the user's workspace
+            try {
+                await workspaceService.fetchAndSetWorkspaceForCurrentUser();
+            } catch (wsErr) {
+                console.warn('[AccountService] Could not fetch/set workspace after login:', wsErr?.message || wsErr);
+            }
       
       // If we were linking, add the account to storage
       if (this.isLinking) {
@@ -89,6 +93,7 @@ class AccountService {
     async signOutUser() {
         try {
             await signOut();
+            try { await removeWorkspaceInfo(); } catch {}
             console.log("User signed out successfully.");
             return { success: true };
         } catch (error) {
@@ -280,7 +285,7 @@ class AccountService {
                             const provider = url.includes('google') ? 'Google' : 
                                            url.includes('microsoft') ? 'Microsoft' : 'OAuth';
                             
-                            // Handle auth success and account linking
+                            // Handle auth success and account linking (will also fetch workspace)
                             await this.handleAuthSuccess(provider);
                             
                             this.navigate("(auth)/profile");

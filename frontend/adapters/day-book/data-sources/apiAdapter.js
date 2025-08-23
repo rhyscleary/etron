@@ -237,7 +237,10 @@ export const createCustomApiAdapter = (
     const endpoint = isObject ? configOrUrl.endpoint : configOrUrl;
     const authType = isObject ? configOrUrl.authType : undefined;
     const secrets = isObject ? configOrUrl.secrets : undefined;
-    console.log("[CustomApiAdapter] testConnection called", { endpoint, authType });
+    console.log("[CustomApiAdapter] testConnection called", {
+      endpoint,
+      authType,
+    });
     try {
       // Build headers from either legacy strings or new auth shape
       let requestHeaders = {
@@ -246,17 +249,40 @@ export const createCustomApiAdapter = (
       if (!isObject) {
         const parsedHeaders = parseHeaders(headers);
         const auth = parseAuthentication(authentication);
-        const hdrConfig = applyAuthentication({ headers: { ...requestHeaders, ...parsedHeaders } }, auth);
-        requestHeaders = hdrConfig.headers || { ...requestHeaders, ...parsedHeaders };
+        const hdrConfig = applyAuthentication(
+          { headers: { ...requestHeaders, ...parsedHeaders } },
+          auth
+        );
+        requestHeaders = hdrConfig.headers || {
+          ...requestHeaders,
+          ...parsedHeaders,
+        };
       } else if (authType && secrets) {
         // Simple heuristics: common API key header name is 'x-api-key'
         if (String(authType).toLowerCase() === "apikey" && secrets.apiKey) {
-          requestHeaders = { ...requestHeaders, "x-api-key": String(secrets.apiKey) };
-        } else if (String(authType).toLowerCase() === "bearer" && secrets.token) {
-          requestHeaders = { ...requestHeaders, Authorization: `Bearer ${secrets.token}` };
-        } else if (String(authType).toLowerCase() === "basic" && (secrets.username || secrets.password)) {
-          const credentials = encodeBase64(`${secrets.username || ""}:${secrets.password || ""}`);
-          requestHeaders = { ...requestHeaders, Authorization: `Basic ${credentials}` };
+          requestHeaders = {
+            ...requestHeaders,
+            "x-api-key": String(secrets.apiKey),
+          };
+        } else if (
+          String(authType).toLowerCase() === "bearer" &&
+          secrets.token
+        ) {
+          requestHeaders = {
+            ...requestHeaders,
+            Authorization: `Bearer ${secrets.token}`,
+          };
+        } else if (
+          String(authType).toLowerCase() === "basic" &&
+          (secrets.username || secrets.password)
+        ) {
+          const credentials = encodeBase64(
+            `${secrets.username || ""}:${secrets.password || ""}`
+          );
+          requestHeaders = {
+            ...requestHeaders,
+            Authorization: `Basic ${credentials}`,
+          };
         }
       }
 
@@ -348,7 +374,8 @@ export const createCustomApiAdapter = (
     });
     if (!isConnected) {
       // Allow direct calls when an absolute endpoint is provided
-      const absolute = typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
+      const absolute =
+        typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
       if (!absolute) throw new Error("Not connected to any API");
     }
 
@@ -367,10 +394,15 @@ export const createCustomApiAdapter = (
 
       const upper = String(method).toUpperCase();
       const isGet = upper === "GET";
-  // If no base url (not connected) and endpoint is absolute, use it directly
-  const base = currentConnection?.url;
-  const absolute = typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
-  const url = base ? buildApiUrl(base, endpoint, isGet ? params : {}) : absolute ? buildApiUrl(endpoint, "", isGet ? params : {}) : buildApiUrl(endpoint, "", isGet ? params : {});
+      // If no base url (not connected) and endpoint is absolute, use it directly
+      const base = currentConnection?.url;
+      const absolute =
+        typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
+      const url = base
+        ? buildApiUrl(base, endpoint, isGet ? params : {})
+        : absolute
+        ? buildApiUrl(endpoint, "", isGet ? params : {})
+        : buildApiUrl(endpoint, "", isGet ? params : {});
 
       if (isGet) {
         const start = Date.now();

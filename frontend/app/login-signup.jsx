@@ -16,9 +16,10 @@ import accountService from '../services/AccountService';
 import { useApp } from "../contexts/AppContext";
 
 function LoginSignup() {
-    const { email: emailParam, isSignUp, link } = useLocalSearchParams();
+    const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
     const isSignUpBool = isSignUp === 'true';
     const isLinking = link === 'true';
+    const fromAccountsBool = fromAccounts === 'true';
 
     const [email, setEmail] = useState(emailParam || "");
     const [password, setPassword] = useState('');
@@ -162,9 +163,9 @@ function LoginSignup() {
     const handleToggleSignUp = () => {
         const params = { isSignUp: (!isSignUpBool).toString() };
         
-        // Preserve linking and fromAccounts params
+    // Preserve linking and fromAccounts params
         if (isLinking) params.link = 'true';
-        if (fromAccounts) params.fromAccounts = 'true';
+    if (fromAccountsBool) params.fromAccounts = 'true';
         if (emailParam) params.email = emailParam;
         
         router.push({
@@ -192,7 +193,7 @@ function LoginSignup() {
 
     return (
         <View style={commonStyles.screen}>
-            {(isLinking || fromAccounts) && (
+            {(isLinking || fromAccountsBool) && (
                 <Header
                     title={isLinking ? "Link Account" : ""}
                     showBack
@@ -312,7 +313,7 @@ function LoginSignup() {
                     </Text>
                 )}
 
-                <VerificationDialog
+                <Modal
                     visible={showVerificationModal}
                     animationType="slide"
                     transparent={true}
