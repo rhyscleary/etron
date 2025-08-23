@@ -41,7 +41,7 @@
         "profile",
         "aws.cognito.signin.user.admin"
       ],
-      "domain": "e4ae5e45b546f60ae83d.auth.ap-southeast-2.amazoncognito.com"
+      "domain": "etron-app.auth.ap-southeast-2.amazoncognito.com"
     },
     "unauthenticated_identities_enabled": true
   },
