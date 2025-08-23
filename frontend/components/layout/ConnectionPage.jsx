@@ -118,6 +118,13 @@ const ConnectionPage = ({
     // eslint-disable-next-line
   }, [formIsValid, isConnected]);
 
+  // When the endpoint/URL changes, clear previous test results to force re-test
+  useEffect(() => {
+    // For API-based connections, the primary field is usually `url` or `endpoint`
+    setTestResponse(null);
+    setConnectionError(null);
+  }, [formData?.url, formData?.endpoint]);
+
   // Accordion toggle
   const handleSectionToggle = (sectionKey) => {
     setExpandedSections(prev => {
@@ -293,6 +300,8 @@ const ConnectionPage = ({
   const testSectionStatus = getTestSectionStatus();
   const isLoading = isTestingConnection || isCreatingConnection;
   const hasError = adapterError;
+  const requiresTest = connectionType === 'custom-api';
+  const canCreate = formIsValid && (!requiresTest || testResponse?.status === 'success') && !isLoading;
 
   return (
     <View style={commonStyles.screen}>
@@ -360,7 +369,7 @@ const ConnectionPage = ({
         <BasicButton
           label={isCreatingConnection ? "Creating Connection..." : "Create Connection"}
           onPress={handleContinue}
-          disabled={isLoading || !formIsValid}
+          disabled={!canCreate}
           fullWidth={false}
         />
       </View>

@@ -36,20 +36,13 @@ class DataSourceService {
     console.log('[DataSourceService] getConnectedDataSources start');
     this._getConnectedPromise = (async () => {
       try {
-        const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.getDataSources);
-        const workspaceId = await getSavedWorkspaceId();
+  const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.getDataSources);
+  const workspaceId = await getSavedWorkspaceId();
         if (!workspaceId) {
           throw new Error('No workspace selected. Please select a workspace.');
         }
-  // Try to include authUserId along with workspaceId as required by backend
-        let authUserId = null;
-        try {
-          const auth = await this.getAuthService();
-          const user = await auth.getCurrentUser();
-          console.log("email!!!!! : ", user?.username || null);
-          authUserId = user?.username || null;
-        } catch {}
-  const params = authUserId ? { workspaceId, authUserId } : { workspaceId };
+  // Only send workspaceId per request
+  const params = { workspaceId };
         let response;
         try {
           // Outgoing request log
@@ -61,11 +54,17 @@ class DataSourceService {
             ? 'array'
             : typeof response?.data;
           const arrayLen = Array.isArray(response?.data) ? response.data.length : undefined;
+          const dataKeys = response?.data && typeof response.data === 'object' && !Array.isArray(response.data) ? Object.keys(response.data) : undefined;
           console.log('[DataSourceService] getConnectedDataSources GET success', {
             status: response?.status,
             dataType: rawType,
             arrayLen,
+            keys: dataKeys,
           });
+          try {
+            const preview = (() => { try { return JSON.stringify(response?.data)?.slice(0, 400); } catch { return String(response?.data)?.slice(0, 400); } })();
+            console.log('[DataSourceService] getConnectedDataSources data preview', preview);
+          } catch {}
         } catch (error) {
           // Error details for the outgoing request
           console.error('[DataSourceService] getConnectedDataSources GET failed', {
@@ -75,6 +74,10 @@ class DataSourceService {
             message: error?.message,
             responseDataType: typeof error?.response?.data,
           });
+          try {
+            const errPreview = (() => { const d = error?.response?.data; try { return JSON.stringify(d)?.slice(0, 400); } catch { return String(d)?.slice(0, 400); } })();
+            console.error('[DataSourceService] getConnectedDataSources error data preview', errPreview);
+          } catch {}
           let backendMsg = '';
           if (error?.response?.data) {
             if (typeof error.response.data === 'string') {
@@ -211,20 +214,23 @@ class DataSourceService {
     console.log('[DataSourceService] getDataSource start', { sourceId });
     this._getDataSourcePromise = (async () => {
     try {
-      const workspaceId = await getSavedWorkspaceId();
-      if (!workspaceId) throw new Error('No workspace selected');
+  const workspaceId = await getSavedWorkspaceId();
+  if (!workspaceId) throw new Error('No workspace selected');
   const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.getDataSource, sourceId);
-      // Include authUserId when available
-      let authUserId = null;
-      try {
-        const auth = await this.getAuthService();
-        const user = await auth.getCurrentUser();
-        authUserId = user?.userId || user?.username || user?.email || null;
-      } catch {}
-      const params = authUserId ? { workspaceId, authUserId } : { workspaceId };
+  // Only send workspaceId per request
+  const params = { workspaceId };
       console.log('[DataSourceService] getDataSource GET', { endpointUrl, sourceId, params });
       const response = await this.apiClient.get(endpointUrl, { params });
-      console.log("single data source responseeee \n =========\n", response, "\n===========\n");
+      try {
+        const status = response?.status;
+        const hasData = !!response?.data;
+        const dtype = Array.isArray(response?.data) ? 'array' : typeof response?.data;
+        const dlen = Array.isArray(response?.data) ? response.data.length : undefined;
+        const dkeys = response?.data && typeof response.data === 'object' && !Array.isArray(response.data) ? Object.keys(response.data) : undefined;
+        const preview = (() => { try { return JSON.stringify(response?.data)?.slice(0, 400); } catch { return String(response?.data)?.slice(0, 400); } })();
+        console.log('[DataSourceService] getDataSource raw response', { status, hasData, dtype, dlen, dkeys });
+        console.log('[DataSourceService] getDataSource data preview', preview);
+      } catch {}
       const raw = response?.data;
       const entity = (raw && typeof raw === 'object' && (raw.data || raw.item || raw.Item)) || raw;
       if (!entity || typeof entity !== 'object') {
@@ -257,6 +263,16 @@ class DataSourceService {
         params = {},
       } = options;
       const rawResponse = await adapter.fetchRawData(endpoint, method, params);
+      try {
+        const meta = {
+          statusCode: rawResponse?.statusCode,
+          responseTime: rawResponse?.responseTime,
+          contentType: rawResponse?.headers?.["content-type"] || rawResponse?.headers?.["Content-Type"] || 'unknown',
+        };
+        const samplePreview = (() => { try { return JSON.stringify(rawResponse?.data)?.slice(0, 300); } catch { return String(rawResponse?.data)?.slice(0, 300); } })();
+        console.log('[DataSourceService] fetchDataFromSource raw response meta', meta);
+        console.log('[DataSourceService] fetchDataFromSource data preview', samplePreview);
+      } catch {}
       const transformedData = this.transformRawData(rawResponse, dataSource, {
         endpoint,
         method,
@@ -398,8 +414,10 @@ class DataSourceService {
         // Derive authType per contract (map 'apikey' -> 'apiKey')
         const authType = (() => {
           const t = auth?.type || clone.authType;
-          if (!t) return 'apiKey';
-          if (String(t).toLowerCase() === 'apikey') return 'apiKey';
+          if (!t) return undefined; // allow no-auth
+          const lc = String(t).toLowerCase();
+          if (lc === 'apikey') return 'apiKey';
+          if (lc === 'jwt' || lc === 'jwt bearer' || lc === 'jwt-bearer') return 'bearer';
           return String(t);
         })();
 
@@ -408,7 +426,7 @@ class DataSourceService {
 
         // Secrets nested inside config
         const secrets = {};
-        switch (String(authType).toLowerCase()) {
+        switch ((authType || '').toLowerCase()) {
           case 'apikey': {
             // Use provided authentication value as apiKey; do not infer from URL/connectionString
             const apiKeyValue = (auth && auth.value != null)
@@ -421,11 +439,14 @@ class DataSourceService {
           }
           case 'bearer': {
             if (auth?.token != null) secrets.token = String(auth.token);
+            else if (clone.token != null) secrets.token = String(clone.token);
             break;
           }
           case 'basic': {
             if (auth?.username != null) secrets.username = String(auth.username);
             if (auth?.password != null) secrets.password = String(auth.password);
+            if (clone.username != null) secrets.username = String(clone.username);
+            if (clone.password != null) secrets.password = String(clone.password);
             break;
           }
           case 'query': {
@@ -562,48 +583,102 @@ class DataSourceService {
 
   async testConnection(type, config, name) {
     try {
-      const authService = await this.getAuthService();
-      // Reuse getAdapter (uses same factory)
-      const adapter = await this.getAdapter(type, config);
-      if (!adapter || !adapter.testConnection)
-        throw new Error(`Adapter for ${type} does not support connection testing`);
-
-      // Normalize config to new contract for adapter testConnection
-      const endpoint = config.endpoint || config.url || config.connectionString || "";
-      // Attempt to infer authType from provided fields
-      const inferAuthType = () => {
-        const t = config.authType || config.authentication?.type || config.auth?.type;
-        if (!t && (config.secrets?.apiKey || typeof config.authentication === 'string')) return 'apiKey';
-        if (!t) return undefined;
-        return String(t).toLowerCase() === 'apikey' ? 'apiKey' : t;
+      // Build payload per backend contract
+      const sanitize = (obj) => {
+        if (!obj || typeof obj !== 'object') return obj;
+        const out = Array.isArray(obj) ? [] : {};
+        Object.entries(obj).forEach(([k, v]) => {
+          if (v === undefined) return;
+          if (v && typeof v === 'object') out[k] = sanitize(v);
+          else out[k] = v;
+        });
+        return out;
       };
-      const authType = inferAuthType();
-      // Build secrets from either new shape or legacy fields
-      const secrets = (() => {
-        if (config.secrets && typeof config.secrets === 'object') return { ...config.secrets };
-        const a = config.authentication;
-        if (typeof a === 'string' && a.trim()) return { apiKey: a.trim() };
-        if (a && typeof a === 'object') {
-          if (a.type && String(a.type).toLowerCase() === 'apikey' && a.value) return { apiKey: a.value };
-          if (a.type && String(a.type).toLowerCase() === 'bearer' && a.token) return { token: a.token };
-          if (a.type && String(a.type).toLowerCase() === 'basic' && (a.username || a.password)) return { username: a.username, password: a.password };
+      const normalizeType = (t) => {
+        if (!t) return t;
+        const map = { 'custom-api': 'api', 'csv-file': 'csv' };
+        return map[t] || t;
+      };
+      const buildConfigPayload = (cfg) => {
+        const clone = cfg ? { ...cfg } : {};
+        const parseMaybeJSON = (val) => {
+          if (val == null) return val;
+          if (typeof val !== 'string') return val;
+          try { return JSON.parse(val); } catch { return val; }
+        };
+        const authRaw = parseMaybeJSON(clone.authentication);
+        let auth = null;
+        if (authRaw && typeof authRaw === 'object') auth = authRaw;
+        else if (typeof authRaw === 'string' && authRaw.trim()) auth = { type: 'apiKey', value: authRaw.trim() };
+        const authType = (() => {
+          const t = auth?.type || clone.authType;
+          if (!t) return undefined; // allow no-auth
+          const lc = String(t).toLowerCase();
+          if (lc === 'apikey') return 'apiKey';
+          if (lc === 'jwt' || lc === 'jwt bearer' || lc === 'jwt-bearer') return 'bearer';
+          return String(t);
+        })();
+        const endpoint = clone.endpoint ?? clone.url ?? '';
+        const secrets = {};
+        switch ((authType || '').toLowerCase()) {
+          case 'apikey': {
+            const apiKeyValue = (auth && auth.value != null)
+              ? auth.value
+              : (typeof authRaw === 'string' && authRaw.trim())
+                ? authRaw.trim()
+                : (clone.apiKey ?? clone.secrets?.apiKey);
+            if (apiKeyValue != null) secrets.apiKey = String(apiKeyValue);
+            break;
+          }
+          case 'bearer': {
+            if (auth?.token != null) secrets.token = String(auth.token);
+            else if (clone.token != null) secrets.token = String(clone.token);
+            break;
+          }
+          case 'basic': {
+            if (auth?.username != null) secrets.username = String(auth.username);
+            if (auth?.password != null) secrets.password = String(auth.password);
+            if (clone.username != null) secrets.username = String(clone.username);
+            if (clone.password != null) secrets.password = String(clone.password);
+            break;
+          }
+          case 'query': {
+            if (auth?.value != null) secrets.token = String(auth.value);
+            break;
+          }
+          default: {}
         }
-        return undefined;
-      })();
+        return sanitize({ authType, endpoint, secrets });
+      };
 
-      const testConfig = { endpoint, authType, secrets };
-      const testResult = await adapter.testConnection(testConfig);
-      return {
-        type,
+      const payload = sanitize({
         name,
-        config: { ...config },
-        status: "success",
+        type: normalizeType(type),
+        config: buildConfigPayload(config),
+      });
+
+      const workspaceId = await getSavedWorkspaceId();
+      if (!workspaceId) throw new Error('No workspace selected');
+      const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.testConnection);
+      console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.type, hasConfig: !!payload.config, endpoint: payload.config?.endpoint } });
+      const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
+      const testResult = response?.data ?? response;
+      console.log('[DataSourceService] testConnection success', { status: response?.status });
+      return {
+        type: payload.type,
+        name,
+        config: payload.config,
+        status: 'success',
         testResult,
         createdAt: new Date().toISOString(),
         lastTested: new Date().toISOString(),
       };
     } catch (error) {
-      throw new Error(`Connection test failed: ${error.message}`);
+      // Surface server-provided message when available
+      const serverMsg = error?.response?.data?.message || error?.response?.data?.error;
+      const msg = serverMsg || error?.message || 'Connection test failed';
+      console.error('[DataSourceService] testConnection failed', { status: error?.response?.status, msg });
+      throw new Error(`Connection test failed: ${msg}`);
     }
   }
 
@@ -670,12 +745,15 @@ class DataSourceService {
 
   async getAvailableDataSources(sourceId) {
     try {
+      console.log('[DataSourceService] getAvailableDataSources start', { sourceId });
       const dataSource = await this.getDataSource(sourceId);
       const adapter = await this.getAdapter(dataSource.type, dataSource.config);
       if (adapter.getDataSources && typeof adapter.getDataSources === "function") {
-        return await adapter.getDataSources();
+        const list = await adapter.getDataSources();
+        console.log('[DataSourceService] getAvailableDataSources adapter list', { count: Array.isArray(list) ? list.length : 0 });
+        return list;
       }
-      return [
+      const fallback = [
         {
           id: `${sourceId}_default`,
           name: `${dataSource.name} - Default`,
@@ -683,6 +761,8 @@ class DataSourceService {
           lastModified: dataSource.lastSync || dataSource.createdAt,
         },
       ];
+      console.log('[DataSourceService] getAvailableDataSources fallback list', { count: fallback.length });
+      return fallback;
     } catch {
       throw new Error("Failed to discover available data sources");
     }

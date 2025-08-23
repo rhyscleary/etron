@@ -87,6 +87,43 @@ export function createDataAdapter(type, dependencies) {
   );
 }
 
+export function getSupportedTypes() {
+  return Object.keys(adapterMap);
+}
+
+const typeToCategory = {
+  // Spreadsheets / cloud storage
+  "google-sheets": "cloud-storage",
+  "microsoft-excel": "cloud-storage",
+  // APIs
+  api: "api",
+  "custom-api": "api",
+  // File transfer
+  "custom-ftp": "file-transfer",
+  // Databases
+  mysql: "database",
+};
+
+export function getCategoryDisplayName(category) {
+  switch (category) {
+    case "cloud-storage":
+      return "Spreadsheets";
+    case "api":
+      return "APIs";
+    case "database":
+      return "Databases";
+    case "file-transfer":
+      return "File Transfer";
+    default:
+      return "Other";
+  }
+}
+
 export function getAdapterInfo(type) {
-  return { type };
+  const category = typeToCategory[type] || "other";
+  return {
+    type,
+    category,
+    categoryDisplayName: getCategoryDisplayName(category),
+  };
 }

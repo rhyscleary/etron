@@ -17,18 +17,13 @@ import {
   getAdapterInfo,
 } from "../../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 import useDataSources from "../../../../../../../hooks/useDataSource";
-import apiClient from "../../../../../../../utils/api/apiClient";
-import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
 import { Button } from "react-native-paper";
 
 const SelectDataSource = () => {
-  const authService = { getCurrentUser, fetchAuthSession, signOut };
   const { ids } = useLocalSearchParams();
-
-  const { getDataSource, loading: dataSourcesLoading, fetchDataSource } = useDataSources(
-    apiClient,
-    authService
-  );
+  const { getDataSource, fetchDataSource } = useDataSources();
+  const lastFetchedIdRef = React.useRef(null);
+  const sourceId = Array.isArray(ids) ? ids[0] : ids;
 
   const [existingSource, setExistingSource] = useState(null);
   const [adapters, setAdapters] = useState([]);
@@ -59,14 +54,16 @@ const SelectDataSource = () => {
 
   // Load the source we're editing (if any)
   useEffect(() => {
-    if (!ids) return;
+    if (!sourceId) return;
+    if (lastFetchedIdRef.current === sourceId) return; // guard against repeated fetches
 
     const fetchExisting = async () => {
       setLoadingSource(true);
       try {
-        console.log("Loading existing data source for id:", ids);
-        const source = await getDataSource(ids); // <-- await here
+        console.log("[SelectDataSource] Loading existing data source for id:", sourceId);
+        const source = await getDataSource(sourceId);
         setExistingSource(source);
+        lastFetchedIdRef.current = sourceId;
       } catch (err) {
         console.error("Could not load data source:", err);
       } finally {
@@ -75,7 +72,7 @@ const SelectDataSource = () => {
     };
 
     fetchExisting();
-  }, [ids, getDataSource]);
+  }, [sourceId, getDataSource]);
 
   const handleSelect = (adapterType) => {
     router.navigate(
@@ -100,7 +97,7 @@ const SelectDataSource = () => {
     }
   };
 
-  if (loadingAdapters || dataSourcesLoading || loadingSource) {
+  if (loadingAdapters || loadingSource) {
     return (
       <View style={[commonStyles.screen, styles.center]}>
         <ActivityIndicator size="large" />
@@ -108,12 +105,12 @@ const SelectDataSource = () => {
     );
   }
 
-  if (ids && !existingSource) {
+  if (sourceId && !existingSource) {
     return (
       <View style={commonStyles.screen}>
         <Header title="Edit Connection" showBack />
         <View style={styles.center}>
-          <Text>No data source found for id "{ids}"</Text>
+          <Text>No data source found for id "{String(sourceId)}"</Text>
         </View>
       </View>
     );
@@ -127,13 +124,13 @@ const SelectDataSource = () => {
 
   return (
     <View style={commonStyles.screen}>
-      <Header title={ids ? "Edit Connection" : "New Connection"} showBack />
+  <Header title={sourceId ? "Edit Connection" : "New Connection"} showBack />
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="titleMedium" style={styles.title}>
-          {ids ? "Edit Data Source" : "Choose a Data Source"}
+          {sourceId ? "Edit Data Source" : "Choose a Data Source"}
         </Text>
 
-        {ids ? (
+  {sourceId ? (
           existingSource ? (
             <>
             <Card style={styles.card}>
