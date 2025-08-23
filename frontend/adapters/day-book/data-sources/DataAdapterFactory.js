@@ -30,7 +30,7 @@ export function getAdaptersForUI() {
         {
           label: "Custom API",
           icon: "web",
-          type: "custom-api",
+          type: "api",
           description: "Connect to a custom REST API endpoint",
           route:
             "/modules/day-book/data-management/data-connection-inputs/custom-API",
@@ -70,6 +70,8 @@ import { createMySqlAdapter } from "./mySqlAdapter";
 const adapterMap = {
   "google-sheets": createGoogleSheetsAdapter,
   "microsoft-excel": createExcelAdapter,
+  // Support backend 'api' type by mapping to the custom API adapter
+  api: createCustomApiAdapter,
   "custom-api": createCustomApiAdapter,
   "custom-ftp": createCustomFtpAdapter,
   mysql: createMySqlAdapter,

@@ -41,11 +41,20 @@ class DataSourceService {
         if (!workspaceId) {
           throw new Error('No workspace selected. Please select a workspace.');
         }
-        const params = { workspaceId };
+  // Try to include authUserId along with workspaceId as required by backend
+        let authUserId = null;
+        try {
+          const auth = await this.getAuthService();
+          const user = await auth.getCurrentUser();
+          console.log("email!!!!! : ", user?.username || null);
+          authUserId = user?.username || null;
+        } catch {}
+  const params = authUserId ? { workspaceId, authUserId } : { workspaceId };
         let response;
         try {
           // Outgoing request log
           console.log('[DataSourceService] getConnectedDataSources GET', { endpointUrl, params });
+          console.log("params :) :", params);
           response = await this.apiClient.get(endpointUrl, { params });
           // Quick response summary (avoid logging full payload)
           const rawType = Array.isArray(response?.data)
@@ -85,10 +94,13 @@ class DataSourceService {
         const getArray = (obj) => {
           if (Array.isArray(obj)) return obj;
           if (!obj || typeof obj !== 'object') return null;
-          const direct = obj.data || obj.items || obj.results || obj.list || obj.value;
+          const direct = obj.data || obj.items || obj.results || obj.list || obj.value || obj.records || obj.rows || obj.sources || obj.Items;
           if (Array.isArray(direct)) return direct;
-          const underData = obj.data && typeof obj.data === 'object' ? (obj.data.items || obj.data.results || obj.data.data) : null;
+          const underData = obj.data && typeof obj.data === 'object' ? (obj.data.items || obj.data.results || obj.data.data || obj.data.records || obj.data.rows || obj.data.sources || obj.data.Items) : null;
           if (Array.isArray(underData)) return underData;
+          // Fallback: first array value in object
+          const firstArray = Object.values(obj).find((v) => Array.isArray(v));
+          if (Array.isArray(firstArray)) return firstArray;
           return null;
         };
         const list = getArray(raw) || [];
@@ -202,7 +214,14 @@ class DataSourceService {
       const workspaceId = await getSavedWorkspaceId();
       if (!workspaceId) throw new Error('No workspace selected');
   const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.getDataSource, sourceId);
-      const params = { workspaceId };
+      // Include authUserId when available
+      let authUserId = null;
+      try {
+        const auth = await this.getAuthService();
+        const user = await auth.getCurrentUser();
+        authUserId = user?.userId || user?.username || user?.email || null;
+      } catch {}
+      const params = authUserId ? { workspaceId, authUserId } : { workspaceId };
       console.log('[DataSourceService] getDataSource GET', { endpointUrl, sourceId, params });
       const response = await this.apiClient.get(endpointUrl, { params });
       console.log("single data source responseeee \n =========\n", response, "\n===========\n");
@@ -233,7 +252,7 @@ class DataSourceService {
       if (!adapter.fetchRawData || typeof adapter.fetchRawData !== "function")
         throw new Error(`Adapter for ${dataSource.type} does not support data fetching`);
       const {
-        endpoint = dataSource.config?.defaultEndpoint || "/",
+        endpoint = dataSource.config?.endpoint || dataSource.config?.defaultEndpoint || "/",
         method = "GET",
         params = {},
       } = options;
@@ -277,7 +296,7 @@ class DataSourceService {
         sourceType: dataSource.type,
         endpoint: requestInfo.endpoint,
         method: requestInfo.method,
-        statusCode: rawResponse.statusCode,
+  statusCode: rawResponse.statusCode,
         responseTime: rawResponse.responseTime,
         contentType: rawResponse.headers?.["content-type"] || "unknown",
         lastUpdated: new Date().toISOString(),
@@ -317,7 +336,13 @@ class DataSourceService {
   // Always real connection, no demo branch
   try {
       console.log('[DataSourceService] connectDataSource calling testConnection', { type, name });
-      const connectionData = await this.testConnection(type, config, name);
+      let connectionData;
+      try {
+        connectionData = await this.testConnection(type, config, name);
+      } catch (e) {
+        console.warn('[DataSourceService] testConnection failed, proceeding to create anyway', { message: e?.message });
+        connectionData = { status: 'skipped', error: e?.message };
+      }
 
       console.log('[DataSourceService] connectDataSource - test result', {
         type,
@@ -333,11 +358,11 @@ class DataSourceService {
       // handle creation locally and only when per-type demo is allowed.
   // Ignore any demo-style test response; proceed with real create
 
-      // Prepare payload matching backend contract
-      // Query param: workspaceId (added below)
-      // Body: { name, type, config, secrets }
+  // Prepare payload matching backend contract
+  // Query param: workspaceId (added below)
+  // Body: { name, type, config }
   const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.add);
-      const sanitize = (obj) => {
+  const sanitize = (obj) => {
         if (!obj || typeof obj !== 'object') return obj;
         const out = Array.isArray(obj) ? [] : {};
         Object.entries(obj).forEach(([k, v]) => {
@@ -355,61 +380,73 @@ class DataSourceService {
         return map[t] || t;
       };
 
-      // Extract secrets from config.authentication/header and strip from config
-      const buildConfigAndSecrets = (cfg) => {
+      // Build config payload per backend contract: { authType, endpoint, secrets }
+      const buildConfigPayload = (cfg) => {
         const clone = cfg ? { ...cfg } : {};
-        let secrets = {};
         // Try to parse possible stringified fields
         const parseMaybeJSON = (val) => {
-          if (!val || typeof val !== 'string') return val;
+          if (val == null) return val;
+          if (typeof val !== 'string') return val;
           try { return JSON.parse(val); } catch { return val; }
         };
-        const headers = parseMaybeJSON(clone.headers) || {};
-        const auth = parseMaybeJSON(clone.authentication) || null;
+        const authRaw = parseMaybeJSON(clone.authentication);
+        // Normalize auth: allow plain string to represent an API key
+        let auth = null;
+        if (authRaw && typeof authRaw === 'object') auth = authRaw;
+        else if (typeof authRaw === 'string' && authRaw.trim()) auth = { type: 'apiKey', value: authRaw.trim() };
 
-        // Map known auth types to allowed secrets keys
-        if (auth && typeof auth === 'object') {
-          switch (auth.type) {
-            case 'bearer':
-              if (auth.token) secrets.token = String(auth.token);
-              break;
-            case 'basic':
-              if (auth.username) secrets.username = String(auth.username);
-              if (auth.password) secrets.password = String(auth.password);
-              break;
-            case 'apikey':
-              if (auth.value) secrets.apiKey = String(auth.value);
-              break;
-            case 'query':
-              if (auth.value) secrets.token = String(auth.value);
-              break;
-            default:
-              break;
+        // Derive authType per contract (map 'apikey' -> 'apiKey')
+        const authType = (() => {
+          const t = auth?.type || clone.authType;
+          if (!t) return 'apiKey';
+          if (String(t).toLowerCase() === 'apikey') return 'apiKey';
+          return String(t);
+        })();
+
+        // Endpoint is optional in contract; default to empty string to match example
+        const endpoint = clone.endpoint ?? clone.url ?? '';
+
+        // Secrets nested inside config
+        const secrets = {};
+        switch (String(authType).toLowerCase()) {
+          case 'apikey': {
+            // Use provided authentication value as apiKey; do not infer from URL/connectionString
+            const apiKeyValue = (auth && auth.value != null)
+              ? auth.value
+              : (typeof authRaw === 'string' && authRaw.trim())
+                ? authRaw.trim()
+                : (clone.apiKey ?? clone.secrets?.apiKey);
+            if (apiKeyValue != null) secrets.apiKey = String(apiKeyValue);
+            break;
+          }
+          case 'bearer': {
+            if (auth?.token != null) secrets.token = String(auth.token);
+            break;
+          }
+          case 'basic': {
+            if (auth?.username != null) secrets.username = String(auth.username);
+            if (auth?.password != null) secrets.password = String(auth.password);
+            break;
+          }
+          case 'query': {
+            if (auth?.value != null) secrets.token = String(auth.value);
+            break;
+          }
+          default: {
+            // No secrets
           }
         }
 
-        // Remove Authorization-like headers from config; backend will use secrets
-        const cleanedHeaders = {};
-        Object.entries(headers).forEach(([k, v]) => {
-          if (/^authorization$/i.test(k)) return; // drop
-          cleanedHeaders[k] = v;
-        });
-
-        const cleaned = { ...clone };
-        if (Object.keys(cleanedHeaders).length) cleaned.headers = cleanedHeaders; else delete cleaned.headers;
-        delete cleaned.authentication; // secrets captured above
-
-        return { config: cleaned, secrets };
+        return sanitize({ authType, endpoint, secrets });
       };
 
       const normalizedType = normalizeType(type);
-      const { config: cleanedConfig, secrets } = buildConfigAndSecrets(config);
+      const configPayload = buildConfigPayload(config);
 
       const payload = sanitize({
         name,
         type: normalizedType,
-        config: cleanedConfig || {},
-        secrets: secrets || {},
+        config: configPayload || {},
       });
 
   const workspaceId = await getSavedWorkspaceId();
@@ -525,22 +562,41 @@ class DataSourceService {
 
   async testConnection(type, config, name) {
     try {
-      if (this.isDemoModeActive()) await this.simulateDemoDelay("test");
       const authService = await this.getAuthService();
-  // Reuse getAdapter (uses same factory) so we don't accidentally pass
-  // transient fallback signals into normal adapter creation.
-  const adapter = await this.getAdapter(type, config);
+      // Reuse getAdapter (uses same factory)
+      const adapter = await this.getAdapter(type, config);
       if (!adapter || !adapter.testConnection)
         throw new Error(`Adapter for ${type} does not support connection testing`);
-      const testResult = await adapter.testConnection(
-        config.url || config.connectionString,
-        config.headers,
-        config.authentication
-      );
+
+      // Normalize config to new contract for adapter testConnection
+      const endpoint = config.endpoint || config.url || config.connectionString || "";
+      // Attempt to infer authType from provided fields
+      const inferAuthType = () => {
+        const t = config.authType || config.authentication?.type || config.auth?.type;
+        if (!t && (config.secrets?.apiKey || typeof config.authentication === 'string')) return 'apiKey';
+        if (!t) return undefined;
+        return String(t).toLowerCase() === 'apikey' ? 'apiKey' : t;
+      };
+      const authType = inferAuthType();
+      // Build secrets from either new shape or legacy fields
+      const secrets = (() => {
+        if (config.secrets && typeof config.secrets === 'object') return { ...config.secrets };
+        const a = config.authentication;
+        if (typeof a === 'string' && a.trim()) return { apiKey: a.trim() };
+        if (a && typeof a === 'object') {
+          if (a.type && String(a.type).toLowerCase() === 'apikey' && a.value) return { apiKey: a.value };
+          if (a.type && String(a.type).toLowerCase() === 'bearer' && a.token) return { token: a.token };
+          if (a.type && String(a.type).toLowerCase() === 'basic' && (a.username || a.password)) return { username: a.username, password: a.password };
+        }
+        return undefined;
+      })();
+
+      const testConfig = { endpoint, authType, secrets };
+      const testResult = await adapter.testConnection(testConfig);
       return {
         type,
         name,
-        config: { ...config, isDemoMode: this.isDemoModeActive() },
+        config: { ...config },
         status: "success",
         testResult,
         createdAt: new Date().toISOString(),
@@ -693,6 +749,10 @@ class DataSourceService {
 
   getDemoStatus() { return { effective: false }; }
 
+  // Explicitly disable demo mode throughout the service
+  isDemoModeActive() { return false; }
+  async simulateDemoDelay() { return; }
+
   getDisplayName(type) {
     const displayNames = {
       "google-sheets": "Google Sheets",
@@ -700,6 +760,7 @@ class DataSourceService {
       "microsoft-excel": "Microsoft Excel",
       onedrive: "OneDrive",
       dropbox: "Dropbox",
+  api: "API",
       "custom-api": "Custom API",
       database: "Database",
       "csv-file": "CSV File",

@@ -174,7 +174,6 @@ const ConnectionPage = ({
 
   // Create connection
   const handleContinue = async () => {
-    if (!testResponse || testResponse.status !== "success") return;
     setIsCreatingConnection(true);
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
@@ -210,14 +209,14 @@ const ConnectionPage = ({
       isDemoMode: false
     };
     const formatters = {
-      'custom-api': (conn) => ({
+    'custom-api': (conn) => ({
         ...baseData,
         title: `API Connection Created`,
         message: `Your custom API connection has been successfully created and is ready to use.`,
         details: [
-          { label: "URL", value: conn.config?.url || formData.url },
+      { label: "Endpoint", value: conn.config?.endpoint ?? '' },
           { label: "Type", value: "REST API" },
-          { label: "Authentication", value: conn.config?.authentication || formData.authentication ? "Configured" : "None" }
+      { label: "Authentication", value: conn.config?.authType ? "Configured" : "None" }
         ]
       }),
       'custom-ftp': (conn) => ({
@@ -361,7 +360,7 @@ const ConnectionPage = ({
         <BasicButton
           label={isCreatingConnection ? "Creating Connection..." : "Create Connection"}
           onPress={handleContinue}
-          disabled={isLoading || !testResponse || testResponse.status !== "success"}
+          disabled={isLoading || !formIsValid}
           fullWidth={false}
         />
       </View>

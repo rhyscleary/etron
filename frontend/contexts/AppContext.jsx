@@ -1,10 +1,13 @@
 import React, { createContext, useContext } from 'react';
-import { getWorkspaceId } from '../storage/workspaceStorage';
+import DataSourceService from "../services/DataSourceService";
+import apiClient from "../utils/api/apiClient";
 
 const AppContext = createContext({});
 
 
 export function AppProvider({ children }) {
+    // Instantiate the real service once for the app
+    const dataSourceService = new DataSourceService(apiClient);
     return (
         <AppContext.Provider value={{
             dataSources: {
@@ -26,29 +29,18 @@ export function AppProvider({ children }) {
                 switchAccount: () => {},
                 connectDataSource: async (type, config, name) => {
                     console.log('[AppContext] connectDataSource called', { type, config, name });
-                    // Simulate backend call and response
-                    await new Promise(res => setTimeout(res, 500));
-                    let id = config && config.workspaceId;
-                    if (!id) {
-                        try {
-                            id = await getWorkspaceId();
-                            console.log('[AppContext] connectDataSource fetched workspaceId from storage:', id);
-                        } catch (e) {
-                            console.log('[AppContext] connectDataSource failed to fetch workspaceId from storage', e);
-                        }
-                    }
-                    if (!id) id = 'no-workspace-id';
-                    const result = { id, type, config, name };
-                    console.log('[AppContext] connectDataSource result', result);
-                    return result;
+                    // No transformation here; service normalizes and posts
+                    const created = await dataSourceService.connectDataSource(type, config, name);
+                    console.log('[AppContext] connectDataSource result', created);
+                    return created;
                 },
-                disconnectDataSource: () => {},
+                disconnectDataSource: async (sourceId) => {
+                    return dataSourceService.disconnectDataSource(sourceId);
+                },
                 testConnection: async (type, config, name) => {
                     console.log('[AppContext] testConnection called', { type, config, name });
-                    // Simulate a short delay and always succeed
-                    await new Promise(res => setTimeout(res, 500));
-                    const result = { status: 'success', message: 'Connection successful' };
-                    console.log('[AppContext] testConnection success', { type, name, result });
+                    const result = await dataSourceService.testConnection(type, config, name);
+                    console.log('[AppContext] testConnection success', { type, name, result: { status: result?.status } });
                     return result;
                 },
                 connectProvider: () => {},

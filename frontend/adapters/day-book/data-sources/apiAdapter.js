@@ -158,15 +158,17 @@ export const createCustomApiAdapter = (
   const connect = async (connectionData) => {
     console.log("[CustomApiAdapter] connect called");
     try {
-      if (!connectionData || !connectionData.url || !connectionData.name) {
-        throw new Error("Connection data with URL and name is required");
+      // Support both legacy ({ url, headers, authentication }) and new shape ({ endpoint, authType, secrets })
+      const endpoint = connectionData?.url || connectionData?.endpoint;
+      if (!connectionData || !endpoint || !connectionData.name) {
+        throw new Error("Connection data with endpoint and name is required");
       }
 
-      const testResult = await testConnection(
-        connectionData.url,
-        connectionData.headers,
-        connectionData.authentication
-      );
+      const testResult = await testConnection({
+        endpoint,
+        authType: connectionData?.authType,
+        secrets: connectionData?.secrets,
+      });
 
       // CHANGED: accept both success and connected
       if (!["success", "connected"].includes(testResult.status)) {
@@ -177,10 +179,11 @@ export const createCustomApiAdapter = (
       const newConnection = {
         id: `api_${Date.now()}`,
         name: connectionData.name,
-        url: connectionData.url,
+        url: endpoint,
         status: "active",
         createdAt: new Date().toISOString(),
         lastTested: new Date().toISOString(),
+        // Keep legacy fields for runtime fetches; when using new shape these may be empty and that's ok
         headers: connectionData.headers || "{}",
         authentication: connectionData.authentication || "",
         testResult,
@@ -223,25 +226,44 @@ export const createCustomApiAdapter = (
   };
 
   // tests API connections with a real HTTP request
-  const testConnection = async (url, headers = "", authentication = "") => {
-    console.log("[CustomApiAdapter] testConnection called", { url });
+  const testConnection = async (
+    // Support new signature: testConnection({ endpoint, authType, secrets })
+    configOrUrl,
+    headers = "",
+    authentication = ""
+  ) => {
+    // Normalize args
+    const isObject = configOrUrl && typeof configOrUrl === "object";
+    const endpoint = isObject ? configOrUrl.endpoint : configOrUrl;
+    const authType = isObject ? configOrUrl.authType : undefined;
+    const secrets = isObject ? configOrUrl.secrets : undefined;
+    console.log("[CustomApiAdapter] testConnection called", { endpoint, authType });
     try {
-      const parsedHeaders = parseHeaders(headers);
-      const auth = parseAuthentication(authentication);
-
-      const requestHeaders = {
+      // Build headers from either legacy strings or new auth shape
+      let requestHeaders = {
         Accept: "application/json",
-        ...parsedHeaders,
       };
+      if (!isObject) {
+        const parsedHeaders = parseHeaders(headers);
+        const auth = parseAuthentication(authentication);
+        const hdrConfig = applyAuthentication({ headers: { ...requestHeaders, ...parsedHeaders } }, auth);
+        requestHeaders = hdrConfig.headers || { ...requestHeaders, ...parsedHeaders };
+      } else if (authType && secrets) {
+        // Simple heuristics: common API key header name is 'x-api-key'
+        if (String(authType).toLowerCase() === "apikey" && secrets.apiKey) {
+          requestHeaders = { ...requestHeaders, "x-api-key": String(secrets.apiKey) };
+        } else if (String(authType).toLowerCase() === "bearer" && secrets.token) {
+          requestHeaders = { ...requestHeaders, Authorization: `Bearer ${secrets.token}` };
+        } else if (String(authType).toLowerCase() === "basic" && (secrets.username || secrets.password)) {
+          const credentials = encodeBase64(`${secrets.username || ""}:${secrets.password || ""}`);
+          requestHeaders = { ...requestHeaders, Authorization: `Basic ${credentials}` };
+        }
+      }
 
-      // apply auth to headers-only config
-      const hdrConfig = applyAuthentication({ headers: requestHeaders }, auth);
-      const finalHeaders = hdrConfig.headers || requestHeaders;
-
-      const requestUrl = buildApiUrl(url, "", {});
+      const requestUrl = buildApiUrl(endpoint, "", {});
       const start = Date.now();
       const response = await apiClient.get(requestUrl, {
-        headers: finalHeaders,
+        headers: requestHeaders,
         timeout: 10000,
         params: {},
       });
@@ -254,7 +276,6 @@ export const createCustomApiAdapter = (
         "";
       const sampleData = response?.data ?? { message: "OK" };
 
-      // Guard: treat non-2xx as failure even if client didn't throw
       if (statusCode >= 400) {
         throw new Error(summarizeRequestError({ response }, requestUrl));
       }
@@ -267,8 +288,7 @@ export const createCustomApiAdapter = (
         sampleData,
       };
     } catch (error) {
-      // CHANGED: concise, actionable error without dumping HTML
-      const concise = summarizeRequestError(error, url);
+      const concise = summarizeRequestError(error, endpoint);
       throw new Error(`Connection test failed: ${concise}`);
     }
   };
@@ -327,12 +347,14 @@ export const createCustomApiAdapter = (
       isDemoMode,
     });
     if (!isConnected) {
-      throw new Error("Not connected to any API");
+      // Allow direct calls when an absolute endpoint is provided
+      const absolute = typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
+      if (!absolute) throw new Error("Not connected to any API");
     }
 
     try {
-      const parsedHeaders = parseHeaders(currentConnection.headers);
-      const auth = parseAuthentication(currentConnection.authentication);
+      const parsedHeaders = parseHeaders(currentConnection?.headers);
+      const auth = parseAuthentication(currentConnection?.authentication);
 
       const baseHeaders = {
         Accept: "application/json",
@@ -345,49 +367,83 @@ export const createCustomApiAdapter = (
 
       const upper = String(method).toUpperCase();
       const isGet = upper === "GET";
-      const url = buildApiUrl(
-        currentConnection.url,
-        endpoint,
-        isGet ? params : {}
-      );
+  // If no base url (not connected) and endpoint is absolute, use it directly
+  const base = currentConnection?.url;
+  const absolute = typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
+  const url = base ? buildApiUrl(base, endpoint, isGet ? params : {}) : absolute ? buildApiUrl(endpoint, "", isGet ? params : {}) : buildApiUrl(endpoint, "", isGet ? params : {});
 
       if (isGet) {
+        const start = Date.now();
         const res = await apiClient.get(url, {
           headers,
           timeout: 30000,
           params: {},
         });
-        return res?.data;
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
       }
 
       if (upper === "POST" && typeof apiClient.post === "function") {
+        const start = Date.now();
         const res = await apiClient.post(url, params, {
           headers,
           timeout: 30000,
         });
-        return res?.data;
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
       }
       if (upper === "PUT" && typeof apiClient.put === "function") {
+        const start = Date.now();
         const res = await apiClient.put(url, params, {
           headers,
           timeout: 30000,
         });
-        return res?.data;
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
       }
       if (upper === "PATCH" && typeof apiClient.patch === "function") {
+        const start = Date.now();
         const res = await apiClient.patch(url, params, {
           headers,
           timeout: 30000,
         });
-        return res?.data;
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
       }
       if (upper === "DELETE" && typeof apiClient.delete === "function") {
+        const start = Date.now();
         const res = await apiClient.delete(url, {
           headers,
           timeout: 30000,
           params: {},
         });
-        return res?.data;
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
       }
 
       throw new Error(`HTTP method not supported by apiClient: ${upper}`);
