@@ -95,7 +95,7 @@ function LoginSignup() {
             if (!url) return;
             
             // check if the URL is a valid social sign-in callback
-            if (url && (url.includes('myapp://callback'))) {
+            if (url && (url.includes('etron://oauth/callback'))) {
                 try {
                     // wait to ensure the sign-in process completes
                     setTimeout(async () => {

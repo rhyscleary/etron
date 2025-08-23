@@ -1,6 +1,6 @@
 {
   "expo": {
-    "scheme": "myapp",
+    "scheme": "etron",
     "name": "frontend",
     "slug": "frontend",
     "version": "1.0.0",
@@ -22,7 +22,7 @@
           "action": "VIEW",
           "data": [
             {
-              "scheme": "myapp",
+              "scheme": "etron",
               "host": "auth",
               "pathPrefix": "/"
             }

@@ -6,7 +6,7 @@ adding a new "isDone" field as a boolean. The authorization rule below
 specifies that any unauthenticated user can "create", "read", "update", 
 and "delete" any "Todo" records.
 =========================================================================*/
-const schema = a.schema({
+/*const schema = a.schema({
   Todo: a
     .model({
       content: a.string(),
@@ -21,7 +21,7 @@ export const data = defineData({
   authorizationModes: {
     defaultAuthorizationMode: 'identityPool',
   },
-});
+});*/
 
 /*== STEP 2 ===============================================================
 Go to your frontend source code. From your client-side code, generate a

@@ -4,7 +4,7 @@ import * as FileSystem from "expo-file-system";
 import { uploadData, getUrl } from 'aws-amplify/storage';
 import { Buffer } from 'buffer';
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import awsconfig from '../src/aws-exports';
+//import awsconfig from '../src/aws-exports';
 
 global.Buffer = global.Buffer || Buffer
 
@@ -65,7 +65,7 @@ export async function uploadProfilePhotoToS3(profilePhotoUri) {
     // Get the destination S3 path
     const { userId } = await getCurrentUser();
     const fileName = `${userId}.jpg`;
-    const S3FilePath = `public/${fileName}`;
+    const S3FilePath = `profile-pictures/${fileName}`;
     console.log("S3 file path created.");
 
     // Upload the photo to S3
@@ -80,10 +80,7 @@ export async function uploadProfilePhotoToS3(profilePhotoUri) {
             path: S3FilePath,
             data: Buffer.from(fileBuffer, 'base64'),
             options: {
-                bucket: {
-                    bucketName: awsconfig.aws_user_files_s3_bucket,
-                    region: awsconfig.aws_user_files_s3_bucket_region
-                }
+                bucket: "profilePicturesStorage"
             }
         }).result;
         console.log("Photo uploaded successfully.");
