@@ -24,7 +24,7 @@ export const auth = defineAuth({
         }
       },
       callbackUrls: ["myapp://callback"],
-      logoutUrls: ["myapp://signout"],
+      logoutUrls: ["myapp://signout/"],
     }
   },
 
