@@ -10,6 +10,7 @@ export function getAdaptersForUI() {
           icon: "google-spreadsheet",
           type: "google-sheets",
           description: "Connect to Google Sheets via Google Drive API",
+          iconColor: "#0F9D58",
           route:
             "/modules/day-book/data-management/data-connection-inputs/google-sheets",
         },
@@ -18,6 +19,7 @@ export function getAdaptersForUI() {
           icon: "microsoft-excel",
           type: "microsoft-excel",
           description: "Connect to Excel files via Microsoft Graph API",
+          iconColor: "#1D6F42",
           route:
             "/modules/day-book/data-management/data-connection-inputs/excel",
         },

@@ -12,6 +12,7 @@ const DescriptiveButton = ({
     boldLabel = true,
     transparentBackground = false,
     noBorder = false,
+    iconColor,
 }) => {
     const theme = useTheme();
 
@@ -45,7 +46,7 @@ const DescriptiveButton = ({
                     <Icon
                         source={icon}
                         size={28}
-                        color={theme.colors.icon}
+                        color={iconColor ?? theme.colors.icon}
                     />
                 ) : null}
 
