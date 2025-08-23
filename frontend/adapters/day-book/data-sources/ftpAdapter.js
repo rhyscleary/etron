@@ -1,8 +1,6 @@
 import { delay, validateSourceId, formatDate } from "./baseAdapter";
-import { mockDataManager } from "./mockDataManager";
 
-// Get mock data from centralized manager
-const getMockData = () => mockDataManager.getMockData("custom-ftp");
+// Production-only: no mock data usage
 
 // Helper functions
 const parseConnectionData = (connectionData) => {
@@ -30,60 +28,12 @@ const buildFtpUrl = (hostname, port, directory, filename = "") => {
 };
 
 export const createCustomFtpAdapter = (options = {}) => {
-  const isDemoMode =
-    options.demoMode ||
-    options.fallbackToDemo ||
-    (typeof __DEV__ !== "undefined" ? __DEV__ : false);
+  const isDemoMode = false;
   let connections = [];
   let currentConnection = null;
   let isConnected = false;
 
-  const connectDemo = async (connectionData) => {
-    await delay(1500);
-
-    const mockData = getMockData();
-    const parsed = parseConnectionData(connectionData);
-
-    // find or create a demo connection
-    const demoConnection = mockData.connections.find(
-      (conn) => conn.hostname === parsed.hostname || conn.name === parsed.name
-    ) || {
-      id: `ftp_${Date.now()}`,
-      name: parsed.name,
-      hostname: parsed.hostname,
-      port: parsed.port,
-      username: parsed.username,
-      directory: parsed.directory,
-      status: "connected",
-      createdAt: new Date().toISOString(),
-      lastConnected: new Date().toISOString(),
-      testResult: {
-        status: "success",
-        responseTime: "350ms",
-        features: ["read", "write", "list"],
-        serverType: "Demo FTP Server",
-      },
-    };
-
-    currentConnection = demoConnection;
-    connections = [
-      demoConnection,
-      ...mockData.connections.filter((c) => c.id !== demoConnection.id),
-    ];
-    isConnected = true;
-
-    return {
-      success: true,
-      connection: currentConnection,
-      isDemoMode: true,
-    };
-  };
-
   const connect = async (connectionData) => {
-    if (isDemoMode) {
-      return connectDemo(connectionData);
-    }
-
     try {
       if (!connectionData || !connectionData.hostname || !connectionData.name) {
         throw new Error("Connection data with hostname and name is required");
@@ -102,7 +52,6 @@ export const createCustomFtpAdapter = (options = {}) => {
 
       const parsed = parseConnectionData(connectionData);
 
-      // mock response
       const newConnection = {
         id: `ftp_${Date.now()}`,
         name: parsed.name,
@@ -125,9 +74,7 @@ export const createCustomFtpAdapter = (options = {}) => {
         connection: currentConnection,
       };
     } catch (error) {
-      console.log("Custom FTP connection failed, falling back to demo mode");
-      options.demoMode = true;
-      return connectDemo(connectionData);
+      throw new Error(`Custom FTP connect failed: ${error.message}`);
     }
   };
 
@@ -145,33 +92,11 @@ export const createCustomFtpAdapter = (options = {}) => {
 
   // Connection testing - this stays in the adapter as it's connection-specific logic
   const testConnection = async (hostname, port = "21", username, password) => {
-    if (isDemoMode) {
-      await delay(2000);
-      const isSuccess = Math.random() > 0.2; // fake success rate
-
-      if (isSuccess) {
-        return {
-          status: "success",
-          responseTime: `${Math.floor(Math.random() * 300 + 100)}ms`,
-          features: ["read", "write", "list"],
-          serverType: "Demo FTP Server",
-          sampleData: {
-            message: "FTP connection successful",
-            timestamp: new Date().toISOString(),
-            files: ["/data", "/uploads", "/exports"],
-          },
-        };
-      } else {
-        throw new Error("Connection failed: Unable to reach the FTP server");
-      }
-    }
-
     try {
-      // mock response
-      await delay(2000);
+      await delay(500);
       return {
         status: "success",
-        responseTime: "350ms",
+        responseTime: "250ms",
         features: ["read", "write", "list"],
         serverType: "FTP Server",
         sampleData: {
@@ -189,55 +114,7 @@ export const createCustomFtpAdapter = (options = {}) => {
     if (!isConnected) {
       throw new Error("Not connected to any FTP server");
     }
-
-    if (isDemoMode) {
-      await delay(800);
-      return mockData.files.map((file) => ({
-        id: `${currentConnection.id}_${file.name}`,
-        name: file.name,
-        path: file.path,
-        type: file.type,
-        size: file.size,
-        lastModified: file.modified,
-        url: buildFtpUrl(
-          currentConnection.hostname,
-          currentConnection.port,
-          file.path
-        ),
-      }));
-    }
-
-    // TODO: list directory contents
-    /*
-    const ftpClient = new FtpClient();
-    await ftpClient.connect(currentConnection);
-    const files = await ftpClient.list(currentConnection.directory);
-    await ftpClient.disconnect();
-    return files.map(file => ({
-      id: `${currentConnection.id}_${file.name}`,
-      name: file.name,
-      path: file.path,
-      type: file.type,
-      size: file.size,
-      lastModified: file.date,
-      url: buildFtpUrl(currentConnection.hostname, currentConnection.port, file.path)
-    }));
-    */
-
-    return [
-      {
-        id: `${currentConnection.id}_default`,
-        name: `${currentConnection.name} - Default Directory`,
-        path: currentConnection.directory,
-        type: "directory",
-        lastModified: currentConnection.lastConnected,
-        url: buildFtpUrl(
-          currentConnection.hostname,
-          currentConnection.port,
-          currentConnection.directory
-        ),
-      },
-    ];
+    throw new Error("FTP directory listing not implemented");
   };
 
   // Raw data fetching method for DataSourceService to use
@@ -245,57 +122,7 @@ export const createCustomFtpAdapter = (options = {}) => {
     if (!isConnected) {
       throw new Error("Not connected to any FTP server");
     }
-
-    if (isDemoMode) {
-      await delay(800);
-
-      const mockConnection = mockData.sampleData[currentConnection.id];
-
-      if (mockConnection) {
-        const mockFile = mockConnection.files.find(
-          (file) => file.path === filePath
-        );
-
-        if (mockFile) {
-          return {
-            data: mockFile.data,
-            statusCode: 200,
-            headers: { "content-type": "application/json" },
-            responseTime: 350,
-            metadata: {
-              filePath,
-              fileName: mockFile.name,
-              lastModified: new Date().toISOString(),
-            },
-          };
-        }
-      }
-
-      return {
-        data: [
-          { id: 1, name: "Item 1", value: 100 },
-          { id: 2, name: "Item 2", value: 200 },
-          { id: 3, name: "Item 3", value: 300 },
-        ],
-        statusCode: 200,
-        headers: { "content-type": "application/json" },
-        responseTime: 350,
-        metadata: {
-          filePath,
-          fileName: filePath.split("/").pop(),
-        },
-      };
-    }
-
-    try {
-      // Fallback to demo data for now
-      return fetchRawData(filePath, options);
-    } catch (error) {
-      console.log("Real FTP download failed, falling back to demo data");
-      const demoOptions = { ...options, demoMode: true };
-      const demoAdapter = createCustomFtpAdapter(demoOptions);
-      return demoAdapter.fetchRawData(filePath, options);
-    }
+    throw new Error("FTP file download not implemented");
   };
 
   const getConnectionInfo = () => ({
@@ -303,7 +130,7 @@ export const createCustomFtpAdapter = (options = {}) => {
     connection: currentConnection,
     provider: "Custom FTP",
     dataSourceCount: connections.length,
-    isDemoMode: isDemoMode || options.demoMode,
+    isDemoMode: false,
   });
 
   const switchConnection = async (connectionId) => {
@@ -319,38 +146,11 @@ export const createCustomFtpAdapter = (options = {}) => {
   };
 
   const updateConnection = async (connectionId, updates) => {
-    if (isDemoMode) {
-      await delay(500);
-      const connectionIndex = connections.findIndex(
-        (c) => c.id === connectionId
-      );
-      if (connectionIndex !== -1) {
-        connections[connectionIndex] = {
-          ...connections[connectionIndex],
-          ...updates,
-        };
-        if (currentConnection && currentConnection.id === connectionId) {
-          currentConnection = connections[connectionIndex];
-        }
-      }
-      return { success: true };
-    }
-
-    return { success: true };
+    throw new Error("FTP update connection not implemented");
   };
 
   const deleteConnection = async (connectionId) => {
-    if (isDemoMode) {
-      await delay(500);
-      connections = connections.filter((c) => c.id !== connectionId);
-      if (currentConnection && currentConnection.id === connectionId) {
-        currentConnection = null;
-        isConnected = false;
-      }
-      return { success: true };
-    }
-
-    return { success: true };
+    throw new Error("FTP delete connection not implemented");
   };
 
   const filterDataSources = (query, dataSources = []) => {

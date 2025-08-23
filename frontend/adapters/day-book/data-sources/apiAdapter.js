@@ -1,30 +1,4 @@
 import { delay, validateSourceId, formatDate } from "./baseAdapter";
-import { mockDataManager } from "./mockDataManager";
-import { demoConfigManager } from "../../../config/demoConfig";
-
-// creates mock data using the centralized mock data manager
-const createMockData = (demoConfig) => {
-  return mockDataManager.getMockData("custom-api");
-};
-
-// generates random response times when network delay simulation is enabled
-const getRandomResponseTime = (demoConfig) => {
-  if (!demoConfig.behavior.simulateNetworkDelay) {
-    return "0ms";
-  }
-  return `${Math.floor(Math.random() * 500 + 50)}ms`;
-};
-
-// retrieves sample data for a specific connection from the mock data manager
-const generateSampleDataForConnection = (connection, demoConfig) => {
-  const mockData = mockDataManager.getMockData("custom-api");
-  return (
-    mockData.sampleData[connection.id] || {
-      name: connection.name,
-      endpoints: [{ path: "/data", method: "GET", data: [] }],
-    }
-  );
-};
 
 // utility functions for parsing and handling API connection data
 const parseHeaders = (headersString) => {
@@ -47,6 +21,23 @@ const parseAuthentication = (authString) => {
   }
 };
 
+// Encode basic auth credentials safely across environments (web/RN/node)
+const encodeBase64 = (str) => {
+  try {
+    if (typeof btoa === "function") return btoa(str);
+  } catch {}
+  try {
+    // Buffer is available in many RN/node setups
+    // eslint-disable-next-line no-undef
+    if (typeof Buffer !== "undefined")
+      return Buffer.from(str, "utf-8").toString("base64");
+  } catch {}
+  console.warn(
+    "Base64 encoding fallback in use; credentials may not be encoded correctly."
+  );
+  return str;
+};
+
 const applyAuthentication = (config, auth) => {
   if (!auth) return config;
 
@@ -58,7 +49,8 @@ const applyAuthentication = (config, auth) => {
       };
       break;
     case "basic":
-      const credentials = btoa(`${auth.username}:${auth.password}`);
+      // CHANGED: avoid raw btoa; use robust encoder
+      const credentials = encodeBase64(`${auth.username}:${auth.password}`);
       config.headers = {
         ...config.headers,
         Authorization: `Basic ${credentials}`,
@@ -81,15 +73,61 @@ const applyAuthentication = (config, auth) => {
   return config;
 };
 
+// Fix URL building so base paths are preserved and query params are merged correctly.
 const buildApiUrl = (baseUrl, endpoint, params = {}) => {
-  const url = new URL(
-    endpoint.startsWith("/") ? endpoint : `/${endpoint}`,
-    baseUrl
-  );
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.append(key, value);
+  // CHANGED: do not use new URL with a leading slash which resets the path.
+  const [basePath, baseQuery] = String(baseUrl).split("?");
+  const trimmedBase = basePath.replace(/\/+$/, ""); // remove trailing slashes
+  const ep =
+    endpoint && endpoint !== "/" ? String(endpoint).replace(/^\/+/, "") : "";
+  const urlWithoutQuery = ep ? `${trimmedBase}/${ep}` : trimmedBase;
+
+  const search = new URLSearchParams(baseQuery || "");
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) search.append(key, value);
   });
-  return url.toString();
+  const qs = search.toString();
+  return qs ? `${urlWithoutQuery}?${qs}` : urlWithoutQuery;
+};
+
+// Produce a concise, actionable error message for failed HTTP calls
+const summarizeRequestError = (error, reqUrl) => {
+  const status =
+    error?.response?.status ?? error?.statusCode ?? error?.status ?? null;
+  const headers = error?.response?.headers || {};
+  const contentType = headers["content-type"] || headers["Content-Type"] || "";
+  const data = error?.response?.data;
+  const body =
+    typeof data === "string"
+      ? data
+      : data
+      ? (() => {
+          try {
+            return JSON.stringify(data);
+          } catch {
+            return String(data);
+          }
+        })()
+      : "";
+  const isHtml =
+    /text\/html/i.test(contentType) || /<!DOCTYPE html>/i.test(body || "");
+  const ngrokOffline = /ERR_NGROK_3200|endpoint .* is offline/i.test(
+    body || ""
+  );
+  let hint = "";
+  if (isHtml && ngrokOffline) hint = "ngrok endpoint appears offline";
+  else if (isHtml) hint = "server returned an HTML error page";
+
+  const preview = isHtml
+    ? hint
+    : (body || "")
+        .replace(/\s+/g, " ")
+        .slice(0, 200)
+        .trim();
+
+  const statusPart = status ? `Server error ${status}` : "Request failed";
+  const urlPart = reqUrl ? ` (${reqUrl})` : "";
+  return [statusPart, preview ? `- ${preview}` : "", urlPart].join(" ").trim();
 };
 
 export const createCustomApiAdapter = (
@@ -97,152 +135,28 @@ export const createCustomApiAdapter = (
   apiClient,
   options = {}
 ) => {
-  const demoConfig =
-    options.demoConfig || demoConfigManager.getScopedConfig("apiConnections");
-
-  // The factory MUST decide demoMode; adapter accepts explicit options.demoMode
-  // or a transient fallbackTriggered flag. Fall back to scoped demoConfig.isDemo only
-  // if neither is provided.
-  const fallbackTriggered = !!options.fallbackTriggered;
-  // Adapter must respect factory-provided demoMode. Only fall back to true
-  // when fallbackTriggered is set. Do NOT read global/apiConnections.isDemo
-  // here to decide mode — the factory is the single source-of-truth.
-  const isDemoMode =
-    options.demoMode !== undefined
-      ? options.demoMode
-      : fallbackTriggered
-      ? true
-      : false;
-
-  // Debug: log the effective demoMode option passed to this adapter and any fallback trigger
-  console.log(
-    "[CustomApiAdapter] effective options.demoMode:",
-    options.demoMode,
-    "fallbackTriggered:",
-    !!options.fallbackTriggered,
-    "resolved isDemoMode:",
-    isDemoMode
-  );
-
-  console.log(
-    `Custom API Adapter initialized in ${
-      isDemoMode ? "demo" : "production"
-    } mode`
-  );
-
-  // Add entry log for create
-  console.log("[CustomApiAdapter] create entry", {
-    isDemoMode,
-    demoConfig: demoConfig.isDemo,
-  });
+  // Production-only mode
+  const isDemoMode = false;
+  console.log("[CustomApiAdapter] initialized in production mode");
 
   // initialize state
-  const mockData = createMockData(demoConfig);
   let connections = [];
   let currentConnection = null;
   let isConnected = false;
 
   // listen for demo configuration changes
   let configUnsubscribe = null;
-  if (demoConfigManager) {
-    configUnsubscribe = demoConfigManager.addListener((newConfig) => {
-      const newDemoConfig = demoConfigManager.getScopedConfig("apiConnections");
-      // Only apply scoped changes (e.g., behavior) to the adapter; do not flip
-      // the adapter's demo mode here — that should be handled by the factory.
-      if (newDemoConfig && newDemoConfig.behavior) {
-        Object.assign(mockData, createMockData(newDemoConfig));
-      }
-    });
-  }
 
   // simulate network delays based on config
-  const simulateDelay = async (operation = "default") => {
-    if (!demoConfig.behavior.simulateNetworkDelay) return;
-
-    const delays = {
-      connect: [800, 1500],
-      test: [1000, 2500],
-      fetch: [200, 1000],
-      default: [300, 800],
-    };
-
-    const [min, max] = delays[operation] || delays.default;
-    const delay = Math.random() * (max - min) + min;
-    await new Promise((resolve) => setTimeout(resolve, delay));
-  };
+  const simulateDelay = async () => {};
 
   // simulate errors based on config
-  const maybeSimulateError = (operation = "default") => {
-    if (!demoConfig.behavior.simulateErrors) return;
+  const maybeSimulateError = () => {};
 
-    const errorRates = {
-      connect: 0.1,
-      test: 0.15,
-      fetch: 0.05,
-      default: 0.08,
-    };
-
-    const rate = errorRates[operation] || errorRates.default;
-    if (Math.random() < rate) {
-      const errors = [
-        "Network timeout occurred",
-        "Connection refused by server",
-        "Authentication failed",
-        "Rate limit exceeded",
-        "Service temporarily unavailable",
-      ];
-      throw new Error(errors[Math.floor(Math.random() * errors.length)]);
-    }
-  };
-
-  const connectDemo = async (connectionData) => {
-    console.log("[CustomApiAdapter] connectDemo entry", { connectionData });
-    await simulateDelay("connect");
-    maybeSimulateError("connect");
-
-    // find or create a demo connection
-    const demoConnection = mockData.connections.find(
-      (conn) =>
-        conn.url === connectionData.url || conn.name === connectionData.name
-    ) || {
-      id: `api_${Date.now()}`,
-      name: connectionData.name,
-      url: connectionData.url,
-      status: "active",
-      createdAt: new Date().toISOString(),
-      lastTested: new Date().toISOString(),
-      headers: connectionData.headers || "{}",
-      authentication: connectionData.authentication || "",
-      testResult: {
-        status: "connected",
-        responseTime: getRandomResponseTime(demoConfig),
-        statusCode: 200,
-        contentType: "application/json",
-      },
-    };
-
-    currentConnection = demoConnection;
-    connections = [
-      demoConnection,
-      ...mockData.connections.filter((c) => c.id !== demoConnection.id),
-    ];
-    isConnected = true;
-
-    console.log(`Demo API connection established: ${demoConnection.name}`);
-
-    return {
-      connected: true,
-      connection: currentConnection,
-      isDemoMode: true,
-    };
-  };
+  // Demo connect removed
 
   const connect = async (connectionData) => {
-    console.log("[CustomApiAdapter] connect called", { isDemoMode });
-    if (isDemoMode) {
-      return connectDemo(connectionData);
-    }
-
+    console.log("[CustomApiAdapter] connect called");
     try {
       if (!connectionData || !connectionData.url || !connectionData.name) {
         throw new Error("Connection data with URL and name is required");
@@ -254,7 +168,8 @@ export const createCustomApiAdapter = (
         connectionData.authentication
       );
 
-      if (testResult.status !== "connected") {
+      // CHANGED: accept both success and connected
+      if (!["success", "connected"].includes(testResult.status)) {
         throw new Error("Connection test failed");
       }
 
@@ -282,24 +197,6 @@ export const createCustomApiAdapter = (
         connection: currentConnection,
       };
     } catch (error) {
-      // Fallback to demo mode only when the centralized config allows it
-      // and the caller allowed fallback via options.fallbackToDemo.
-      try {
-        const dsCfg = demoConfigManager.getConfig().components?.dataSources;
-        const perType = demoConfigManager.isDataSourceTypeInDemo("custom-api");
-        const allowFallback =
-          options.fallbackToDemo !== false &&
-          (typeof dsCfg === "boolean" ? dsCfg === true : perType !== false);
-        if (allowFallback) {
-          console.log(
-            "Custom API connection failed, falling back to demo mode",
-            error.message
-          );
-          return connectDemo(connectionData);
-        }
-      } catch (e) {
-        // If reading centralized config fails, don't silently fallback to demo
-      }
       throw error;
     }
   };
@@ -325,99 +222,54 @@ export const createCustomApiAdapter = (
     }
   };
 
-  // tests API connections with configurable demo behavior and error simulation
+  // tests API connections with a real HTTP request
   const testConnection = async (url, headers = "", authentication = "") => {
     console.log("[CustomApiAdapter] testConnection called", { url });
-    if (isDemoMode) {
-      await simulateDelay("test");
-      maybeSimulateError("test");
-
-      const isConnectionSuccessful = Math.random() > 0.02; // 98% success rate in demo
-
-      if (isConnectionSuccessful) {
-        return {
-          status: "connected",
-          responseTime: getRandomResponseTime(demoConfig),
-          statusCode: 200,
-          contentType: "application/json",
-          sampleData: {
-            message: "Demo API connection successful",
-            timestamp: new Date().toISOString(),
-            endpoints: ["/data", "/users", "/status"],
-            demoMode: true,
-          },
-        };
-      } else {
-        throw new Error("Demo connection test failed: Simulated network error");
-      }
-    }
-
     try {
       const parsedHeaders = parseHeaders(headers);
       const auth = parseAuthentication(authentication);
 
-      let config = {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...parsedHeaders,
-        },
-        timeout: 10000,
+      const requestHeaders = {
+        Accept: "application/json",
+        ...parsedHeaders,
       };
 
-      config = applyAuthentication(config, auth);
+      // apply auth to headers-only config
+      const hdrConfig = applyAuthentication({ headers: requestHeaders }, auth);
+      const finalHeaders = hdrConfig.headers || requestHeaders;
 
-      // In real implementation, would make actual HTTP request
-      await simulateDelay("test");
+      const requestUrl = buildApiUrl(url, "", {});
+      const start = Date.now();
+      const response = await apiClient.get(requestUrl, {
+        headers: finalHeaders,
+        timeout: 10000,
+        params: {},
+      });
+      const durationMs = Date.now() - start;
+
+      const statusCode = response?.status ?? response?.statusCode ?? 200;
+      const contentType =
+        response?.headers?.["content-type"] ||
+        response?.headers?.["Content-Type"] ||
+        "";
+      const sampleData = response?.data ?? { message: "OK" };
+
+      // Guard: treat non-2xx as failure even if client didn't throw
+      if (statusCode >= 400) {
+        throw new Error(summarizeRequestError({ response }, requestUrl));
+      }
 
       return {
-        status: "connected",
-        responseTime: "245ms",
-        statusCode: 200,
-        contentType: "application/json",
-        sampleData: {
-          message: "API connection successful",
-          timestamp: new Date().toISOString(),
-        },
+        status: "success",
+        responseTime: `${durationMs}ms`,
+        statusCode,
+        contentType,
+        sampleData,
       };
     } catch (error) {
-      // Fallback to demo mode only when the centralized config allows it
-      // and the caller allowed fallback via options.fallbackToDemo.
-      try {
-        const dsCfg = demoConfigManager.getConfig().components?.dataSources;
-        const perType = demoConfigManager.isDataSourceTypeInDemo("custom-api");
-        const allowFallback =
-          options.fallbackToDemo !== false &&
-          (typeof dsCfg === "boolean" ? dsCfg === true : perType !== false);
-        if (allowFallback) {
-          console.log(
-            "Real connection test failed, falling back to demo",
-            error.message
-          );
-          // Return a demo-style successful test result instead of recursing
-          try {
-            await simulateDelay("test");
-            maybeSimulateError("test");
-            return {
-              status: "connected",
-              responseTime: getRandomResponseTime(demoConfig),
-              statusCode: 200,
-              contentType: "application/json",
-              sampleData: {
-                message: "Demo API connection successful (fallback)",
-                timestamp: new Date().toISOString(),
-                endpoints: ["/data", "/users", "/status"],
-                demoMode: true,
-              },
-            };
-          } catch (demoErr) {
-            throw new Error(`Demo fallback failed: ${demoErr.message}`);
-          }
-        }
-      } catch (e) {
-        // If reading centralized config fails, don't silently fallback to demo
-      }
-      throw new Error(`Connection test failed: ${error.message}`);
+      // CHANGED: concise, actionable error without dumping HTML
+      const concise = summarizeRequestError(error, url);
+      throw new Error(`Connection test failed: ${concise}`);
     }
   };
 
@@ -431,24 +283,26 @@ export const createCustomApiAdapter = (
       throw new Error("Not connected to any API");
     }
 
-    if (isDemoMode) {
-      await simulateDelay("fetch");
-      maybeSimulateError("fetch");
-
-      const mockConnection = mockData.sampleData[currentConnection.id];
-      if (mockConnection?.endpoints) {
-        return mockConnection.endpoints.map((endpoint) => ({
-          id: `${currentConnection.id}_${endpoint.path.replace("/", "")}`,
-          name: `${endpoint.method} ${endpoint.path}`,
-          path: endpoint.path,
-          method: endpoint.method,
+    // Optionally map provided options.endpoints into data sources if present
+    if (options?.endpoints && currentConnection) {
+      const entries = [];
+      Object.entries(options.endpoints).forEach(([key, value]) => {
+        if (!value) return;
+        // value may be an object with path/method or a string path
+        const path = typeof value === "string" ? value : value.path || "/";
+        const method =
+          typeof value === "string" ? "GET" : value.method || "GET";
+        entries.push({
+          id: `${currentConnection.id}_${key}`,
+          name: `${currentConnection.name} - ${key}`,
+          path,
+          method,
           type: "endpoint",
           lastModified: currentConnection.lastTested,
-          url: `${currentConnection.url}${endpoint.path}`,
-          recordCount: endpoint.data?.length || 0,
-          demoMode: true,
-        }));
-      }
+          url: currentConnection.url,
+        });
+      });
+      if (entries.length) return entries;
     }
 
     // Real implementation would discover actual endpoints
@@ -465,7 +319,7 @@ export const createCustomApiAdapter = (
     ];
   };
 
-  // fetches raw data from API endpoints with fallback to demo data
+  // fetches raw data from API endpoints with real HTTP calls
   const fetchRawData = async (endpoint = "/", method = "GET", params = {}) => {
     console.log("[CustomApiAdapter] fetchRawData called", {
       endpoint,
@@ -476,86 +330,68 @@ export const createCustomApiAdapter = (
       throw new Error("Not connected to any API");
     }
 
-    if (isDemoMode) {
-      await simulateDelay("fetch");
-      maybeSimulateError("fetch");
-
-      const endpointName = endpoint.replace("/", "");
-      const mockConnection = mockData.sampleData[currentConnection.id];
-
-      if (mockConnection) {
-        const mockEndpoint = mockConnection.endpoints.find(
-          (ep) =>
-            ep.path.replace("/", "") === endpointName || ep.path === endpoint
-        );
-
-        if (mockEndpoint) {
-          return {
-            data: mockEndpoint.data,
-            statusCode: 200,
-            headers: {
-              "content-type": "application/json",
-              "x-demo-mode": "true",
-              "x-response-time": getRandomResponseTime(demoConfig),
-            },
-            responseTime: parseInt(getRandomResponseTime(demoConfig)),
-          };
-        }
-      }
-
-      // Fallback demo data
-      return {
-        data: generateGenericData(demoConfig),
-        statusCode: 200,
-        headers: {
-          "content-type": "application/json",
-          "x-demo-mode": "true",
-        },
-        responseTime: parseInt(getRandomResponseTime(demoConfig)),
-      };
-    }
-
     try {
       const parsedHeaders = parseHeaders(currentConnection.headers);
       const auth = parseAuthentication(currentConnection.authentication);
 
-      let config = {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          ...parsedHeaders,
-        },
-        timeout: 30000,
+      const baseHeaders = {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...parsedHeaders,
       };
 
-      config = applyAuthentication(config, auth);
+      const hdrConfig = applyAuthentication({ headers: baseHeaders }, auth);
+      const headers = hdrConfig.headers || baseHeaders;
 
-      if (method === "GET" && Object.keys(params).length > 0) {
-        config.params = params;
-      } else if (["POST", "PUT", "PATCH"].includes(method)) {
-        config.data = params;
-      }
-
-      const url = buildApiUrl(currentConnection.url, endpoint, config.params);
-
-      // In real implementation, would make actual HTTP request
-      // For now, fallback to demo data
-      console.log(
-        "Real API call would be made here, falling back to demo data"
+      const upper = String(method).toUpperCase();
+      const isGet = upper === "GET";
+      const url = buildApiUrl(
+        currentConnection.url,
+        endpoint,
+        isGet ? params : {}
       );
-      return fetchRawData(endpoint, method, params);
-    } catch (error) {
-      // Fallback to demo data if enabled
-      if (demoConfig.fallback.enableOnApiFailure) {
-        console.log(
-          "Real API call failed, falling back to demo data",
-          error.message
-        );
-        const demoOptions = { ...options, demoMode: true, demoConfig };
-        // Adapter factory signature is (authService, apiClient, options)
-        const demoAdapter = createCustomApiAdapter(null, null, demoOptions);
-        return demoAdapter.fetchRawData(endpoint, method, params);
+
+      if (isGet) {
+        const res = await apiClient.get(url, {
+          headers,
+          timeout: 30000,
+          params: {},
+        });
+        return res?.data;
       }
+
+      if (upper === "POST" && typeof apiClient.post === "function") {
+        const res = await apiClient.post(url, params, {
+          headers,
+          timeout: 30000,
+        });
+        return res?.data;
+      }
+      if (upper === "PUT" && typeof apiClient.put === "function") {
+        const res = await apiClient.put(url, params, {
+          headers,
+          timeout: 30000,
+        });
+        return res?.data;
+      }
+      if (upper === "PATCH" && typeof apiClient.patch === "function") {
+        const res = await apiClient.patch(url, params, {
+          headers,
+          timeout: 30000,
+        });
+        return res?.data;
+      }
+      if (upper === "DELETE" && typeof apiClient.delete === "function") {
+        const res = await apiClient.delete(url, {
+          headers,
+          timeout: 30000,
+          params: {},
+        });
+        return res?.data;
+      }
+
+      throw new Error(`HTTP method not supported by apiClient: ${upper}`);
+    } catch (error) {
       throw error;
     }
   };
@@ -565,16 +401,8 @@ export const createCustomApiAdapter = (
     connection: currentConnection,
     provider: "Custom API",
     dataSourceCount: connections.length,
-    isDemoMode: isDemoMode,
-    demoConfig: isDemoMode
-      ? demoConfig
-      : null
-      ? {
-          simulateNetworkDelay: demoConfig.behavior.simulateNetworkDelay,
-          simulateErrors: demoConfig.behavior.simulateErrors,
-          showDemoIndicators: demoConfig.behavior.showDemoIndicators,
-        }
-      : null,
+    isDemoMode: false,
+    demoConfig: null,
   });
 
   const switchConnection = async (connectionId) => {
@@ -593,47 +421,11 @@ export const createCustomApiAdapter = (
   };
 
   const updateConnection = async (connectionId, updates) => {
-    if (isDemoMode || demoConfig.isDemo) {
-      await simulateDelay("update");
-      maybeSimulateError("update");
-
-      const connectionIndex = connections.findIndex(
-        (c) => c.id === connectionId
-      );
-      if (connectionIndex !== -1) {
-        connections[connectionIndex] = {
-          ...connections[connectionIndex],
-          ...updates,
-          lastTested: new Date().toISOString(),
-        };
-        if (currentConnection && currentConnection.id === connectionId) {
-          currentConnection = connections[connectionIndex];
-        }
-        console.log(`Updated connection: ${connections[connectionIndex].name}`);
-      }
-      return { connected: true };
-    }
-
     // Real implementation would update via API
     return { connected: true };
   };
 
   const deleteConnection = async (connectionId) => {
-    if (isDemoMode || demoConfig.isDemo) {
-      await simulateDelay("delete");
-
-      const connectionToDelete = connections.find((c) => c.id === connectionId);
-      connections = connections.filter((c) => c.id !== connectionId);
-
-      if (currentConnection && currentConnection.id === connectionId) {
-        currentConnection = null;
-        isConnected = false;
-      }
-
-      console.log(`Deleted connection: ${connectionToDelete?.name}`);
-      return { connected: true };
-    }
-
     // Real implementation would delete via API
     return { connected: true };
   };
@@ -650,9 +442,9 @@ export const createCustomApiAdapter = (
 
   // returns current demo mode status and configuration for UI display
   const getDemoStatus = () => ({
-    isDemoActive: isDemoMode || demoConfig.isDemo,
-    config: demoConfig,
-    showIndicators: demoConfig.behavior.showDemoIndicators,
+    isDemoActive: false,
+    config: null,
+    showIndicators: false,
     connectionCount: connections.length,
   });
 

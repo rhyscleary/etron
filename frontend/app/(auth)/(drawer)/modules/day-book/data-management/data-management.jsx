@@ -69,13 +69,24 @@ const DataManagement = () => {
     console.log('Update trigger changed, refreshing UI...');
   }, [updateTrigger]);
 
+  // Trace local system/loading state
+  useEffect(() => {
+    console.log('[DataManagement] system loading ->', loading, 'hasError ->', hasError, 'error ->', error ?? null);
+  }, [loading, hasError, error]);
+
+  // Trace list changes as seen by the screen
+  useEffect(() => {
+    console.log('[DataManagement] dataSourcesList length ->', dataSourcesList.length);
+  }, [dataSourcesList.length]);
+
   // FIXED: Only refresh on initial focus, not every time
   useFocusEffect(
     useCallback(() => {
       if (!hasInitiallyLoadedRef.current) {
-        console.log('DataManagement screen focused for first time, refreshing data...');
+  console.log('DataManagement screen focused for first time, refreshing data...', { existingCount: dataSourcesList.length });
         refresh();
         hasInitiallyLoadedRef.current = true;
+  console.log('DataManagement initial focus load flag set');
       } else {
         console.log('DataManagement screen focused, skipping refresh (already loaded)');
         console.log('[DataManagement] Current data sources on focus:', dataSourcesList.length, 'total');
@@ -335,12 +346,7 @@ const DataManagement = () => {
             <Text variant="bodyMedium" style={styles.emptyStateMessage}>
               Connect your first data source to start tracking your data.
             </Text>
-            <Pressable 
-              style={styles.addButton}
-              onPress={() => router.push("/modules/day-book/data-management/create-data-connection")}
-            >
-              <Text style={styles.addButtonText}>Add Data Source</Text>
-            </Pressable>
+            {/* Add Data Source button removed per request */}
           </View>
         )}
 

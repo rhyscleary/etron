@@ -19,12 +19,13 @@ import {
 import useDataSources from "../../../../../../../hooks/useDataSource";
 import apiClient from "../../../../../../../utils/api/apiClient";
 import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
+import { Button } from "react-native-paper";
 
 const SelectDataSource = () => {
   const authService = { getCurrentUser, fetchAuthSession, signOut };
   const { ids } = useLocalSearchParams();
 
-  const { getDataSource, loading: dataSourcesLoading } = useDataSources(
+  const { getDataSource, loading: dataSourcesLoading, fetchDataSource } = useDataSources(
     apiClient,
     authService
   );
@@ -33,6 +34,8 @@ const SelectDataSource = () => {
   const [adapters, setAdapters] = useState([]);
   const [loadingAdapters, setLoadingAdapters] = useState(true);
   const [loadingSource, setLoadingSource] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
   // Load available adapter types
   useEffect(() => {
@@ -80,6 +83,23 @@ const SelectDataSource = () => {
     );
   };
 
+  const handleViewData = async () => {
+    if (!existingSource) return;
+    setPreviewLoading(true);
+    setPreviewData(null);
+    try {
+      console.log('Fetching preview data for', existingSource.id);
+      const result = await fetchDataSource(existingSource.id, { endpoint: existingSource.config?.defaultEndpoint || '/' });
+      console.log('Preview result:', result);
+      setPreviewData(result);
+    } catch (err) {
+      console.error('Failed to fetch preview data:', err.message || err);
+      setPreviewData({ error: err.message || String(err) });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   if (loadingAdapters || dataSourcesLoading || loadingSource) {
     return (
       <View style={[commonStyles.screen, styles.center]}>
@@ -115,6 +135,7 @@ const SelectDataSource = () => {
 
         {ids ? (
           existingSource ? (
+            <>
             <Card style={styles.card}>
               <Card.Title
                 title={
@@ -128,8 +149,44 @@ const SelectDataSource = () => {
                 <Text>Type: {String(existingSource.type)}</Text>
                 <Text>Status: {String(existingSource.status)}</Text>
                 <Text>Last Sync: {String(existingSource.lastSync)}</Text>
+                <View style={{ marginTop: 12 }}>
+                  <Button onPress={handleViewData} mode="contained" disabled={previewLoading}>
+                    {previewLoading ? 'Loading...' : 'View Data'}
+                  </Button>
+                </View>
               </View>
             </Card>
+            {previewData ? (
+              <Card style={{ margin: 16 }}>
+                <Card.Title title="Preview" />
+                <View style={{ padding: 12 }}>
+                  {previewData.error ? (
+                    <Text>Error: {previewData.error}</Text>
+                  ) : (
+                    <ScrollView horizontal>
+                      <View>
+                        <Text variant="labelLarge">Showing up to 10 rows</Text>
+                        {previewData.headers && (
+                          <View style={{ flexDirection: 'row', marginTop: 8 }}>
+                            {previewData.headers.map((h) => (
+                              <Text key={h} style={{ minWidth: 120, fontWeight: '600' }}>{h}</Text>
+                            ))}
+                          </View>
+                        )}
+                        {(previewData.data || []).slice(0, 10).map((row, idx) => (
+                          <View key={idx} style={{ flexDirection: 'row', marginTop: 8 }}>
+                            {(previewData.headers || Object.keys(row)).map((h) => (
+                              <Text key={h} style={{ minWidth: 120 }}>{String(row[h])}</Text>
+                            ))}
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  )}
+                </View>
+              </Card>
+            ) : null}
+            </>
           ) : null
         ) : (
           adapters.map(({ type, info }) => (

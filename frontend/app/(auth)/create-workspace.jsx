@@ -10,10 +10,11 @@ import TextField from "../../components/common/input/TextField";
 import StackLayout from "../../components/layout/StackLayout";
 
 import { Snackbar, Text, useTheme } from "react-native-paper";
-import { apiPost } from "../../utils/api/apiClient";
+import { apiPost, apiGet } from "../../utils/api/apiClient";
 import MessageBar from "../../components/overlays/MessageBar";
 import endpoints from "../../utils/api/endpoints";
-import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
+import { saveWorkspaceInfo, extractWorkspaceId } from "../../storage/workspaceStorage";
+import AuthService from "../../services/AuthService";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -44,10 +45,43 @@ const CreateWorkspace = () => {
                 workspaceData
             );
 
-            // save workspace info to local storage
-            saveWorkspaceInfo(result);
+            console.log('[CreateWorkspace] workspace create response received', {
+                hasResult: !!result,
+                type: typeof result,
+                keys: result && typeof result === 'object' ? Object.keys(result) : null,
+                message: result?.message || null,
+                receivedId: extractWorkspaceId(result),
+            });
 
-            console.log('Workspace creation response:', result);
+            let toSave = result;
+            let id = extractWorkspaceId(result);
+
+            // Fallback: some backends return a message when a workspace already exists.
+            // In that case, fetch the user's current workspace and save that instead.
+            if (!id) {
+                try {
+                    const user = await AuthService.getCurrentUserInfo();
+                    const userId = user?.userId || user?.username || null;
+                    console.log('[CreateWorkspace] no id in create response; fetching workspace by userId', { userId });
+                    if (userId) {
+                        const fetched = await apiGet(endpoints.workspace.core.getByUserId(userId));
+                        // API might return a single object or an array; prefer first item if array
+                        toSave = Array.isArray(fetched) ? (fetched[0] || null) : fetched;
+                        id = extractWorkspaceId(toSave);
+                        console.log('[CreateWorkspace] fetched workspace by userId', {
+                            hasWorkspace: !!toSave,
+                            receivedId: id,
+                            keys: toSave && typeof toSave === 'object' ? Object.keys(toSave) : null,
+                        });
+                    }
+                } catch (fallbackErr) {
+                    console.log('[CreateWorkspace] fallback fetch by userId failed', fallbackErr?.message || fallbackErr);
+                }
+            }
+
+            console.log('[CreateWorkspace] saving workspace', { idBeforeSave: id });
+            // save workspace info to local storage (storage will log before/after saving as well)
+            await saveWorkspaceInfo(toSave);
 
 
             // navigate to the profile

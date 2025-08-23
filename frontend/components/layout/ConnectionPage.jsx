@@ -14,7 +14,6 @@ import Divider from "./Divider";
 
 import { commonStyles } from "../../assets/styles/stylesheets/common";
 import { useApp } from "../../contexts/AppContext";
-import { demoConfigManager } from "../../config/demoConfig";
 import { createDataAdapter } from "../../adapters/day-book/data-sources";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
@@ -64,9 +63,8 @@ const ConnectionPage = ({
 }) => {
   const theme = useTheme();
   const {
-    dataSources: { list: dataSources, isDemoMode },
-    demo: { status: demoStatus, config: demoConfig },
-    actions: { connectDataSource, testConnection: testDataSourceConnection },
+  dataSources: { list: dataSources },
+  actions: { connectDataSource, testConnection: testDataSourceConnection },
   } = useApp();
 
   // State
@@ -85,28 +83,21 @@ const ConnectionPage = ({
   // Adapter setup
   useEffect(() => {
     try {
-  console.log('[ConnectionPage] creating adapter', { connectionType, isDemoMode, demoStatus: demoStatus, perTypeDemo: demoConfigManager?.isDataSourceTypeInDemo ? demoConfig?.components && (typeof demoConfig.components.dataSources === 'object' ? !!demoConfig.components.dataSources[connectionType] : demoConfig.components.dataSources) : undefined });
+  console.log('[ConnectionPage] creating adapter', { connectionType });
       const apiClient = {
         post: apiPost,
         get: async () => ({ data: [] }),
         put: async () => ({ data: {} }),
         delete: async () => ({ data: {} })
       };
-      const authService =
-        Array.isArray(demoStatus?.activeComponents) && demoStatus.activeComponents.includes('authentication')
-          ? {
-              getCurrentUser: () => Promise.resolve({ username: 'demo_user' }),
-              fetchAuthSession: () => Promise.resolve({ tokens: { accessToken: 'demo_token' } }),
-              signOut: () => Promise.resolve(),
-            }
-          : { getCurrentUser, fetchAuthSession, signOut };
+      const authService = { getCurrentUser, fetchAuthSession, signOut };
     const newAdapter = createDataAdapter(connectionType, {
         authService,
         apiClient,
         endpoints,
         options: {
-      fallbackToDemo: demoConfig.fallback.enableOnApiFailure,
-      demoConfig
+      // Do not allow automatic fallback to demo when creating a UI adapter
+      fallbackToDemo: false
         }
       });
       if (!newAdapter) throw new Error('Failed to create adapter - adapter is null');
@@ -116,7 +107,7 @@ const ConnectionPage = ({
       setAdapterError(`Failed to create adapter: ${err.message}`);
   console.error('[ConnectionPage] Adapter creation error:', err);
     }
-  }, [connectionType, isDemoMode, demoStatus, demoConfig]);
+  }, [connectionType]);
 
   // Expand test section when form valid
   const formIsValid = useMemo(() => formValidator ? formValidator(formData) : true, [formData, formValidator]);
@@ -169,26 +160,7 @@ const ConnectionPage = ({
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
       const connectionName = formData.name || generateName() || `${title} Connection`;
-      let result;
-      if (isDemoMode || demoConfig.behavior.simulateNetworkDelay) {
-        const delay = Math.random() * 1000 + 200;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        if (demoConfig.behavior.simulateErrors && Math.random() < 0.1) {
-          throw new Error("Demo error: Simulated connection failure");
-        }
-        result = {
-          status: "success",
-          data: {
-            message: `${title} connection test passed (Demo Mode)`,
-            timestamp: new Date().toISOString(),
-            responseTime: `${Math.floor(delay)}ms`,
-            statusCode: 200,
-            demoMode: true
-          }
-        };
-      } else {
-        result = await testDataSourceConnection(connectionType, connectionData, connectionName);
-      }
+  const result = await testDataSourceConnection(connectionType, connectionData, connectionName);
       setTestResponse(result);
       setConnectionError(null);
     } catch (error) {
@@ -209,6 +181,9 @@ const ConnectionPage = ({
       const connectionName = formData.name || generateName() || `${title} Connection`;
   console.log('[ConnectionPage] calling connectDataSource', { type: connectionType, name: connectionName });
   const result = await connectDataSource(connectionType, connectionData, connectionName);
+      if (!result || !result.id) {
+        throw new Error('Backend did not confirm creation (missing id)');
+      }
       if (result) {
         const dialogData = formatConnectionForDialog(result, connectionType, testResponse);
         setConnection(dialogData);
@@ -232,44 +207,41 @@ const ConnectionPage = ({
       createdAt: connection.createdAt || new Date().toISOString(),
       testResult: testResult?.status === 'success' ? testResult.data : null,
       originalConnection: connection,
-      isDemoMode: isDemoMode || connection.config?.isDemoMode
+      isDemoMode: false
     };
     const formatters = {
       'custom-api': (conn) => ({
         ...baseData,
-        title: `API Connection Created${isDemoMode ? ' (Demo)' : ''}`,
-        message: `Your custom API connection has been successfully created${isDemoMode ? ' in demo mode' : ''} and is ready to use.`,
+        title: `API Connection Created`,
+        message: `Your custom API connection has been successfully created and is ready to use.`,
         details: [
           { label: "URL", value: conn.config?.url || formData.url },
           { label: "Type", value: "REST API" },
-          { label: "Authentication", value: conn.config?.authentication || formData.authentication ? "Configured" : "None" },
-          ...(isDemoMode ? [{ label: "Mode", value: "Demo" }] : [])
+          { label: "Authentication", value: conn.config?.authentication || formData.authentication ? "Configured" : "None" }
         ]
       }),
       'custom-ftp': (conn) => ({
         ...baseData,
-        title: `FTP Connection Created${isDemoMode ? ' (Demo)' : ''}`,
-        message: `Your FTP connection has been successfully created${isDemoMode ? ' in demo mode' : ''} and is ready to use.`,
+        title: `FTP Connection Created`,
+        message: `Your FTP connection has been successfully created and is ready to use.`,
         details: [
           { label: "Hostname", value: conn.config?.hostname || formData.hostname },
           { label: "Port", value: conn.config?.port || formData.port || "21" },
           { label: "Username", value: conn.config?.username || formData.username },
           { label: "Directory", value: conn.config?.directory || formData.directory || "/" },
-          { label: "Protocol", value: conn.config?.keyFile || formData.keyFile ? "SFTP" : "FTP" },
-          ...(isDemoMode ? [{ label: "Mode", value: "Demo" }] : [])
+          { label: "Protocol", value: conn.config?.keyFile || formData.keyFile ? "SFTP" : "FTP" }
         ]
       }),
       'custom-mysql': (conn) => ({
         ...baseData,
-        title: `MySQL Connection Created${isDemoMode ? ' (Demo)' : ''}`,
-        message: `Your MySQL connection has been successfully created${isDemoMode ? ' in demo mode' : ''} and is ready to use.`,
+        title: `MySQL Connection Created`,
+        message: `Your MySQL connection has been successfully created and is ready to use.`,
         details: [
           { label: "Host", value: conn.config?.host || formData.host },
           { label: "Port", value: conn.config?.port || formData.port || "3306" },
           { label: "Username", value: conn.config?.username || formData.username },
           { label: "Database", value: conn.config?.database || formData.database },
-          { label: "SSL", value: conn.config?.sslCA || formData.sslCA ? "Enabled" : "Disabled" },
-          ...(isDemoMode ? [{ label: "Mode", value: "Demo" }] : [])
+          { label: "SSL", value: conn.config?.sslCA || formData.sslCA ? "Enabled" : "Disabled" }
         ]
       })
     };
@@ -277,12 +249,11 @@ const ConnectionPage = ({
     if (formatter) return formatter(connection);
     return {
       ...baseData,
-      title: `Connection Created${isDemoMode ? ' (Demo)' : ''}`,
-      message: `Your connection has been successfully created${isDemoMode ? ' in demo mode' : ''} and is ready to use.`,
+      title: `Connection Created`,
+      message: `Your connection has been successfully created and is ready to use.`,
       details: [
         { label: "Type", value: type },
-        { label: "Name", value: connection.name },
-        ...(isDemoMode ? [{ label: "Mode", value: "Demo" }] : [])
+        { label: "Name", value: connection.name }
       ]
     };
   };
@@ -297,7 +268,6 @@ const ConnectionPage = ({
         connectionId: originalConnection.id,
         name: originalConnection.name,
         status: originalConnection.status,
-        isDemoMode: isDemoMode.toString(),
         ...originalConnection
       },
     });
@@ -342,30 +312,6 @@ const ConnectionPage = ({
               </Text>
             </View>
           )}
-          {isDemoMode && demoConfig.behavior.showDemoIndicators && (
-            <View style={{
-              padding: 15,
-              backgroundColor: theme.colors.secondaryContainer,
-              borderRadius: 8,
-              marginBottom: 20
-            }}>
-              <Text style={{
-                color: theme.colors.onSecondaryContainer,
-                fontWeight: 'bold',
-                textAlign: 'center'
-              }}>
-                🚀 Demo Mode Active
-              </Text>
-              <Text style={{
-                color: theme.colors.onSecondaryContainer,
-                textAlign: 'center',
-                fontSize: 12,
-                marginTop: 4
-              }}>
-                Using simulated data for development
-              </Text>
-            </View>
-          )}
           <CollapsibleList
             canCloseFormAccordion={formIsValid}
             expandedSections={expandedSections}
@@ -386,7 +332,6 @@ const ConnectionPage = ({
                     isConnected={isConnected()}
                     theme={theme}
                     onFieldBlur={generateName}
-                    isDemoMode={isDemoMode}
                   />
                 ),
               },

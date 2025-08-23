@@ -89,28 +89,28 @@ const endpoints = {
     },
 
     invites: {
-      getUserInvites: (userId, workspaceId) =>
-        `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
+      getUserInvites: `${USER_BASE_URL}/invites`,
     },
   },
 
   modules: {
     day_book: {
       data_sources: {
-        add: () => `${DATASOURCES_BASE_URL}`,
+        add: `${DATASOURCES_BASE_URL}`,
         update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
         getDataSource: (dataSourceId) =>
           `${DATASOURCES_BASE_URL}/${dataSourceId}`,
-        getDataSources: () => `${DATASOURCES_BASE_URL}`,
+        getDataSources: `${DATASOURCES_BASE_URL}`,
         removeDataSource: (dataSourceId) =>
           `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+        testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
       },
 
       metrics: {
-        add: () => `${METRICS_BASE_URL}`,
+        add: `${METRICS_BASE_URL}`,
         update: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
         getMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
-        getMetrics: () => `${METRICS_BASE_URL}`,
+        getMetrics: `${METRICS_BASE_URL}`,
         removeMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
       },
     },
