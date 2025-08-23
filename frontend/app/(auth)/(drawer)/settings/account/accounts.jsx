@@ -7,6 +7,15 @@ import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
 import Header from '../../../../../components/layout/Header';
 import BasicDialog from '../../../../../components/overlays/BasicDialog';
 import AccountCard from '../../../../../components/cards/accountCard';
+import BasicButton from '../../../../../components/common/buttons/BasicButton';
+import { loadLinkedAccounts, removeLinkedAccount } from '../../../../../storage/linkedAccountStorage';
+import { useAuthenticator } from '@aws-amplify/ui-react-native';
+
+import {
+    signOut,
+    fetchUserAttributes
+} from 'aws-amplify/auth';
+import { removeWorkspaceInfo } from '../../../../../storage/workspaceStorage';
 
 const Accounts = () => {
     const {

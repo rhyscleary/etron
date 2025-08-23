@@ -18,6 +18,7 @@ import {
     deleteUser,
     signIn
 } from 'aws-amplify/auth';
+import BasicButton from '../../../../../components/common/buttons/BasicButton';
 
 const Account = () => {
     const theme = useTheme();
@@ -46,8 +47,8 @@ const Account = () => {
     }, []);
 
     const accountSettingsButtons = [
-        { label: "Personal Details", description: "Update first and last name, phone number, and avatar", onPress: () => router.push("/settings/account/personal-details")},
-        { label: "Password and Security", onPress: () => router.push("/settings/account/password-security") },
+        { label: "Personal Details", description: "Update first and last name, phone number, and avatar", onPress: () => router.navigate("/settings/account/personal-details")},
+        { label: "Password and Security", onPress: () => router.navigate("/settings/account/password-security") },
         { label: "Delete Account", onPress: () => setDialogVisible(true)}
     ]
 
@@ -67,6 +68,7 @@ const Account = () => {
             // delete the user from Cognito and reset the app state
             await deleteUser();
             setDialogVisible(false);
+            router.dismissAll();
             router.replace("/landing");
         } catch (error) {
             console.log("Error deleting account: ", error);
@@ -88,7 +90,7 @@ const Account = () => {
                                 key={"Accounts"}
                                 label={"Accounts"}
                                 description={email}
-                                onPress={() => router.push("/settings/account/accounts")}
+                                onPress={() => router.navigate("/settings/account/accounts")}
                             />
                         )}
                     </View>
@@ -103,6 +105,7 @@ const Account = () => {
                         ))}
                     </StackLayout>
                 </StackLayout>
+                
             </ScrollView>
             <BasicDialog
                 visible={dialogVisible}

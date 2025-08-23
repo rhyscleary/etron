@@ -15,7 +15,7 @@ const MetricManagement = () => {
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.push("/modules/day-book/metrics/create-metric")}/>
+            <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric")}/>
             
             <View>
                 <SearchBar/>
@@ -39,7 +39,7 @@ const MetricManagement = () => {
             </View>
 
             {/*Temporary redirect to profile screen*/}
-            <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+            <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
         </View>
     )
 }

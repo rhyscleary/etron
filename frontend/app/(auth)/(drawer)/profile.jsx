@@ -8,13 +8,18 @@ import DescriptiveButton from "../../../components/common/buttons/DescriptiveBut
 
 const Profile = () => {
     const settingOptionButtons = [
-        { icon: "", label: "Settings", onPress: () => router.push("/settings/settings")},
-        { icon: "", label: "Data Sources", onPress: () => router.push("/modules/day-book/data-management/data-management") },
-        { icon: "", label: "Metrics", onPress: () => router.push("/modules/day-book/metrics/metric-management") },
-        { icon: "", label: "Notifications", onPress: () => router.push("/modules/day-book/notifications/notifications") },
-        { icon: "", label: "Collaboration", onPress: () => router.push("/collaboration/collaboration") },
-        { icon: "", label: "Testing - Account Settings", onPress: () => router.push("/account-settings") },
-        { icon: "", label: "Testing - Example Graph Display", onPress: () => router.push("/graphs") },
+
+        { icon: "", label: "Settings", onPress: () => router.navigate("/settings/settings")},
+        { icon: "", label: "Data Sources", onPress: () => router.navigate("/modules/day-book/data-management/data-management") },
+        { icon: "", label: "Metrics", onPress: () => router.navigate("/modules/day-book/metrics/metric-management") },
+        { icon: "", label: "Notifications", onPress: () => router.navigate("/modules/day-book/notifications/notifications") },
+        { icon: "", label: "Collaboration", onPress: () => router.navigate("/collaboration/collaboration") },
+        { icon: "", label: "Testing - Account Settings", onPress: () => router.navigate("/account-settings") },
+        { icon: "", label: "Testing - Example Graph Display", onPress: () => router.navigate("/graphs") },
+        { icon: "", label: "Testing - Endpoints", onPress: () => router.navigate("/test-endpoints/endpoints") },
+        { icon: "", label: "Testing - Create Workspace", onPress: () => router.navigate("../create-workspace") },
+        { icon: "", label: "Testing - Join Workspace", onPress: () => router.navigate("../join-workspace") },
+
     ];
     
     return (

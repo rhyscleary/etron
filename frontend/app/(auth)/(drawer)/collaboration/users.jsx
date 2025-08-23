@@ -1,6 +1,6 @@
 // Author(s): Matthew Page
 
-import { Pressable, View, SectionList, Text as RNText } from "react-native";
+import { Pressable, View, SectionList, Text as RNText, ActivityIndicator, StyleSheet } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
@@ -78,7 +78,7 @@ const Users = () => {
                 title="Users"
                 showBack
                 showPlus
-                onRightIconPress={() => router.push("/collaboration/invite-user")}
+                onRightIconPress={() => router.navigate("/collaboration/invite-user")}
             />
 
             {/* Search Box */}
@@ -105,20 +105,6 @@ const Users = () => {
                 ))}
             </View>
 
-            {/* Workspace Log */}
-            <Pressable
-                onPress={() => router.push("/collaboration/workspace-log")}
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    borderRadius: 4,
-                    padding: 16,
-                    marginVertical: 8
-                }}
-            >
-                <Text>Workspace Log</Text>
-            </Pressable>
-
             {/* Sectioned User List */}
             <SectionList
                 sections={groupedUsers}
@@ -135,16 +121,19 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => router.push(`/collaboration/edit-user/${item.userId || item.id}`)}
+                        onPress={() => router.navigate(`/collaboration/edit-user/${item.userId || item.id}`)}
                     >
                         <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>
                 )}
                 ListEmptyComponent={
                     loading ? (
-                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                            Loading Users...
-                        </RNText>
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" />
+                            <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
+                                Loading Users...
+                            </RNText>
+                        </View> 
                     ) : (
                         <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
                             No users found
@@ -155,5 +144,13 @@ const Users = () => {
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+})
 
 export default Users;

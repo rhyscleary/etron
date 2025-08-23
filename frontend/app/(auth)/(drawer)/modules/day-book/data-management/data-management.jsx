@@ -185,16 +185,17 @@ const DataManagement = () => {
         <DataConnectionButton
           label={source.name}
           height={60}
-          onNavigate={() => {
-            router.push(
-              `/modules/day-book/data-management/select-data-source/${source.id}`
-            );
-          }}
+           onNavigate={() => {
+            {
+          router.navigate(
+            `/modules/day-book/data-management/select-data-source/${source.id}`
+          );}
+        }}
           onSync={() => handleSyncSource(source.id)}
           onDelete={() => handleDisconnectSource(source.id, source.name)}
           onTest={() => handleTestConnection(source.id)}
           onSettings={() =>
-            router.push(
+            router.navigate(
               `/modules/day-book/data-management/update-data-source/${source.id}`
             )
           }
@@ -229,11 +230,13 @@ const DataManagement = () => {
           showMenu
           showPlus
           onRightIconPress={() =>
-            router.push(
+            router.navigate(
               "/modules/day-book/data-management/create-data-connection"
             )
           }
         />
+        {/*Temporary redirect to profile screen*/}
+        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <Text style={styles.loadingText}>Loading data sources...</Text>
@@ -250,11 +253,13 @@ const DataManagement = () => {
           showMenu
           showPlus
           onRightIconPress={() =>
-            router.push(
+            router.navigate(
               "/modules/day-book/data-management/create-data-connection"
             )
           }
         />
+        {/*Temporary redirect to profile screen*/}
+        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
         <View style={styles.errorContainer}>
           <Text variant="headlineSmall" style={styles.errorTitle}>
             Unable to Load Data Sources
@@ -279,11 +284,12 @@ const DataManagement = () => {
         showMenu
         showPlus
         onRightIconPress={() =>
-          router.push(
+          router.navigate(
             "/modules/day-book/data-management/create-data-connection"
           )
         }
       />
+
       {/*Temporary redirect to profile screen*/}
       <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
 

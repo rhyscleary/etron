@@ -1,4 +1,4 @@
-// Author(s): Matthew Parkinson, Holly Wyatt
+// Author(s): Matthew Parkinson, Holly Wyatt, Rhys Cleary
 
 import { Redirect, useRouter, router, Link, useLocalSearchParams } from "expo-router";
 import { PaperProvider, Text } from 'react-native-paper';
@@ -16,7 +16,7 @@ import accountService from '../services/AccountService';
 import { useApp } from "../contexts/AppContext";
 
 function LoginSignup() {
-    const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
+    const { email: emailParam, isSignUp, link } = useLocalSearchParams();
     const isSignUpBool = isSignUp === 'true';
     const isLinking = link === 'true';
 
@@ -79,6 +79,27 @@ function LoginSignup() {
         const subscription = accountService.setupDeepLinkListener();
         return () => subscription?.remove();
     }, []);
+
+    const setHasWorkspaceAttribute = async (value) => {
+        try {
+            await updateUserAttributes({
+                userAttributes: {
+                    'custom:has_workspace': value ? 'true' : 'false'
+                }
+            });
+        } catch (error) {
+            console.error("Unable to update user attribute has_workspace:", error);
+        }
+    }
+
+    const handleResend = async () => {
+        try {
+            await resendSignUpCode({username: email});
+            setResendCooldown(60);
+        } catch (error) {
+            console.error("Error resending the code", error);
+        }
+    }
 
     const handleSignIn = async () => {
         setLoading(true);
@@ -216,7 +237,7 @@ function LoginSignup() {
 
                         {!isSignUpBool && (
                             <View style={{ marginTop: 10 }}>
-                                <Link href="/forgot-password">
+                                <Link href="/reset-password">
                                     <Text style={{
                                         textDecorationLine: 'underline'
                                     }}>
@@ -291,7 +312,7 @@ function LoginSignup() {
                     </Text>
                 )}
 
-                <Modal
+                <VerificationDialog
                     visible={showVerificationModal}
                     animationType="slide"
                     transparent={true}

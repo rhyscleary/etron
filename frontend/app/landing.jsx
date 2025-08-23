@@ -14,15 +14,6 @@ UNSURE WHAT TO DO WITH THIS AT THIS MOMENT
 import { Linking } from 'react-native';
 
 import { signIn, signUp, signInWithRedirect } from 'aws-amplify/auth';
-
-import awsmobile from '../src/aws-exports';
-Amplify.configure({
-    awsmobile,
-    oauth: {
-        redirectSignIn: 'myapp://auth/',
-        redirectSignOut: 'myapp://signout/',
-        responseType: 'code'
-    }});
 */
 
 const Landing = () => {
@@ -49,14 +40,14 @@ const Landing = () => {
                     <View>
                         <BasicButton
                             label='Login'
-                            onPress={() => router.push('/login-signup?isSignUp=false')}
+                            onPress={() => router.navigate('/login-signup?isSignUp=false')}
                         />
                     </View>
 
                     <View style={{ alignItems: 'flex-end' }}>
                         <BasicButton
                             label='Sign Up'
-                            onPress={() => router.push('/login-signup?isSignUp=true')}
+                            onPress={() => router.navigate('/login-signup?isSignUp=true')}
                         />
                     </View>
                 </View>

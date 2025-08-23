@@ -20,7 +20,8 @@ const Header = ({
     showCheck,
     showPlus,
     onRightIconPress,
-    customBackAction
+    customBackAction,
+    onBackPress
 }) => {
     const router = useRouter();
     const theme = useTheme();
@@ -29,7 +30,14 @@ const Header = ({
         <Appbar.Header mode="center-aligned" style={[{backgroundColor: theme.colors.background}, {marginBottom: 12}]}>
             {
                 showBack ? (
-                    <Appbar.BackAction onPress={customBackAction || (() => router.back())} />
+                    <Appbar.BackAction onPress={customBackAction || (() => {
+                        if (onBackPress) {
+                            onBackPress();
+                        } else {
+                            router.back()
+                        }
+                    })} 
+                    />
                 ) : showMenu ? (
                     <Appbar.Action icon="menu" onPress={() => {}} />
                 ) : null

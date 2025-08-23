@@ -1,0 +1,70 @@
+{
+  "auth": {
+    "user_pool_id": "ap-southeast-2_Q4EgaQS86",
+    "aws_region": "ap-southeast-2",
+    "user_pool_client_id": "nor0j2skjolr23qkbt2fehuhp",
+    "identity_pool_id": "ap-southeast-2:760300f0-80f7-412c-befb-5e68329c99a6",
+    "mfa_methods": [],
+    "standard_required_attributes": [
+      "email"
+    ],
+    "username_attributes": [
+      "email"
+    ],
+    "user_verification_types": [
+      "email"
+    ],
+    "groups": [],
+    "mfa_configuration": "NONE",
+    "password_policy": {
+      "min_length": 8,
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_symbols": true,
+      "require_uppercase": true
+    },
+    "oauth": {
+      "identity_providers": [
+        "GOOGLE"
+      ],
+      "redirect_sign_in_uri": [
+        "myapp://callback"
+      ],
+      "redirect_sign_out_uri": [
+        "myapp://signout/"
+      ],
+      "response_type": "code",
+      "scopes": [
+        "phone",
+        "email",
+        "openid",
+        "profile",
+        "aws.cognito.signin.user.admin"
+      ],
+      "domain": "etron-app.auth.ap-southeast-2.amazoncognito.com"
+    },
+    "unauthenticated_identities_enabled": true
+  },
+  "storage": {
+    "aws_region": "ap-southeast-2",
+    "bucket_name": "amplify-d3vtak5uri6g9a-de-profilepicturesbucket46b-q7toxf3npzs2",
+    "buckets": [
+      {
+        "name": "profilePictures",
+        "bucket_name": "amplify-d3vtak5uri6g9a-de-profilepicturesbucket46b-q7toxf3npzs2",
+        "aws_region": "ap-southeast-2",
+        "paths": {
+          "profile-pictures/*": {
+            "authenticated": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "version": "1.3"
+}

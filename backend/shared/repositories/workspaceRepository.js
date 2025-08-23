@@ -356,10 +356,6 @@ async function updateWorkspace(workspaceId, data) {
         expressionAttributeNames["#description"] = "description";
     }
 
-    if (updateFields.length === 0) {
-        throw new Error("No fields to update");
-    }
-
     updateFields.push("#updatedAt = :updatedAt");
     expressionAttributeValues[":updatedAt"] = new Date().toISOString();
     expressionAttributeNames["#updatedAt"] = "updatedAt";
@@ -377,8 +373,13 @@ async function updateWorkspace(workspaceId, data) {
             ReturnValues: "ALL_NEW"
         })
     );
-    
-    return result;
+
+    const itemAttributes = result.Attributes;
+    const { sk, ...rest } = itemAttributes;
+
+    return {
+        ...rest,
+    };
 }
 
 // MODULES

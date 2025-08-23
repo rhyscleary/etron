@@ -2,7 +2,7 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
-const { getUserById } = require("@etron/shared/utils/auth");
+const { getUserById, updateUser } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
 const { isOwner, isManager, getDefaultPermissions } = require("@etron/shared/utils/permissions");
 
@@ -71,17 +71,17 @@ async function createWorkspace(authUserId, data) {
         updatedAt: date
     };
 
-    const managerRoleItem = {
+    /*const managerRoleItem = {
         workspaceId: workspaceId,
         roleId: managerRoleId,
         name: "Manager",
         permissions: managerPerms,
         createdAt: date,
         updatedAt: date
-    };
+    };*/
 
     await workspaceRepo.addRole(ownerRoleItem);
-    await workspaceRepo.addRole(managerRoleItem);
+    //await workspaceRepo.addRole(managerRoleItem);
 
     // add user as an owner of the workspace. Get cognito user by sub
     const userProfile = await getUserById(authUserId);
@@ -141,18 +141,7 @@ async function updateWorkspace(authUserId, workspaceId, data) {
         throw new Error("Workspace not found");
     }
 
-    const updatedWorkspaceItem = workspaceRepo.updateWorkspace(workspaceId, data);
-
-    return {
-        workspaceId: workspaceId,
-        name: updatedWorkspaceItem.name,
-        location: updatedWorkspaceItem.location || null,
-        description: updatedWorkspaceItem.description || null,
-        ownerId: updateWorkspace.ownerId,
-        createdAt: updateWorkspace.createdAt,
-        updatedAt: updateWorkspace.updatedAt
-    };
-
+    return workspaceRepo.updateWorkspace(workspaceId, data);
 }
 
 async function deleteWorkspace(authUserId, workspaceId) {
@@ -170,6 +159,14 @@ async function deleteWorkspace(authUserId, workspaceId) {
 
     if (authUserId !== workspace.ownerId) {
         throw new Error("Unauthorised user");
+    }
+
+    // get all users in workspace
+    const users = await workspaceUsersRepo.getUsersByWorkspaceId(workspaceId);
+
+    // set has_workspace to false
+    for (const user of users) {
+        await updateUser(user.userId, { "custom:has_workspace": "false" });
     }
 
     await workspaceRepo.removeWorkspace(workspaceId);
@@ -195,16 +192,16 @@ async function getWorkspaceByWorkspaceId(workspaceId) {
     };
 }
 
-async function getWorkspaceByUserId(authUserId) {
+async function getWorkspaceByUserId(userId) {
     // get user data
-    const user = await workspaceUsersRepo.getUserByUserId(authUserId);
+    const user = await workspaceUsersRepo.getUserByUserId(userId);
 
     if (!user?.[0]) {
         throw new Error("No user found");
     }
 
-    // get workspace data
-    const workspace = await workspaceRepo.getWorkspaceById(user.workspaceId);
+    // get workspace data  
+    const workspace = await workspaceRepo.getWorkspaceById(user[0].workspaceId);
 
     if (!workspace) {
         throw new Error("Workspace not found");

@@ -1,6 +1,6 @@
 // Author(s): Noah Bradley
 
-import { Redirect, useRouter, router, Link } from "expo-router";
+import { Redirect, useRouter, router, Link, Slot } from "expo-router";
 import { ActivityIndicator, PaperProvider, Text } from 'react-native-paper';
 import React, { useEffect, useState } from "react";
 import { Button, TextInput, View, Pressable } from 'react-native';
@@ -8,8 +8,12 @@ import { Button, TextInput, View, Pressable } from 'react-native';
 import { Amplify } from 'aws-amplify';
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
 
-import awsmobile from '../src/aws-exports';
-Amplify.configure({
+// TOOD: make sure all app-wide initialisations are in here
+
+//import awsmobile from '../src/aws-exports';
+import amplifyOutputs from '../amplify_outputs.json'
+import { fetchUserAttributes, updateUserAttributes } from "aws-amplify/auth";
+/*Amplify.configure({
     ...awsmobile,
     oauth: {
         domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
@@ -17,30 +21,37 @@ Amplify.configure({
         redirectSignIn: 'myapp://auth/',
         redirectSignOut: 'myapp://signout/',
         responseType: 'code'
-    }
-});
+});*/
+Amplify.configure(amplifyOutputs);
 console.log('Amplify configured with:', Amplify.getConfig());
 
 
 function App() {
+
     const { authStatus } = useAuthenticator();
+    const [target, setTarget] = useState(null);
 
     useEffect(() => {
         console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
-            console.log("Redirection to auth root page.")
-            router.replace('/(auth)/profile'); // Go to the protected root page
-        } else if (authStatus === "configuring") {
+            //if (router.canDismiss()) router.dismissAll();
+            console.log("Redirection to auth root page.");
+            setTarget("/(auth)/profile")
+            //router.replace('/(auth)/profile');
+        } else if (authStatus === `configuring`) {
+
         } else {
-            router.replace('landing');
+            //router.replace('landing');
+            setTarget("landing")
         }
     }, [authStatus]);
 
-    return (
-        <>
-            <ActivityIndicator size="large" color="#0000ff" />
-        </>
-    );
+    if (target) {
+        return <Redirect href={target} />;
+    }
+
+    return <ActivityIndicator size="large" color="#0000ff" />;
+
 }
 
 //export default withAuthenticator(App);
