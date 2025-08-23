@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Text, Card, DataTable, useTheme } from "react-native-paper";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router, Link } from "expo-router";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import {
@@ -33,6 +33,12 @@ const SelectDataSource = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [showAllRows, setShowAllRows] = useState(false);
+
+  // Compute edit href target once we have an id
+  const navId = existingSource?.id || existingSource?._id || existingSource?.dataSourceId || sourceId;
+  const editHref = navId
+    ? `/modules/day-book/data-management/update-data-source/${encodeURIComponent(String(navId))}`
+    : null;
 
   // Load available adapter types
   useEffect(() => {
@@ -121,6 +127,12 @@ const SelectDataSource = () => {
     }
   };
 
+  // Keep the old handler as a fallback if needed
+  const handleEditSource = () => {
+    if (!editHref) return;
+    router.push(editHref);
+  };
+
   if (loadingAdapters || loadingSource) {
     return (
       <View style={[commonStyles.screen, styles.center]}>
@@ -146,12 +158,15 @@ const SelectDataSource = () => {
       ? adapterInfo.description
       : existingSource?.type;
 
+  const createdAtValue = existingSource?.createdAt || existingSource?.lastSync || null;
+  const createdAtText = createdAtValue ? (() => { try { return new Date(createdAtValue).toLocaleString(); } catch { return String(createdAtValue); } })() : null;
+
   return (
     <View style={commonStyles.screen}>
-  <Header title={sourceId ? "Edit Connection" : "New Connection"} showBack />
+  <Header title={sourceId ? (existingSource?.name || "Data Source") : "New Connection"} showBack />
       <ScrollView contentContainerStyle={styles.container}>
         <Text variant="titleMedium" style={styles.title}>
-          {sourceId ? "Edit Data Source" : "Choose a Data Source"}
+          {sourceId ? (createdAtText ? `Created: ${createdAtText}` : "Created: Unknown") : "Choose a Data Source"}
         </Text>
 
   {sourceId ? (
@@ -171,9 +186,20 @@ const SelectDataSource = () => {
                 <Text>Status: {String(existingSource.status)}</Text>
                 <Text>Last Sync: {String(existingSource.lastSync)}</Text>
                 <View style={{ marginTop: 12 }}>
-                  <Button onPress={handleViewData} mode="contained" disabled={previewLoading}>
-                    {previewLoading ? 'Loading...' : 'View Data'}
-                  </Button>
+                  <View style={{ flexDirection: 'row' }}>
+                    <Button onPress={handleViewData} mode="contained" disabled={previewLoading}>
+                      {previewLoading ? 'Loading...' : 'View Data'}
+                    </Button>
+                    {editHref ? (
+                      <Link href={editHref} asChild>
+                        <Button mode="outlined">Edit Data Source</Button>
+                      </Link>
+                    ) : (
+                      <Button mode="outlined" disabled>
+                        Edit Data Source
+                      </Button>
+                    )}
+                  </View>
                 </View>
               </View>
             </Card>
