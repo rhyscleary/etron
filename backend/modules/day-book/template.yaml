@@ -77,6 +77,13 @@ Resources:
             Method: post
             RestApiId: !Ref eTRONApi
 
+        TestDataSourceConnection:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/test-connection
+            Method: post
+            RestApiId: !Ref eTRONApi
+
         UpdateDataSource:
           Type: Api 
           Properties:
