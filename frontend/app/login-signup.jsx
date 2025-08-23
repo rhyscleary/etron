@@ -88,11 +88,14 @@ function LoginSignup() {
 
     // handle deep link return from the social providers
     useEffect(() => {
-        const handleDeepLink = async (url) => {
-            console.log('Deep link received:', url);
+        const handleDeepLink = async (objectUrl) => {
+            console.log('Deep link received:', objectUrl);
+
+            let url = objectUrl.url || objectUrl;
+            if (!url) return;
             
             // check if the URL is a valid social sign-in callback
-            if (url && (url.includes('oauth/callback') || url.includes('auth/callback'))) {
+            if (url && (url.includes('myapp://callback'))) {
                 try {
                     // wait to ensure the sign-in process completes
                     setTimeout(async () => {
@@ -101,7 +104,55 @@ function LoginSignup() {
                             console.log('Social sign-in successful:', user);
                             // navigate to profile page (or consider back to accounts page again)
 
-                            router.dismissAll()
+                            const userAttributes = await fetchUserAttributes();
+                            const hasGivenName = userAttributes["given_name"];
+                            const hasFamilyName = userAttributes["family_name"];
+                            let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
+
+                            // if the attribute doesn't exist set it to false
+                            if (hasWorkspaceAttribute == null) {
+                                await setHasWorkspaceAttribute(false);
+                                hasWorkspaceAttribute = "false";
+                            }
+
+                            const hasWorkspace = hasWorkspaceAttribute === "true";
+
+                            if (!hasWorkspace) {
+                                if (!hasGivenName || !hasFamilyName) {
+                                    router.dismissAll();
+                                    router.replace("(auth)/personalise-account");
+                                    return;
+                                } else {
+                                    router.dismissAll();
+                                    router.replace("(auth)/workspace-choice");
+                                    return;
+                                }
+                            } else {
+                                // fetch the workspace
+                                try {
+                                    const workspace = await apiGet(
+                                        endpoints.workspace.core.getByUserId(user.userId)
+                                    );
+
+                                    if (!workspace || !workspace.workspaceId) {
+                                        // clear attribute and redirect to choose workspace
+                                        await setHasWorkspaceAttribute(false);
+                                        router.dismissAll();
+                                        router.replace("(auth)/workspace-choice");
+                                        return;
+                                    }
+
+                                    // save locally and go to profile screen
+                                    await saveWorkspaceInfo(workspace);
+                                    router.dismissAll();
+                                    router.replace("(auth)/profile");
+                                } catch (error) {
+                                    console.error("Error fetching workspace:", error);
+                                    setMessage("Unable to locate workspace. Please try again."); 
+                                }
+                            }
+
+                            router.dismissAll();
                             router.replace("(auth)/profile");
 
                         } catch (error) {
@@ -112,6 +163,21 @@ function LoginSignup() {
                 } catch (error) {
                     console.log('Error handling social sign-in callback:', error);
                     setMessage("Error completing social sign-in");
+                    await signOut();
+                }
+            }
+
+            // check if the URL is a valid social sign-out
+            if (url && (url.includes('myapp://signout/'))) {
+                router.dismissAll();
+                try {
+                    // navigate to landing with signout()
+                    await signOut();
+                    setMessage("Signed out successfully!");
+
+                } catch (error) {
+                    console.log('Error handling social sign-out:', error);
+                    setMessage("Social sign-out was cancelled or failed");
                 }
             }
         };
@@ -270,6 +336,8 @@ function LoginSignup() {
                 provider: 'Google',
                 customState: isLinking ? 'linking' : 'signin'
             });
+
+            //await signInWithRedirect({ provider: 'Google' });
             
         } catch (error) {
             console.log('Error with Google sign-in:', error);

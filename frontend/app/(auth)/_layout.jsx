@@ -1,14 +1,15 @@
 import { Slot, router } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { fetchAuthSession, fetchUserAttributes, getCurrentUser } from 'aws-amplify/auth';
-import { View, Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useVerification } from '../../components/layout/VerificationContext'; // temp until backend
 
 export default function AuthLayout() {
 
     const { authStatus } = useAuthenticator();
     const { verifyingPassword } = useVerification();// temp until backend
+   // const [checked, setChecked] = useState(false);
 
     const setHasWorkspaceAttribute = async (value) => {
         try {
@@ -59,6 +60,8 @@ export default function AuthLayout() {
     }
 
     useEffect(() => {
+        //if (checked) return;
+
         const loadLayout = async () => {
             console.log("(AuthLayout) Auth status:", authStatus);
 
@@ -74,21 +77,30 @@ export default function AuthLayout() {
                     router.replace("/(auth)/workspace-choice");
                 } else {
                     console.log("Showing authenticated profile page.");
+                    router.replace("/(auth)/profile")
                 }
+
             } else if (authStatus === `configuring`) {
                 
             } else {
                 if (!verifyingPassword) {  // temp until backend
                     console.log("Redirecting to root page.");
                     if (router.canDismiss()) router.dismissAll();
-                    router.replace('landing');
+                    router.replace('/landing');
                 } else {
                     console.log("Paused redirect due to verifying password.");
                 }
             }
+
+            //setChecked(true);
         }
         loadLayout();
+
      }, [authStatus, verifyingPassword]); // temp until backend
+
+     /*if (!checked) {
+        return <ActivityIndicator size="large" />
+     }*/
 
     return (         
         <>
