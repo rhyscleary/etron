@@ -433,24 +433,28 @@ class DataSourceService {
               ? auth.value
               : (typeof authRaw === 'string' && authRaw.trim())
                 ? authRaw.trim()
-                : (clone.apiKey ?? clone.secrets?.apiKey);
+        : (clone.apiKey ?? clone.secrets?.apiKey);
             if (apiKeyValue != null) secrets.apiKey = String(apiKeyValue);
             break;
           }
           case 'bearer': {
-            if (auth?.token != null) secrets.token = String(auth.token);
-            else if (clone.token != null) secrets.token = String(clone.token);
+      if (auth?.token != null) secrets.token = String(auth.token);
+      else if (clone.token != null) secrets.token = String(clone.token);
+      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
             break;
           }
           case 'basic': {
-            if (auth?.username != null) secrets.username = String(auth.username);
-            if (auth?.password != null) secrets.password = String(auth.password);
-            if (clone.username != null) secrets.username = String(clone.username);
-            if (clone.password != null) secrets.password = String(clone.password);
+      if (auth?.username != null) secrets.username = String(auth.username);
+      if (auth?.password != null) secrets.password = String(auth.password);
+      if (clone.username != null) secrets.username = String(clone.username);
+      if (clone.password != null) secrets.password = String(clone.password);
+      if (clone.secrets?.username != null) secrets.username = String(clone.secrets.username);
+      if (clone.secrets?.password != null) secrets.password = String(clone.secrets.password);
             break;
           }
           case 'query': {
-            if (auth?.value != null) secrets.token = String(auth.value);
+      if (auth?.value != null) secrets.token = String(auth.value);
+      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
             break;
           }
           default: {
@@ -626,24 +630,28 @@ class DataSourceService {
               ? auth.value
               : (typeof authRaw === 'string' && authRaw.trim())
                 ? authRaw.trim()
-                : (clone.apiKey ?? clone.secrets?.apiKey);
+        : (clone.apiKey ?? clone.secrets?.apiKey);
             if (apiKeyValue != null) secrets.apiKey = String(apiKeyValue);
             break;
           }
           case 'bearer': {
-            if (auth?.token != null) secrets.token = String(auth.token);
-            else if (clone.token != null) secrets.token = String(clone.token);
+      if (auth?.token != null) secrets.token = String(auth.token);
+      else if (clone.token != null) secrets.token = String(clone.token);
+      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
             break;
           }
           case 'basic': {
-            if (auth?.username != null) secrets.username = String(auth.username);
-            if (auth?.password != null) secrets.password = String(auth.password);
-            if (clone.username != null) secrets.username = String(clone.username);
-            if (clone.password != null) secrets.password = String(clone.password);
+      if (auth?.username != null) secrets.username = String(auth.username);
+      if (auth?.password != null) secrets.password = String(auth.password);
+      if (clone.username != null) secrets.username = String(clone.username);
+      if (clone.password != null) secrets.password = String(clone.password);
+      if (clone.secrets?.username != null) secrets.username = String(clone.secrets.username);
+      if (clone.secrets?.password != null) secrets.password = String(clone.secrets.password);
             break;
           }
           case 'query': {
-            if (auth?.value != null) secrets.token = String(auth.value);
+      if (auth?.value != null) secrets.token = String(auth.value);
+      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
             break;
           }
           default: {}
