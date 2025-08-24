@@ -6,47 +6,50 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { signOut } from "aws-amplify/auth";
 
 
-const WorkspaceDialog = ({
+const DecisionDialog = ({
     visible,
     onDismiss,
-    setWorkspaceModal,
-    router,
     showGoBack = false,
-    showSignOut = false
+    showSignOut = false,
+    title = "",
+    message = "",
+    leftActionLabel = "Cancel",
+    leftDanger = false,
+    handleLeftAction = () => {},
+    rightActionLabel = "Confirm",
+    rightDanger = false,
+    handleRightAction = () => {},
+    handleGoBack = () => {}
 }) => {
     const theme = useTheme();
 
     return (
         <Portal>
             <Dialog visible={visible} onDismiss={onDismiss} style={[styles.dialog, {backgroundColor: theme.colors.surface}]}>
-                <Dialog.Title style={styles.title}>Workspace</Dialog.Title>
+                <Dialog.Title style={styles.title}>{title}</Dialog.Title>
 
                 <Dialog.Content>
                     <Text style={styles.message}>
-                        Create your own workspace or join an existing one.
+                        {message}
                     </Text>
                 </Dialog.Content>
 
                 <Dialog.Actions style={styles.actions}>
                     <BasicButton 
-                        label="Create" 
-                        onPress={() => {
-                            setWorkspaceModal(false);
-                            router.navigate("/(auth)/create-workspace");
-                        }}
+                        label={leftActionLabel}
+                        danger={leftDanger}
+                        onPress={handleLeftAction}
                     />
                     <BasicButton 
-                        label="Join" 
-                        onPress={() => {
-                            setWorkspaceModal(false);
-                            router.navigate("/(auth)/join-workspace");
-                        }}
+                        label={rightActionLabel}
+                        danger={rightDanger} 
+                        onPress={handleRightAction}
                     />
                 </Dialog.Actions>
 
                 {showGoBack && (
                     <View style={styles.bottomActionContainer}>
-                        <TouchableOpacity onPress={() => setWorkspaceModal(false)}>
+                        <TouchableOpacity onPress={handleGoBack}>
                             <Text>Go back</Text>
                         </TouchableOpacity>
                     </View>
@@ -56,7 +59,6 @@ const WorkspaceDialog = ({
                         <TouchableOpacity onPress={async () => {
                             try {
                                 await signOut();
-                                router.navigate('landing');
                             } catch (error) {
                                 console.error(`Error signing out:`, error);
                             }
@@ -93,4 +95,4 @@ const styles = StyleSheet.create({
     }
 })
 
-export default WorkspaceDialog;
+export default DecisionDialog;
