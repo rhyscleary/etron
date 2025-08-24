@@ -1,5 +1,24 @@
 // Author(s): Rhys Cleary
 
+
+function validateConfig(config) {
+
+}
+
+function validateSecrets(secrets) {
+    
+}
+
+function validateData() {
+    
+}
+
+function translateData() {
+    
+}
+
+
+// poll ftp server
 async function poll(config, secrets) {
     try {
         const requestHeader = constructHeader(config.authType, secrets);
