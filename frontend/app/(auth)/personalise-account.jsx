@@ -14,7 +14,7 @@ import { Auth } from 'aws-amplify';
 import AvatarButton from '../../components/common/buttons/AvatarButton';
 import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhotoFromDevice, uploadProfilePhotoToS3 } from '../../utils/profilePhoto';
 import { fetchUserAttributes, getCurrentUser, updateUserAttribute, updateUserAttributes } from 'aws-amplify/auth';
-import WorkspaceDialog from '../../components/overlays/WorkspaceDialog';
+import DecisionDialog from '../../components/overlays/DecisionDialog';
 
 //import * as ImagePicker from 'expo-image-picker';
 
@@ -245,12 +245,24 @@ const PersonaliseAccount = () => {
           />
         </View>
 
-        <WorkspaceDialog
+        <DecisionDialog
           visible={showWorkspaceModal}
-          onDismiss={() => setWorkspaceModal(false)}
-          setWorkspaceModal={setWorkspaceModal}
-          router={router}
+          title="Workspace"
+          message="Create your own workspace or join an existing one."
           showGoBack={true}
+          leftActionLabel="Create"
+          handleLeftAction={() => {
+            setWorkspaceModal(false);
+            router.navigate("/(auth)/create-workspace");
+          }}
+          rightActionLabel="Join"
+          handleRightAction={() => {
+            setWorkspaceModal(false);
+            router.navigate("/(auth)/join-workspace");
+          }}
+          handleGoBack={() => {
+            setWorkspaceModal(false);
+          }}
         />
 
       </View>
