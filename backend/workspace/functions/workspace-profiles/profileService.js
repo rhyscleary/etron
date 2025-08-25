@@ -4,29 +4,34 @@ const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
-async function createProfileInWorkspace(authUserId, workspaceId, data) {
+async function createBoardInWorkspace(authUserId, workspaceId, data) {
     const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
 
-    const profileId = uuidv4();
+    const boardId = uuidv4();
     const date = new Date().toISOString();
 
-    // create a new profile item
-    const profileItem = {
+    // create a new board item
+    const boardItem = {
         workspaceId: workspaceId,
         profileId: profileId,
         name: data.name,
+        isDashboard: data.isDashboard,
+        displayConfig: [{}],
+        permissions: [{}],
+        elements: [{}],
+        config: data.config,
         layout: data.layout,
         createdAt: date,
         updatedAt: date
     };
 
-    await workspaceRepo.addProfile(profileItem);
+    await workspaceRepo.addProfile(boardItem);
 
-    return profileItem;
+    return boardItem;
 }
 
 async function deleteProfileInWorkspace(authUserId, workspaceId, profileId) {
@@ -84,7 +89,7 @@ async function updateProfileInWorkspace(authUserId, workspaceId, profileId, data
 }
 
 module.exports = {
-    createProfileInWorkspace,
+    createBoardInWorkspace,
     deleteProfileInWorkspace,
     getProfileInWorkspace,
     getProfilesInWorkspace,
