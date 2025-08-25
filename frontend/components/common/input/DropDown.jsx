@@ -11,8 +11,9 @@ const DropDown = ({
 }) => {
     const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
-
+    
     const handleItemSelect = (item) => {
+        
         setSelectedItem(item);
         setExpanded(false);
         if (onSelect) {
@@ -35,6 +36,7 @@ const DropDown = ({
             >
                 {items.map((item, index) => {
                     const isLastItem = index === items.length - 1 && !showRouterButton;
+                    
                     return (
                         <List.Item 
                             key={item.value}

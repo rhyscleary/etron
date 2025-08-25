@@ -27,11 +27,11 @@ import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 const CreateMetric = () => {
     const router = useRouter();
     const [step, setStep] = useState(0);
-    const [dataSources, setDataSources] = useState([]);
+    const [readyData, setReadyData] = useState([]);
     const [graphData, setGraphData] = useState([]);
     const [selectedMetric, setSelectedMetric] = useState(null);
-    const [selectedDataSource, setSelectedDataSource] = useState(null);
-    const [loadingDataSources, setLoadingDataSources] = useState(true);
+    const [selectedReadyData, setSelectedReadyData] = useState(null);
+    const [loadingReadyData, setLoadingReadyData] = useState(true);
     const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
     const [downloadProgress, setDownloadProgress] = useState(0);
 
@@ -92,11 +92,11 @@ const CreateMetric = () => {
 
     /*useEffect(() => {
         const sources = Object.keys(graphDataBySource);
-        setDataSources(sources);
+        setReadyData(sources);
     }, []);*/
 
-    /*const handleDataSourceSelect = (source) => {
-        setSelectedDataSource(source);
+    /*const handleReadyDataSelect = (source) => {
+        setSelectedReadyData(source);
         const formattedData = graphDataBySource[source]?.map(value => ({ value })) || [];
         setGraphData(formattedData);
     };*/
@@ -111,29 +111,25 @@ const CreateMetric = () => {
         async function initialiseStoredData() {
             try {
                 const result = await list ({
-                    path: "public/",
+                    path: "ready-data/",
                     options: {
-                        bucket: {
-                            bucketName: 'workspace-stored-data1858d-dev',
-                            region: amplifyOutputs.storage.aws_region,
-                        }
+                        bucket: "workspaceReadyData"
                     }
                 })
                 const sources = result.items.map(item => item.path);
-                setDataSources(sources);
-                setLoadingDataSources(false);
+                setReadyData(sources);
+                setLoadingReadyData(false);
+                //console.log('Ready data list retrieved:', result.items.map(item => item.path));
             } catch (error) {
-                console.error('Error retrieving data sources:', error);
+                console.error('Error retrieving ready data:', error);
                 return;
             }
-            //console.log('Data sources retrieved:', result.items.map(item => item.path));
         }
-
         initialiseStoredData();
     }, []);
 
-    const handleDataSourceSelect = async (source) => {
-        console.log('Downloading data source:', source);
+    const handleReadyDataSelect = async (source) => {
+        console.log('Downloading ready data:', source);
         setDownloadProgress(0);
         try {
             const { body, eTag } = await downloadData({
@@ -143,10 +139,7 @@ const CreateMetric = () => {
                         setDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
                         console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
                     },
-                    bucket: {
-                        bucketName: 'workspace-stored-data1858d-dev',
-                        region: amplifyOutputs.storage.aws_region,
-                    }
+                    bucket: "workspaceReadyData"
                 }
             }).result
             setDownloadProgress(100)
@@ -193,63 +186,16 @@ const CreateMetric = () => {
         switch (step) {
             case 0:
                 return ( <>
-                    <View style={{height:220, marginTop:12}}>
-                        <CartesianChart
-                            data={tableToGraph(headerRows, allRows, 1, 2)}
-                            xKey="label"
-                            yKeys={['value1', 'value2']}
-                            axisOptions={{ font }}
-                            chartPressState={state}
-                            domain = {{y:[0]}}
-                            renderOutside={({ chartBounds }) => (
-                                <>
-                                    {console.log("state.y.value1.position.value:", state.y.value1.position.value)}
-                                    {console.log("state.x.position.value:", state.x.position.value)}
-                                    {isActive && (
-                                        <>
-                                            <ToolTip
-                                                //text={state.y.value2.value.value}
-                                                xPosition={state.x.position.value}
-                                                yPosition={state.y.value1.position.value}
-                                            />
-                                        </>
-                                    )}
-                                    {console.log("working?")}
-                                </>
-                            )}
-                        >
-                            {({ points }) => (
-                                <>
-                                    <Line
-                                        points={points.value1}
-                                        color="white"
-                                        strokeWidth={3}
-                                    />
-                                    <Line
-                                        points={points.value2}
-                                        color="blue"
-                                        strokeWidth={3}
-                                    />
-                                    
-                                    {isActive ? (
-                                        <>
-                                            
-                                        </>
-                                    ) : null}
-                                </>
-                            )}
-                        </CartesianChart>
-                    </View>
                     <ScrollView>
                         <DropDown
                             title = "Select Data Source"
-                            items = {loadingDataSources ? ["Loading..."] : dataSources/*.map(item => item.split('/').at(-1))*/} //commented out code just shows the path, but we need the full path to download the file
-                            onSelect={handleDataSourceSelect}
+                            items = {loadingReadyData ? ["Loading..."] : readyData.map(URL => ({value: URL, label: URL.split('/').at(-1)}))}
+                            onSelect={(item) => handleReadyDataSelect(item)}
                         />
 
                         <DropDown
                             title = "Select Metric"
-                            items = {metrics}
+                            items = {metrics.map((metric) => ({value: metric, label: metric}))}
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
                         />
@@ -322,6 +268,56 @@ const CreateMetric = () => {
                     </ScrollView>
                 </>)
             case 1:
+                return (
+                    <View style={{height:"80%", width:"80%", marginTop:12}}>
+                        <CartesianChart
+                            data={tableToGraph(headerRows, allRows, 1, 2)}
+                            xKey="label"
+                            yKeys={['value1', 'value2']}
+                            axisOptions={{ font }}
+                            chartPressState={state}
+                            domain = {{y:[0]}}
+                            renderOutside={({ chartBounds }) => (
+                                <>
+                                    {console.log("state.y.value1.position.value:", state.y.value1.position.value)}
+                                    {console.log("state.x.position.value:", state.x.position.value)}
+                                    {isActive && (
+                                        <>
+                                            <ToolTip
+                                                //text={state.y.value2.value.value}
+                                                xPosition={state.x.position.value}
+                                                yPosition={state.y.value1.position.value}
+                                            />
+                                        </>
+                                    )}
+                                    {console.log("working?")}
+                                </>
+                            )}
+                        >
+                            {({ points }) => (
+                                <>
+                                    <Line
+                                        points={points.value1}
+                                        color="white"
+                                        strokeWidth={3}
+                                    />
+                                    <Line
+                                        points={points.value2}
+                                        color="blue"
+                                        strokeWidth={3}
+                                    />
+                                    
+                                    {isActive ? (
+                                        <>
+                                            
+                                        </>
+                                    ) : null}
+                                </>
+                            )}
+                        </CartesianChart>
+                    </View>
+                )
+            case 2:
                 return (
                     <View>
                         <TextField
