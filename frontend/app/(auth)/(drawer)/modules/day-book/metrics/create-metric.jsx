@@ -18,8 +18,13 @@ import { list, downloadData } from 'aws-amplify/storage';
 import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { ResourceSavingView } from '@react-navigation/elements';
 
+
+import { CartesianChart, Line, useChartPressState, VictoryLabel } from "victory-native";
+import { SharedValue } from "react-native-reanimated";
+import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
+import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
+
 const CreateMetric = () => {
-    
     const router = useRouter();
     const [step, setStep] = useState(0);
     const [dataSources, setDataSources] = useState([]);
@@ -40,17 +45,7 @@ const CreateMetric = () => {
     const allRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);
     const displayedRows = useMemo(() => allRows.slice(0, rowLimit), [allRows, rowLimit]);
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);
-
-    const renderRow = useCallback(({ item }) => (
-        <View style={{ flexDirection: 'row' }}>
-            {item.map((cell, index) => (
-                <Text key={index} style={{ width: 100 }} numberOfLines={1}>
-                    {String(cell)}
-                </Text>
-            ))}
-        </View>
-    ), []);
-
+    
     const onBottomReached = useCallback(() => {
         if (loadingMoreRows) return;
         if (allRows.length <= rowLimit) return;
@@ -61,6 +56,39 @@ const CreateMetric = () => {
             setLoadingMoreRows(false);
         });
     }, [allRows.length, rowLimit, loadingMoreRows]);
+
+    const { state, isActive } = useChartPressState({ x: 0, y: {value1: 0, value2: 0}})
+    const font = useFont(inter, 12);
+
+    function ToolTip({text, xPosition, yPosition}) {
+        return (<>
+            <SkiaText
+                color = "grey"
+                font = {font}
+                text = {"test"}
+                x = {xPosition}
+                y = {yPosition - 15}
+            />
+            <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
+        </>)
+    }
+
+    function tableToGraph(headers, rows, key1, key2) {
+        if (!Array.isArray(rows)) return [];
+        
+        const output = rows
+        .filter((row) =>
+            row?.[key1] != null &&
+            row?.[key2] != null
+        )
+        .map((row) => ({
+            label: String(row[0]),
+            value1: Number(row[key1]),
+            value2: Number(row[key2]),
+            
+        }))
+        return output;
+    }
 
     /*useEffect(() => {
         const sources = Object.keys(graphDataBySource);
@@ -76,7 +104,6 @@ const CreateMetric = () => {
     useEffect(() => {
         if (storedData) {
             console.log("Stored data updated. Length:", storedData.length);
-            console.log("Displayed rows:", displayedRows);
         }
     }, [storedData]);
 
@@ -165,8 +192,55 @@ const CreateMetric = () => {
     const renderFormStep = () => {
         switch (step) {
             case 0:
-                return (
-                    <View>
+                return ( <>
+                    <View style={{height:220, marginTop:12}}>
+                        <CartesianChart
+                            data={tableToGraph(headerRows, allRows, 1, 2)}
+                            xKey="label"
+                            yKeys={['value1', 'value2']}
+                            axisOptions={{ font }}
+                            chartPressState={state}
+                            domain = {{y:[0]}}
+                            renderOutside={({ chartBounds }) => (
+                                <>
+                                    {console.log("state.y.value1.position.value:", state.y.value1.position.value)}
+                                    {console.log("state.x.position.value:", state.x.position.value)}
+                                    {isActive && (
+                                        <>
+                                            <ToolTip
+                                                //text={state.y.value2.value.value}
+                                                xPosition={state.x.position.value}
+                                                yPosition={state.y.value1.position.value}
+                                            />
+                                        </>
+                                    )}
+                                    {console.log("working?")}
+                                </>
+                            )}
+                        >
+                            {({ points }) => (
+                                <>
+                                    <Line
+                                        points={points.value1}
+                                        color="white"
+                                        strokeWidth={3}
+                                    />
+                                    <Line
+                                        points={points.value2}
+                                        color="blue"
+                                        strokeWidth={3}
+                                    />
+                                    
+                                    {isActive ? (
+                                        <>
+                                            
+                                        </>
+                                    ) : null}
+                                </>
+                            )}
+                        </CartesianChart>
+                    </View>
+                    <ScrollView>
                         <DropDown
                             title = "Select Data Source"
                             items = {loadingDataSources ? ["Loading..."] : dataSources/*.map(item => item.split('/').at(-1))*/} //commented out code just shows the path, but we need the full path to download the file
@@ -179,7 +253,9 @@ const CreateMetric = () => {
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
                         />
-
+                        
+                        
+                                                   
                         <Card style={styles.card}>
                             <Card.Content>
                                 {selectedMetric === 'Bar Chart' && (
@@ -243,8 +319,8 @@ const CreateMetric = () => {
                                 )}
                             </Card.Content>
                         </Card>
-                    </View>
-                )
+                    </ScrollView>
+                </>)
             case 1:
                 return (
                     <View>
