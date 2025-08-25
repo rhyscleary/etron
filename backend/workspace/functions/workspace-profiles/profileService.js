@@ -5,11 +5,6 @@ const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
 async function createBoardInWorkspace(authUserId, workspaceId, data) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const boardId = uuidv4();
     const date = new Date().toISOString();
@@ -34,51 +29,28 @@ async function createBoardInWorkspace(authUserId, workspaceId, data) {
     return boardItem;
 }
 
-async function deleteProfileInWorkspace(authUserId, workspaceId, profileId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
+async function deleteBoardInWorkspace(authUserId, workspaceId, profileId) {
 
     const profile = await workspaceRepo.getProfileById(workspaceId, profileId);
 
     if (!profile) {
-        throw new Error("Profile not found");
+        throw new Error("Board not found");
     }
 
-    await workspaceRepo.removeProfile(workspaceId, profileId);
+    await workspaceRepo.removeBoard(workspaceId, profileId);
 
-    return {message: "Profile successfully removed"};
+    return {message: "Board successfully removed"};
 }
 
-async function getProfileInWorkspace(authUserId, workspaceId, profileId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
-
+async function getBoardInWorkspace(authUserId, workspaceId, profileId) {
     return workspaceRepo.getProfileById(workspaceId, profileId);
 }
 
 async function getProfilesInWorkspace(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
-
     return workspaceRepo.getProfilesByWorkspaceId(workspaceId);
 }
 
 async function updateProfileInWorkspace(authUserId, workspaceId, profileId, data) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
-
     const profile = await workspaceRepo.getProfileById(workspaceId, profileId);
 
     if (!profile) {
