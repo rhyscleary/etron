@@ -4,7 +4,6 @@ import { Slot, Stack } from 'expo-router';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { themes } from '../assets/styles/themes/themes';
-import { View, Text } from 'react-native'
 import SafeView from '../components/layout/SafeView';
 import { Authenticator } from '@aws-amplify/ui-react-native';
 import { VerificationProvider } from '../components/layout/VerificationContext'; // temp until backend
@@ -15,15 +14,7 @@ import * as Linking from 'expo-linking';
 //import awsmobile from '../src/aws-exports';
 import amplifyOutputs from '../amplify_outputs.json'
 Amplify.configure({
-    ...amplifyOutputs /* all this stuff only works in amplify gen 2 storage; we're using gen 1 storage */
-    , 
-    /*oauth: {
-        domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
-        scope: ['email', 'openid', 'profile'],
-        redirectSignIn: 'myapp://auth/',
-        redirectSignOut: 'myapp://signout/',
-        responseType: 'code'
-    },*/
+    ...amplifyOutputs,
     Storage: {
         S3: {
             bucket: amplifyOutputs.storage.bucket_name,  //the default bucket

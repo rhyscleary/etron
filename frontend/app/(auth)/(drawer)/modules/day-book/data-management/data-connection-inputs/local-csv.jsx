@@ -6,9 +6,6 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Button } from 'react-native';
 import { uploadData } from 'aws-amplify/storage';
 import { getCurrentUser } from 'aws-amplify/auth';
-import * as FileSystem from 'expo-file-system';
-//import awsmobile from '../../../../../../../src/aws-exports';
-import amplifyOutputs from '../../../../../../../amplify_outputs.json'
 
 const LocalCSV = () => {
     const [fileUri, setFileUri] = useState(null);
@@ -18,6 +15,7 @@ const LocalCSV = () => {
 
     const pickDocument = async () => {
         try {
+            console.log("Picking file...");
             const result = await DocumentPicker.getDocumentAsync({
                 type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
                 copyToCacheDirectory: true  // This might be bad for large files
@@ -52,7 +50,7 @@ const LocalCSV = () => {
         try {
             console.log('Creating file path...');
             const { userId } = await getCurrentUser();
-            const S3FilePath = `public/${userId}/${fileName}`;
+            const S3FilePath = `ready-data/${userId}/${fileName}`;
             console.log('S3 File Path:', S3FilePath);
 
             console.log('Retrieving file...');
