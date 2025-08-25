@@ -65,10 +65,7 @@ const LocalCSV = () => {
                 data: blob,
                 //accessLevel: 'public', // should become private or protected in future i think?
                 options: {
-                    bucket: {
-                        bucketName: 'workspace-stored-data1858d-dev',
-                        region: amplifyOutputs.storage.aws_region,
-                    },
+                    bucket: 'workspaceReadyData',
                     contentType: 'text/csv',
                     onProgress: ({ transferredBytes, totalBytes }) => {
                         if (totalBytes) {
