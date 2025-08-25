@@ -43,7 +43,6 @@ function translateData(data) {
     return data;
 }
 
-
 // poll server
 async function poll(config, secrets) {
     try {

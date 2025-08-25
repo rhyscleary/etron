@@ -34,8 +34,16 @@ export async function removeWorkspaceInfo() {
 
 // get values from the information stored
 export async function getWorkspaceId() {
-    const workspace = await getWorkspaceInfo();
-    return workspace.workspaceId || null;
+    try {
+        const workspace = await getWorkspaceInfo();
+        if (workspace && workspace.workspaceId) {
+            return workspace.workspaceId;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching workspaceId from local storage:", error);
+        return null;
+    }
 }
 
 // TESTING

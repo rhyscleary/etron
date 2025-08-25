@@ -1,56 +1,95 @@
 // Author(s): Rhys Cleary
+const { Client } = require("basic-ftp");
+const fs = require("fs");
 
-
+// validate the configurations before creating the data source
 function validateConfig(config) {
+    if (!config) return { valid: false, error: "Config is missing"};
 
+    // define required fields
+    const requiredFields = ["hostname", "port", "directory"];
+    for (const field of requiredFields) {
+        if (!config[field]) return { valid: false, error: `${field} is required`};
+    }
+
+    return { valid: true };
 }
 
+// validate the secrets before creating the data source
 function validateSecrets(secrets) {
-    
+    if (!secrets) return { valid: false, error: "Secrets are missing"};
+    if (!secrets.username || !secrets.password) return { valid: false, error: "username and password are required"};
+    return { valid: true };
 }
 
-function validateData() {
-    
+// validate the data fetched
+function validateData(data) {
+    // stub implementation 
+    return { valid: true };
 }
 
-function translateData() {
-    
+// normalize data
+function translateData(data) {
+    // stub implementation
+    return data;
 }
 
-
-// poll ftp server
+// poll server
 async function poll(config, secrets) {
+    const client = new Client();
+    client.ftp.verbose = false;
+
     try {
-        const requestHeader = constructHeader(config.authType, secrets);
+        const accessOptions = {
+            host: config.hostname,
+            port: config.port,
+            user: secrets.username,
+            password: secrets.password,
+            secure: true,
+        };
 
-        const response = await axios.get(config.endpoint, requestHeader);
+        if (secrets.keyFile) {
+            accessOptions.password = undefined;
+            accessOptions.privateKey = fs.readFileSync(secrets.keyFile, "utf-8");
+        }
 
-        return response.data;
+        await client.access(accessOptions);
+
+        const remoteDirectory = config.directory || "/";
+        const fileList = await client.list(remoteDirectory);
+
+        const results = [];
+
+        for (const file of fileList) {
+            if (file.isDirectory) continue;
+
+
+        }
+        
+
+        // validate the response data
+        const dataValidation = validateData(response.data);
+        if (!dataValidation.valid) {
+            throw new Error(`Validation failed: ${dataValidation.error}`);
+        }
+
+        // translate the fetched data
+        const translated = translateData(response.data);
+
+        return results;
 
     } catch (error) {
-        return {
-            error: error.message
-        }
-    }
-}
-
-function constructHeader(authType, secrets) {
-    switch (authType) {
-        case "apiKey":
-            return {Authorization: `${secrets.apiKey}`};
-        case "bearer":
-        case "jwt":
-            return {Authorization: `Bearer ${secrets.token}`};
-        case "basic": {
-            const credentials = `${secrets.username}:${secrets.password}`;
-            const encoded = Buffer.from(credentials).toString("base64");
-            return { Authorization: `Basic ${encoded}` };
-        }
-        default:
-            return {}; 
+        throw new Error(error.message);
+    } finally {
+        client.close();
     }
 }
 
 module.exports = {
+    validateConfig,
+    validateSecrets,
+    validateData,
+    translateData,
+    supportsPolling: true,
     poll
 };
