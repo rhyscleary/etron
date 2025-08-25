@@ -15,7 +15,7 @@ import graphDataBySource from './graph-data';
 import csvtojson from 'csvtojson';
 
 import { list, downloadData } from 'aws-amplify/storage';
-import awsmobile from '../../../../../../src/aws-exports';
+import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { ResourceSavingView } from '@react-navigation/elements';
 
 
@@ -115,7 +115,7 @@ const CreateMetric = () => {
                     options: {
                         bucket: {
                             bucketName: 'workspace-stored-data1858d-dev',
-                            region: awsmobile.aws_project_region,
+                            region: amplifyOutputs.storage.aws_region,
                         }
                     }
                 })
@@ -145,7 +145,7 @@ const CreateMetric = () => {
                     },
                     bucket: {
                         bucketName: 'workspace-stored-data1858d-dev',
-                        region: awsmobile.aws_project_region,
+                        region: amplifyOutputs.storage.aws_region,
                     }
                 }
             }).result

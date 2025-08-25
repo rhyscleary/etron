@@ -17,17 +17,44 @@ async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
 
     const { name, type, config, secrets } = payload;
 
+    if (!type) {
+        throw new Error("Please specify a type of data source");
+    }
+
+    if (!name || typeof name != "string") {
+        throw new Error("Please specify a type of data source");
+    }
+
+    // try to get adapter (will also check if it exists)
+    const adapter = adapterFactory.getAdapter(type);
+
+    if (!adapter) {
+        throw new Error("The data type sent is not supported");
+    }
+
+    // validate config
+    const configValidation = adapter.validateConfig(config);
+    if (!configValidation.valid) {
+        throw new Error(configValidation.error);
+    }
+
+    // validate secrets
+    const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
+    if (!secretsValidation.valid) {
+        throw new Error(secretsValidation.error);
+    }
+
     const dataSourceId = uuidv4();
     const date = new Date().toISOString();
 
     // create data source item and store in repo 
     const dataSourceItem = {
-        workspaceId: workspaceId,
-        dataSourceId: dataSourceId,
-        name: name,
-        type: type,
+        workspaceId,
+        dataSourceId,
+        name,
+        type,
         status: "active",
-        config: config,
+        config,
         createdAt: date,
         lastUpdate: date
     };
@@ -57,6 +84,25 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     }
 
     const { name, config, secrets } = payload;
+
+    // try to get adapter
+    const adapter = adapterFactory.getAdapter(dataSource.type);
+
+    if (!adapter) {
+        throw new Error("The data type is not supported");
+    }
+
+    // validate config
+    const configValidation = adapter.validateConfig(config);
+    if (!configValidation.valid) {
+        throw new Error(configValidation.error);
+    }
+
+    // validate secrets
+    const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
+    if (!secretsValidation.valid) {
+        throw new Error(secretsValidation.error);
+    }
     
     // create data source item and store in repo 
     const dataSourceItem = {
@@ -88,11 +134,11 @@ async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
         return null;
     }
 
-    const dataSourceSecrets = await dataSourceSecretsRepo.getSecrets(workspaceId, dataSourceId);
+    const secrets = await dataSourceSecretsRepo.getSecrets(workspaceId, dataSourceId);
 
     return {
         ...dataSource,
-        dataSourceSecrets
+        secrets
     }
 }
 
@@ -139,16 +185,62 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     return {message: "Data source successfully deleted"};
 }
 
+async function testConnection(authUserId, payload) {
+    const { type, config, secrets } = payload;
+
+    // try polling
+    try {
+
+        // check if type of data source is valid
+        if (!type) {
+            throw new Error("Please specify a type of data source");
+        }
+
+        // try to get adapter (will also check if it exists)
+        const adapter = adapterFactory.getAdapter(type);
+
+        if (!adapter) {
+            throw new Error("The data type sent is not supported");
+        }
+
+        // validate config
+        const configValidation = adapter.validateConfig(config);
+        if (!configValidation.valid) {
+            throw new Error(configValidation.error);
+        }
+
+        // validate secrets
+        const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
+        if (!secretsValidation.valid) {
+            throw new Error(secretsValidation.error);
+        }
+
+
+        const data = await adapter.poll(config, secrets);
+
+        // return the data from the endpoint
+        return { status: "success", data: data };
+
+    } catch (error) {
+        // if the data source fails polling return error
+        const errorItem = {
+            status: "error",
+            errorMessage: error.message
+        }
+
+        return errorItem;
+    }
+
+}
+
 async function pollDataSources() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
+    const allowedTypes = adapterFactory.getAllowedPollingTypes();
 
     for (const workspace of workspaces) {
         const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspace.workspaceId);
 
         for (const dataSource of dataSources) {
-
-            // types of data to be polled
-            const allowedTypes = ["api"];
 
             // check if the data source is active and an allowed type
             if (dataSource.status !== "active" || !allowedTypes.includes(dataSource.type)) {
@@ -184,7 +276,7 @@ async function pollDataSources() {
 async function startPolling(adapter, config, secrets) {
     let currentError;
 
-    for (let attempt = 0; attempt <= 3; attempt++) {
+    for (let attempt = 0; attempt < 3; attempt++) {
         try {
             return await adapter.poll(config, secrets);
         } catch (error) {
@@ -201,5 +293,6 @@ module.exports = {
     getDataSourceInWorkspace,
     getDataSourcesInWorkspace,
     deleteDataSourceInWorkspace,
-    pollDataSources
+    pollDataSources,
+    testConnection
 };

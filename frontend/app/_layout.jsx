@@ -12,36 +12,38 @@ import { Amplify } from 'aws-amplify';
 
 import * as Linking from 'expo-linking';
 
-import awsmobile from '../src/aws-exports';
+//import awsmobile from '../src/aws-exports';
+import amplifyOutputs from '../amplify_outputs.json'
 Amplify.configure({
-    ...awsmobile /* all this stuff only works in amplify gen 2 storage; we're using gen 1 storage
+    ...amplifyOutputs /* all this stuff only works in amplify gen 2 storage; we're using gen 1 storage */
     , 
-    oauth: {
+    /*oauth: {
         domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
         scope: ['email', 'openid', 'profile'],
         redirectSignIn: 'myapp://auth/',
         redirectSignOut: 'myapp://signout/',
         responseType: 'code'
-    },
+    },*/
     Storage: {
         S3: {
-            bucket: awsmobile.aws_user_files_s3_bucket,  //the default bucket
-            region: awsmobile.aws_user_files_s3_bucket_region,
+            bucket: amplifyOutputs.storage.bucket_name,  //the default bucket
+            region: amplifyOutputs.storage.aws_region,
 
             buckets: {  //extra buckets
-                etronProfilePhotos: {
-                    bucketName: awsmobile.aws_user_files_s3_bucket,
-                    region: awsmobile.aws_user_files_s3_bucket_region,
+                profilePictures: {
+                    bucketName: amplifyOutputs.storage.buckets[0].bucket_name,
+                    region: amplifyOutputs.storage.buckets[0].aws_region,
                 },
                 workspaceStoredData: {
                     bucketName: 'workspace-stored-data1858d-dev',
-                    region: awsmobile.aws_project_region,
+                    region: amplifyOutputs.storage.aws_region,
                 },
             },
 
             defaultAccessLevel: 'public', //should probably change this in future to make privacy levels correct
         },
-    },*/
+    },
+    
 });
 console.log('Amplify configured with:', Amplify.getConfig());
 

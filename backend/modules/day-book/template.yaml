@@ -27,7 +27,7 @@ Resources:
         DefaultAuthorizer: CognitoAuthorizer
         Authorizers:
           CognitoAuthorizer:
-            UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
+            UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
             Identity:
               Header: Authorization
 
@@ -67,13 +67,20 @@ Resources:
               Action:
                 - cognito-idp:ListUsers
               Resource:
-                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
         AddDataSource:
           Type: Api 
           Properties:
             Path: /day-book/data-sources
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        TestDataSourceConnection:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/test-connection
             Method: post
             RestApiId: !Ref eTRONApi
 
@@ -136,7 +143,7 @@ Resources:
               Action:
                 - cognito-idp:ListUsers
               Resource:
-                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_v6f4XS4Ez
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
         AddMetric:

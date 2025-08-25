@@ -65,7 +65,7 @@ const endpoints = {
         },
 
         invites: {
-            getUserInvites: (userId, workspaceId) => `${USER_BASE_URL}/${userId}/workspace/${workspaceId}`,
+            getUserInvites: `${USER_BASE_URL}/invites`,
         }
     },
 
@@ -77,6 +77,7 @@ const endpoints = {
                 getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 getDataSources: `${DATASOURCES_BASE_URL}`,
                 removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+                testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
             },
 
             metrics: {
