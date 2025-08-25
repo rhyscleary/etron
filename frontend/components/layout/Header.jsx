@@ -39,7 +39,7 @@ const Header = ({
                     })} 
                     />
                 ) : showMenu ? (
-                    <Appbar.Action icon="menu" onPress={() => {}} />
+                    <Appbar.Action icon="menu" onPress={() => {router.navigate("profile")}} />
                 ) : null
             }
             
