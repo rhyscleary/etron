@@ -27,7 +27,6 @@ import {
     resendSignUpCode
 } from 'aws-amplify/auth';
 
-import awsmobile from '../src/aws-exports';
 import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../storage/workspaceStorage";
@@ -66,7 +65,7 @@ function LoginSignup() {
     }, [resendCooldown]);
 
     useEffect(() => {
-        if (showVerificationModal && email && resendCooldown === 0) {
+        if (showVerificationModal && email && resendCooldown === 0 && verificationError) {
             handleResend();
         }
     }, [showVerificationModal]);
@@ -204,6 +203,7 @@ function LoginSignup() {
     }
 
     const handleResend = async () => {
+        if (resendCooldown > 0) return;
         try {
             await resendSignUpCode({username: email});
             setResendCooldown(60);
@@ -232,6 +232,7 @@ function LoginSignup() {
             // check if not fully signed up
             if (!isSignedIn && nextStep.signInStep === "CONFIRM_SIGN_UP") {
                 setShowVerificationModal(true);
+                setResendCooldown(60);
                 return;
             }
 

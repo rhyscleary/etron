@@ -1,13 +1,13 @@
 // Author(s): Rhys Cleary
-const { Client } = require("basic-ftp");
-const fs = require("fs");
+const axios = require('axios');
+const mysql = require('mysql2/promise');
 
 // validate the configurations before creating the data source
 function validateConfig(config) {
     if (!config) return { valid: false, error: "Config is missing"};
 
     // define required fields
-    const requiredFields = ["hostname", "port", "directory"];
+    const requiredFields = ["host", "port", "databaseName"];
     for (const field of requiredFields) {
         if (!config[field]) return { valid: false, error: `${field} is required`};
     }
@@ -36,35 +36,22 @@ function translateData(data) {
 
 // poll server
 async function poll(config, secrets) {
-    const client = new Client();
-    client.ftp.verbose = false;
-
+    let connection;
     try {
-        const accessOptions = {
-            host: config.hostname,
+        // construct options
+        const options = {
+            host: config.host,
             port: config.port,
             user: secrets.username,
             password: secrets.password,
-            secure: true,
-        };
-
-        if (secrets.keyFile) {
-            accessOptions.password = undefined;
-            accessOptions.privateKey = fs.readFileSync(secrets.keyFile, "utf-8");
+            database: config.database,
+            ssl: config.sslCa ? { ca: config.sslCa } : undefined,
         }
 
-        await client.access(accessOptions);
+        connection = await mysql.createConnection(options);
 
-        const remoteDirectory = config.directory || "/";
-        const fileList = await client.list(remoteDirectory);
+        // get query and query table
 
-        const results = [];
-
-        for (const file of fileList) {
-            if (file.isDirectory) continue;
-
-
-        }
         
 
         // validate the response data
@@ -74,14 +61,12 @@ async function poll(config, secrets) {
         }
 
         // translate the fetched data
-        const translated = translateData(response.data);
-
-        return results;
+        return translateData(response.data);
 
     } catch (error) {
         throw new Error(error.message);
     } finally {
-        client.close();
+        if (connection) await connection.end();
     }
 }
 

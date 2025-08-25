@@ -25,9 +25,10 @@ const VerificationDialog = ({
                 style={[styles.dialog, {backgroundColor: theme.colors.surface}]}
                 //theme={{colors: {backdrop: `rgba(0,0,0,0.4)`}}}
             >
-                <Dialog.Title style={styles.title}>Enter Verification Code</Dialog.Title>
+                <Dialog.Title style={styles.title}>Verify Email</Dialog.Title>
 
                 <Dialog.Content>
+                    <Text style={styles.message}>Please enter the verification code that has been emailed to you.</Text>
                     <View style={styles.inputContainer}>
                         <TextField
                             placeholder="Code"
