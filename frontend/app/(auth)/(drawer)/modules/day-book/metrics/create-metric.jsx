@@ -279,8 +279,8 @@ const CreateMetric = () => {
                             domain = {{y:[0]}}
                             renderOutside={({ chartBounds }) => (
                                 <>
-                                    {console.log("state.y.value1.position.value:", state.y.value1.position.value)}
-                                    {console.log("state.x.position.value:", state.x.position.value)}
+                                    {/*console.log("state.y.value1.position.value:", state.y.value1.position.value)*/}
+                                    {/*console.log("state.x.position.value:", state.x.position.value)*/}
                                     {isActive && (
                                         <>
                                             <ToolTip
@@ -290,7 +290,7 @@ const CreateMetric = () => {
                                             />
                                         </>
                                     )}
-                                    {console.log("working?")}
+                                    {console.log("Displayed graph details")}
                                 </>
                             )}
                         >
