@@ -313,15 +313,26 @@ const PersonalDetails = () => {
                             <Text style={{ color: theme.colors.error }}>Please enter your last name</Text>
                         )}
 
-                        <View>
-                            <Text style={{ marginBottom: 6, color: theme.colors.text }}>Country Code</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <CountryPicker
                                 countryCode={countryCca2}
                                 withFilter
                                 withFlag
-                                withCountryNameButton
                                 withCallingCode
+                                withCallingCodeButton
+                                withCountryNameButton={false}
                                 withDarkTheme={!!theme.dark}
+                                containerButtonStyle={{
+                                    borderWidth: 1,
+                                    borderRadius: 10,
+                                    paddingHorizontal: 12,
+                                    height: 56,
+                                    alignItems: 'center',
+                                    flexDirection: 'row',
+                                    marginRight: 8,
+                                    borderColor: theme.colors.outline,
+                                    backgroundColor: theme.colors.background,
+                                }}
                                 theme={{
                                     onBackgroundTextColor: theme.colors.text,
                                     backgroundColor: theme.colors.background,
@@ -334,22 +345,23 @@ const PersonalDetails = () => {
                                     if (code) setCallingCode(code);
                                 }}
                             />
-                            <Text style={{ marginTop: 6, opacity: 0.7, color: theme.colors.text }}>Selected calling code: +{callingCode}</Text>
-                        </View>
 
-                        <TextField 
-                            label="Phone Number (Optional)"
-                            value={phoneNumber}
-                            placeholder="Phone Number"
-                            maxLength={15}
-                            keyboardType="numeric"
-                            textContentType="telephoneNumber"
-                            onChangeText={(text) => {
-                                setPhoneNumber(text);
-                                const digits = text.replace(/\D/g, '');
-                                if (digits.length >= 4 && digits.length <= 15) setErrors((prev) => ({ ...prev, phoneNumber: false }));
-                            }}
-                        />
+                            <View style={{ flex: 1 }}>
+                                <TextField 
+                                    label="Phone Number (Optional)"
+                                    value={phoneNumber}
+                                    placeholder="Phone Number"
+                                    maxLength={15}
+                                    keyboardType="numeric"
+                                    textContentType="telephoneNumber"
+                                    onChangeText={(text) => {
+                                        setPhoneNumber(text);
+                                        const digits = text.replace(/\D/g, '');
+                                        if (digits.length >= 4 && digits.length <= 15) setErrors((prev) => ({ ...prev, phoneNumber: false }));
+                                    }}
+                                />
+                            </View>
+                        </View>
                         {errors.phoneNumber && (
                             <Text style={{ color: theme.colors.error }}>Phone number must be 4-15 digits</Text>
                         )}
