@@ -28,6 +28,7 @@ import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhot
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import UnsavedChangesDialog from "../../../../../components/overlays/UnsavedChangesDialog";
+import CountryPicker from 'react-native-country-picker-modal';
 
 global.Buffer = global.Buffer || Buffer
 
@@ -37,6 +38,8 @@ const PersonalDetails = () => {
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [countryCca2, setCountryCca2] = useState('AU');
+    const [callingCode, setCallingCode] = useState('61');
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
     const [message, setMessage] = useState("");
@@ -53,6 +56,30 @@ const PersonalDetails = () => {
         lastName: false,
         phoneNumber: false,
     })
+
+    // Minimal calling code to country mapping for initial detection
+    const CALLING_CODE_TO_CCA2 = {
+        '1': 'US', '44': 'GB', '61': 'AU', '64': 'NZ', '91': 'IN',
+        '81': 'JP', '49': 'DE', '33': 'FR', '34': 'ES', '39': 'IT',
+        '86': 'CN', '82': 'KR', '65': 'SG', '971': 'AE', '353': 'IE',
+        '41': 'CH', '31': 'NL', '46': 'SE', '47': 'NO', '45': 'DK',
+        '358': 'FI', '48': 'PL', '55': 'BR', '52': 'MX', '27': 'ZA',
+        '351': 'PT', '62': 'ID', '63': 'PH', '60': 'MY', '66': 'TH',
+        '90': 'TR', '7': 'RU', '380': 'UA', '420': 'CZ', '43': 'AT',
+        '32': 'BE', '30': 'GR'
+    };
+
+    function parseE164(e164) {
+        if (!e164 || !e164.startsWith('+')) return { callingCode: '61', number: '', cca2: 'AU' };
+        const digits = e164.slice(1);
+        const candidates = [3, 2, 1].map(n => digits.slice(0, n));
+        for (const code of candidates) {
+            if (CALLING_CODE_TO_CCA2[code]) {
+                return { callingCode: code, number: digits.slice(code.length), cca2: CALLING_CODE_TO_CCA2[code] };
+            }
+        }
+        return { callingCode: '61', number: digits.replace(/^\d{1,3}/, ''), cca2: 'AU' };
+    }
 
     // Function for uploading photo to S3
     const handleUploadPhoto = async () => {
@@ -83,11 +110,12 @@ const PersonalDetails = () => {
             
             setFirstName(userAttributes.given_name || "");
             setLastName(userAttributes.family_name || "");
-            // remove country code from phone number
-            const phoneNumber = userAttributes.phone_number || "";
-            const cleanPhone = phoneNumber.startsWith('+61') ? 
-                phoneNumber.substring(3) : phoneNumber;
-            setPhoneNumber(cleanPhone);
+            // Parse country calling code and local number from E.164
+            const fullPhone = userAttributes.phone_number || "";
+            const parsed = parseE164(fullPhone);
+            setCallingCode(parsed.callingCode);
+            setCountryCca2(parsed.cca2);
+            setPhoneNumber(parsed.number);
 
             const profilePhotoUri = await loadProfilePhoto();
             setProfilePhotoUri(profilePhotoUri || null);
@@ -96,7 +124,9 @@ const PersonalDetails = () => {
             setOriginalData({
                 firstName: userAttributes.given_name || "",
                 lastName: userAttributes.family_name || "",
-                phoneNumber: cleanPhone || "",
+                phoneNumber: parsed.number || "",
+                callingCode: parsed.callingCode,
+                countryCca2: parsed.cca2,
                 profilePhotoUri: profilePhotoUri || null
             });
             
@@ -111,10 +141,11 @@ const PersonalDetails = () => {
         const changed =
             firstName.trim() !== originalData.firstName ||
             lastName.trim() !== originalData.lastName ||
-            phoneNumber.trim() !== originalData.phoneNumber ||
+        phoneNumber.trim() !== originalData.phoneNumber ||
+        callingCode !== originalData.callingCode ||
             profilePhotoUri !== originalData.profilePhotoUri;
         setHasUnsavedChanges(changed);
-    }, [firstName, lastName, phoneNumber, profilePhotoUri, originalData]);
+    }, [firstName, lastName, phoneNumber, callingCode, profilePhotoUri, originalData]);
 
 
     // TODO: change this to whatever toast/alert method we're using
@@ -134,10 +165,12 @@ const PersonalDetails = () => {
         setMessage("");
         setUpdating(true);
         
+        const digitsOnlyPhone = (phoneNumber || '').replace(/\D/g, '');
         const newErrors = {
             firstName: !firstName.trim(),
             lastName: !lastName.trim(),
-            phoneNumber: phoneNumber && (phoneNumber.length < 9 || phoneNumber.length > 10),
+            // Optional phone; if provided validate 4-15 digits per E.164
+            phoneNumber: !!phoneNumber && (digitsOnlyPhone.length < 4 || digitsOnlyPhone.length > 15),
         };
         setErrors(newErrors);
 
@@ -157,10 +190,9 @@ const PersonalDetails = () => {
                 updateData.family_name = lastName.trim();
             }
 
-            if (phoneNumber.trim() !== originalData.phoneNumber) {
-                // adds country code for australia (do we need to handle other countries?)
-                const formattedPhone = phoneNumber.startsWith('+61') ? phoneNumber : `+61${phoneNumber}`;
-                updateData.phone_number = formattedPhone.trim();
+            if (phoneNumber.trim() !== originalData.phoneNumber || callingCode !== originalData.callingCode) {
+                const digits = (phoneNumber || '').replace(/\D/g, '');
+                updateData.phone_number = digits ? `+${callingCode}${digits}` : '';
             }
 
             if (photoChanged) {
@@ -194,6 +226,7 @@ const PersonalDetails = () => {
                 firstName,
                 lastName,
                 phoneNumber,
+                callingCode,
                 profilePhotoUri
             });
             setPhotoChanged(false);
@@ -259,9 +292,7 @@ const PersonalDetails = () => {
                             textContentType="givenName"
                             onChangeText={(text) => {
                                 setFirstName(text);
-                                if (text.trim()) {
-                                    setErrors((prev) => ({ ...prev, first: false }));
-                                }
+                                if (text.trim()) setErrors((prev) => ({ ...prev, firstName: false }));
                             }}
                         />
                         {errors.firstName && (
@@ -275,31 +306,52 @@ const PersonalDetails = () => {
                             placeholder="Last Name"
                             onChangeText={(text) => {
                                 setLastName(text);
-                                if (text.trim()) {
-                                    setErrors((prev) => ({ ...prev, last: false }));
-                                }
+                                if (text.trim()) setErrors((prev) => ({ ...prev, lastName: false }));
                             }}
                         />
                         {errors.lastName && (
                             <Text style={{ color: theme.colors.error }}>Please enter your last name</Text>
                         )}
 
+                        <View>
+                            <Text style={{ marginBottom: 6, color: theme.colors.text }}>Country Code</Text>
+                            <CountryPicker
+                                countryCode={countryCca2}
+                                withFilter
+                                withFlag
+                                withCountryNameButton
+                                withCallingCode
+                                withDarkTheme={!!theme.dark}
+                                theme={{
+                                    onBackgroundTextColor: theme.colors.text,
+                                    backgroundColor: theme.colors.background,
+                                    primaryColor: theme.colors.primary,
+                                    primaryColorVariant: theme.colors.primary,
+                                }}
+                                onSelect={(country) => {
+                                    setCountryCca2(country.cca2);
+                                    const code = (country.callingCode && country.callingCode[0]) || '';
+                                    if (code) setCallingCode(code);
+                                }}
+                            />
+                            <Text style={{ marginTop: 6, opacity: 0.7, color: theme.colors.text }}>Selected calling code: +{callingCode}</Text>
+                        </View>
+
                         <TextField 
                             label="Phone Number (Optional)"
                             value={phoneNumber}
                             placeholder="Phone Number"
-                            maxLength={10}
+                            maxLength={15}
                             keyboardType="numeric"
                             textContentType="telephoneNumber"
                             onChangeText={(text) => {
                                 setPhoneNumber(text);
-                                if (text.length >= 9 && text.length <= 10) {
-                                    setErrors((prev) => ({ ...prev, phoneNumber: false }));
-                                }
+                                const digits = text.replace(/\D/g, '');
+                                if (digits.length >= 4 && digits.length <= 15) setErrors((prev) => ({ ...prev, phoneNumber: false }));
                             }}
                         />
                         {errors.phoneNumber && (
-                            <Text style={{ color: theme.colors.error }}>Phone number must be 9-10 digits</Text>
+                            <Text style={{ color: theme.colors.error }}>Phone number must be 4-15 digits</Text>
                         )}
 
                         {needsPhoneConfirmation && (
