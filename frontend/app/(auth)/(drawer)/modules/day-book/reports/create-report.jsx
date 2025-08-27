@@ -1,165 +1,157 @@
 // Author(s): Matthew Page
 
-import React, { useRef, useState } from "react";
-import { View, Button, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Text, Alert, Platform } from "react-native";
 import { WebView } from "react-native-webview";
+import { useState, useRef } from "react";
+import RNHTMLtoPDF from "react-native-html-to-pdf";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
+import RNFS from "react-native-fs";
 
-// ⚠️ For DOCX export, you’ll need html-docx-js (npm install html-docx-js)
-// For PDF, you’ll need react-native-html-to-pdf
-import HtmlDocx from "html-docx-js/dist/html-docx";
-import RNHTMLtoPDF from "react-native-html-to-pdf";
+const CreateReport = () => {
+    const [editorContent, setEditorContent] = useState("");
+    const webViewRef = useRef(null);
 
-const RichTextReport = () => {
-  const webViewRef = useRef(null);
-  const [editorContent, setEditorContent] = useState("<p>Start writing here...</p>");
+    const pellHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link rel="stylesheet" href="https://unpkg.com/pell/dist/pell.min.css">
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              height: 100%;
+              width: 100%;
+              font-family: sans-serif;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+            }
+            .pell {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+            }
+            .pell-actionbar {
+              position: sticky;
+              top: 0;
+              background: #fff;
+              border-bottom: 1px solid #ccc;
+              z-index: 100;
+              flex-shrink: 0;
+              padding: 6px;
+              overflow-x: auto;
+              white-space: nowrap;
+            }
+            .pell-button {
+              font-size: 20px;
+              min-width: 40px;
+              min-height: 40px;
+              margin-right: 6px;
+            }
+            .pell-content {
+              flex: 1;
+              width: 100%;
+              overflow-y: auto;
+              padding: 10px;
+              box-sizing: border-box;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="editor" class="pell"></div>
+          <script src="https://unpkg.com/pell"></script>
+          <script>
+            const editor = window.pell.init({
+              element: document.getElementById('editor'),
+              onChange: html => {
+                window.ReactNativeWebView.postMessage(html);
+              },
+              defaultParagraphSeparator: 'p',
+              styleWithCSS: true
+            });
+          </script>
+        </body>
+      </html>
+    `;
 
-  // ---- Export as PDF ----
-  const exportAsPDF = async () => {
+const exportAsPDF = async () => {
     try {
-      const file = await RNHTMLtoPDF.convert({
-        html: editorContent,
-        fileName: "MyReport",
-        base64: false,
-      });
+        const file = await RNHTMLtoPDF.convert({
+            html: editorContent || "<p>No content</p>",
+            fileName: "Report",
+            base64: false,
+        });
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(file.filePath);
-      }
+        // Export location (Downloads on Android, Documents on iOS)
+        const downloadDir =
+            Platform.OS === "android"
+                ? RNFS.DownloadDirectoryPath   // /storage/emulated/0/Download
+                : RNFS.DocumentDirectoryPath;  // iOS sandbox Documents
+
+        const destPath = `${downloadDir}/Report.pdf`;
+
+        // Copies file from temp to Downloads/Documents
+        await RNFS.copyFile(file.filePath, destPath);
+
+        Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
     } catch (err) {
-      console.error("PDF export failed:", err);
+        console.error("PDF export failed:", err);
+        Alert.alert("Error", "Could not export PDF.");
     }
-  };
+};
 
-  // ---- Export as DOCX ----
-  const exportAsDocx = async () => {
-    try {
-      const blob = HtmlDocx.asBlob(editorContent);
-      const base64 = await blobToBase64(blob);
+    return (
+        <View style={commonStyles.screen}>
+            <Header title="Structure Report" showBack />
 
-      const path = FileSystem.documentDirectory + "MyReport.docx";
-      await FileSystem.writeAsStringAsync(path, base64, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+            {/* Export button */}
+            <View style={styles.exportContainer}>
+                <TouchableOpacity style={styles.exportButton} onPress={exportAsPDF}>
+                    <Text style={styles.exportButtonText}>Export PDF</Text>
+                </TouchableOpacity>
+            </View>
 
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(path);
-      }
-    } catch (err) {
-      console.error("DOCX export failed:", err);
-    }
-  };
-
-  // ---- Export as RTF (fallback: just save raw RTF markup) ----
-  const exportAsRtf = async () => {
-    try {
-      const rtfContent = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Arial;}}\\f0 ${editorContent}}`;
-
-      const path = FileSystem.documentDirectory + "MyReport.rtf";
-      await FileSystem.writeAsStringAsync(path, rtfContent);
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(path);
-      }
-    } catch (err) {
-      console.error("RTF export failed:", err);
-    }
-  };
-
-  // ---- Export as ODT (⚠️ usually needs server conversion; here raw HTML fallback) ----
-  const exportAsOdt = async () => {
-    try {
-      const path = FileSystem.documentDirectory + "MyReport.odt";
-      await FileSystem.writeAsStringAsync(path, editorContent);
-
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(path);
-      }
-    } catch (err) {
-      console.error("ODT export failed:", err);
-    }
-  };
-
-  // Helper: convert Blob → base64
-  const blobToBase64 = (blob) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  return (
-    <View style={commonStyles.screen}>
-      <Header title="Write Report" showBack />
-
-      {/* Export buttons */}
-      <ScrollView
-        horizontal
-        contentContainerStyle={styles.exportButtons}
-        showsHorizontalScrollIndicator={false}
-      >
-        <Button title="Export PDF" onPress={exportAsPDF} />
-        <Button title="Export DOCX" onPress={exportAsDocx} />
-        <Button title="Export RTF" onPress={exportAsRtf} />
-        <Button title="Export ODT" onPress={exportAsOdt} />
-      </ScrollView>
-
-      {/* Rich Text Editor */}
-      <WebView
-        ref={webViewRef}
-        originWhitelist={["*"]}
-        javaScriptEnabled={true}
-        domStorageEnabled={true}
-        style={styles.editor}
-        source={{
-          html: `
-            <html>
-              <head>
-                <style>
-                  body { font-family: Arial; padding: 10px; }
-                  #toolbar { position: sticky; top: 0; background: #eee; padding: 5px; }
-                  button { margin: 2px; }
-                  #editor { min-height: 100%; }
-                </style>
-              </head>
-              <body>
-                <div id="toolbar">
-                  <button onclick="document.execCommand('bold')">Bold</button>
-                  <button onclick="document.execCommand('italic')">Italic</button>
-                  <button onclick="document.execCommand('underline')">Underline</button>
-                </div>
-                <div id="editor" contenteditable="true">${editorContent}</div>
-                <script>
-                  const editor = document.getElementById('editor');
-                  editor.addEventListener('input', () => {
-                    window.ReactNativeWebView.postMessage(editor.innerHTML);
-                  });
-                </script>
-              </body>
-            </html>
-          `,
-        }}
-        onMessage={(event) => setEditorContent(event.nativeEvent.data)}
-      />
-    </View>
-  );
+            {/* Pell / Rich Text editor */}
+            <WebView
+                ref={webViewRef}
+                originWhitelist={['*']}
+                source={{ html: pellHtml }}
+                style={styles.webview}
+                javaScriptEnabled
+                domStorageEnabled
+                onMessage={(event) => {
+                    setEditorContent(event.nativeEvent.data);
+                }}
+            />
+        </View>
+    );
 };
 
 const styles = StyleSheet.create({
-  exportButtons: {
-    flexDirection: "row",
-    padding: 10,
-    gap: 10,
-  },
-  editor: {
-    flex: 1,
-    marginTop: 10,
-  },
+    exportContainer: {
+        flexDirection: "row",
+        justifyContent: "flex-start",
+        marginBottom: 10,
+        paddingHorizontal: 10,
+    },
+    exportButton: {
+        backgroundColor: "#007AFF",
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 6,
+    },
+    exportButtonText: {
+        color: "white",
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    webview: {
+        flex: 1,
+    },
 });
 
-export default RichTextReport;
+export default CreateReport;
