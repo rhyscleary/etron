@@ -16,6 +16,7 @@ import csvtojson from 'csvtojson';
 
 import { list, downloadData } from 'aws-amplify/storage';
 import amplifyOutputs from '../../../../../../amplify_outputs.json'
+import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
 import { ResourceSavingView } from '@react-navigation/elements';
 
 
@@ -109,11 +110,17 @@ const CreateMetric = () => {
 
     useEffect(() => {
         async function initialiseStoredData() {
+            const workspaceId = await getWorkspaceId();
+
             try {
                 const result = await list ({
-                    path: "ready-data/",
+                    path: `workspaces/${workspaceId}/readyData/`,
                     options: {
-                        bucket: "workspaceReadyData"
+                        /*bucket: {
+                            bucketName: 'workspace-stored-data1858d-dev',
+                            region: amplifyOutputs.storage.aws_region,
+                        }*/
+                        bucket: "workspaces"
                     }
                 })
                 const sources = result.items.map(item => item.path);
