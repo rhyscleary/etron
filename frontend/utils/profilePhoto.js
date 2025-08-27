@@ -90,7 +90,7 @@ export async function uploadProfilePhotoToS3(profilePhotoUri) {
 
     try {
         await uploadData({
-            path: `${userId}/accountpicture.jpg`,
+            path: `users/${userId}/accountpicture.jpg`,
             data: Buffer.from(fileBuffer, 'base64'),
             options: {
                 bucket: "users"
