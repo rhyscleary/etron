@@ -146,7 +146,7 @@ const CreateMetric = () => {
                         setDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
                         console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
                     },
-                    bucket: "workspaceReadyData"
+                    bucket: "workspaces"
                 }
             }).result
             setDownloadProgress(100)

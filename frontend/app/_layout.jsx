@@ -11,6 +11,7 @@ import { Amplify } from 'aws-amplify';
 
 import * as Linking from 'expo-linking';
 
+/* //can remove if app is working fine without it, there's also one in index.jsx; or get rid of the one there and leave the one here since it's always active as a _layout? - 27/08/2025 on prototype datatometric
 //import awsmobile from '../src/aws-exports';
 import amplifyOutputs from '../amplify_outputs.json'
 Amplify.configure({
@@ -37,6 +38,7 @@ Amplify.configure({
     
 });
 console.log('Amplify configured with:', Amplify.getConfig());
+*/
 
 Linking.addEventListener('url', (event) => { //deep linking; used for microsoft/google sign in redirects
     console.log('App was opened with URL:', event.url);
