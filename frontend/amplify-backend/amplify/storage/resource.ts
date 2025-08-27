@@ -20,7 +20,7 @@ export const workspaceReadyDataStorage = defineStorage({
 export const usersStorage = defineStorage({
 	name: 'users',
 	access: (allow) => ({
-		'*': [
+		'/*': [
 			allow.authenticated.to(['read', 'write', 'delete'])  //TODO: Customise these permissions to be as limited as reasonable
 		]
 	})
@@ -29,7 +29,7 @@ export const usersStorage = defineStorage({
 export const workspacesStorage = defineStorage({
 	name: 'workspaces',
 	access: (allow) => ({
-		'*': [
+		'/*': [
 			allow.authenticated.to(['read', 'write', 'delete'])
 		]
 	})
