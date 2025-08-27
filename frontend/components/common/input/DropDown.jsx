@@ -57,7 +57,7 @@ const DropDown = ({
                             styles.routerButton,
                             { borderColor: theme.colors.outline }
                         ]}
-                        onPress={() => {
+                        onPress={() => { //TODO: MAKE THIS HAVE PROPER NAVIGATION SO THAT THE BACK BUTTON AFTER CREATING A DATA CONNECTION TAKES YOU BACK HERE
                             router.navigate('/modules/day-book/data-management/create-data-connection')
                         }}
                     >
@@ -77,7 +77,7 @@ const DropDown = ({
                                     { color: theme.colors.placeholderText, } 
                                 ]}
                             >
-                                New Data Source
+                                New Data Source {/*TODO: MAKE THIS A VARIABLE*/}
                             </Text>
                         </View>
                     </TouchableOpacity>

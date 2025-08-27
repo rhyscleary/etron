@@ -46,6 +46,8 @@ const CreateMetric = () => {
     const allRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);
     const displayedRows = useMemo(() => allRows.slice(0, rowLimit), [allRows, rowLimit]);
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);
+
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2]);
     
     const onBottomReached = useCallback(() => {
         if (loadingMoreRows) return;
@@ -58,7 +60,7 @@ const CreateMetric = () => {
         });
     }, [allRows.length, rowLimit, loadingMoreRows]);
 
-    const { state, isActive } = useChartPressState({ x: 0, y: {value1: 0, value2: 0}})
+    const { state, isActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})
     const font = useFont(inter, 12);
 
     function ToolTip({text, xPosition, yPosition}) {
@@ -74,8 +76,8 @@ const CreateMetric = () => {
         </>)
     }
 
-    function tableToGraph(headers, rows, key1, key2) {
-        if (!Array.isArray(rows)) return [];
+    /*function tableToGraph(rows, key1, key2) {
+        //if (!Array.isArray(rows)) return [];
         
         const output = rows
         .filter((row) =>
@@ -84,10 +86,21 @@ const CreateMetric = () => {
         )
         .map((row) => ({
             label: String(row[0]),
-            value1: Number(row[key1]),
-            value2: Number(row[key2]),
+            "value1": Number(row[key1]),
+            "value2": Number(row[key2]),
             
         }))
+        return output;
+    }*/
+
+    function tableToGraph(rows, columns=[]) {
+        const output = rows.map(row => { //creates a json object with 1 independent variable and several dependent variables
+            let rowOutput = {independentVariable: String(row[0])}
+            for (let i = 0; i < columns.length; i++) (
+                rowOutput["dependentVariable" + (i)] = Number(row[columns[i]])
+            );
+            return rowOutput;
+        });
         return output;
     }
 
@@ -206,30 +219,19 @@ const CreateMetric = () => {
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
                         />
-                        
-                        
                                                    
                         <Card style={styles.card}>
                             <Card.Content>
-                                {selectedMetric === 'Bar Chart' && (
-                                    <BarChart data={graphData} />
-                                )}
-                                {selectedMetric === 'Line Chart' && (
-                                    <LineChart data={graphData} />
-                                )}
-                                {selectedMetric === 'Pie Chart' && (
-                                    <PieChart data={graphData} />
-                                )}
-                                {!selectedMetric && downloadProgress == 0 && (
+                                {downloadProgress == 0 && (
                                     <Text>Display preview here</Text>
                                 )}
-                                {!selectedMetric && downloadProgress > 0 && (
+                                {downloadProgress > 0 && downloadProgress < 100 && (
                                     <Text>Downloading data source: {downloadProgress}%</Text>
                                 )}
-                                {!selectedMetric && downloadProgress == 100 && loadingStoredData && (
+                                {downloadProgress == 100 && loadingStoredData && (
                                     <ActivityIndicator size="large" color="#0000ff" />
                                 )}
-                                {!selectedMetric && downloadProgress == 100 && !loadingStoredData && (
+                                {downloadProgress == 100 && !loadingStoredData && (
                                     <ScrollView horizontal
                                         showsHorizontalScrollIndicator
                                     >
@@ -277,23 +279,24 @@ const CreateMetric = () => {
             case 1:
                 return (
                     <View style={{height:"80%", width:"80%", marginTop:12}}>
+                        
                         <CartesianChart
-                            data={tableToGraph(headerRows, allRows, 1, 2)}
-                            xKey="label"
-                            yKeys={['value1', 'value2']}
-                            axisOptions={{ font }}
-                            chartPressState={state}
+                            data = {tableToGraph(allRows, chosenDependentVariables)}
+                            xKey = "independentVariable"
+                            yKeys = {chosenDependentVariables.map((_, index) => "dependentVariable" + index)}
+                            axisOptions = {{ font }}
+                            chartPressState = {state}
                             domain = {{y:[0]}}
-                            renderOutside={({ chartBounds }) => (
+                            renderOutside = {({ chartBounds }) => (
                                 <>
-                                    {/*console.log("state.y.value1.position.value:", state.y.value1.position.value)*/}
+                                    {/*console.log("state.y.dependentVariable0.position.value:", state.y.dependentVariable0.position.value)*/}
                                     {/*console.log("state.x.position.value:", state.x.position.value)*/}
                                     {isActive && (
                                         <>
                                             <ToolTip
                                                 //text={state.y.value2.value.value}
                                                 xPosition={state.x.position.value}
-                                                yPosition={state.y.value1.position.value}
+                                                yPosition={state.y.dependentVariable0.position.value}
                                             />
                                         </>
                                     )}
@@ -304,12 +307,12 @@ const CreateMetric = () => {
                             {({ points }) => (
                                 <>
                                     <Line
-                                        points={points.value1}
+                                        points={points.dependentVariable0}
                                         color="white"
                                         strokeWidth={3}
                                     />
                                     <Line
-                                        points={points.value2}
+                                        points={points.dependentVariable1}
                                         color="blue"
                                         strokeWidth={3}
                                     />
