@@ -1,16 +1,17 @@
 // Author(s): Rhys Cleary
-const axios = require('axios');
 const mysql = require('mysql2/promise');
+const { testConnection } = require('../services/dataSourceService');
 
 // validate the configurations before creating the data source
 function validateConfig(config) {
     if (!config) return { valid: false, error: "Config is missing"};
 
     // define required fields
-    const requiredFields = ["host", "port", "databaseName"];
+    const requiredFields = ["host", "port", "databaseName", "tables"];
     for (const field of requiredFields) {
         if (!config[field]) return { valid: false, error: `${field} is required`};
     }
+    if (!Array.isArray(config.tables)) return { valid: false, error: "A list of tables is required"};
 
     return { valid: true };
 }
@@ -34,6 +35,19 @@ function translateData(data) {
     return data;
 }
 
+function testConnection() {
+    // poll the data source
+}
+
+function formatValidation(data) {
+
+}
+
+function translateData(data) {
+
+}
+
+
 // poll server
 async function poll(config, secrets) {
     let connection;
@@ -55,13 +69,13 @@ async function poll(config, secrets) {
         
 
         // validate the response data
-        const dataValidation = validateData(response.data);
+        const dataValidation = validateDataStructure(rawData);
         if (!dataValidation.valid) {
             throw new Error(`Validation failed: ${dataValidation.error}`);
         }
 
         // translate the fetched data
-        return translateData(response.data);
+        return translateData(rawData);
 
     } catch (error) {
         throw new Error(error.message);

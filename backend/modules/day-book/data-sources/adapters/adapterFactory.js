@@ -30,12 +30,12 @@ function getAdapter(type) {
             throw new Error(`Adapter ${type} must implement poll(config, secrets)`);
         }
     }
-    if (typeof adapter.validateData != "function") {
+    /*if (typeof adapter.validateData != "function") {
         throw new Error(`Adapter ${type} must implement validateData()`);
     }
     if (typeof adapter.translateData != "function") {
         throw new Error(`Adapter ${type} must implement translateData()`);
-    }
+    }*/
 
     return adapter;
 }
