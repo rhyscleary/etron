@@ -72,7 +72,7 @@ const CreateMetric = () => {
                     },
                     bucket: "workspaces"
                 }
-            }).result
+            }).result;
             setReadyDataDownloadProgress(100)
             setLoadingStoredData(true);
 
