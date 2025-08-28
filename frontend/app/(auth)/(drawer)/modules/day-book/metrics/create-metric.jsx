@@ -14,7 +14,7 @@ import graphDataBySource from './graph-data';
 
 import csvtojson from 'csvtojson';
 
-import { list, downloadData } from 'aws-amplify/storage';
+import { list, downloadData, uploadData } from 'aws-amplify/storage';
 import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
 import { ResourceSavingView } from '@react-navigation/elements';
@@ -128,7 +128,7 @@ const CreateMetric = () => {
     }, [dataRows.length, rowLimit]);
 
 
-    const { state, isActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})
+    const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})
     const font = useFont(inter, 12);
 
     function GraphTooltip({text, xPosition, yPosition}) {
@@ -145,8 +145,8 @@ const CreateMetric = () => {
     }
 
 
-    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);
-    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);
+    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);  // Hard-coded value, but should be set by the user
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);  // Hard-coded values, but should be set by the user
     const colours = ["white", "red", "blue", "green", "purple", "orange"]
 
     function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {
@@ -173,13 +173,37 @@ const CreateMetric = () => {
     };
 
     const handleContinue = () => {
-        if (step < totalSteps - 1) {
-            setStep((prev) => prev + 1);
-        } else {
-            console.log("Form completed");
-            router.navigate("/modules/day-book/metrics/metric-management");
-        }
+        setStep((prev) => prev + 1);
     };
+
+    const [metricName, setMetricName] = React.useState('');
+
+    const handleFinish = async () => {
+        // Upload metric settings
+        try {
+            const metricSettings = {
+                data: dataRows,
+                independentVariable: chosenIndependentVariable,
+                dependentVariables: chosenDependentVariables,
+            }
+            const workspaceId = await getWorkspaceId();
+            const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_settings.json`
+            console.log("File path:", S3FilePath)
+            const result = uploadData({
+                path: S3FilePath,
+                data: JSON.stringify(metricSettings),
+                options: {
+                    bucket: "workspaces"
+                }
+            }).result;
+            console.log("File uploaded successfully.");
+        } catch (error) {
+            console.log("Error uploading metric settings:", error);
+            return;
+        }
+        console.log("Form completed");
+        router.navigate("/modules/day-book/metrics/metric-management"); 
+    }
 
     const renderFormStep = () => {
         switch (step) {
@@ -215,11 +239,11 @@ const CreateMetric = () => {
                                         showsHorizontalScrollIndicator
                                     >
                                         <View style={{ minWidth: (dataHeader?.length ?? 0) * 100 }}>
-                                            <DataTable>
+                                            <DataTable>{/* Displays a preview of the data as a table */} 
                                                 <DataTable.Header>
                                                     {dataHeader.map((header, index) => (
                                                         <DataTable.Title key={index} numberOfLines={1}>
-                                                            {String(header)}
+                                                            <Text>{String(header)}</Text>
                                                         </DataTable.Title>
                                                     ))}
                                                 </DataTable.Header>
@@ -229,7 +253,7 @@ const CreateMetric = () => {
                                                         <DataTable.Row>
                                                             {item.map((cell, index) => (
                                                                 <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
-                                                                    {String(cell)}
+                                                                    <Text>{String(cell)}</Text>
                                                                 </DataTable.Cell>
                                                             ))}
                                                         </DataTable.Row>
@@ -271,15 +295,15 @@ const CreateMetric = () => {
                             xKey = "independentVariable"
                             yKeys = {chosenDependentVariables.map((_, index) => "dependentVariable" + index)}
                             axisOptions = {{ font }}
-                            chartPressState = {state}
+                            chartPressState = { chartPressState }
                             domain = {{y:[0]}}
                             renderOutside = {({ chartBounds }) => (
                                 <>
-                                    {isActive && (
+                                    {chartPressIsActive && (
                                         <>
                                             <GraphTooltip
-                                                xPosition={state.x.position.value}
-                                                yPosition={state.y.dependentVariable0.position.value}
+                                                xPosition={chartPressState.x.position.value}
+                                                yPosition={chartPressState.y.dependentVariable0.position.value}
                                             />
                                         </>
                                     )}
@@ -298,7 +322,7 @@ const CreateMetric = () => {
                                         )
                                     })}
                                     
-                                    {isActive ? (
+                                    {chartPressIsActive ? (
                                         <>
                                             
                                         </>
@@ -314,6 +338,7 @@ const CreateMetric = () => {
                         <TextField
                             label="Metric Name"
                             placeholder="Metric Name"
+                            onChangeText={setMetricName}
                         />
                     </View>
                 )
@@ -332,7 +357,7 @@ const CreateMetric = () => {
                 <View alignItems={'flex-end'}>
                     <BasicButton
                         label={step < totalSteps - 1 ? "Continue" : "Finish"}
-                        onPress={handleContinue}
+                        onPress={step < totalSteps - 1 ? handleContinue : handleFinish}
                         style={styles.button}
                     />
                 </View>
