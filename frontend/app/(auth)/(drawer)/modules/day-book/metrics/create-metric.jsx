@@ -14,7 +14,7 @@ import graphDataBySource from './graph-data';
 
 import csvtojson from 'csvtojson';
 
-import { list, downloadData } from 'aws-amplify/storage';
+import { list, downloadData, uploadData } from 'aws-amplify/storage';
 import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
 import { ResourceSavingView } from '@react-navigation/elements';
@@ -27,133 +27,53 @@ import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 
 const CreateMetric = () => {
     const router = useRouter();
-    const [step, setStep] = useState(0);
-    const [dataSources, setDataSources] = useState([]);
-    const [graphData, setGraphData] = useState([]);
-    const [selectedMetric, setSelectedMetric] = useState(null);
-    const [selectedDataSource, setSelectedDataSource] = useState(null);
-    const [loadingDataSources, setLoadingDataSources] = useState(true);
-    const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
-    const [downloadProgress, setDownloadProgress] = useState(0);
 
-    const [loadingStoredData, setLoadingStoredData] = useState(false);
-    const [storedData, setStoredData] = useState(null);
 
-    const totalSteps = 2;
-
-    const [rowLimit, setRowLimit] = useState(5);
-    const headerRows = useMemo(() => storedData?.[0] ?? [], [storedData]);
-    const allRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);
-    const displayedRows = useMemo(() => allRows.slice(0, rowLimit), [allRows, rowLimit]);
-    const [loadingMoreRows, setLoadingMoreRows] = useState(false);
+    const [workspaceReadyData, setWorkspaceReadyData] = useState([]);  // Array of file paths for ready-data in the workspace
+    const [loadingWorkspaceReadyData, setLoadingWorkspaceReadyData] = useState(true);
     
-    const onBottomReached = useCallback(() => {
-        if (loadingMoreRows) return;
-        if (allRows.length <= rowLimit) return;
-
-        setLoadingMoreRows(true);
-        requestAnimationFrame(() => {
-            setRowLimit((prev) => Math.min(prev + 10, allRows.length));
-            setLoadingMoreRows(false);
-        });
-    }, [allRows.length, rowLimit, loadingMoreRows]);
-
-    const { state, isActive } = useChartPressState({ x: 0, y: {value1: 0, value2: 0}})
-    const font = useFont(inter, 12);
-
-    function ToolTip({text, xPosition, yPosition}) {
-        return (<>
-            <SkiaText
-                color = "grey"
-                font = {font}
-                text = {"test"}
-                x = {xPosition}
-                y = {yPosition - 15}
-            />
-            <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
-        </>)
-    }
-
-    function tableToGraph(headers, rows, key1, key2) {
-        if (!Array.isArray(rows)) return [];
-        
-        const output = rows
-        .filter((row) =>
-            row?.[key1] != null &&
-            row?.[key2] != null
-        )
-        .map((row) => ({
-            label: String(row[0]),
-            value1: Number(row[key1]),
-            value2: Number(row[key2]),
-            
-        }))
-        return output;
-    }
-
-    /*useEffect(() => {
-        const sources = Object.keys(graphDataBySource);
-        setDataSources(sources);
-    }, []);*/
-
-    /*const handleDataSourceSelect = (source) => {
-        setSelectedDataSource(source);
-        const formattedData = graphDataBySource[source]?.map(value => ({ value })) || [];
-        setGraphData(formattedData);
-    };*/
-
     useEffect(() => {
-        if (storedData) {
-            console.log("Stored data updated. Length:", storedData.length);
-        }
-    }, [storedData]);
-
-    useEffect(() => {
-        async function initialiseStoredData() {
+        async function initialiseWorkspaceReadyData() {
             const workspaceId = await getWorkspaceId();
 
             try {
                 const result = await list ({
                     path: `workspaces/${workspaceId}/readyData/`,
                     options: {
-                        /*bucket: {
-                            bucketName: 'workspace-stored-data1858d-dev',
-                            region: amplifyOutputs.storage.aws_region,
-                        }*/
                         bucket: "workspaces"
                     }
                 })
-                const sources = result.items.map(item => item.path);
-                setDataSources(sources);
-                setLoadingDataSources(false);
+                const workspaceReadyDataPaths = result.items.map(item => item.path);
+                setWorkspaceReadyData(workspaceReadyDataPaths);
+                setLoadingWorkspaceReadyData(false);
             } catch (error) {
-                console.error('Error retrieving data sources:', error);
+                console.error('Error retrieving ready data:', error);
                 return;
             }
-            //console.log('Data sources retrieved:', result.items.map(item => item.path));
         }
-
-        initialiseStoredData();
+        initialiseWorkspaceReadyData();
     }, []);
 
-    const handleDataSourceSelect = async (source) => {
-        console.log('Downloading data source:', source);
-        setDownloadProgress(0);
+
+    const [readyDataDownloadProgress, setReadyDataDownloadProgress] = useState(0);
+    const [storedData, setStoredData] = useState(null);  // Data chosen by the user to be loaded into the graph
+    const [loadingStoredData, setLoadingStoredData] = useState(false);
+
+    const handleWorkspaceReadyDataSelect = async (source) => {
+        console.log('Downloading ready data:', source);
+        setReadyDataDownloadProgress(0);
         try {
             const { body, eTag } = await downloadData({
                 path: source,
                 options: {
                     onProgress: (progress) => {
-                        setDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
+                        setReadyDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
                         console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
                     },
-                    bucket: {
-                        bucketName: 'workspace-stored-data1858d-dev',
-                        region: amplifyOutputs.storage.aws_region,
-                    }
+                    bucket: "workspaces"
                 }
             }).result
-            setDownloadProgress(100)
+            setReadyDataDownloadProgress(100)
             setLoadingStoredData(true);
 
             const csvText = await body.text();
@@ -176,6 +96,74 @@ const CreateMetric = () => {
         }
     }
 
+
+    useEffect(() => {
+        if (storedData) {
+            console.log("Stored data updated. Length:", storedData.length);
+        }
+    }, [storedData]);
+
+
+    const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
+    const [selectedMetric, setSelectedMetric] = useState(null);
+    const [selectedReadyData, setSelectedReadyData] = useState(null);
+
+
+    const rowLoadAmount = 5;  // How many rows are loaded at a time in the data preview
+    const [rowLimit, setRowLimit] = useState(rowLoadAmount);  // How many roads are loaded total (will update over time)
+    const dataHeader = useMemo(() => storedData?.[0] ?? [], [storedData]);
+    const dataRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);
+    const displayedRows = useMemo(() => dataRows.slice(0, rowLimit), [dataRows, rowLimit]);
+    const [loadingMoreRows, setLoadingMoreRows] = useState(false);
+
+    const onPreviewBottomReached = useCallback(() => {
+        if (loadingMoreRows) return;
+        if (rowLimit >= dataRows.length) return;
+
+        setLoadingMoreRows(true);
+        requestAnimationFrame(() => {
+            setRowLimit((prev) => Math.min(prev + rowLoadAmount, dataRows.length));
+            setLoadingMoreRows(false);
+        });
+    }, [dataRows.length, rowLimit]);
+
+
+    const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})
+    const font = useFont(inter, 12);
+
+    function GraphTooltip({text, xPosition, yPosition}) {
+        return (<>
+            <SkiaText
+                color = "grey"
+                font = {font}
+                text = {"test"}
+                x = {xPosition}
+                y = {yPosition - 15}
+            />
+            <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
+        </>)
+    }
+
+
+    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);  // Hard-coded value, but should be set by the user
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);  // Hard-coded values, but should be set by the user
+    const colours = ["white", "red", "blue", "green", "purple", "orange"]
+
+    function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {
+        const output = rows.map(row => { //creates a json object with 1 independent variable and several dependent variables
+            let rowOutput = {independentVariable: String(row[independentColumn])}  // Issue: this doesn't resort the data, so the independentVariable can be out of order and look weird (but still correct) 
+            for (let i = 0; i < dependentColumns.length; i++) (
+                rowOutput["dependentVariable" + (i)] = Number(row[dependentColumns[i]])
+            );
+            return rowOutput;
+        });
+        return output;
+    }
+
+
+    const [step, setStep] = useState(0);
+    const totalSteps = 4;
+
     const handleBack = () => {
         if (step === 0) {
             router.back();
@@ -185,111 +173,77 @@ const CreateMetric = () => {
     };
 
     const handleContinue = () => {
-        if (step < totalSteps - 1) {
-            setStep((prev) => prev + 1);
-        } else {
-            console.log("Form completed");
-            router.navigate("/modules/day-book/metrics/metric-management");
-        }
+        setStep((prev) => prev + 1);
     };
+
+    const [metricName, setMetricName] = React.useState('');
+
+    const handleFinish = async () => {
+        // Upload metric settings
+        try {
+            const metricSettings = {
+                data: dataRows,
+                independentVariable: chosenIndependentVariable,
+                dependentVariables: chosenDependentVariables,
+            }
+            const workspaceId = await getWorkspaceId();
+            const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_settings.json`
+            console.log("File path:", S3FilePath)
+            const result = uploadData({
+                path: S3FilePath,
+                data: JSON.stringify(metricSettings),
+                options: {
+                    bucket: "workspaces"
+                }
+            }).result;
+            console.log("File uploaded successfully.");
+        } catch (error) {
+            console.log("Error uploading metric settings:", error);
+            return;
+        }
+        console.log("Form completed");
+        router.navigate("/modules/day-book/metrics/metric-management"); 
+    }
 
     const renderFormStep = () => {
         switch (step) {
             case 0:
-                return ( <>
-                    <View style={{height:220, marginTop:12}}>
-                        <CartesianChart
-                            data={tableToGraph(headerRows, allRows, 1, 2)}
-                            xKey="label"
-                            yKeys={['value1', 'value2']}
-                            axisOptions={{ font }}
-                            chartPressState={state}
-                            domain = {{y:[0]}}
-                            renderOutside={({ chartBounds }) => (
-                                <>
-                                    {console.log("state.y.value1.position.value:", state.y.value1.position.value)}
-                                    {console.log("state.x.position.value:", state.x.position.value)}
-                                    {isActive && (
-                                        <>
-                                            <ToolTip
-                                                //text={state.y.value2.value.value}
-                                                xPosition={state.x.position.value}
-                                                yPosition={state.y.value1.position.value}
-                                            />
-                                        </>
-                                    )}
-                                    {console.log("working?")}
-                                </>
-                            )}
-                        >
-                            {({ points }) => (
-                                <>
-                                    <Line
-                                        points={points.value1}
-                                        color="white"
-                                        strokeWidth={3}
-                                    />
-                                    <Line
-                                        points={points.value2}
-                                        color="blue"
-                                        strokeWidth={3}
-                                    />
-                                    
-                                    {isActive ? (
-                                        <>
-                                            
-                                        </>
-                                    ) : null}
-                                </>
-                            )}
-                        </CartesianChart>
-                    </View>
+                return (
                     <ScrollView>
                         <DropDown
                             title = "Select Data Source"
-                            items = {loadingDataSources ? ["Loading..."] : dataSources/*.map(item => item.split('/').at(-1))*/} //commented out code just shows the path, but we need the full path to download the file
-                            onSelect={handleDataSourceSelect}
+                            items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/').at(-1)}))}
+                            onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
                         />
 
                         <DropDown
                             title = "Select Metric"
-                            items = {metrics}
+                            items = {metrics.map((metric) => ({value: metric, label: metric}))}
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
                         />
-                        
-                        
                                                    
                         <Card style={styles.card}>
                             <Card.Content>
-                                {selectedMetric === 'Bar Chart' && (
-                                    <BarChart data={graphData} />
-                                )}
-                                {selectedMetric === 'Line Chart' && (
-                                    <LineChart data={graphData} />
-                                )}
-                                {selectedMetric === 'Pie Chart' && (
-                                    <PieChart data={graphData} />
-                                )}
-                                {!selectedMetric && downloadProgress == 0 && (
+                                {readyDataDownloadProgress == 0 && (
                                     <Text>Display preview here</Text>
                                 )}
-                                {!selectedMetric && downloadProgress > 0 && (
-                                    <Text>Downloading data source: {downloadProgress}%</Text>
+                                {readyDataDownloadProgress > 0 && readyDataDownloadProgress < 100 && (
+                                    <Text>Downloading data source: {readyDataDownloadProgress}%</Text>
                                 )}
-                                {!selectedMetric && downloadProgress == 100 && loadingStoredData && (
+                                {readyDataDownloadProgress == 100 && loadingStoredData && (
                                     <ActivityIndicator size="large" color="#0000ff" />
                                 )}
-                                {!selectedMetric && downloadProgress == 100 && !loadingStoredData && (
+                                {readyDataDownloadProgress == 100 && !loadingStoredData && (
                                     <ScrollView horizontal
                                         showsHorizontalScrollIndicator
                                     >
-                                        <View style={{ minWidth: (headerRows?.length ?? 0) * 100 }}>
-                                            <DataTable>
+                                        <View style={{ minWidth: (dataHeader?.length ?? 0) * 100 }}>
+                                            <DataTable>{/* Displays a preview of the data as a table */} 
                                                 <DataTable.Header>
-                                                    {headerRows.map((header, index) => (
+                                                    {dataHeader.map((header, index) => (
                                                         <DataTable.Title key={index} numberOfLines={1}>
-                                                            {String(header)}
+                                                            <Text>{String(header)}</Text>
                                                         </DataTable.Title>
                                                     ))}
                                                 </DataTable.Header>
@@ -299,7 +253,7 @@ const CreateMetric = () => {
                                                         <DataTable.Row>
                                                             {item.map((cell, index) => (
                                                                 <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
-                                                                    {String(cell)}
+                                                                    <Text>{String(cell)}</Text>
                                                                 </DataTable.Cell>
                                                             ))}
                                                         </DataTable.Row>
@@ -309,7 +263,7 @@ const CreateMetric = () => {
                                                     initialNumToRender={5}
                                                     windowSize={10}
                                                     removeClippedSubviews={true}
-                                                    onEndReached={onBottomReached}
+                                                    onEndReached={onPreviewBottomReached}
                                                     onEndReachedThreshold={0.1} 
                                                     ListFooterComponent={
                                                         loadingMoreRows ? (
@@ -324,13 +278,67 @@ const CreateMetric = () => {
                             </Card.Content>
                         </Card>
                     </ScrollView>
-                </>)
+                )
             case 1:
+                return (
+                    <View>
+                        <Text>
+                            Pick dependent variables and graph styling here
+                        </Text>
+                    </View>
+                )
+            case 2:
+                return (
+                    <View style={{height:"80%", width:"80%", marginTop:12}}>
+                        <CartesianChart
+                            data = {readyDataToGraphData(dataRows, chosenIndependentVariable, chosenDependentVariables)}
+                            xKey = "independentVariable"
+                            yKeys = {chosenDependentVariables.map((_, index) => "dependentVariable" + index)}
+                            axisOptions = {{ font }}
+                            chartPressState = { chartPressState }
+                            domain = {{y:[0]}}
+                            renderOutside = {({ chartBounds }) => (
+                                <>
+                                    {chartPressIsActive && (
+                                        <>
+                                            <GraphTooltip
+                                                xPosition={chartPressState.x.position.value}
+                                                yPosition={chartPressState.y.dependentVariable0.position.value}
+                                            />
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        >
+                            {({ points }) => (
+                                <>
+                                    {chosenDependentVariables.map((_, index) => {
+                                        return (
+                                            <Line
+                                                points = {points["dependentVariable" + index]}
+                                                color = {colours[index]}
+                                                strokeWidth = {3}
+                                            />
+                                        )
+                                    })}
+                                    
+                                    {chartPressIsActive ? (
+                                        <>
+                                            
+                                        </>
+                                    ) : null}
+                                </>
+                            )}
+                        </CartesianChart>
+                    </View>
+                )
+            case 3:
                 return (
                     <View>
                         <TextField
                             label="Metric Name"
                             placeholder="Metric Name"
+                            onChangeText={setMetricName}
                         />
                     </View>
                 )
@@ -349,12 +357,11 @@ const CreateMetric = () => {
                 <View alignItems={'flex-end'}>
                     <BasicButton
                         label={step < totalSteps - 1 ? "Continue" : "Finish"}
-                        onPress={handleContinue}
+                        onPress={step < totalSteps - 1 ? handleContinue : handleFinish}
                         style={styles.button}
                     />
                 </View>
-            </View>
-                
+            </View>    
         </View>
     )
 }

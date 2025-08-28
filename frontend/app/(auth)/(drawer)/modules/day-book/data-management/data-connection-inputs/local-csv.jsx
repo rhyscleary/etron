@@ -20,6 +20,7 @@ const LocalCSV = () => {
 
     const pickDocument = async () => {
         try {
+            console.log("Picking file...");
             const result = await DocumentPicker.getDocumentAsync({
                 type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
                 copyToCacheDirectory: true  // This might be bad for large files
