@@ -28,11 +28,10 @@ import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 const CreateMetric = () => {
     const router = useRouter();
 
-
     const [workspaceReadyData, setWorkspaceReadyData] = useState([]);  // Array of file paths for ready-data in the workspace
-    const [loadingWorkspaceReadyData, setLoadingWorkspaceReadyData] = useState(true);
+    const [loadingWorkspaceReadyData, setLoadingWorkspaceReadyData] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
-    useEffect(() => {
+    useEffect(() => {  // When page loads, get a list of all file paths in the workspaces' readyData folder
         async function initialiseWorkspaceReadyData() {
             const workspaceId = await getWorkspaceId();
 
@@ -57,23 +56,23 @@ const CreateMetric = () => {
 
     const [readyDataDownloadProgress, setReadyDataDownloadProgress] = useState(0);
     const [storedData, setStoredData] = useState(null);  // Data chosen by the user to be loaded into the graph
-    const [loadingStoredData, setLoadingStoredData] = useState(false);
+    const [loadingStoredData, setLoadingStoredData] = useState(false);  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
 
-    const handleWorkspaceReadyDataSelect = async (source) => {
+    const handleWorkspaceReadyDataSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
         console.log('Downloading ready data:', source);
         setReadyDataDownloadProgress(0);
         try {
             const { body, eTag } = await downloadData({
                 path: source,
                 options: {
-                    onProgress: (progress) => {
+                    onProgress: (progress) => {  // This continuously returns the progress as the download occurs
                         setReadyDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
                         console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
                     },
                     bucket: "workspaces"
                 }
             }).result;
-            setReadyDataDownloadProgress(100)
+            setReadyDataDownloadProgress(100);  // Not necessary; just makes sure it gets set to 100% in case something weird happens
             setLoadingStoredData(true);
 
             const csvText = await body.text();
@@ -88,8 +87,6 @@ const CreateMetric = () => {
             setStoredData(csvRow);
             setLoadingStoredData(false);
             console.log("Stored data length:", csvRow.length);
-
-            //setStoredData(await body.text());
         } catch (error) {
             console.error('Error downloading data source:', error);
             setLoadingStoredData(false);
@@ -97,26 +94,21 @@ const CreateMetric = () => {
     }
 
 
-    useEffect(() => {
-        if (storedData) {
-            console.log("Stored data updated. Length:", storedData.length);
-        }
-    }, [storedData]);
-
-
     const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
     const [selectedMetric, setSelectedMetric] = useState(null);
     const [selectedReadyData, setSelectedReadyData] = useState(null);
 
 
+    // This stuff is for the data preview that appears on the page
     const rowLoadAmount = 5;  // How many rows are loaded at a time in the data preview
     const [rowLimit, setRowLimit] = useState(rowLoadAmount);  // How many roads are loaded total (will update over time)
-    const dataHeader = useMemo(() => storedData?.[0] ?? [], [storedData]);
-    const dataRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);
-    const displayedRows = useMemo(() => dataRows.slice(0, rowLimit), [dataRows, rowLimit]);
+    // useMemo caches the result so that it doesn't keep recalculating
+    const dataHeader = useMemo(() => storedData?.[0] ?? [], [storedData]);  // Automatically loads the first row of data as headers
+    const dataRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);  // Automatically loads everything except the first row of data
+    const displayedRows = useMemo(() => dataRows.slice(0, rowLimit), [dataRows, rowLimit]);  // Loads only the data that will be displayed
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);
 
-    const onPreviewBottomReached = useCallback(() => {
+    const onPreviewBottomReached = useCallback(() => {  // When the user scrolls to the bottom, loads more rows
         if (loadingMoreRows) return;
         if (rowLimit >= dataRows.length) return;
 
@@ -128,10 +120,10 @@ const CreateMetric = () => {
     }, [dataRows.length, rowLimit]);
 
 
-    const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})
+    const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
     const font = useFont(inter, 12);
 
-    function GraphTooltip({text, xPosition, yPosition}) {
+    function GraphTooltip({text, xPosition, yPosition}) {  // Creates a small overlay for the graph at the specified position (usually where the user clicks)
         return (<>
             <SkiaText
                 color = "grey"
@@ -149,9 +141,9 @@ const CreateMetric = () => {
     const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);  // Hard-coded values, but should be set by the user
     const colours = ["white", "red", "blue", "green", "purple", "orange"]
 
-    function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {
-        const output = rows.map(row => { //creates a json object with 1 independent variable and several dependent variables
-            let rowOutput = {independentVariable: String(row[independentColumn])}  // Issue: this doesn't resort the data, so the independentVariable can be out of order and look weird (but still correct) 
+    function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {  // Transforms the rows into a json object (which the graph needs)
+        const output = rows.map(row => {
+            let rowOutput = {independentVariable: String(row[independentColumn])}  // Issue: this doesn't sort the data, so the independentVariable can be out of order and look weird (but still correct) 
             for (let i = 0; i < dependentColumns.length; i++) (
                 rowOutput["dependentVariable" + (i)] = Number(row[dependentColumns[i]])
             );
@@ -179,8 +171,7 @@ const CreateMetric = () => {
     const [metricName, setMetricName] = React.useState('');
 
     const handleFinish = async () => {
-        // Upload metric settings
-        try {
+        try {  // Upload metric settings
             const metricSettings = {
                 data: dataRows,
                 independentVariable: chosenIndependentVariable,
@@ -293,13 +284,13 @@ const CreateMetric = () => {
                         <CartesianChart
                             data = {readyDataToGraphData(dataRows, chosenIndependentVariable, chosenDependentVariables)}
                             xKey = "independentVariable"
-                            yKeys = {chosenDependentVariables.map((_, index) => "dependentVariable" + index)}
+                            yKeys = {chosenDependentVariables.map((_, index) => "dependentVariable" + index) /* Just sets the yKeys to dependentVariable0, dependentVariable1, etc*/}
                             axisOptions = {{ font }}
-                            chartPressState = { chartPressState }
-                            domain = {{y:[0]}}
-                            renderOutside = {({ chartBounds }) => (
+                            chartPressState = { chartPressState /* Enables tracking where the user taps on the graph */}
+                            domain = {{y:[0]} /* Forces the graph to show down to 0, even if the data is all in the 100s */}
+                            renderOutside = {({ chartBounds }) => (  // This stuff has to be outside because you can't render text inside the graph
                                 <>
-                                    {chartPressIsActive && (
+                                    {chartPressIsActive && (  // When the user taps on the graph, this stuff is rendered
                                         <>
                                             <GraphTooltip
                                                 xPosition={chartPressState.x.position.value}
@@ -314,7 +305,7 @@ const CreateMetric = () => {
                                 <>
                                     {chosenDependentVariables.map((_, index) => {
                                         return (
-                                            <Line
+                                            <Line  // Creates a line on the graph for each dependent variable
                                                 points = {points["dependentVariable" + index]}
                                                 color = {colours[index]}
                                                 strokeWidth = {3}
