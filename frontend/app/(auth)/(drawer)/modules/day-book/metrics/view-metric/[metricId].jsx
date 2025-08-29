@@ -13,6 +13,7 @@ import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 
 const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
+    
     const [metricSettings, setMetricSettings] = useState({});
     const [dataRows, setDataRows] = useState([]);
     const [independentVariable, setIndependentVariable] = useState();
