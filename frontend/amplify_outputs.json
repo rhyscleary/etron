@@ -41,7 +41,7 @@
         "profile",
         "aws.cognito.signin.user.admin"
       ],
-      "domain": "etron-app.auth.ap-southeast-2.amazoncognito.com"
+      "domain": "e4ae5e45b546f60ae83d.auth.ap-southeast-2.amazoncognito.com"
     },
     "unauthenticated_identities_enabled": true
   },
@@ -55,6 +55,51 @@
         "aws_region": "ap-southeast-2",
         "paths": {
           "profile-pictures/*": {
+            "authenticated": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          }
+        }
+      },
+      {
+        "name": "workspaceReadyData",
+        "bucket_name": "amplify-d3vtak5uri6g9a-de-workspacereadydatabucket-lizhwuaiyrtk",
+        "aws_region": "ap-southeast-2",
+        "paths": {
+          "ready-data/*": {
+            "authenticated": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          }
+        }
+      },
+      {
+        "name": "users",
+        "bucket_name": "amplify-d3vtak5uri6g9a-develop-usersbucket22de6c1b-zlzw9djjefwj",
+        "aws_region": "ap-southeast-2",
+        "paths": {
+          "users/*": {
+            "authenticated": [
+              "get",
+              "list",
+              "write",
+              "delete"
+            ]
+          }
+        }
+      },
+      {
+        "name": "workspaces",
+        "bucket_name": "amplify-d3vtak5uri6g9a-de-workspacesbucket784af028-utfi3tbysihb",
+        "aws_region": "ap-southeast-2",
+        "paths": {
+          "workspaces/*": {
             "authenticated": [
               "get",
               "list",

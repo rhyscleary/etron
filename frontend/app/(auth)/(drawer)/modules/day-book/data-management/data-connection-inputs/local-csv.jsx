@@ -10,6 +10,8 @@ import * as FileSystem from 'expo-file-system';
 //import awsmobile from '../../../../../../../src/aws-exports';
 import amplifyOutputs from '../../../../../../../amplify_outputs.json'
 
+import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage"
+
 const LocalCSV = () => {
     const [fileUri, setFileUri] = useState(null);
     const [fileName, setName] = useState('');
@@ -18,6 +20,7 @@ const LocalCSV = () => {
 
     const pickDocument = async () => {
         try {
+            console.log("Picking file...");
             const result = await DocumentPicker.getDocumentAsync({
                 type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
                 copyToCacheDirectory: true  // This might be bad for large files
@@ -51,8 +54,9 @@ const LocalCSV = () => {
 
         try {
             console.log('Creating file path...');
-            const { userId } = await getCurrentUser();
-            const S3FilePath = `public/${userId}/${fileName}`;
+            const workspaceId = await getWorkspaceId();
+            
+            const S3FilePath = `workspaces/${workspaceId}/readyData/${fileName}`;
             console.log('S3 File Path:', S3FilePath);
 
             console.log('Retrieving file...');
@@ -65,8 +69,8 @@ const LocalCSV = () => {
                 data: blob,
                 //accessLevel: 'public', // should become private or protected in future i think?
                 options: {
-                    bucket: 'workspaceReadyData',
-                    contentType: 'text/csv',
+                    bucket: "workspaces",
+                    contentType: "text/csv",
                     onProgress: ({ transferredBytes, totalBytes }) => {
                         if (totalBytes) {
                             setUploadProgress(Math.round((transferredBytes / totalBytes) * 100));  // for some reason, transferredBytes goes to double totalBytes
