@@ -7,8 +7,12 @@ const { saveSourcedData } = require("@etron/shared/repositories/s3BucketReposito
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("../adapters/adapterFactory");
+const { removeStoredData, saveStoredData, removeAllStoredData, getUploadUrl } = require("../../shared/repositories/dataBucketRepository");
+const { validateFormat } = require("../utils/validateFormat");
+const { translateData } = require("../utils/translateData");
+const { toParquet } = require("../utils/typeConversion");
 
-async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
+async function createRemoteDataSource(authUserId, workspaceId, payload) {
 
     const { name, sourceType, method, expiry, config, secrets } = payload;
 
@@ -20,8 +24,8 @@ async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
         throw new Error("Please specify a type of data source");
     }
 
-    if (typeof method != "string" && method != "replace" || "extend") {
-        throw new Error("Please specify the method 'replace' or 'extend'");
+    if (typeof method != "string" && method != "overwrite" || "extend") {
+        throw new Error("Please specify the method 'overwrite' or 'extend'");
     }
 
     if (method === "extend") {
@@ -58,9 +62,10 @@ async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
         dataSourceId,
         name,
         sourceType,
-        method: method || "replace",
+        method: method || "overwrite",
         expiry: expiry || null,
         status: "active",
+        createdBy: authUserId,
         config,
         createdAt: date,
         lastUpdate: date
@@ -77,6 +82,61 @@ async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
     };
 }
 
+async function createLocalDataSource(authUserId, workspaceId, payload) {
+
+    const { name, sourceType, method, expiry } = payload;
+
+    if (!sourceType) {
+        throw new Error("Please specify the type of data source");
+    }
+
+    if (!name || typeof name != "string") {
+        throw new Error("Please specify a type of data source");
+    }
+
+    if (typeof method != "string" && method != "overwrite" || "extend") {
+        throw new Error("Please specify the method 'overwrite' or 'extend'");
+    }
+
+    if (method === "extend") {
+        if (expiry && typeof expiry != "object") {
+            throw new Error("Expiry is not in the correct format");
+        }
+    }
+
+    // try to get adapter (will also check if it exists)
+    const adapter = adapterFactory.getAdapter(sourceType);
+
+    if (!adapter) {
+        throw new Error("The data type sent is not supported");
+    }
+
+    const dataSourceId = uuidv4();
+    const date = new Date().toISOString();
+
+    // create data source item and store in repo 
+    const dataSourceItem = {
+        workspaceId,
+        dataSourceId,
+        name,
+        sourceType,
+        method: method || "overwrite",
+        expiry: expiry || null,
+        status: "pending_upload",
+        createdBy: authUserId,
+        createdAt: date,
+        lastUpdate: date
+    };
+
+    await dataSourceRepo.addDataSource(dataSourceItem);
+    const uploadUrl = await getUploadUrl(workspaceId, dataSourceId);
+
+    return {
+        ...dataSourceItem,
+        uploadUrl
+    };
+}
+
 async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId, payload) {
 
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
@@ -87,8 +147,8 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
 
     const { name, method, expiry, config, secrets } = payload;
 
-    if (method && typeof method != "string" && method != "replace" || "extend") {
-            throw new Error("Please specify the method 'replace' or 'extend'");
+    if (method && typeof method != "string" && method != "overwrite" || "extend") {
+            throw new Error("Please specify the method 'overwrite' or 'extend'");
         }
 
     if (method === "extend") {
@@ -105,15 +165,19 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     }
 
     // validate config
-    const configValidation = adapter.validateConfig(config);
-    if (!configValidation.valid) {
-        throw new Error(configValidation.error);
+    if (config) {
+        const configValidation = adapter.validateConfig(config);
+        if (!configValidation.valid) {
+            throw new Error(configValidation.error);
+        }
     }
 
     // validate secrets
-    const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
-    if (!secretsValidation.valid) {
-        throw new Error(secretsValidation.error);
+    if (secrets) {
+        const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
+        if (!secretsValidation.valid) {
+            throw new Error(secretsValidation.error);
+        }
     }
     
     // create data source item and store in repo 
@@ -177,7 +241,7 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     }
 
     // remove data from bucket
-
+    await removeAllStoredData(workspaceId, dataSourceId);
 
     // remove data source from repo and secrets
     await dataSourceRepo.removeDataSource(workspaceId, dataSourceId);
@@ -235,22 +299,25 @@ async function testConnection(authUserId, payload) {
 
 }
 
-function validateData() {
-    // poll the server
-    // validate the format
-    // translate the data
-    // validate the data
+async function getRemotePreview() {
+
 }
 
-function fetchData() {
-    // poll the server
-    // validate the format
-    // translate the data
-    // validate the data
-    // store the data
+async function getLocalPreview() {
+
 }
 
-async function pollDataSources() {
+function getAvailableSpreadsheets(authUserId, payload) {
+    const {  } = payload;
+}
+
+async function validateData() {
+    // get the data from s3
+    // validate the data format
+
+}
+
+async function fetchData() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
     const allowedTypes = adapterFactory.getAllowedPollingTypes();
 
@@ -272,10 +339,22 @@ async function pollDataSources() {
 
             // try polling
             try {
-                const data = await startPolling(adapter, dataSource.config, secrets);
+                const newData = await poll(adapter, dataSource.config, secrets);
+                const translatedData = translateData(newData);
 
-                // save data to s3 bucket
-                await saveSourcedData(workspace.workspaceId, dataSource.dataSourceId, data);
+                const {valid, error } = validateFormat(translatedData);
+                if (!valid) throw new Error(`Invalid data format: ${error}`);
+
+                const parquetBuffer = await toParquet(translatedData);
+
+                if (dataSource.method === "extend") {
+                    // extend the data source
+                    await saveStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
+
+                } else {
+                    // replace data
+                    await replaceStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
+                }
 
             } catch (error) {
                 // if the data source fails three polls update it's status to error
@@ -290,7 +369,7 @@ async function pollDataSources() {
     }
 }
 
-async function startPolling(adapter, config, secrets) {
+async function poll(adapter, config, secrets) {
     let currentError;
 
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -305,11 +384,11 @@ async function startPolling(adapter, config, secrets) {
 }
 
 module.exports = {
-    createDataSourceInWorkspace,
+    createRemoteDataSource,
     updateDataSourceInWorkspace,
     getDataSourceInWorkspace,
     getDataSourcesInWorkspace,
     deleteDataSourceInWorkspace,
-    pollDataSources,
+    fetchData,
     testConnection
 };

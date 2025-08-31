@@ -22,18 +22,6 @@ function validateSecrets(secrets) {
     return { valid: true };
 }
 
-// validate the data fetched
-function validateData(data) {
-    // stub implementation 
-    return { valid: true };
-}
-
-// normalize data
-function translateData(data) {
-    // stub implementation
-    return data;
-}
-
 // poll server
 async function poll(config, secrets) {
     const client = new Client();
@@ -67,14 +55,8 @@ async function poll(config, secrets) {
         }
         
 
-        // validate the response data
-        const dataValidation = validateDataStructure(rawData);
-        if (!dataValidation.valid) {
-            throw new Error(`Validation failed: ${dataValidation.error}`);
-        }
-
-        // translate the fetched data
-        return translateData(rawData);
+        // return the data to be translated
+        return rawData;
 
     } catch (error) {
         throw new Error(error.message);
@@ -86,8 +68,6 @@ async function poll(config, secrets) {
 module.exports = {
     validateConfig,
     validateSecrets,
-    validateData,
-    translateData,
     supportsPolling: true,
     poll
 };
