@@ -7,7 +7,7 @@ import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import { ActivityIndicator, Text } from "react-native-paper";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
-import { downloadData, uploadData } from "aws-amplify/storage";
+import { downloadData, uploadData, list } from "aws-amplify/storage";
 import * as DocumentPicker from 'expo-document-picker'
 
 const ViewDataSource = () => {
@@ -27,7 +27,7 @@ const ViewDataSource = () => {
 
             try {
                 const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/dataSources/${dataSourceName}/data_source_details.json`,
+                    path: `workspaces/${workspaceId}/dataSources/${dataSourceName}/data-source-details.json`,
                     options: {
                         bucket: 'workspaces'
                     }
@@ -109,23 +109,32 @@ const ViewDataSource = () => {
 
     async function updateIntegratedMetrics() {
         const workspaceId = await getWorkspaceId();
-        let metricId;
+        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics/`
+        let metricIds = []
         try {
-            const { body } = await downloadData({
-                path: `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics.txt`,
+            const result = await list ({
+                path: S3FilePath,
                 options: {
-                    bucket: "workspaces"
+                    bucket: "workspaces",
                 }
-            }).result;
-            metricId = await body.text();
+            });
+            metricIds = result.items
+                .filter(item => item.path.length > S3FilePath.length)
+                .map(item => item.path.split("/")[5]);  // 5 refers to the metricId at the end of the path
+            console.log(metricIds);
+            // metricId = await body.text();
         } catch (error) {
             console.log("Error downloading list of integrated metrics:", error);
             return;
         }
 
-        try { await CSVIntoMetricData(metricId) } catch (error) {
-            console.log(`Error uploading pruned data for ${metricId} from csv file:`, error);
-        }
+        metricIds.map(async metricId => {
+            try { 
+                await CSVIntoMetricData(metricId);
+            } catch (error) {
+                console.log(`Error uploading pruned data for ${metricId} from csv file:`, error);
+            }
+        })
     }
 
     async function CSVIntoMetricData(metricId) {
@@ -135,14 +144,9 @@ const ViewDataSource = () => {
         const { body } = await downloadData({
             path: S3FilePath,
             options: {
-                /*onProgress: (progress) => {  // This continuously returns the progress as the download occurs
-                    setReadyDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
-                    console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
-                },*/
                 bucket: "workspaces"
             }
         }).result;
-        //setReadyDataDownloadProgress(100);  // Not necessary; just makes sure it gets set to 100% in case something weird happens
 
         // Convert the new data from csv into json
         const csvText = await body.text();

@@ -179,13 +179,16 @@ const CreateMetric = () => {
 
     const [metricName, setMetricName] = useState('');
     const [metricId, setMetricId] = useState('');
+    useEffect(() => {
+        setMetricId(metricName.replace(/ /g, "_"));
+    }, [metricName]) 
 
     async function uploadInfoToDataSource() {
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics.txt`
+        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics/${metricId}`;
         const result = uploadData({
             path: S3FilePath,
-            data: metricId,
+            data: "",
             options: {
                 bucket: 'workspaces'
             }
@@ -228,7 +231,8 @@ const CreateMetric = () => {
     }
 
     const handleFinish = async () => {
-        setMetricId(metricName.replace(/ /g, "_"));
+        console.log("metric name:", metricName);
+        console.log("metric id:", metricId);
         try { await uploadInfoToDataSource() } catch (error) {
             console.log("Error uploading metric id to data source:", error);
             return;

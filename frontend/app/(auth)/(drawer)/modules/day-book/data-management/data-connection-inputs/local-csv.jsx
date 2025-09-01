@@ -69,7 +69,7 @@ const LocalCSV = () => {
                     }
                 }
             }).result;
-            console.log('File uploaded successfully:', result);
+            console.log('File uploaded successfully:', result.path);
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
