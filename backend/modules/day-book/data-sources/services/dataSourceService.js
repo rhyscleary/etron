@@ -358,7 +358,7 @@ function getAvailableSpreadsheets(authUserId, payload) {
     const {  } = payload;
 }
 
-async function validateData(authUserId, dataSourceId) {
+async function viewData(authUserId, dataSourceId) {
     // get the data from s3
     const key = "";
     // validate the data format
