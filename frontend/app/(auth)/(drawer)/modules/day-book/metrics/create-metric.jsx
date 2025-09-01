@@ -171,15 +171,34 @@ const CreateMetric = () => {
     const [metricName, setMetricName] = React.useState('');
 
     const handleFinish = async () => {
+        const workspaceId = await getWorkspaceId();
+
+        try {
+            const prunedData = {
+                data: dataRows,
+            }
+            const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_pruned_data.json`
+            console.log("File path (pruned data):", S3FilePath)
+            const result = uploadData({
+                path: S3FilePath,
+                data: JSON.stringify(prunedData),
+                options: {
+                    bucket: 'workspaces'
+                }
+            }).result;
+            console.log("Pruned data uploaded successfully.")
+        } catch (error) {
+            console.log("Error uploading pruned data:", error);
+            return;
+        }
+        
         try {  // Upload metric settings
             const metricSettings = {
-                data: dataRows,
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
             }
-            const workspaceId = await getWorkspaceId();
             const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_settings.json`
-            console.log("File path:", S3FilePath)
+            console.log("File path (metric settings):", S3FilePath)
             const result = uploadData({
                 path: S3FilePath,
                 data: JSON.stringify(metricSettings),
@@ -187,7 +206,7 @@ const CreateMetric = () => {
                     bucket: "workspaces"
                 }
             }).result;
-            console.log("File uploaded successfully.");
+            console.log("Metric settings uploaded successfully.");
         } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;

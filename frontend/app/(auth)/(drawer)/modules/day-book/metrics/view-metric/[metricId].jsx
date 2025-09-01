@@ -14,7 +14,6 @@ import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
     
-    const [metricSettings, setMetricSettings] = useState({});
     const [dataRows, setDataRows] = useState([]);
     const [independentVariable, setIndependentVariable] = useState();
     const [dependentVariables, setDependentVariables] = useState([]);
@@ -22,23 +21,39 @@ const ViewMetric = () => {
     useEffect(() => {
         async function getMetricSettings() {
             const workspaceId = await getWorkspaceId();
-            console.log(`workspaces/${workspaceId}/metrics/${metricId}`);
-            
-            try {
+            console.log("Metric folder:", `workspaces/${workspaceId}/metrics/${metricId}`);
+        
+            console.log("Downloading metric settings...");
+            try {  // Download metric settings
                 const { body } = await downloadData ({
                     path: `workspaces/${workspaceId}/metrics/${metricId}/metric_settings.json`,
                     options: {
                         bucket: 'workspaces'
                     }
                 }).result;
-                const metricJson = JSON.parse(await body.text());
-                setMetricSettings(metricJson);
-                setDataRows(metricJson.data);
-                setDependentVariables(metricJson.dependentVariables)
-                setIndependentVariable(metricJson.independentVariable);
+                const metricSettingsJson = JSON.parse(await body.text());
+                setDependentVariables(metricSettingsJson.dependentVariables);
+                setIndependentVariable(metricSettingsJson.independentVariable);
             } catch (error) {
-                console.log("Error downloading metric data:", error);
+                console.log("Error downloading metric settings:", error);
+                return;
             }
+            console.log("Metric settings downloaded successfully");
+
+            try {  // Download metric data
+                const { body } = await downloadData ({
+                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric_pruned_data.json`,
+                    options: {
+                        bucket: 'workspaces'
+                    }
+                }).result;
+                const metricPrunedDataJson = JSON.parse(await body.text());
+                setDataRows(metricPrunedDataJson.data);
+            } catch (error) {
+                console.log("Error downloading pruned data:", error);
+                return;
+            }
+            console.log("Metric pruned data downloaded successfully");
         }
         getMetricSettings();
     }, []);
