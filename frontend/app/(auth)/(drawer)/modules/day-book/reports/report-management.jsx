@@ -2,6 +2,7 @@
 
 import { View, ScrollView, Button, StyleSheet } from "react-native";
 import Header from "../../../../../../components/layout/Header";
+import DecisionDialog from "../../../../../../components/overlays/DecisionDialog";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
 import StackLayout from "../../../../../../components/layout/StackLayout";
@@ -47,45 +48,30 @@ const ReportManagement = () => {
                 </StackLayout>
             </ScrollView>
 
+
             {/* Dialog */}
-            <Portal>
-                <Dialog
-                    visible={dialogVisible}
-                    onDismiss={hideDialog}
-                    style={styles.dialogBox}
-                >
-                    <Dialog.Title style={styles.centerText}>
-                        Would you like to use a template?
-                    </Dialog.Title>
-                    <Dialog.Content>
-                        <Text style={styles.centerText}>
-                            Create a new report or use an existing template
-                        </Text>
-                    </Dialog.Content>
+            <DecisionDialog
+                visible={dialogVisible} 
+                title="Would you like to use a template?"
+                message="Create a new report or use an existing template."
+                showGoBack={true}
+                leftActionLabel="New"
+                handleLeftAction={() => {
+                    hideDialog();
+                    router.navigate("/modules/day-book/reports/create-report");
+                }}
+                rightActionLabel="Existing"
+                handleRightAction={() => {
+                    hideDialog();
+                    router.navigate("/modules/day-book/reports/templates");
+                }}
+                handleGoBack={() => {
+                    hideDialog(); // closes the modal
+                }}
+            />
 
-                    <Dialog.Actions style={styles.centerActionsRow}>
-                        <View style={styles.buttonWrapper}>
-                            <Button
-                                title="New"
-                                onPress={() => { hideDialog(); router.navigate("/modules/day-book/reports/create-report"); }}
-                            />
-                        </View>
-                        <View style={styles.buttonWrapper}>
-                            <Button
-                                title="Existing"
-                                onPress={() => { hideDialog(); router.navigate("/modules/day-book/reports/templates"); }}
-                            />
-                        </View>
-                    </Dialog.Actions>
 
-                    {/* Separate row for Go Back */}
-                    <Dialog.Actions style={styles.centerActionsColumn}>
-                        <View style={styles.singleButtonWrapper}>
-                            <Button title="Go Back" onPress={hideDialog} />
-                        </View>
-                    </Dialog.Actions>
-                </Dialog>
-            </Portal>
+
         </View>
     );
 };
