@@ -9,7 +9,7 @@ const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("../adapters/adapterFactory");
 const { removeStoredData, saveStoredData, removeAllStoredData, getUploadUrl } = require("../../shared/repositories/dataBucketRepository");
 const { validateFormat } = require("../utils/validateFormat");
-const { translateData, translateData } = require("../utils/translateData");
+const { translateData } = require("../utils/translateData");
 const { toParquet } = require("../utils/typeConversion");
 
 async function createRemoteDataSource(authUserId, workspaceId, payload) {
