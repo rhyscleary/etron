@@ -6,6 +6,15 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 const bucketName = process.env.WORKSPACE_BUCKET;
 
+function handleS3Error(error, message) {
+    if (error instanceof S3ServiceException) {
+        console.error(`${message}:`, error);
+        throw new Error(message);
+    } else {
+        throw error;
+    }
+}
+
 // save data polled for data sources to s3
 async function saveStoredData(workspaceId, dataSourceId, data) {
     const timestamp = new Date().toISOString();
@@ -22,12 +31,7 @@ async function saveStoredData(workspaceId, dataSourceId, data) {
         );
 
     } catch (error) {
-        if (error instanceof S3ServiceException) {
-            console.error(`Error from S3 while saving data to ${bucketName}`);
-            throw new Error(`Error from S3 while saving data to ${bucketName}`);
-        } else {
-            throw error;
-        }
+        handleS3Error(error, `Error saving data to ${bucketName}`);
     }
 }
 
@@ -50,12 +54,25 @@ async function removeAllStoredData(workspaceId, dataSourceId) {
         await s3Client.send(new DeleteObjectsCommand(deleteParams));
 
     } catch (error) {
-        if (error instanceof S3ServiceException) {
-            console.error(`Error removing stored data from ${bucketName}`);
-            throw new Error(`Error removing stored data from ${bucketName}`);
-        } else {
-            throw error;
+        handleS3Error(error, `Error removing stored data from ${bucketName}`);
+    }
+}
+
+async function getStoredData(key) {
+    try {
+        const response = await s3Client.send(
+            new GetObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+            }),
+        );
+
+        return response.Body;
+    } catch (error) {
+        if (error.name === "NoSuchKey") {
+            return null;
         }
+        handleS3Error(error, `Error retrieving object ${key} from ${bucketName}`);
     }
 }
 
@@ -71,40 +88,23 @@ async function getUploadUrl(workspaceId, dataSourceId) {
 
         return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     } catch (error) {
-        if (error instanceof S3ServiceException) {
-            console.error(`Error getting url from ${bucketName}`);
-            throw new Error(`Error getting url from ${bucketName}`);
-        } else {
-            throw error;
-        }
+        handleS3Error(error, `Error getting upload url from ${bucketName}`);
     }
 }
 
-// get data from s3
-/*async function getStoredData() {
-    const bucketName = "etron-modules";
-    const key = "modules.json"
+async function getDownloadUrl(key) {
     try {
-        const response = await s3Client.send(
-            new GetObjectCommand({
-                Bucket: bucketName,
-                Key: key,
-            }),
-        );
+        const command = new GetObjectCommand({
+            Bucket: bucketName,
+            Key: key,
+            ContentType: "text/csv"
+        });
 
-        const jsonString = await response.Body.transformToString();
-        const parsed = JSON.parse(jsonString);
-
-        return parsed || [];
+        return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     } catch (error) {
-        if (error instanceof S3ServiceException) {
-            console.error(`Error from S3 while fetching the permissions from ${bucketName}`);
-            throw new Error(`Error from S3 while fetching the permissions from ${bucketName}`);
-        } else {
-            throw error;
-        }
+        handleS3Error(error, `Error generating download url from ${bucketName}`);
     }
-}*/
+}
 
 async function replaceStoredData(workspaceId, dataSourceId, data) {
     await removeAllStoredData(workspaceId, dataSourceId);
@@ -116,5 +116,6 @@ module.exports = {
     removeAllStoredData,
     replaceStoredData,
     getUploadUrl,
-    //getStoredData
+    getDownloadUrl,
+    getStoredData
 };

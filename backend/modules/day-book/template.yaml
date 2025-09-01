@@ -68,10 +68,17 @@ Resources:
                 - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
-        AddDataSource:
+        AddRemoteDataSource:
           Type: Api 
           Properties:
-            Path: /day-book/data-sources
+            Path: /day-book/data-sources/remote
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        AddLocalDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/local
             Method: post
             RestApiId: !Ref eTRONApi
 
@@ -109,6 +116,14 @@ Resources:
             Path: /day-book/data-sources/{dataSourceId}
             Method: delete
             RestApiId: !Ref eTRONApi
+
+        GetRemotePreview:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/preview/remote
+            Method: get
+            RestApiId: !Ref eTRONApi
+            
 
   MetricFunction:
     Type: AWS::Serverless::Function

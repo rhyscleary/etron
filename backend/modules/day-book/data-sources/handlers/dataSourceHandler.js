@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, createDataSourceInWorkspace, testConnection } = require("../services/dataSourceService");
+const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, createDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview } = require("../services/dataSourceService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -25,15 +25,27 @@ exports.handler = async (event) => {
         const routeKey = `${event.httpMethod} ${event.resource}`;
 
         switch (routeKey) {
-            // ADD DATA SOURCE
-            case "POST /day-book/data-sources": {
-                body = await createDataSourceInWorkspace(authUserId, workspaceId, requestJSON);
+            // ADD REMOTE DATA SOURCE
+            case "POST /day-book/data-sources/remote": {
+                body = await createRemoteDataSource(authUserId, workspaceId, requestJSON);
+                break;
+            }
+
+            // ADD LOCAL DATA SOURCE
+            case "POST /day-book/data-sources/local": {
+                body = await createLocalDataSource(authUserId, workspaceId, requestJSON);
                 break;
             }
 
             // TEST DATA SOURCE CONNECTION
             case "POST /day-book/data-sources/test-connection": {
                 body = await testConnection(authUserId, requestJSON);
+                break;
+            }
+
+            // PREVIEW REMOTE DATA SOURCE CONNECTION
+            case "GET /day-book/data-sources/preview/remote": {
+                body = await getRemotePreview(authUserId, requestJSON);
                 break;
             }
 
