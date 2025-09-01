@@ -3,11 +3,9 @@
 const dataSourceRepo = require("../repositories/dataSourceRepository");
 const dataSourceSecretsRepo = require("../repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
-const { saveSourcedData } = require("@etron/shared/repositories/s3BucketRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("../adapters/adapterFactory");
-const { removeStoredData, saveStoredData, removeAllStoredData, getUploadUrl } = require("../../shared/repositories/dataBucketRepository");
+const { saveStoredData, removeAllStoredData, getUploadUrl } = require("../repositories/dataBucketRepository");
 const { validateFormat } = require("../utils/validateFormat");
 const { translateData } = require("../utils/translateData");
 const { toParquet } = require("../utils/typeConversion");

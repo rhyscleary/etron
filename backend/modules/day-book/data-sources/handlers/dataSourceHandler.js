@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, createDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview } = require("../services/dataSourceService");
+const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview } = require("../services/dataSourceService");
 
 exports.handler = async (event) => {
     let statusCode = 200;

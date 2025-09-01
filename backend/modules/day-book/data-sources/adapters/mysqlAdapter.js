@@ -1,6 +1,5 @@
 // Author(s): Rhys Cleary
 const mysql = require('mysql2/promise');
-const { testConnection } = require('../services/dataSourceService');
 
 // validate the configurations before creating the data source
 function validateConfig(config) {
@@ -33,18 +32,6 @@ function validateData(data) {
 function translateData(data) {
     // stub implementation
     return data;
-}
-
-function testConnection() {
-    // poll the data source
-}
-
-function formatValidation(data) {
-
-}
-
-function translateData(data) {
-
 }
 
 

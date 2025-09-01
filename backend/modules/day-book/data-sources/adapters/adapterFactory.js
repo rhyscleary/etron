@@ -2,7 +2,7 @@
 const apiAdapter = require("./apiAdapter");
 const ftpAdapter = require("./ftpAdapter");
 const mysqlAdapter = require("./mysqlAdapter");
-const googleSheetsAdapter = require("/.googleSheetsAdapter");
+const googleSheetsAdapter = require("./googleSheetsAdapter");
 
 const adapters = {
     api: apiAdapter,
