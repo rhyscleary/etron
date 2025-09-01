@@ -7,10 +7,8 @@ import Header from "../../../../../../components/layout/Header";
 import { Text, Card, ActivityIndicator, DataTable } from "react-native-paper";
 import BasicButton from "../../../../../../components/common/buttons/BasicButton";
 import DropDown from '../../../../../../components/common/input/DropDown';
-import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import TextField from '../../../../../../components/common/input/TextField';
 import endpoints from '../../../../../../utils/api/endpoints';
-import graphDataBySource from './graph-data';
 
 import csvtojson from 'csvtojson';
 

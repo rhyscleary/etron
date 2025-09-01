@@ -47,7 +47,7 @@ const MetricManagement = () => {
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric")}/>
+            <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric-v2")}/>
             
             <View>
                 <SearchBar/>

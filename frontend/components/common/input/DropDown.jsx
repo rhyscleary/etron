@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { Text, useTheme, IconButton, List } from 'react-native-paper';
+import { View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
 
 const DropDown = ({
@@ -11,15 +11,19 @@ const DropDown = ({
 }) => {
     const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [searchQuery, setSearchQuery] = useState("");
     
     const handleItemSelect = (item) => {
-        
         setSelectedItem(item);
         setExpanded(false);
         if (onSelect) {
             onSelect(item.value);
         }
     }
+
+    const filteredItems = items.filter((item) =>
+        (item.label ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
     const theme = useTheme();
 
@@ -34,22 +38,38 @@ const DropDown = ({
                     { borderColor: theme.colors.outline }
                 ]}
             >
-                {items.map((item, index) => {
-                    const isLastItem = index === items.length - 1 && !showRouterButton;
-                    
-                    return (
-                        <List.Item 
-                            key={item.value}
-                            title={item.label}
-                            style={[
-                                styles.items,
-                                isLastItem && styles.lastItem,
-                                { borderColor: theme.colors.outline }
-                            ]}
-                            onPress={() => handleItemSelect(item)}
-                        />                        
-                    );
-                })}
+                <View style={styles.searchContainer}>
+                    <TextInput
+                        mode="outlined"
+                        placeholder="Search..."
+                        placeholderTextColor={theme.colors.placeholderText}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        style={styles.searchInput}
+                        outlineColor={theme.colors.outline}
+                        activeOutlineColor={theme.colors.primary}
+                        theme={{ roundness: 0 }}
+                    />
+                </View>
+                
+                <ScrollView style={{ macHeight: 200}}>
+                    {filteredItems.map((item, index) => {
+                        const isLastItem = index === filteredItems.length - 1 && !showRouterButton;
+                        
+                        return (
+                            <List.Item 
+                                key={item.value}
+                                title={item.label}
+                                style={[
+                                    styles.items,
+                                    isLastItem && styles.lastItem,
+                                    { borderColor: theme.colors.outline }
+                                ]}
+                                onPress={() => handleItemSelect(item)}
+                            />                        
+                        );
+                    })}
+                </ScrollView>
 
                 {showRouterButton && (
                     <TouchableOpacity
@@ -98,6 +118,13 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
+    },
+    searchContainer: {
+        borderCurve: 0,
+    },
+    searchInput: {
+        height: 50,
+        fontSize: 16,
     },
     items: {
         borderWidth: 1,
