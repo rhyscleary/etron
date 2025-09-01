@@ -1,9 +1,10 @@
-// Author(s): Holly Wyatt
+// Author(s): Holly Wyatt, Noah Bradley
 
 // DataManagement.js
-import React from "react";
+import { useState, useEffect } from "react";
 import { RefreshControl, Button } from "react-native";
-import { Pressable, ScrollView, View, StyleSheet, Alert } from "react-native";
+import { Pressable, ScrollView, View, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import { Card } from "react-native-paper";
 import {
   Text,
   ActivityIndicator,
@@ -20,7 +21,37 @@ import useDataSources from "../../../../../../hooks/useDataSource";
 
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
 
+import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
+import { list } from "aws-amplify/storage";
+
 const DataManagement = () => {
+  const [dataSourcePaths, setDataSourcePaths] = useState([]);
+  const [loadingDataSourcePaths, setLoadingDataSourcePaths] = useState(true);
+  useEffect(() => {
+    async function getWorkspaceDataSources() {
+      const workspaceId = await getWorkspaceId();
+      const filePathPrefix = `workspaces/${workspaceId}/dataSources/`
+      try {
+        const result = await list ({
+          path: filePathPrefix,
+          options: {
+            bucket: 'workspaces',
+          }
+        });
+        setDataSourcePaths(Array.from(new Set(  // Set prevents duplicates
+          result.items.map((item) => item.path
+            .slice(filePathPrefix.length)  // Cuts off file path
+            .split('/')[0]  // Cuts off everything inside the folder
+          )
+        )));
+        setLoadingDataSourcePaths(false);
+      } catch (error) {
+        console.log("Error getting workspace data sources:", error);
+      }
+    }
+    getWorkspaceDataSources();
+  }, []);
+
   const {
     dataSources,
     loading,
@@ -210,6 +241,23 @@ const DataManagement = () => {
         }
       >
         {/* Grouped Data Sources */}
+        {loadingDataSourcePaths && (
+          <ActivityIndicator />
+        )}
+        {!loadingDataSourcePaths && (
+          dataSourcePaths.map((path) => { return (
+            <TouchableOpacity 
+              key = {path}
+              onPress={() => {router.navigate(`./view-data-source/${path}`)}}
+            >
+              <Card>
+                {<Text>
+                  {path}
+                </Text>}
+              </Card>
+            </TouchableOpacity>
+          )})
+        )}
         {Object.entries(groupedSources).map(([category, sources]) => (
           <View key={category} style={styles.categorySection}>
             <Text variant="titleMedium" style={styles.categoryTitle}>
