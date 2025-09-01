@@ -31,18 +31,25 @@ const CreateMetric = () => {
     const [workspaceReadyData, setWorkspaceReadyData] = useState([]);  // Array of file paths for ready-data in the workspace
     const [loadingWorkspaceReadyData, setLoadingWorkspaceReadyData] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
-    useEffect(() => {  // When page loads, get a list of all file paths in the workspaces' readyData folder
+    useEffect(() => {  // When page loads, get a list of URLs for all data in the workspaces' readyData folder
         async function initialiseWorkspaceReadyData() {
             const workspaceId = await getWorkspaceId();
-
+            const filePathPrefix = `workspaces/${workspaceId}/dataSources/`
             try {
                 const result = await list ({
-                    path: `workspaces/${workspaceId}/readyData/`,
+                    path: filePathPrefix,
                     options: {
                         bucket: "workspaces"
                     }
-                })
-                const workspaceReadyDataPaths = result.items.map(item => item.path);
+                });
+                const workspaceReadyDataPaths = Array.from(new Set(  // Using a Set prevents duplicates
+                    result.items.map(item => item.path
+                        .split('/')  // Turn into array of each component of directory
+                        .slice(0, 4)  // Keeps up to and including the dataSourceId
+                        .join('/')
+                        + "/data-source-data.csv"
+                    )
+                ));
                 setWorkspaceReadyData(workspaceReadyDataPaths);
                 setLoadingWorkspaceReadyData(false);
             } catch (error) {
@@ -57,12 +64,14 @@ const CreateMetric = () => {
     const [readyDataDownloadProgress, setReadyDataDownloadProgress] = useState(0);
     const [storedData, setStoredData] = useState(null);  // Data chosen by the user to be loaded into the graph
     const [loadingStoredData, setLoadingStoredData] = useState(false);  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
+    const [dataSourceId, setDataSourceId] = useState('');
 
     const handleWorkspaceReadyDataSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
+        setDataSourceId(source.split("/")[3]);
         console.log('Downloading ready data:', source);
         setReadyDataDownloadProgress(0);
         try {
-            const { body, eTag } = await downloadData({
+            const { body } = await downloadData({
                 path: source,
                 options: {
                     onProgress: (progress) => {  // This continuously returns the progress as the download occurs
@@ -168,37 +177,45 @@ const CreateMetric = () => {
         setStep((prev) => prev + 1);
     };
 
-    const [metricName, setMetricName] = React.useState('');
+    const [metricName, setMetricName] = useState('');
+    const [metricId, setMetricId] = useState('');
 
-    const handleFinish = async () => {
+    async function uploadInfoToDataSource() {
         const workspaceId = await getWorkspaceId();
-
-        try {
-            const prunedData = {
-                data: dataRows,
+        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics.txt`
+        const result = uploadData({
+            path: S3FilePath,
+            data: metricId,
+            options: {
+                bucket: 'workspaces'
             }
-            const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_pruned_data.json`
-            console.log("File path (pruned data):", S3FilePath)
-            const result = uploadData({
-                path: S3FilePath,
-                data: JSON.stringify(prunedData),
-                options: {
-                    bucket: 'workspaces'
-                }
-            }).result;
-            console.log("Pruned data uploaded successfully.")
-        } catch (error) {
-            console.log("Error uploading pruned data:", error);
-            return;
+        })
+        console.log("Metric ID uploaded to data source successfully.")
+    }
+
+    async function uploadPrunedData () {
+        const workspaceId = await getWorkspaceId();
+        const prunedData = {
+            data: dataRows,
         }
-        
-        try {  // Upload metric settings
+        const S3FilePath = `workspaces/${workspaceId}/metrics/${metricId}/metric-pruned-data.json`
+        const result = uploadData({
+            path: S3FilePath,
+            data: JSON.stringify(prunedData),
+            options: {
+                bucket: 'workspaces'
+            }
+        }).result;
+        console.log("Pruned data uploaded successfully.")
+    }
+
+    async function uploadMetricSettings() {
+        const workspaceId = await getWorkspaceId();
             const metricSettings = {
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
             }
-            const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_settings.json`
-            console.log("File path (metric settings):", S3FilePath)
+            const S3FilePath = `workspaces/${workspaceId}/metrics/${metricId}/metric-settings.json`
             const result = uploadData({
                 path: S3FilePath,
                 data: JSON.stringify(metricSettings),
@@ -207,10 +224,24 @@ const CreateMetric = () => {
                 }
             }).result;
             console.log("Metric settings uploaded successfully.");
-        } catch (error) {
-            console.log("Error uploading metric settings:", error);
+        
+    }
+
+    const handleFinish = async () => {
+        setMetricId(metricName.replace(/ /g, "_"));
+        try { await uploadInfoToDataSource() } catch (error) {
+            console.log("Error uploading metric id to data source:", error);
             return;
         }
+        try { await uploadPrunedData() } catch (error) {
+            console.log("Error uploading pruned data:", error);
+            return;
+        }
+        try { await uploadMetricSettings() } catch (error) {
+            console.log("Error uploading metric settings:", error);
+            return;
+        }        
+        
         console.log("Form completed");
         router.navigate("/modules/day-book/metrics/metric-management"); 
     }
@@ -222,7 +253,7 @@ const CreateMetric = () => {
                     <ScrollView>
                         <DropDown
                             title = "Select Data Source"
-                            items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/').at(-1)}))}
+                            items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/').at(-2)}))}
                             onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
                         />
 

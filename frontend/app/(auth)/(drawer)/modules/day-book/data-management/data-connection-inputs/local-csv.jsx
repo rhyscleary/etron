@@ -88,7 +88,7 @@ const LocalCSV = () => {
         dataSourceDetails.method = method;
 
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceName.replace(/ /g, "_")}/data_source_details.json`
+        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`
         try {
             const result = uploadData({
                 path: S3FilePath,
@@ -106,7 +106,8 @@ const LocalCSV = () => {
         createDataSource();
 
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/readyData/${dataSourceName.replace(/ /g, "_")}`;
+        const dataSourceId = dataSourceName.replace(/ /g, "_")
+        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/data-source-data.csv`;
         console.log('S3 File Path:', S3FilePath);
         uploadDocument(deviceFilePath, S3FilePath);
     }

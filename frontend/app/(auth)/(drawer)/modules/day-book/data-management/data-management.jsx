@@ -31,14 +31,13 @@ const DataManagement = () => {
     async function getWorkspaceDataSources() {
       const workspaceId = await getWorkspaceId();
       const filePathPrefix = `workspaces/${workspaceId}/dataSources/`
-
       try {
         const result = await list ({
           path: filePathPrefix,
           options: {
             bucket: 'workspaces',
           }
-        })
+        });
         setDataSourcePaths(Array.from(new Set(  // Set prevents duplicates
           result.items.map((item) => item.path
             .slice(filePathPrefix.length)  // Cuts off file path

@@ -12,6 +12,7 @@ import * as DocumentPicker from 'expo-document-picker'
 
 const ViewDataSource = () => {
     const { dataSourceName } = useLocalSearchParams();
+    const dataSourceId = dataSourceName.replace(/ /g, "_")
 
     const [loadingDataSourceInfo, setLoadingDataSourceInfo] = useState(true);
     const [creator, setCreator] = useState();
@@ -60,7 +61,6 @@ const ViewDataSource = () => {
                 return;
             }
             
-            
             const file = result.assets[0];  // [0] means it only keeps the first file, as result will be an array of files
             setDeviceFilePath(file.uri);
 
@@ -76,8 +76,6 @@ const ViewDataSource = () => {
 
     const [dataDetailsStatus, setDataDetailsStatus] = useState("none");
     const uploadDocument = async (sourceFilePath, destinationFilePath) => {
-        console.log('File path:', sourceFilePath);
-
         setIsUploadingData(true);
         setUploadProgress(0);
 
@@ -101,7 +99,7 @@ const ViewDataSource = () => {
                     }
                 }
             }).result;
-            console.log('File uploaded successfully:', result);
+            console.log('File uploaded successfully:', result.path);
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -109,11 +107,72 @@ const ViewDataSource = () => {
         }
     }
 
+    async function updateIntegratedMetrics() {
+        const workspaceId = await getWorkspaceId();
+        let metricId;
+        try {
+            const { body } = await downloadData({
+                path: `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics.txt`,
+                options: {
+                    bucket: "workspaces"
+                }
+            }).result;
+            metricId = await body.text();
+        } catch (error) {
+            console.log("Error downloading list of integrated metrics:", error);
+            return;
+        }
+
+        try { await CSVIntoMetricData(metricId) } catch (error) {
+            console.log(`Error uploading pruned data for ${metricId} from csv file:`, error);
+        }
+    }
+
+    async function CSVIntoMetricData(metricId) {
+        // Get the new data
+        const workspaceId = await getWorkspaceId();
+        let S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/data-source-data.csv`
+        const { body } = await downloadData({
+            path: S3FilePath,
+            options: {
+                /*onProgress: (progress) => {  // This continuously returns the progress as the download occurs
+                    setReadyDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
+                    console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
+                },*/
+                bucket: "workspaces"
+            }
+        }).result;
+        //setReadyDataDownloadProgress(100);  // Not necessary; just makes sure it gets set to 100% in case something weird happens
+
+        // Convert the new data from csv into json
+        const csvText = await body.text();
+        const csv = require('csvtojson');
+        const csvRow = await csv({
+            noheader: true,
+            output: 'csv',
+        }).fromString(csvText)
+        const dataRows = csvRow?.slice(1);
+
+        // Upload the json data to the metric
+        const prunedData = {
+            data: dataRows,
+        }
+        S3FilePath = `workspaces/${workspaceId}/metrics/${metricId}/metric-pruned-data.json`
+        const result = uploadData({
+            path: S3FilePath,
+            data: JSON.stringify(prunedData),
+            options: {
+                bucket: 'workspaces'
+            }
+        }).result;
+        console.log(`Pruned data uploaded to ${metricId} successfully.`)
+    }
+
     const handleFinalise = async () => {
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/readyData/${dataSourceName.replace(/ /g, "_")}`;
-        console.log('S3 File Path:', S3FilePath);
-        uploadDocument(deviceFilePath, S3FilePath);
+        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/data-source-data.csv`;
+        await uploadDocument(deviceFilePath, S3FilePath);
+        await updateIntegratedMetrics();
     }
 
     return (

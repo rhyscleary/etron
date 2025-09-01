@@ -26,7 +26,7 @@ const ViewMetric = () => {
             console.log("Downloading metric settings...");
             try {  // Download metric settings
                 const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric_settings.json`,
+                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric-settings.json`,
                     options: {
                         bucket: 'workspaces'
                     }
@@ -42,7 +42,7 @@ const ViewMetric = () => {
 
             try {  // Download metric data
                 const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric_pruned_data.json`,
+                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric-pruned-data.json`,
                     options: {
                         bucket: 'workspaces'
                     }
