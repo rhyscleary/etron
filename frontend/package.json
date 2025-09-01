@@ -29,6 +29,7 @@
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",
+    "@shopify/react-native-skia": "^2.2.4",
     "aws-amplify": "^6.15.5",
     "axios": "^1.10.0",
     "csvtojson": "^2.0.10",
@@ -69,7 +70,8 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "react-oidc-context": "^3.3.0",
-    "uuid": "^11.0.0"
+    "uuid": "^11.0.0",
+    "victory-native": "^41.19.3"
   },
   "overrides": {
     "uuid": "^11.0.0"
