@@ -29,18 +29,18 @@ Resources:
       TemplateURL: ./workspace/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
-        WorkspaceBucketName: !Ref WorkspaceBucket
+        
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./user/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
-        WorkspaceBucketName: !Ref WorkspaceBucket
+        
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./modules/day-book/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
-        WorkspaceBucketName: !Ref WorkspaceBucket
+        WorkspaceBucketName: !Ref WorkspaceBucketName

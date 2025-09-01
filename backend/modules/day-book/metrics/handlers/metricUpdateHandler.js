@@ -17,7 +17,7 @@ exports.handler = async (event) => {
         const bucket = record.s3.bucket.name;
         const key = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
 
-        if (bucket !== "etron-day-book-sourced-data") {
+        if (bucket !== process.env.WORKSPACE_BUCKET) {
             continue;
         }
 

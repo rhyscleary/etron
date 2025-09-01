@@ -194,22 +194,6 @@ Resources:
             Method: delete
             RestApiId: !Ref eTRONApi
 
-  MetricUpdateFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./metrics
-      Handler: handlers/metricUpdateHandler.handler
-      Policies:
-        - S3ReadPolicy:
-            BucketName: etron-day-book-sourced-data
-  
-      Events:
-        S3PutEvent:
-          Type: S3
-          Properties:
-            Bucket: !Ref SourcedDataBucket
-            Events: s3:ObjectCreated:Put
-
   DataSourcePollFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -219,7 +203,7 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: DataSources
         - S3WritePolicy:
-            BucketName: etron-day-book-sourced-data
+            BucketName: !Ref WorkspaceBucketName
         - Statement:
             - Effect: Allow
               Action:

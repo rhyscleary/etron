@@ -285,7 +285,7 @@ async function testConnection(authUserId, payload) {
         const data = await adapter.poll(config, secrets);
 
         // return the data from the endpoint
-        return { status: "success" };
+        return { status: "success", data: data };
 
     } catch (error) {
         // if the data source fails polling return error
@@ -296,7 +296,6 @@ async function testConnection(authUserId, payload) {
 
         return errorItem;
     }
-
 }
 
 // get a preview of the data translated from the data source
