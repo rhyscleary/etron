@@ -661,19 +661,20 @@ class DataSourceService {
 
       const payload = sanitize({
         name,
-        type: normalizeType(type),
+        sourceType: normalizeType(type),
         config: buildConfigPayload(config),
       });
 
       const workspaceId = await getSavedWorkspaceId();
       if (!workspaceId) throw new Error('No workspace selected');
       const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.testConnection);
-      console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.type, hasConfig: !!payload.config, endpoint: payload.config?.endpoint } });
+      console.log(payload);
+      console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.sourceType, hasConfig: !!payload.config, endpoint: payload.config?.endpoint } });
       const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
       const testResult = response?.data ?? response;
       console.log('[DataSourceService] testConnection success', { status: response?.status });
       return {
-        type: payload.type,
+        type: payload.sourceType,
         name,
         config: payload.config,
         status: 'success',

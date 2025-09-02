@@ -96,7 +96,7 @@ const endpoints = {
   modules: {
     day_book: {
       data_sources: {
-        add: `${DATASOURCES_BASE_URL}`,
+        add: `${DATASOURCES_BASE_URL}/remote`,
         update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
         getDataSource: (dataSourceId) =>
           `${DATASOURCES_BASE_URL}/${dataSourceId}`,
