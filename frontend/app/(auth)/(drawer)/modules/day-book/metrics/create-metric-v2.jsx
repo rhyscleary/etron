@@ -200,7 +200,8 @@ const CreateMetric = () => {
             return;
         }
         console.log("Form completed");
-        router.navigate("/modules/day-book/metrics/metric-management"); 
+        //router.navigate("/modules/day-book/metrics/metric-management"); 
+        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround?    
     }
 
     const renderFormStep = () => {
