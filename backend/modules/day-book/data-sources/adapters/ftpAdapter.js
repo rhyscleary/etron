@@ -7,7 +7,7 @@ function validateConfig(config) {
     if (!config) return { valid: false, error: "Config is missing"};
 
     // define required fields
-    const requiredFields = ["hostname", "port", "directory"];
+    const requiredFields = ["hostname", "port", "filePath"];
     for (const field of requiredFields) {
         if (!config[field]) return { valid: false, error: `${field} is required`};
     }
@@ -20,18 +20,6 @@ function validateSecrets(secrets) {
     if (!secrets) return { valid: false, error: "Secrets are missing"};
     if (!secrets.username || !secrets.password) return { valid: false, error: "username and password are required"};
     return { valid: true };
-}
-
-// validate the data fetched
-function validateData(data) {
-    // stub implementation 
-    return { valid: true };
-}
-
-// normalize data
-function translateData(data) {
-    // stub implementation
-    return data;
 }
 
 // poll server
@@ -67,16 +55,8 @@ async function poll(config, secrets) {
         }
         
 
-        // validate the response data
-        const dataValidation = validateData(response.data);
-        if (!dataValidation.valid) {
-            throw new Error(`Validation failed: ${dataValidation.error}`);
-        }
-
-        // translate the fetched data
-        const translated = translateData(response.data);
-
-        return results;
+        // return the data to be translated
+        return rawData;
 
     } catch (error) {
         throw new Error(error.message);
@@ -88,8 +68,6 @@ async function poll(config, secrets) {
 module.exports = {
     validateConfig,
     validateSecrets,
-    validateData,
-    translateData,
     supportsPolling: true,
     poll
 };

@@ -1,12 +1,12 @@
 // Author(s): Rhys Cleary
 
-const { pollDataSources } = require("../services/dataSourceService");
+const { fetchData } = require("../services/dataSourceService");
 
 exports.handler = async () => {
     let statusCode = 200;
     
     try {
-        await pollDataSources();
+        await fetchData();
 
     } catch (error) {
         console.error(error);

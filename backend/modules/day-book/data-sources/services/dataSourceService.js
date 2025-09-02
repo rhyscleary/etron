@@ -3,30 +3,37 @@
 const dataSourceRepo = require("../repositories/dataSourceRepository");
 const dataSourceSecretsRepo = require("../repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
-const { saveSourcedData } = require("@etron/shared/repositories/s3BucketRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("../adapters/adapterFactory");
+const { saveStoredData, removeAllStoredData, getUploadUrl } = require("../repositories/dataBucketRepository");
+const { validateFormat } = require("../utils/validateFormat");
+const { translateData } = require("../utils/translateData");
+const { toParquet } = require("../utils/typeConversion");
 
-async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+async function createRemoteDataSource(authUserId, workspaceId, payload) {
 
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
+    const { name, sourceType, method, expiry, config, secrets } = payload;
 
-    const { name, type, config, secrets } = payload;
-
-    if (!type) {
-        throw new Error("Please specify a type of data source");
+    if (!sourceType) {
+        throw new Error("Please specify the type of data source");
     }
 
     if (!name || typeof name != "string") {
         throw new Error("Please specify a type of data source");
     }
 
+    if (typeof method != "string" && method != "overwrite" || "extend") {
+        throw new Error("Please specify the method 'overwrite' or 'extend'");
+    }
+
+    if (method === "extend") {
+        if (expiry && typeof expiry != "object") {
+            throw new Error("Expiry is not in the correct format");
+        }
+    }
+
     // try to get adapter (will also check if it exists)
-    const adapter = adapterFactory.getAdapter(type);
+    const adapter = adapterFactory.getAdapter(sourceType);
 
     if (!adapter) {
         throw new Error("The data type sent is not supported");
@@ -52,8 +59,11 @@ async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
         workspaceId,
         dataSourceId,
         name,
-        type,
+        sourceType,
+        method: method || "overwrite",
+        expiry: expiry || null,
         status: "active",
+        createdBy: authUserId,
         config,
         createdAt: date,
         lastUpdate: date
@@ -70,12 +80,62 @@ async function createDataSourceInWorkspace(authUserId, workspaceId, payload) {
     };
 }
 
-async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId, payload) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+async function createLocalDataSource(authUserId, workspaceId, payload) {
 
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
+    const { name, sourceType, method, expiry } = payload;
+
+    if (!sourceType) {
+        throw new Error("Please specify the type of data source");
     }
+
+    if (!name || typeof name != "string") {
+        throw new Error("Please specify a type of data source");
+    }
+
+    if (typeof method != "string" && method != "overwrite" || "extend") {
+        throw new Error("Please specify the method 'overwrite' or 'extend'");
+    }
+
+    if (method === "extend") {
+        if (expiry && typeof expiry != "object") {
+            throw new Error("Expiry is not in the correct format");
+        }
+    }
+
+    // try to get adapter (will also check if it exists)
+    const adapter = adapterFactory.getAdapter(sourceType);
+
+    if (!adapter) {
+        throw new Error("The data type sent is not supported");
+    }
+
+    const dataSourceId = uuidv4();
+    const date = new Date().toISOString();
+
+    // create data source item and store in repo 
+    const dataSourceItem = {
+        workspaceId,
+        dataSourceId,
+        name,
+        sourceType,
+        method: method || "overwrite",
+        expiry: expiry || null,
+        status: "pending_upload",
+        createdBy: authUserId,
+        createdAt: date,
+        lastUpdate: date
+    };
+
+    await dataSourceRepo.addDataSource(dataSourceItem);
+    const uploadUrl = await getUploadUrl(workspaceId, dataSourceId);
+
+    return {
+        ...dataSourceItem,
+        uploadUrl
+    };
+}
+
+async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId, payload) {
 
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
@@ -83,31 +143,47 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
         throw new Error("The data source does not exist");
     }
 
-    const { name, config, secrets } = payload;
+    const { name, method, expiry, config, secrets } = payload;
+
+    if (method && typeof method != "string" && method != "overwrite" || "extend") {
+            throw new Error("Please specify the method 'overwrite' or 'extend'");
+        }
+
+    if (method === "extend") {
+        if (expiry && typeof expiry != "object") {
+            throw new Error("Expiry is not in the correct format");
+        }
+    }
 
     // try to get adapter
-    const adapter = adapterFactory.getAdapter(dataSource.type);
+    const adapter = adapterFactory.getAdapter(dataSource.sourceType);
 
     if (!adapter) {
         throw new Error("The data type is not supported");
     }
 
     // validate config
-    const configValidation = adapter.validateConfig(config);
-    if (!configValidation.valid) {
-        throw new Error(configValidation.error);
+    if (config) {
+        const configValidation = adapter.validateConfig(config);
+        if (!configValidation.valid) {
+            throw new Error(configValidation.error);
+        }
     }
 
     // validate secrets
-    const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
-    if (!secretsValidation.valid) {
-        throw new Error(secretsValidation.error);
+    if (secrets) {
+        const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
+        if (!secretsValidation.valid) {
+            throw new Error(secretsValidation.error);
+        }
     }
     
     // create data source item and store in repo 
     const dataSourceItem = {
-        name: name,
-        config: config
+        name,
+        method,
+        expiry,
+        config
     };
 
     const updatedDataSource = await dataSourceRepo.updateDataSource(workspaceId, dataSourceId, dataSourceItem);
@@ -122,11 +198,6 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
 }
 
 async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
@@ -143,11 +214,6 @@ async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
 }
 
 async function getDataSourcesInWorkspace(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     // get data source details by workspace id
     const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspaceId);
@@ -164,11 +230,6 @@ async function getDataSourcesInWorkspace(authUserId, workspaceId) {
 }
 
 async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     // get data source details
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
@@ -176,6 +237,9 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     if (!dataSource) {
         throw new Error("Data Source not found");
     }
+
+    // remove data from bucket
+    await removeAllStoredData(workspaceId, dataSourceId);
 
     // remove data source from repo and secrets
     await dataSourceRepo.removeDataSource(workspaceId, dataSourceId);
@@ -186,18 +250,18 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
 }
 
 async function testConnection(authUserId, payload) {
-    const { type, config, secrets } = payload;
+    const { sourceType, config, secrets } = payload;
 
     // try polling
     try {
 
         // check if type of data source is valid
-        if (!type) {
+        if (!sourceType) {
             throw new Error("Please specify a type of data source");
         }
 
         // try to get adapter (will also check if it exists)
-        const adapter = adapterFactory.getAdapter(type);
+        const adapter = adapterFactory.getAdapter(sourceType);
 
         if (!adapter) {
             throw new Error("The data type sent is not supported");
@@ -230,10 +294,76 @@ async function testConnection(authUserId, payload) {
 
         return errorItem;
     }
+}
+
+// get a preview of the data translated from the data source
+async function getRemotePreview(authUserId, payload) {
+    const { sourceType, config, secrets } = payload;
+
+    try {
+        // check if type of data source is valid
+        if (!sourceType) {
+            throw new Error("Please specify a type of data source");
+        }
+
+        // try to get adapter (will also check if it exists)
+        const adapter = adapterFactory.getAdapter(sourceType);
+
+        if (!adapter) {
+            throw new Error("The data type sent is not supported");
+        }
+
+        // validate config
+        const configValidation = adapter.validateConfig(config);
+        if (!configValidation.valid) {
+            throw new Error(configValidation.error);
+        }
+
+        // validate secrets
+        const secretsValidation = adapter.validateSecrets(secrets, config?.authType);
+        if (!secretsValidation.valid) {
+            throw new Error(secretsValidation.error);
+        }
+
+        // fetch data
+        const data = await adapter.poll(config, secrets);
+
+        // translate the data
+        const translatedData = translateData(data);
+
+        const {valid, error } = validateFormat(translatedData);
+        if (!valid) throw new Error(`Invalid data format: ${error}`);
+
+        // return the data
+        return translateData.slice(0, 50);
+
+    } catch (error) {
+        // if the data source fails polling return error
+        const errorItem = {
+            status: "error",
+            errorMessage: error.message
+        }
+
+        return errorItem;
+    }
+}
+
+async function getLocalPreview() {
 
 }
 
-async function pollDataSources() {
+function getAvailableSpreadsheets(authUserId, payload) {
+    const {  } = payload;
+}
+
+async function viewData(authUserId, dataSourceId) {
+    // get the data from s3
+    const key = "";
+    // validate the data format
+
+}
+
+async function fetchData() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
     const allowedTypes = adapterFactory.getAllowedPollingTypes();
 
@@ -243,7 +373,7 @@ async function pollDataSources() {
         for (const dataSource of dataSources) {
 
             // check if the data source is active and an allowed type
-            if (dataSource.status !== "active" || !allowedTypes.includes(dataSource.type)) {
+            if (dataSource.status !== "active" || !allowedTypes.includes(dataSource.sourceType)) {
                 continue;
             }
 
@@ -251,14 +381,26 @@ async function pollDataSources() {
             const secrets = await dataSourceSecretsRepo.getSecrets(workspace.workspaceId, dataSource.dataSourceId);
 
             // create adapter
-            const adapter = adapterFactory.getAdapter(dataSource.type);
+            const adapter = adapterFactory.getAdapter(dataSource.sourceType);
 
             // try polling
             try {
-                const data = await startPolling(adapter, dataSource.config, secrets);
+                const newData = await poll(adapter, dataSource.config, secrets);
+                const translatedData = translateData(newData);
 
-                // save data to s3 bucket
-                await saveSourcedData(workspace.workspaceId, dataSource.dataSourceId, data);
+                const {valid, error } = validateFormat(translatedData);
+                if (!valid) throw new Error(`Invalid data format: ${error}`);
+
+                const parquetBuffer = await toParquet(translatedData);
+
+                if (dataSource.method === "extend") {
+                    // extend the data source
+                    await saveStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
+
+                } else {
+                    // replace data
+                    await replaceStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
+                }
 
             } catch (error) {
                 // if the data source fails three polls update it's status to error
@@ -273,7 +415,7 @@ async function pollDataSources() {
     }
 }
 
-async function startPolling(adapter, config, secrets) {
+async function poll(adapter, config, secrets) {
     let currentError;
 
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -287,12 +429,19 @@ async function startPolling(adapter, config, secrets) {
     throw currentError;
 }
 
+async function localFileConversion() {
+
+}
+
 module.exports = {
-    createDataSourceInWorkspace,
+    createRemoteDataSource,
+    createLocalDataSource,
     updateDataSourceInWorkspace,
     getDataSourceInWorkspace,
     getDataSourcesInWorkspace,
     deleteDataSourceInWorkspace,
-    pollDataSources,
-    testConnection
+    fetchData,
+    testConnection,
+    getRemotePreview,
+    localFileConversion
 };
