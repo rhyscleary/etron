@@ -18,7 +18,7 @@ function handleS3Error(error, message) {
 // save data polled for data sources to s3
 async function saveStoredData(workspaceId, dataSourceId, data) {
     const timestamp = new Date().toISOString();
-    const key = `${workspaceId}/dataSources/${dataSourceId}/${timestamp}.parquet`;
+    const key = `workspaces/${workspaceId}/dataSources/${dataSourceId}/${timestamp}.parquet`;
 
     try {
         await s3Client.send(
@@ -37,7 +37,7 @@ async function saveStoredData(workspaceId, dataSourceId, data) {
 
 // remove data
 async function removeAllStoredData(workspaceId, dataSourceId) {
-    const prefix = `${workspaceId}/dataSources/${dataSourceId}/`;
+    const prefix = `workspaces/${workspaceId}/dataSources/${dataSourceId}/`;
     try {
         const objectList = await s3Client.send(
             new ListObjectsV2Command({
@@ -77,7 +77,7 @@ async function getStoredData(key) {
 }
 
 async function getUploadUrl(workspaceId, dataSourceId) {
-    const key = `${workspaceId}/dataSources/uploads/${dataSourceId}.csv`;
+    const key = `workspaces/${workspaceId}/dataSources/uploads/${dataSourceId}.csv`;
     
     try {
         const command = new PutObjectCommand({

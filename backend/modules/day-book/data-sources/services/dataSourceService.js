@@ -18,16 +18,16 @@ async function createRemoteDataSource(authUserId, workspaceId, payload) {
         throw new Error("Please specify the type of data source");
     }
 
-    if (!name || typeof name != "string") {
+    if (!name || typeof name !== "string") {
         throw new Error("Please specify a type of data source");
     }
 
-    if (typeof method != "string" && method != "overwrite" || "extend") {
+    if (typeof method !== "string" && (method !== "overwrite" || method !== "extend")) {
         throw new Error("Please specify the method 'overwrite' or 'extend'");
     }
 
     if (method === "extend") {
-        if (expiry && typeof expiry != "object") {
+        if (expiry && typeof expiry !== "object") {
             throw new Error("Expiry is not in the correct format");
         }
     }
@@ -88,16 +88,16 @@ async function createLocalDataSource(authUserId, workspaceId, payload) {
         throw new Error("Please specify the type of data source");
     }
 
-    if (!name || typeof name != "string") {
+    if (!name || typeof name !== "string") {
         throw new Error("Please specify a type of data source");
     }
 
-    if (typeof method != "string" && method != "overwrite" || "extend") {
+    if (typeof method !== "string" && (method !== "overwrite" || method !== "extend")) {
         throw new Error("Please specify the method 'overwrite' or 'extend'");
     }
 
     if (method === "extend") {
-        if (expiry && typeof expiry != "object") {
+        if (expiry && typeof expiry !== "object") {
             throw new Error("Expiry is not in the correct format");
         }
     }
@@ -145,12 +145,12 @@ async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
 
     const { name, method, expiry, config, secrets } = payload;
 
-    if (method && typeof method != "string" && method != "overwrite" || "extend") {
+    if (method && typeof method !== "string" && method !== "overwrite" || "extend") {
             throw new Error("Please specify the method 'overwrite' or 'extend'");
         }
 
     if (method === "extend") {
-        if (expiry && typeof expiry != "object") {
+        if (expiry && typeof expiry !== "object") {
             throw new Error("Expiry is not in the correct format");
         }
     }

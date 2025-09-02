@@ -5,7 +5,7 @@ const mysqlAdapter = require("./mysqlAdapter");
 const googleSheetsAdapter = require("./googleSheetsAdapter");
 
 const adapters = {
-    "custom-api": customApiAdapter,
+    "api": customApiAdapter,
     "ftp": ftpAdapter,
     "mysql": mysqlAdapter,
     "googleSheets": googleSheetsAdapter
