@@ -15,7 +15,7 @@ exports.handler = async (event) => {
         if (bucket !== process.env.WORKSPACE_BUCKET) {
             continue;
         }
-
+        
         const uploadLocationRegex = /^([^/]+)\/dataSources\/uploads\/(.+)$/;
         const match = key.match(uploadLocationRegex);
 

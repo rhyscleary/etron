@@ -1,8 +1,8 @@
 // Author(s): Rhys Cleary
 const customApiAdapter = require("./customApiAdapter");
 const ftpAdapter = require("./ftpAdapter");
-const mysqlAdapter = require("/.mysqlAdapter");
-const googleSheetsAdapter = require("/.googleSheetsAdapter");
+const mysqlAdapter = require("./mysqlAdapter");
+const googleSheetsAdapter = require("./googleSheetsAdapter");
 
 const adapters = {
     "custom-api": customApiAdapter,
