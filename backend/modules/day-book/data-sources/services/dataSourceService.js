@@ -442,5 +442,6 @@ module.exports = {
     deleteDataSourceInWorkspace,
     fetchData,
     testConnection,
-    getRemotePreview
+    getRemotePreview,
+    localFileConversion
 };
