@@ -87,23 +87,24 @@ const CreateReport = () => {
             'line',
             {
               name: 'left',
-              icon: '<div style="text-align:left;">L</div>',
+              icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 6h12v2H3v-2zm0 6h18v2H3v-2zm0 6h12v2H3v-2z"/></svg>',
               title: 'Align Left',
               result: () => document.execCommand('justifyLeft', false, null)
             },
             {
               name: 'center',
-              icon: '<div style="text-align:center;">C</div>',
+              icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm3 6h12v2H6v-2zm-3 6h18v2H3v-2zm3 6h12v2H6v-2z"/></svg>',
               title: 'Align Center',
               result: () => document.execCommand('justifyCenter', false, null)
             },
             {
               name: 'right',
-              icon: '<div style="text-align:right;">R</div>',
+              icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm6 6h12v2H9v-2zm-6 6h18v2H3v-2zm6 6h12v2H9v-2z"/></svg>',
               title: 'Align Right',
               result: () => document.execCommand('justifyRight', false, null)
             }
           ]
+
         });
       </script>
     </body>
