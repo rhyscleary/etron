@@ -8,6 +8,7 @@ import SafeView from '../components/layout/SafeView';
 import { Authenticator } from '@aws-amplify/ui-react-native';
 import { VerificationProvider } from '../components/layout/VerificationContext'; // temp until backend
 import { Amplify } from 'aws-amplify';
+import { ToastProvider } from '../components/overlays/AppToast';
 
 import * as Linking from 'expo-linking';
 
@@ -55,6 +56,7 @@ export default function RootLayout() {
                 <VerificationProvider> 
                     <SafeAreaProvider>
                         <SafeView>            
+                            <ToastProvider position="top" useModal={true} topOffset={56} />
                             <Slot />
                         </SafeView>
                     </SafeAreaProvider>

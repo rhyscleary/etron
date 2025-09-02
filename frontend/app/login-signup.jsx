@@ -31,6 +31,7 @@ import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../storage/workspaceStorage";
 import VerificationDialog from "../components/overlays/VerificationDialog";
+import { ToastProvider, toast } from '../components/overlays/AppToast';
 
 //Amplify.configure(awsmobile);
 
@@ -42,6 +43,8 @@ function LoginSignup() {
     const [email, setEmail] = useState(emailParam || "");
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
+    const [usernameMessage, setUsernameMessage] = useState('');
+    const [passwordMessage, setPasswordMessage] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
@@ -53,6 +56,13 @@ function LoginSignup() {
 
     const router = useRouter();
     const theme = useTheme();
+
+    // ensure messages start with a capital letter
+    const capitalizeFirst = (str) => {
+        if (!str) return '';
+        const s = String(str).trim();
+        return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+    };
 
     useEffect(() => {
         let interval;
@@ -207,16 +217,20 @@ function LoginSignup() {
         try {
             await resendSignUpCode({username: email});
             setResendCooldown(60);
+            toast.info('Verification code resent');
         } catch (error) {
             console.error("Error resending the code", error);
+            toast.error('Error resending the code');
         }
     }
 
     const handleSignIn = async () => {
         setLoading(true);
-        setMessage('');
+    setMessage('');
+    setUsernameMessage('');
+    setPasswordMessage('');
         try {
-
+            toast.hide();
             try {
                 const currentUser = await getCurrentUser();
                 if (currentUser) {
@@ -233,6 +247,7 @@ function LoginSignup() {
             if (!isSignedIn && nextStep.signInStep === "CONFIRM_SIGN_UP") {
                 setShowVerificationModal(true);
                 setResendCooldown(60);
+                toast.info('Please confirm your account. We sent you a code.');
                 return;
             }
 
@@ -291,7 +306,29 @@ function LoginSignup() {
             }
         } catch (error) {
             console.error("Sign in error:", error);
-            setMessage(`Error: ${error.message}`);
+            const nameLower = (error?.name || '').toLowerCase();
+            const backendMsg = (error?.message || '').trim();
+            const combinedLower = `${nameLower} ${backendMsg.toLowerCase()}`;
+
+            // NotAuthorizedException -> persistent toast, no inline messages
+            if (nameLower === 'notauthorizedexception' || combinedLower.includes('notauthorizedexception')) {
+                setMessage('');
+                setUsernameMessage('');
+                setPasswordMessage('');
+                toast.persistent({ type: 'error', title: 'Sign in failed', message: capitalizeFirst(backendMsg || 'Not authorized') });
+            } else if (combinedLower.includes('password')) {
+                // show response under password field
+                setPasswordMessage(capitalizeFirst(backendMsg || 'Password error'));
+                setMessage('');
+            } else if (combinedLower.includes('username') || combinedLower.includes('email')) {
+                // show backend message under email/username field
+                setUsernameMessage(capitalizeFirst(backendMsg || 'Username error'));
+                setMessage('');
+            } else {
+                // fallback banner + auto toast
+                setMessage(backendMsg ? `Error: ${capitalizeFirst(backendMsg)}` : 'An error occurred');
+                if (backendMsg) toast.error(`Error: ${capitalizeFirst(backendMsg)}`); else toast.error('Sign in failed');
+            }
             await signOut();
         } finally {
             setLoading(false);
@@ -318,9 +355,11 @@ function LoginSignup() {
             });
             setMessage("Sign up successful! Check your email to confirm.");
             setShowVerificationModal(true);
+            toast.success('Sign up successful! Check your email to confirm.');
         } catch (error) {
             console.log('Error signing up:', error);
             setMessage(`Error: ${error.message}`);
+            toast.error(`Error: ${error.message}`);
         }
     };
 
@@ -344,6 +383,7 @@ function LoginSignup() {
             console.log('Error with Google sign-in:', error);
             setMessage(`Google sign-in error: ${error.message}`);
             setSocialLoading({ ...socialLoading, google: false });
+            toast.error(`Google sign-in error: ${error.message}`);
         }
     };
 
@@ -365,6 +405,7 @@ function LoginSignup() {
             console.log('Error with Microsoft sign-in:', error);
             setMessage(`Microsoft sign-in error: ${error.message}`);
             setSocialLoading({ ...socialLoading, microsoft: false });
+            toast.error(`Microsoft sign-in error: ${error.message}`);
         }
     };
 
@@ -413,19 +454,22 @@ function LoginSignup() {
             await confirmSignUp({ username: email, confirmationCode: verificationCode });
             setShowVerificationModal(false);
             console.log("Confirmation successful! Please personalize your account.");
+            toast.success('Confirmation successful!');
 
             // sign in the user
             await signIn({ username: email, password });
             router.navigate("(auth)/personalise-account"); // navigate to personalise account after sign up
         } catch (error) {
             console.log('Error confirming code:', error);
-            setMessage(`Error: ${error.message}`);
-            setVerificationError(error.message);
+            setMessage(`Error: ${capitalizeFirst(error.message)}`);
+            setVerificationError(capitalizeFirst(error.message));
+            toast.error(`Error: ${capitalizeFirst(error.message)}`);
         }
     };
-
+    // TODO: change the height between text input boxes, don't affect message box height
     return (
         <View style={commonStyles.screen}>
+            <ToastProvider position="top" useModal={false} />
             <View style={{ padding: 20, gap: 30, flex: 1, justifyContent: 'center' }}>
                 <Text style={{ fontSize: 40, textAlign: 'center' }}>
                     {isSignUpBool ? 'Welcome' : 'Welcome Back'}
@@ -438,6 +482,15 @@ function LoginSignup() {
                         value={email}
                         onChangeText={setEmail}
                     />
+                    <View style={{ minHeight: 18, marginTop: -20, justifyContent: 'flex-start', color: theme.colors.error }}>
+                        {usernameMessage ? (
+                            <Text style={{ color: theme.colors.error }}>
+                                {usernameMessage}
+                            </Text>
+                        ) : (
+                            <Text style={{ opacity: 0 }}>.</Text>
+                        )}
+                    </View>
 
                     <View>
                         <TextField
@@ -447,6 +500,15 @@ function LoginSignup() {
                             secureTextEntry
                             onChangeText={setPassword}
                         />
+                        <View style={{ minHeight: 18, marginTop: 6, justifyContent: 'flex-start', color: theme.colors.error }}>
+                            {passwordMessage ? (
+                                <Text style={{ color: theme.colors.error }}>
+                                    {passwordMessage}
+                                </Text>
+                            ) : (
+                                <Text style={{ opacity: 0 }}>.</Text>
+                            )}
+                        </View>
 
                         {!isSignUpBool && (
                             <View style={{ marginTop: 10 }}>
@@ -517,7 +579,7 @@ function LoginSignup() {
                     altText='true'
                 />
 
-                {message && (
+                {message && !usernameMessage && !passwordMessage && (
                     <Text style={{ 
                         marginTop: 30, 
                         color: message.includes('Error') ? theme.colors.error : theme.colors.primary,

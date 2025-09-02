@@ -1,11 +1,8 @@
-// Reusable toast wrapper for toastify-react-native
-// Drop <ToastProvider /> near the app root once, then call toast.success/error/info/warn from any file.
-
 import React, { memo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import ToastManager, { Toast as RNToast } from 'toastify-react-native';
 import { useTheme } from 'react-native-paper';
 
-// Provider component to mount once (e.g., in your RootLayout or App entry)
 export const ToastProvider = memo(function ToastProvider({
   position = 'top',
   duration = 3000,
@@ -25,6 +22,14 @@ export const ToastProvider = memo(function ToastProvider({
   const paperTheme = useTheme();
   const isDark = themeMode ? themeMode === 'dark' : !!paperTheme.dark;
 
+  // No cached theme usage; components read theme directly
+
+  // build custom toast config, merge any provided config
+  const mergedConfig = {
+    ...(config || {}),
+  persistent: (props) => <PersistentToast {...props} />,
+  };
+
   return (
     <ToastManager
       theme={isDark ? 'dark' : 'light'}
@@ -33,12 +38,12 @@ export const ToastProvider = memo(function ToastProvider({
       useModal={useModal}
       showCloseIcon={showCloseIcon}
       showProgressBar={showProgressBar}
-      width={width}
-      topOffset={topOffset}
-      bottomOffset={bottomOffset}
-      iconFamily={iconFamily}
-      icons={icons}
-      config={config}
+  width={width}
+  topOffset={topOffset}
+  bottomOffset={bottomOffset}
+  iconFamily={iconFamily}
+  icons={icons}
+      config={mergedConfig}
       style={{
         borderRadius: 12,
         elevation: 4,
@@ -48,78 +53,132 @@ export const ToastProvider = memo(function ToastProvider({
         fontSize: 14,
         ...(textStyle || {}),
       }}
-      // You can also set closeIcon defaults here if desired
-      // closeIcon='close-outline'
-      // closeIconFamily='Ionicons'
-      // closeIconSize={22}
+      // etc.
     />
   );
 });
 
-// Convenience helpers. Import { toast } to use.
 export const toast = {
-  show: (options = {}) => RNToast.show({
-    autoHide: true,
-    visibilityTime: options.visibilityTime ?? options.duration ?? 3000,
-    position: options.position ?? 'top',
-    type: options.type ?? 'default',
-    text1: options.title ?? options.text1 ?? '',
-    text2: options.message ?? options.text2,
-    icon: options.icon,
-    iconFamily: options.iconFamily,
-    iconColor: options.iconColor,
-    iconSize: options.iconSize,
-    backgroundColor: options.backgroundColor,
-    textColor: options.textColor,
-    progressBarColor: options.progressBarColor,
-    theme: options.theme,
-    useModal: options.useModal,
-    showCloseIcon: options.showCloseIcon,
-    closeIcon: options.closeIcon,
-    closeIconFamily: options.closeIconFamily,
-    closeIconSize: options.closeIconSize,
-    closeIconColor: options.closeIconColor,
-    onShow: options.onShow,
-    onHide: options.onHide,
-    onPress: options.onPress,
-  }),
+  show: (options = {}) => {
+    const type = options.type ?? 'default';
+    const autoHide = options.autoHide ?? true;
+  const backgroundColor = options.backgroundColor;
+  const textColor = options.textColor;
+    const iconColor = options.noIcon ? 'transparent' : options.iconColor; // hide left icon
+    const iconSize = options.iconSize ?? 20;
+    const isPersistent = !autoHide;
+    const showCloseIcon = isPersistent ? false : options.showCloseIcon;
+    const progressBarColor = isPersistent ? 'transparent' : options.progressBarColor;
 
-  success: (message, opts = {}) => RNToast.success(
-    message,
-    opts.position ?? 'top',
-    opts.icon,
-    opts.iconFamily,
-    opts.useModal
-  ),
-  error: (message, opts = {}) => RNToast.error(
-    message,
-    opts.position ?? 'top',
-    opts.icon,
-    opts.iconFamily,
-    opts.useModal
-  ),
-  info: (message, opts = {}) => RNToast.info(
-    message,
-    opts.position ?? 'top',
-    opts.icon,
-    opts.iconFamily,
-    opts.useModal
-  ),
-  warn: (message, opts = {}) => RNToast.warn(
-    message,
-    opts.position ?? 'top',
-    opts.icon,
-    opts.iconFamily,
-    opts.useModal
-  ),
+    return RNToast.show({
+      autoHide,
+      visibilityTime: options.visibilityTime ?? options.duration ?? 3000,
+      position: options.position ?? 'top',
+      type,
+      text1: options.title ?? options.text1 ?? '',
+      text2: options.message ?? options.text2,
+      iconFamily: options.iconFamily,
+      iconColor,
+      iconSize,
+      backgroundColor,
+      textColor,
+      progressBarColor,
+      theme: options.theme,
+      useModal: options.useModal,
+      showCloseIcon,
+      closeIcon: options.closeIcon,
+      closeIconFamily: options.closeIconFamily,
+      closeIconSize: options.closeIconSize,
+      closeIconColor: options.closeIconColor,
+      onShow: options.onShow,
+      onHide: options.onHide,
+      onPress: options.onPress,
+      // forward custom props to custom components
+      props: options.props,
+    });
+  },
+
+  // generic persistent toast
+  // customizing type (error/success/info/warn/default) and position (top/bottom). Default no left icon and no auto-hide.
+  persistent: (opts = {}) => {
+    const {
+      type = 'error',
+      title,
+      message,
+      position = 'top',
+      useModal = false,
+      noIcon = true,
+      visibilityTime,
+    } = opts;
+    
+    return toast.show({
+      type: 'persistent',
+      title,
+      message,
+      autoHide: false,
+      position,
+      useModal,
+      noIcon,
+      visibilityTime,
+      props: { variant: type },
+    });
+  },
+  
+  success: (message, opts = {}) =>
+    toast.show({ type: 'success', message, position: opts.position ?? 'top', iconFamily: opts.iconFamily, useModal: opts.useModal, autoHide: opts.autoHide, visibilityTime: opts.visibilityTime }),
+  error: (message, opts = {}) =>
+    toast.show({ type: 'error', message, position: opts.position ?? 'top', iconFamily: opts.iconFamily, useModal: opts.useModal, autoHide: opts.autoHide, visibilityTime: opts.visibilityTime }),
+  info: (message, opts = {}) =>
+    toast.show({ type: 'info', message, position: opts.position ?? 'top', iconFamily: opts.iconFamily, useModal: opts.useModal, autoHide: opts.autoHide, visibilityTime: opts.visibilityTime }),
+  warn: (message, opts = {}) =>
+    toast.show({ type: 'warn', message, position: opts.position ?? 'top', iconFamily: opts.iconFamily, useModal: opts.useModal, autoHide: opts.autoHide, visibilityTime: opts.visibilityTime }),
   hide: () => RNToast.hide(),
 };
 
-// Suggested usage:
-// 1) Mount provider once (e.g., in _layout.jsx or root):
-//    <ToastProvider position="top" useModal={false} />
-// 2) Use anywhere:
-//    import { toast } from '../../components/overlays/AppToast';
-//    toast.success('Saved!');
-//    toast.error('Something went wrong');
-//    toast.show({ type: 'success', title: 'Done', message: 'All set', position: 'bottom' });
+// custom persistent toast
+function PersistentToast(inProps) {
+  const { text1, text2, props } = inProps;
+  const theme = useTheme();
+  const palette = {
+    error: theme?.colors?.error ?? 'red',
+    success: theme?.colors?.textGreen ?? 'green',
+    info: theme?.colors?.primary ?? 'blue',
+    warn: theme?.colors?.secondary ?? 'gold',
+    default: theme?.colors?.buttonBackground ?? 'dimgray',
+  };
+  const variant = (props?.variant || 'error').toLowerCase();
+  const background =
+    variant === 'success' ? palette.success :
+    variant === 'info' ? palette.info :
+    variant === 'warn' || variant === 'warning' ? palette.warn :
+    variant === 'default' ? palette.default :
+    palette.error;
+  const textColor = theme?.colors?.text ?? 'white';
+
+  return (
+    <View style={[styles.persistentContainer, { backgroundColor: background }]}>
+      {!!text1 && <Text style={[styles.title, { color: textColor }]}>{text1}</Text>}
+      {!!text2 && <Text style={[styles.message, { color: textColor }]}>{text2}</Text>}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  persistentContainer: {
+    width: 'auto',
+    borderRadius: 12,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  alignItems: 'center',
+  },
+  title: {
+  fontSize: 16,
+    fontWeight: '600',
+  textAlign: 'center',
+  },
+  message: {
+  fontSize: 14,
+  marginTop: 2,
+  textAlign: 'center',
+  },
+});
