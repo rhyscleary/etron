@@ -18,8 +18,12 @@ exports.handler = async (event) => {
 
         const workspaceId = queryParams.workspaceId;
 
-        if (!workspaceId || typeof workspaceId !== "string") {
-            throw new Error("Missing required query parameters");
+        if (!workspaceId) {
+            throw new Error("Missing workspaceId in query parameters");
+        }
+
+        if (typeof workspaceId !== "string") {
+            throw new Error("workspaceId not a string");
         }
 
         const routeKey = `${event.httpMethod} ${event.resource}`;

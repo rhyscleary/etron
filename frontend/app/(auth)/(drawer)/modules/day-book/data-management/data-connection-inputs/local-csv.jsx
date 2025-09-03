@@ -80,14 +80,11 @@ const LocalCSV = () => {
     }
 
     const createDataSource = async () => {
-        console.log("2");
         let dataSourceDetails = {};
 
-        console.log("2.1");
         const { userId } = await getCurrentUser();
-        console.log("2.1.1");
-        try {
-            dataSourceDetails = {
+        
+        dataSourceDetails = {
             name: dataSourceName,
             //creator: userId,
             sourceType: "local-csv",
@@ -96,30 +93,21 @@ const LocalCSV = () => {
             //expiry: TODO,
             config: null,
             secrets: null
-        } } catch (error) {
-            console.log(error);
         }
-        console.log("2.2");
 
         const workspaceId = await getWorkspaceId();
 
-        console.log("2.3");
         //endpoint stuff{
         try {
-            console.log("2.3.1");
             let result = await apiPost(
-                endpoints.modules.day_book.data_sources.addLocal,
+                endpoints.modules.day_book.data_sources.addLocal(),
                 dataSourceDetails,
-                { params: {
-                    workspaceId
-                }}
+                workspaceId
             )
-            console.log("2.3.2");
             console.log("Result:", result);
         } catch (error) {
             console.log("Error posting via endpoint:", error);
         }
-        console.log("2.4");
         //}endpoints stuff
 
         const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`
@@ -137,9 +125,7 @@ const LocalCSV = () => {
     }
 
     const handleFinalise = async () => {
-        console.log("1");
         await createDataSource();
-        console.log("3");
 
         const workspaceId = await getWorkspaceId();
         const dataSourceId = dataSourceName.replace(/ /g, "_")
