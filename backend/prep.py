@@ -10,7 +10,7 @@ import glob
 #PROJECT_ROOT = r"C:\Users\rhysj\Documents\321 Project\etron\backend"
 
 # Rhys's Laptop
-PROJECT_ROOT = r"C:\Users\rhysj\OneDrive\Desktop\etron\backend"
+PROJECT_ROOT = r"C:\Users\katea\Desktop\CSIT321 - Project\etron\backend"
 
 # List of subfolders (relative to PROJECT_ROOT) to check
 TARGET_FOLDERS = [

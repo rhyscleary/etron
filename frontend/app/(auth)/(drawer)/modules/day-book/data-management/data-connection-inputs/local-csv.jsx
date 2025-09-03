@@ -10,6 +10,8 @@ import * as FileSystem from 'expo-file-system';
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import TextField from '../../../../../../../components/common/input/TextField';
 import { RadioButton } from 'react-native-paper';
+import { apiPost } from "../../../../../../../utils/api/apiClient";
+import endpoints from "../../../../../../../utils/api/endpoints"
 
 const LocalCSV = () => {
     const [deviceFilePath, setDeviceFilePath] = useState(null);
@@ -78,21 +80,51 @@ const LocalCSV = () => {
     }
 
     const createDataSource = async () => {
-        const dataSourceDetails = {};
+        console.log("2");
+        let dataSourceDetails = {};
 
+        console.log("2.1");
         const { userId } = await getCurrentUser();
-        dataSourceDetails = {
-            creator: userId,
+        console.log("2.1.1");
+        try {
+            dataSourceDetails = {
             name: dataSourceName,
+            //creator: userId,
             sourceType: "local-csv",
-            timeCreated: Date.now(),
-            method: method
+            method: method,
+            //timeCreated: Date.now(),
+            //expiry: TODO,
+            config: null,
+            secrets: null
+        } } catch (error) {
+            console.log(error);
         }
+        console.log("2.2");
 
         const workspaceId = await getWorkspaceId();
+
+        console.log("2.3");
+        //endpoint stuff{
+        try {
+            console.log("2.3.1");
+            let result = await apiPost(
+                endpoints.modules.day_book.data_sources.addLocal,
+                dataSourceDetails,
+                { params: {
+                    workspaceId
+                }}
+            )
+            console.log("2.3.2");
+            console.log("Result:", result);
+        } catch (error) {
+            console.log("Error posting via endpoint:", error);
+        }
+        console.log("2.4");
+        //}endpoints stuff
+
         const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`
         try {
-            const result = uploadData({
+            let result = uploadData({
                 path: S3FilePath,
                 data: JSON.stringify(dataSourceDetails),
                 options: {
@@ -105,7 +137,9 @@ const LocalCSV = () => {
     }
 
     const handleFinalise = async () => {
-        createDataSource();
+        console.log("1");
+        await createDataSource();
+        console.log("3");
 
         const workspaceId = await getWorkspaceId();
         const dataSourceId = dataSourceName.replace(/ /g, "_")
