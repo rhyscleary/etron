@@ -81,11 +81,13 @@ const LocalCSV = () => {
         const dataSourceDetails = {};
 
         const { userId } = await getCurrentUser();
-        dataSourceDetails.creator = userId;
-        dataSourceDetails.name = dataSourceName;
-        dataSourceDetails.sourceType = "local-csv"
-        dataSourceDetails.timeCreated = Date.now();
-        dataSourceDetails.method = method;
+        dataSourceDetails = {
+            creator: userId,
+            name: dataSourceName,
+            sourceType: "local-csv",
+            timeCreated: Date.now(),
+            method: method
+        }
 
         const workspaceId = await getWorkspaceId();
         const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`

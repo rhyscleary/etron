@@ -40,7 +40,7 @@ const CreateMetric = () => {
                     path: filePathPrefix,
                     options: {
                         bucket: "workspaces",
-                        subpathStrategy: { strategy:'exclude' }
+                        //subpathStrategy: { strategy:'exclude' }
                     }
                 });
                 const workspaceReadyDataPaths = Array.from(new Set(  // Using a Set prevents duplicates
@@ -51,6 +51,7 @@ const CreateMetric = () => {
                         + "/data-source-data.csv"
                     )
                 ));
+                console.log('workspace ready data paths:', workspaceReadyDataPaths);
                 setWorkspaceReadyData(workspaceReadyDataPaths);
                 setLoadingWorkspaceReadyData(false);
             } catch (error) {
