@@ -34,18 +34,19 @@ const CreateMetric = () => {
     useEffect(() => {  // When page loads, get a list of URLs for all data in the workspaces' readyData folder
         async function initialiseWorkspaceReadyData() {
             const workspaceId = await getWorkspaceId();
-            const filePathPrefix = `workspaces/${workspaceId}/dataSources/`
+            const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
                 const result = await list ({
                     path: filePathPrefix,
                     options: {
-                        bucket: "workspaces"
+                        bucket: "workspaces",
+                        subpathStrategy: { strategy:'exclude' }
                     }
                 });
                 const workspaceReadyDataPaths = Array.from(new Set(  // Using a Set prevents duplicates
                     result.items.map(item => item.path
                         .split('/')  // Turn into array of each component of directory
-                        .slice(0, 4)  // Keeps up to and including the dataSourceId
+                        .slice(0, 5)  // Keeps up to and including the dataSourceId
                         .join('/')
                         + "/data-source-data.csv"
                     )
@@ -67,7 +68,7 @@ const CreateMetric = () => {
     const [dataSourceId, setDataSourceId] = useState('');
 
     const handleWorkspaceReadyDataSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
-        setDataSourceId(source.split("/")[3]);
+        setDataSourceId(source.split("/")[4]);
         console.log('Downloading ready data:', source);
         setReadyDataDownloadProgress(0);
         try {
@@ -185,7 +186,7 @@ const CreateMetric = () => {
 
     async function uploadInfoToDataSource() {
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics/${metricId}`;
+        const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/${metricId}`;
         const result = uploadData({
             path: S3FilePath,
             data: "",
@@ -201,7 +202,7 @@ const CreateMetric = () => {
         const prunedData = {
             data: dataRows,
         }
-        const S3FilePath = `workspaces/${workspaceId}/metrics/${metricId}/metric-pruned-data.json`
+        const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
         const result = uploadData({
             path: S3FilePath,
             data: JSON.stringify(prunedData),
@@ -218,7 +219,7 @@ const CreateMetric = () => {
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
             }
-            const S3FilePath = `workspaces/${workspaceId}/metrics/${metricId}/metric-settings.json`
+            const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-settings.json`
             const result = uploadData({
                 path: S3FilePath,
                 data: JSON.stringify(metricSettings),
@@ -257,7 +258,7 @@ const CreateMetric = () => {
                     <ScrollView>
                         <DropDown
                             title = "Select Data Source"
-                            items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/').at(-2)}))}
+                            items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/')[4]}))}
                             onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
                         />
 

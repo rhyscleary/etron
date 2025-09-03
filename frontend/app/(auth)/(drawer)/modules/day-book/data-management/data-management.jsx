@@ -30,7 +30,7 @@ const DataManagement = () => {
   useEffect(() => {
     async function getWorkspaceDataSources() {
       const workspaceId = await getWorkspaceId();
-      const filePathPrefix = `workspaces/${workspaceId}/dataSources/`
+      const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
       try {
         const result = await list ({
           path: filePathPrefix,
