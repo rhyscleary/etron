@@ -1,14 +1,14 @@
 // Author(s): Rhys Cleary
-const apiAdapter = require("./apiAdapter");
+const customApiAdapter = require("./customApiAdapter");
 const ftpAdapter = require("./ftpAdapter");
-const mysqlAdapter = require("/.mysqlAdapter");
-const googleSheetsAdapter = require("/.googleSheetsAdapter");
+const mysqlAdapter = require("./mysqlAdapter");
+const googleSheetsAdapter = require("./googleSheetsAdapter");
 
 const adapters = {
-    api: apiAdapter,
-    ftp: ftpAdapter,
-    mysql: mysqlAdapter,
-    googleSheets: googleSheetsAdapter
+    "api": customApiAdapter,
+    "ftp": ftpAdapter,
+    "mysql": mysqlAdapter,
+    "googleSheets": googleSheetsAdapter
 };
 
 function getAdapter(type) {
@@ -29,12 +29,6 @@ function getAdapter(type) {
         if (typeof adapter.poll != "function") {
             throw new Error(`Adapter ${type} must implement poll(config, secrets)`);
         }
-    }
-    if (typeof adapter.validateData != "function") {
-        throw new Error(`Adapter ${type} must implement validateData()`);
-    }
-    if (typeof adapter.translateData != "function") {
-        throw new Error(`Adapter ${type} must implement translateData()`);
     }
 
     return adapter;

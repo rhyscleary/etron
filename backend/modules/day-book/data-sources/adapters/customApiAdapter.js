@@ -31,18 +31,6 @@ function validateSecrets(secrets, authType) {
     return { valid: true };
 }
 
-// validate the data fetched
-function validateData(data) {
-    // stub implementation 
-    return { valid: true };
-}
-
-// normalize data
-function translateData(data) {
-    // stub implementation
-    return data;
-}
-
 // poll server
 async function poll(config, secrets) {
     try {
@@ -52,14 +40,8 @@ async function poll(config, secrets) {
 
         const response = await axios.get(config.endpoint, { headers });
 
-        // validate the response data
-        const dataValidation = validateData(response.data);
-        if (!dataValidation.valid) {
-            throw new Error(`Validation failed: ${dataValidation.error}`);
-        }
-
-        // translate the fetched data
-        return translateData(response.data);
+        // return data
+        return response.data;
 
     } catch (error) {
         throw new Error(`Poll failed: ${error.message}`);
@@ -87,8 +69,6 @@ function constructHeader(authType, secrets) {
 module.exports = {
     validateConfig,
     validateSecrets,
-    validateData,
-    translateData,
     supportsPolling: true,
     poll
 };
