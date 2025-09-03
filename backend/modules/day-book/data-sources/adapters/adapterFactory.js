@@ -2,12 +2,14 @@
 const customApiAdapter = require("./customApiAdapter");
 const ftpAdapter = require("./ftpAdapter");
 const mysqlAdapter = require("./mysqlAdapter");
+const localCsvAdapter = require("./localCsvAdapter");
 const googleSheetsAdapter = require("./googleSheetsAdapter");
 
 const adapters = {
     "api": customApiAdapter,
     "ftp": ftpAdapter,
     "mysql": mysqlAdapter,
+    "local-csv": localCsvAdapter,
     "googleSheets": googleSheetsAdapter
 };
 
