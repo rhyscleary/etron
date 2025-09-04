@@ -9,6 +9,7 @@ const GraphTypes = {
     line: {
         label: "Line Chart",
         value: "line",
+        previewImage: require("../../../../../../assets/images/lineChart.png"),
         render: ({ data, xKey, yKeys }) => (
             <CartesianChart 
                 data={data} 
@@ -31,6 +32,7 @@ const GraphTypes = {
     bar: {
         label: "Bar Chart",
         value: "bar",
+        previewImage: require("../../../../../../assets/images/barChart.png"),
         render: ({ data, xKey, yKeys }) => (
             <CartesianChart 
                 data={data} 
@@ -56,6 +58,7 @@ const GraphTypes = {
     pie: {
         label: "Pie Chart",
         value: "pie",
+        previewImage: require("../../../../../../assets/images/pieChart.png"),
         render: ({ data, yKeys }) => {
             <Pie
                 data={data}

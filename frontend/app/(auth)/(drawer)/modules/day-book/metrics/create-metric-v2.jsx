@@ -180,6 +180,7 @@ const CreateMetric = () => {
         // Upload metric settings
         try {
             const metricSettings = {
+                type: selectedMetric,
                 data: dataRows,
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
