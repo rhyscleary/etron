@@ -73,7 +73,7 @@ const endpoints = {
         day_book: {
             data_sources: {
                 addRemote: `${DATASOURCES_BASE_URL}/remote`,
-                addLocal: () => `${DATASOURCES_BASE_URL}/local`,
+                addLocal: `${DATASOURCES_BASE_URL}/local`,
                 update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 getDataSources: `${DATASOURCES_BASE_URL}`,

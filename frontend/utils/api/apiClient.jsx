@@ -37,8 +37,8 @@ async function request(method, path, body = {}, params = {}) {
     }
 }
 
-export async function apiPost(path, body = {}) {
-    return request('post', path, body, {});
+export async function apiPost(path, body = {}, params = {}) {
+    return request('post', path, body, params);
 }
 
 export async function apiGet(path, params = {}) {
