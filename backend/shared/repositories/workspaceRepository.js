@@ -7,7 +7,8 @@ const {
     GetCommand, 
     DeleteCommand, 
     UpdateCommand,
-    QueryCommand 
+    QueryCommand ,
+    ScanCommand
 } = require("@aws-sdk/lib-dynamodb");
 
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -332,6 +333,17 @@ async function getWorkspaceByOwnerId(ownerId) {
     return result.Items || null;
 }
 
+// get all workspaces
+async function getAllWorkspaces() {
+    const result = await dynamoDB.send(
+        new ScanCommand({
+            TableName: tableName
+        })
+    );
+
+    return result.Items || null;
+}
+
 // get workspace by id
 async function updateWorkspace(workspaceId, data) {
     const updateFields = [];
@@ -512,6 +524,7 @@ module.exports = {
     removeWorkspace,
     getWorkspaceById,
     getWorkspaceByOwnerId,
+    getAllWorkspaces,
     updateWorkspace,
     addModule,
     updateModule,
