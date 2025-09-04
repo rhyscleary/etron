@@ -1,17 +1,11 @@
 // Author(s): Rhys Cleary
 
-const dataSourceRepo = require("../repositories/dataSourceRepository");
-const dataSourceSecretsRepo = require("../repositories/dataSourceSecretsRepository");
-const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
+const reportRepo = require("../../reports-shared/repositories/reportsRepository");
 const {v4 : uuidv4} = require('uuid');
-const adapterFactory = require("../adapters/adapterFactory");
-const { saveStoredData, removeAllStoredData, getUploadUrl } = require("../repositories/dataBucketRepository");
-const { validateFormat } = require("../utils/validateFormat");
-const { translateData } = require("../utils/translateData");
-const { toParquet } = require("../utils/typeConversion");
-const { getDownloadUrl } = require("../../../data-sources/repositories/dataBucketRepository");
+const { deleteFolder, getUploadUrl, getDownloadUrl } = require("../../reports-shared/repositories/reportsBucketRepository");
 
-async function createDraftReport(authUserId, workspaceId, payload) {
+async function createDraftReport(authUserId, payload) {
+    const workspaceId = payload.workspaceId;
 
     const { name } = payload;
 
@@ -33,52 +27,82 @@ async function createDraftReport(authUserId, workspaceId, payload) {
         lastEdited: currentDate
     };
 
+    const fileKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/report.docx`;
+    const thumbnailKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/thumbnail.jpeg`;
+
+    draftItem.fileKey = fileKey;
+    draftItem.thumbnailKey = thumbnailKey;
+
+    const fileUploadUrl = await getUploadUrl(fileKey, { 
+        ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    });
+
+    const thumbnailUrl = await getUploadUrl(thumbnailKey, {
+        ContentType: "image/jpeg"
+    });
+
     await reportRepo.addDraft(draftItem);
-    const uploadUrl = await getUploadUrl(workspaceId, draftId);
 
     return {
         ...draftItem,
-        uploadUrl
+        fileUploadUrl,
+        thumbnailUrl
     };
 }
 
-async function updateDraftReport(authUserId, workspaceId, draftId, payload) {
+async function updateDraftReport(authUserId, draftId, payload) {
+    const workspaceId = payload.workspaceId;
 
     const draft = await reportRepo.getDraftById(workspaceId, draftId);
 
-    if (!draft) {
-        throw new Error("Draft not found");
-    }
+    if (!draft) throw new Error("Draft not found");
 
-    const { name, newThumbnail } = payload;
+    const { name, isThumbnailUpdated, isFileUpdated } = payload;
     const currentDate = new Date().toISOString();
-
-    if (editedBy && !Array.isArray(editedBy)) {
-        throw new Error("Edited by must be an array of userIds");
-    }
-
-
-
 
     // create draft item and update repo
     const draftUpdateItem = {
-        name,
-        editedBy,
         lastEdited: currentDate,
+        editedBy: [...(draft.editedBy || []), authUserId],
     };
+
+    let fileUploadUrl = null;
+    let thumbnailUploadUrl = null;
+
+    if (name) {
+        draftUpdateItem.name = name;
+    }
+
+    if (isFileUpdated) {
+        fileUploadUrl = await getUploadUrl(draft.fileKey, {
+            ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        });
+    }
+
+    if (isThumbnailUpdated) {
+        thumbnailUploadUrl = await getUploadUrl(draft.thumbnailKey, {
+            ContentType: `image/jpeg`
+        });
+    }
 
     const updatedDraft = await reportRepo.updateDraft(workspaceId, draftId, draftUpdateItem);
 
-    return updatedDraft;
+    const fileUrl = draft.fileKey ? await getDownloadUrl(draft.fileKey) : null;
+    const thumbnailUrl = draft.fileKey ? await getDownloadUrl(draft.thumbnailKey) : null;
+    
+    return {
+        ...updatedDraft,
+        fileUrl,
+        thumbnailUrl,
+        fileUploadUrl,
+        thumbnailUploadUrl
+    }
 }
 
 async function getDraftReport(authUserId, workspaceId, draftId) {
-
     const draft = await reportRepo.getDraftById(workspaceId, draftId);
 
-    if (!draft) {
-        return null;
-    }
+    if (!draft) return null;
 
     const fileUrl = draft.fileKey 
         ? await getDownloadUrl(draft.fileKey)
@@ -99,6 +123,8 @@ async function getDraftReports(authUserId, workspaceId) {
 
     // get all drafts in a workspace
     const drafts = await reportRepo.getDraftsByWorkspaceId(workspaceId);
+
+    if (!drafts || drafts.length === 0) return [];
 
     const results = await Promise.all(
         drafts.map(async draft => {
@@ -124,19 +150,12 @@ async function getDraftReports(authUserId, workspaceId) {
 async function deleteDraftReport(authUserId, workspaceId, draftId) {
 
     // get draft details
-    const draft = await reportRepo.getReportById(workspaceId, draftId);
+    const draft = await reportRepo.getDraftById(workspaceId, draftId);
 
-    if (!draft) {
-        throw new Error("Draft not found");
-    }
+    if (!draft) throw new Error("Draft not found");
 
-    if (draft.fileKey) {
-        await deleteObjectFromS3Workspace(draft.fileKey);
-    }
-
-    if (draft.thumbnailKey) {
-        await deleteObjectFromS3Workspace(draft.thumbnailKey);
-    }
+    const folderPrefix = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/`;
+    await deleteFolder(folderPrefix);
 
     await reportRepo.deleteDraft(workspaceId, draftId);
 

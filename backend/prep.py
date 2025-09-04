@@ -23,10 +23,15 @@ TARGET_FOLDERS = [
     "workspace/functions/workspace-roles",
     "workspace/functions/workspace-users",
     "modules/day-book/data-sources",
-    "modules/day-book/metrics"
+    "modules/day-book/metrics",
+    "modules/day-book/reports/functions/reports-drafts",
+    #"modules/day-book/reports/functions/reports-exports",
+    #"modules/day-book/reports/functions/reports-templates"
 ]
 
 SHARED_FOLDER = "shared"
+REPORTS_SHARED_FOLDER = "modules/day-book/reports/reports-shared"
+
 
 shared_path = os.path.join(PROJECT_ROOT, SHARED_FOLDER)
 
@@ -44,6 +49,26 @@ if os.path.exists(shared_path):
     subprocess.run(["npm", "pack"], cwd=shared_path, shell=True)
 else:
     print(f"❌ Shared folder not found: {shared_path}")
+
+
+
+# === SHARED REPORTS FOLDER ===
+shared_reports_path = os.path.join(PROJECT_ROOT, REPORTS_SHARED_FOLDER)
+
+if os.path.exists(shared_reports_path):
+    print(f"=== Processing shared tgz in: {shared_reports_path} ===")
+
+    # Remove any existing .tgz files
+    tgz_files = glob.glob(os.path.join(shared_reports_path, "*.tgz"))
+    for tgz in tgz_files:
+        print(f"🗑 Removing {tgz} ...")
+        os.remove(tgz)
+
+    # Run npm pack
+    print("📦 Running npm pack in shared...")
+    subprocess.run(["npm", "pack"], cwd=shared_reports_path, shell=True)
+else:
+    print(f"❌ Shared folder not found: {shared_reports_path}")
 
 # === SCRIPT ===
 for folder in TARGET_FOLDERS:
