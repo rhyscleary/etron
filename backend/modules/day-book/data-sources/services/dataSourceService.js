@@ -429,8 +429,13 @@ async function poll(adapter, config, secrets) {
     throw currentError;
 }
 
-async function localFileConversion() {
+async function localFileConversion(uploadData) {
+    const translatedData = translateData(uploadData);
 
+    const {valid, error } = validateFormat(translatedData);
+    if (!valid) throw new Error(`Invalid data format: ${error}`);
+
+    return toParquet(translatedData);
 }
 
 module.exports = {
