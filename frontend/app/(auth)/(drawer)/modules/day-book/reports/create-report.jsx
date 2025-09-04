@@ -1,223 +1,197 @@
 // Author(s): Matthew Page
 
-import { View, StyleSheet, TouchableOpacity, Text, Alert, Platform } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Text, Alert, Platform, TextInput } from "react-native";
 import { WebView } from "react-native-webview";
 import { useState, useRef } from "react";
 import RNHTMLtoPDF from "react-native-html-to-pdf";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
-import { Portal, Dialog, TextInput, Button } from "react-native-paper";
+import { Portal, Dialog, Button } from "react-native-paper";
 
 const CreateReport = () => {
-  const [editorContent, setEditorContent] = useState("");
-  const [dialogVisible, setDialogVisible] = useState(false);
-  const [fileName, setFileName] = useState("Report");
-  const webViewRef = useRef(null);
+    const [editorContent, setEditorContent] = useState("");
+    const [dialogVisible, setDialogVisible] = useState(false);
+    const [fileName, setFileName] = useState("Report"); // default
+    const webViewRef = useRef(null);
 
-  // Full Pell editor HTML with alignment buttons
-  const pellHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://unpkg.com/pell/dist/pell.min.css">
-        <style>
-          html, body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            width: 100%;
-            font-family: sans-serif;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-          }
-          .pell {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-          }
-          .pell-actionbar {
-            position: sticky;
-            top: 0;
-            background: #fff;
-            border-bottom: 1px solid #ccc;
-            z-index: 100;
-            flex-shrink: 0;
-            padding: 6px;
-            overflow-x: auto;
-            white-space: nowrap;
-          }
-          .pell-button {
-            font-size: 20px;
-            min-width: 40px;
-            min-height: 40px;
-            margin-right: 6px;
-          }
-          .pell-content {
-            flex: 1;
-            width: 100%;
-            overflow-y: auto;
-            padding: 10px;
-            box-sizing: border-box;
-          }
-        </style>
-      </head>
-      <body>
-        <div id="editor" class="pell"></div>
-        <script src="https://unpkg.com/pell"></script>
-        <script>
-          const editor = window.pell.init({
-            element: document.getElementById('editor'),
-            onChange: html => {
-              window.ReactNativeWebView.postMessage(html);
-            },
-            defaultParagraphSeparator: 'p',
-            styleWithCSS: true,
-            actions: [
-              'bold',
-              'italic',
-              'underline',
-              'strikethrough',
-              'heading1',
-              'heading2',
-              'paragraph',
-              'quote',
-              'olist',
-              'ulist',
-              'code',
-              'line',
-              {
-                name: 'left',
-                icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm0 6h12v2H3v-2zm0 6h18v2H3v-2zm0 6h12v2H3v-2z"/></svg>',
-                title: 'Align Left',
-                result: () => document.execCommand('justifyLeft', false, null)
+    const pellHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <link rel="stylesheet" href="https://unpkg.com/pell/dist/pell.min.css">
+          <style>
+            html, body {
+              margin: 0;
+              padding: 0;
+              height: 100%;
+              width: 100%;
+              font-family: sans-serif;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
+            }
+            .pell {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+            }
+            .pell-actionbar {
+              position: sticky;
+              top: 0;
+              background: #fff;
+              border-bottom: 1px solid #ccc;
+              z-index: 100;
+              flex-shrink: 0;
+              padding: 6px;
+              overflow-x: auto;
+              white-space: nowrap;
+            }
+            .pell-button {
+              font-size: 20px;
+              min-width: 40px;
+              min-height: 40px;
+              margin-right: 6px;
+            }
+            .pell-content {
+              flex: 1;
+              width: 100%;
+              overflow-y: auto;
+              padding: 10px;
+              box-sizing: border-box;
+            }
+          </style>
+        </head>
+        <body>
+          <div id="editor" class="pell"></div>
+          <script src="https://unpkg.com/pell"></script>
+          <script>
+            const editor = window.pell.init({
+              element: document.getElementById('editor'),
+              onChange: html => {
+                window.ReactNativeWebView.postMessage(html);
               },
-              {
-                name: 'center',
-                icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm3 6h12v2H6v-2zm-3 6h18v2H3v-2zm3 6h12v2H6v-2z"/></svg>',
-                title: 'Align Center',
-                result: () => document.execCommand('justifyCenter', false, null)
-              },
-              {
-                name: 'right',
-                icon: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 4h18v2H3V4zm6 6h12v2H9v-2zm-6 6h18v2H3v-2zm6 6h12v2H9v-2z"/></svg>',
-                title: 'Align Right',
-                result: () => document.execCommand('justifyRight', false, null)
-              }
-            ]
-          });
-        </script>
-      </body>
-    </html>
-  `;
+              defaultParagraphSeparator: 'p',
+              styleWithCSS: true
+            });
+          </script>
+        </body>
+      </html>
+    `;
 
-  const exportAsPDF = async (customName) => {
-    try {
-      const safeName = (customName && customName.trim()) || "Report";
+    const exportAsPDF = async (customFileName) => {
+        try {
+            // Generate temp file
+            const file = await RNHTMLtoPDF.convert({
+                html: editorContent || "<p>No content</p>",
+                fileName: "temp_report",
+                base64: false,
+            });
 
-      const file = await RNHTMLtoPDF.convert({
-        html: editorContent || "<p>No content</p>",
-        fileName: safeName,
-        base64: false,
-      });
+            // Export location (Downloads on Android, Documents on iOS)
+            const downloadDir =
+                Platform.OS === "android"
+                    ? RNFS.DownloadDirectoryPath
+                    : RNFS.DocumentDirectoryPath;
 
-      const downloadDir =
-        Platform.OS === "android"
-          ? RNFS.DownloadDirectoryPath // /storage/emulated/0/Download
-          : RNFS.DocumentDirectoryPath; // iOS sandbox Documents
+            // Destination path
+            const destPath = `${downloadDir}/${customFileName}.pdf`;
 
-      const destPath = `${downloadDir}/${safeName}.pdf`;
+            // Replace if already exists
+            if (await RNFS.exists(destPath)) {
+                await RNFS.unlink(destPath);
+            }
+            await RNFS.moveFile(file.filePath, destPath);
 
-      await RNFS.copyFile(file.filePath, destPath);
+            Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
+        } catch (err) {
+            console.error("PDF export failed:", err);
+            Alert.alert("Error", "Could not export PDF.");
+        }
+    };
 
-      Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
-    } catch (err) {
-      console.error("PDF export failed:", err);
-      Alert.alert("Error", "Could not export PDF.");
-    }
-  };
+    const handleExport = () => {
+        setDialogVisible(false);
+        exportAsPDF(fileName.trim() || "Report");
+    };
 
-  const handleConfirmExport = () => {
-    setDialogVisible(false);
-    exportAsPDF(fileName);
-  };
+    return (
+        <View style={commonStyles.screen}>
+            <Header title="Structure Report" showBack />
 
-  return (
-    <View style={commonStyles.screen}>
-      <Header title="Structure Report" showBack />
+            {/* Export button */}
+            <View style={styles.exportContainer}>
+                <TouchableOpacity style={styles.exportButton} onPress={() => setDialogVisible(true)}>
+                    <Text style={styles.exportButtonText}>Export PDF</Text>
+                </TouchableOpacity>
+            </View>
 
-      {/* Export button (unchanged styling) */}
-      <View style={styles.exportContainer}>
-        <TouchableOpacity
-          style={styles.exportButton}
-          onPress={() => setDialogVisible(true)}
-        >
-          <Text style={styles.exportButtonText}>Export PDF</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Rich Text editor */}
-      <WebView
-        ref={webViewRef}
-        originWhitelist={['*']}
-        source={{ html: pellHtml }}
-        style={styles.webview}
-        javaScriptEnabled
-        domStorageEnabled
-        onMessage={(event) => {
-          setEditorContent(event.nativeEvent.data);
-        }}
-      />
-
-      {/* Dialog for file name */}
-      <Portal>
-        <Dialog
-          visible={dialogVisible}
-          onDismiss={() => setDialogVisible(false)}
-        >
-          <Dialog.Title>Name your PDF</Dialog.Title>
-          <Dialog.Content>
-            <TextInput
-              label="File Name"
-              value={fileName}
-              onChangeText={setFileName}
-              mode="outlined"
+            {/* Pell / Rich Text editor */}
+            <WebView
+                ref={webViewRef}
+                originWhitelist={['*']}
+                source={{ html: pellHtml }}
+                style={styles.webview}
+                javaScriptEnabled
+                domStorageEnabled
+                onMessage={(event) => {
+                    setEditorContent(event.nativeEvent.data);
+                }}
             />
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
-            <Button onPress={handleConfirmExport}>Export</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-    </View>
-  );
+
+            {/* Dialog for filename input */}
+            <Portal>
+                <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
+                    <Dialog.Title>Export PDF</Dialog.Title>
+                    <Dialog.Content>
+                        <Text>Enter file name:</Text>
+                        <TextInput
+                            style={styles.input}
+                            value={fileName}
+                            onChangeText={setFileName}
+                            placeholder="Report"
+                        />
+                    </Dialog.Content>
+                    <Dialog.Actions>
+                        <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
+                        <Button onPress={handleExport}>Export</Button>
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
+        </View>
+    );
 };
 
 const styles = StyleSheet.create({
-  exportContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  exportButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-  },
-  exportButtonText: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  webview: {
-    flex: 1,
-  },
+    exportContainer: {
+        flexDirection: "row",
+        justifyContent: "flex-start",
+        marginBottom: 10,
+        paddingHorizontal: 10,
+    },
+    exportButton: {
+        backgroundColor: "#007AFF",
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 6,
+    },
+    exportButtonText: {
+        color: "white",
+        fontSize: 14,
+        fontWeight: "600",
+    },
+    webview: {
+        flex: 1,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: "#ccc",
+        padding: 8,
+        marginTop: 10,
+        borderRadius: 5,
+    },
 });
 
 export default CreateReport;
