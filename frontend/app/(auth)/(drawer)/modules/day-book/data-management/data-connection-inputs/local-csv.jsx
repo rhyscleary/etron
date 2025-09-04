@@ -45,7 +45,7 @@ const LocalCSV = () => {
     const [isUploadingData, setIsUploadingData] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    const uploadDocument = async (sourceFilePath, destinationFilePath) => {
+    const uploadDocument = async (sourceFilePath, /*destinationFilePath*/ uploadUrl) => {
         console.log('File path:', sourceFilePath);
 
         setIsUploadingData(true);
@@ -57,8 +57,14 @@ const LocalCSV = () => {
             const blob = await response.blob();
 
             console.log('Uploading file to S3 Bucket...');
-            const result = await uploadData({
-                path: destinationFilePath,
+            const result = await fetch(uploadUrl, {
+                method: "PUT",
+                body: blob,
+                headers: {
+                    "Content-Type": "text/csv",
+                },
+            });
+                /*path: destinationFilePath,
                 data: blob,
                 //accessLevel: 'public', // should become private or protected in future i think?
                 options: {
@@ -70,8 +76,8 @@ const LocalCSV = () => {
                         }
                     }
                 }
-            }).result;
-            console.log('File uploaded successfully:', result.path);
+            }).result;*/
+            console.log('File uploaded successfully:', result);
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -82,7 +88,7 @@ const LocalCSV = () => {
     const createDataSource = async () => {
         let dataSourceDetails = {};
 
-        const { userId } = await getCurrentUser();
+        //const { userId } = await getCurrentUser();
         
         dataSourceDetails = {
             name: dataSourceName,            
@@ -101,12 +107,14 @@ const LocalCSV = () => {
                 { workspaceId }
             )
             console.log("Result:", result);
+            return result;
         } catch (error) {
             console.log("Error posting via endpoint:", error);
+            return null;
         }
         //}endpoints stuff
 
-        const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`
+        /*const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`
         try {
             let result = uploadData({
                 path: S3FilePath,
@@ -117,17 +125,29 @@ const LocalCSV = () => {
             }).result;
         } catch (error) {
             console.log("Error uploading data source info:", error);
-        };
+        };*/
     }
 
     const handleFinalise = async () => {
-        await createDataSource();
+        /*await createDataSource();
 
         const workspaceId = await getWorkspaceId();
         const dataSourceId = dataSourceName.replace(/ /g, "_")
         const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data-source-data.csv`;
         console.log('S3 File Path:', S3FilePath);
-        uploadDocument(deviceFilePath, S3FilePath);
+        uploadDocument(deviceFilePath, S3FilePath);*/
+
+        const createResponse = await createDataSource();
+        if (!createResponse) return;
+
+        const { uploadUrl } = createResponse;
+        if (!uploadUrl) {
+            console.error("No upload URL was returned");
+            return;
+        }
+
+        await uploadDocument(deviceFilePath, uploadUrl);
+
     }
 
     const [dataSourceName, setDataSourceName] = useState("");
