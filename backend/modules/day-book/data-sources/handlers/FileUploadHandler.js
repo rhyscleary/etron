@@ -7,69 +7,64 @@ const s3Client = new S3Client({});
 
 exports.handler = async (event) => {
 
-    for (const record of event.Records) {
-        if (record.eventName !== "ObjectCreated:Put") {
-            continue;
-        }
+    const bucket = event.Records[0].s3.bucket.name;
+    const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
+
+    if (bucket !== process.env.WORKSPACE_BUCKET) {
+        console.log("Skipping. Not the workspace bucket");
+        return;
+    }
     
-        const bucket = record.s3.bucket.name;
-        const key = decodeURIComponent(record.s3.object.key.replace(/\+/g, " "));
+    const uploadLocationRegex = /^workspaces\/([^/]+)\/day-book\/dataSources\/uploads\/(.+)$/;
+    const match = key.match(uploadLocationRegex);
 
-        if (bucket !== process.env.WORKSPACE_BUCKET) {
-            continue;
-        }
+    if (!match) {
+        console.log("Skipping. Interaction not in upload directory.");
+        return;
+    }
+
+    const workspaceId = match[1];
+    const fileName = match[2];
+
+    if (!workspaceId || !fileName) {
+        console.warn("Missing workspaceId or fileName");
+        return;
+    }
+
+    const dataSourceId = fileName.split(".")[0];
+    const timestamp = new Date().toISOString();
+
+    console.log(`Processing file ${fileName} in ${workspaceId}`);
+
+    try {
+        const data = await s3Client.send(
+            new GetObjectCommand({ Bucket: bucket, Key: key })
+        );
+
+        const parquetBuffer = await localFileConversion(data.Body);
+
+        // upload to s3
+        const parquetKey = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/${timestamp}.parquet`;
+        await s3Client.send(
+            new PutObjectCommand({ 
+                Bucket: bucket, 
+                Key: parquetKey,
+                Body: parquetBuffer, 
+            })
+        );
+
+        console.log(`Uploaded parquet file to: ${parquetKey}`);
+
         
-        const uploadLocationRegex = /^([^/]+)\/day-book\/dataSources\/uploads\/(.+)$/;
-        const match = key.match(uploadLocationRegex);
+        // delete the original uploaded file
+        await s3Client.send(
+            new DeleteObjectCommand({ Bucket: bucket, Key: key })
+        );
 
-        if (!match) {
-            console.log("Skipping. Interaction not in upload directory.");
-            continue;
-        }
+        console.log(`Deleted the original file: ${key}`);
 
-        const workspaceId = match[1];
-        const fileName = match[2];
-
-        if (!workspaceId || !fileName) {
-            console.warn("Missing workspaceId or fileName");
-            continue;
-        }
-
-        const dataSourceId = fileName.split(".")[0];
-        const timestamp = new Date().toISOString();
-
-        console.log(`Processing file ${fileName} in ${workspaceId}`);
-
-        try {
-            const data = await s3Client.send(
-                new GetObjectCommand({ Bucket: bucket, Key: key })
-            );
-
-            const parquetBuffer = await localFileConversion(data.Body);
-
-            // upload to s3
-            const parquetKey = `${workspaceId}/day-book/dataSources/${dataSourceId}/${timestamp}.parquet`;
-            await s3Client.send(
-                new PutObjectCommand({ 
-                    Bucket: bucket, 
-                    Key: parquetKey,
-                    Body: Readable.from(parquetBuffer), 
-                })
-            );
-
-            console.log(`Uploaded parquet file to: ${parquetKey}`);
-
-            
-            // delete the original uploaded file
-            await s3Client.send(
-                new DeleteObjectCommand({ Bucket: bucket, Key: key })
-            );
-
-            console.log(`Deleted the original file: ${key}`);
-
-        } catch (error) {
-            console.error(`Failed to process ${fileName}:`, error);
-        }
+    } catch (error) {
+        console.error(`Failed to process ${fileName}:`, error);
     }
     
 }
