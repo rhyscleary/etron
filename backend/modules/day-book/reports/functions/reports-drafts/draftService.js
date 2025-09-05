@@ -60,10 +60,13 @@ async function updateDraftReport(authUserId, draftId, payload) {
     const { name, isThumbnailUpdated, isFileUpdated } = payload;
     const currentDate = new Date().toISOString();
 
+    // ensure only unique users are added to editedBy
+    const editedBySet = new Set([...(draft.editedBy || []), authUserId]);
+
     // create draft item and update repo
     const draftUpdateItem = {
         lastEdited: currentDate,
-        editedBy: [...(draft.editedBy || []), authUserId],
+        editedBy: Array.from(editedBySet),
     };
 
     let fileUploadUrl = null;

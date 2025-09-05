@@ -60,10 +60,13 @@ async function updateTemplateReport(authUserId, templateId, payload) {
     const { name, isThumbnailUpdated, isFileUpdated } = payload;
     const currentDate = new Date().toISOString();
 
+    // ensure only unique users are added to editedBy
+    const editedBySet = new Set([...(template.editedBy || []), authUserId]);
+
     // create template item and update repo
     const templateUpdateItem = {
         lastEdited: currentDate,
-        editedBy: [...(template.editedBy || []), authUserId],
+        editedBy: Array.from(editedBySet),
     };
 
     let fileUploadUrl = null;
