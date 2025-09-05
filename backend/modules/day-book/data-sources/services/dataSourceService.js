@@ -349,10 +349,6 @@ async function getRemotePreview(authUserId, payload) {
     }
 }
 
-async function getLocalPreview() {
-
-}
-
 function getAvailableSpreadsheets(authUserId, payload) {
     const {  } = payload;
 }
@@ -433,7 +429,10 @@ async function poll(adapter, config, secrets) {
 async function localFileConversion(uploadData) {
     const translatedData = translateData(uploadData);
 
-    const {valid, error } = validateFormat(translatedData);
+    // wrap it in an array
+    const normalisedData = [translatedData];
+
+    const {valid, error } = validateFormat(normalisedData);
     if (!valid) throw new Error(`Invalid data format: ${error}`);
 
     return toParquet(translatedData);

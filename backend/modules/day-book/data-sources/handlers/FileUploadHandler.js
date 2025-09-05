@@ -5,6 +5,15 @@ const { localFileConversion } = require("../services/dataSourceService");
 
 const s3Client = new S3Client({});
 
+async function streamToString(stream) {
+    return new Promise((resolve, reject) => {
+        const chunks = [];
+        stream.on("data", (chunk) => chunks.push(chunk));
+        stream.on("error", reject);
+        stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    });
+}
+
 exports.handler = async (event) => {
 
     const bucket = event.Records[0].s3.bucket.name;
@@ -41,7 +50,10 @@ exports.handler = async (event) => {
             new GetObjectCommand({ Bucket: bucket, Key: key })
         );
 
-        const parquetBuffer = await localFileConversion(data.Body);
+        // convert the stream to a string
+        const stringFile = await streamToString(data.Body);
+
+        const parquetBuffer = await localFileConversion(stringFile);
 
         // upload to s3
         const parquetKey = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/${timestamp}.parquet`;
