@@ -87,7 +87,29 @@ const endpoints = {
                 getMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
                 getMetrics: `${METRICS_BASE_URL}`,
                 removeMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
-            }
+            },
+
+            reports: {
+                drafts: {
+                    createDraft: ``,
+                    updateDraft: ``,
+                    getDraft: ``,
+                    getDrafts: ``,
+                    deleteDraft: ``,
+                },
+                templates: {
+                    createTemplate: ``,
+                    updateTemplate: ``,
+                    getTemplate: ``,
+                    getTemplates: ``,
+                    deleteTemplate: ``,
+                },
+                exports: { 
+                    addExport: ``,
+                    getExport: ``,
+                    getExports: ``,
+                }
+            },
         }
     }
 
