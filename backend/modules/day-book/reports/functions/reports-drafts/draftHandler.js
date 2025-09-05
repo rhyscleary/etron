@@ -21,7 +21,7 @@ exports.handler = async (event) => {
         switch (routeKey) {
 
             // CREATE DRAFT
-            case "POST /reports/drafts": {
+            case "POST /day-book/reports/drafts": {
                 if (!requestJSON.workspaceId) {
                     throw new Error("Please specify a workspaceId");
                 }
@@ -30,7 +30,7 @@ exports.handler = async (event) => {
             }
 
             // UPDATE DRAFT
-            case "PATCH /reports/drafts/{draftId}": {
+            case "PATCH /day-book/reports/drafts/{draftId}": {
                 if (!requestJSON.workspaceId) {
                     throw new Error("Please specify a workspaceId");
                 }
@@ -45,7 +45,7 @@ exports.handler = async (event) => {
             }
 
             // GET DRAFT BY ID
-            case "GET /reports/drafts/{draftId}": {
+            case "GET /day-book/reports/drafts/{draftId}": {
                 const workspaceId = queryParams.workspaceId;
 
                 if (!pathParams.draftId) {
@@ -63,7 +63,7 @@ exports.handler = async (event) => {
             }
 
             // GET ALL DRAFTS IN WORKSPACE
-            case "GET /reports/drafts": {
+            case "GET /day-book/reports/drafts": {
                 const workspaceId = queryParams.workspaceId;
 
                 if (!workspaceId || typeof workspaceId !== "string") {
@@ -75,7 +75,7 @@ exports.handler = async (event) => {
             }
 
             // DELETE DRAFT
-            case "DELETE /reports/drafts/{draftId}": {
+            case "DELETE /day-book/reports/drafts/{draftId}": {
                 const workspaceId = queryParams.workspaceId;
                 
                 if (!pathParams.draftId) {

@@ -21,7 +21,7 @@ exports.handler = async (event) => {
         switch (routeKey) {
 
             // CREATE TEMPLATE
-            case "POST /reports/templates": {
+            case "POST /day-book/reports/templates": {
                 if (!requestJSON.workspaceId) {
                     throw new Error("Please specify a workspaceId");
                 }
@@ -30,7 +30,7 @@ exports.handler = async (event) => {
             }
 
             // UPDATE TEMPLATE
-            case "PATCH /reports/templates/{templateId}": {
+            case "PATCH /day-book/reports/templates/{templateId}": {
                 if (!requestJSON.workspaceId) {
                     throw new Error("Please specify a workspaceId");
                 }
@@ -45,7 +45,7 @@ exports.handler = async (event) => {
             }
 
             // GET TEMPLATE BY ID
-            case "GET /reports/templates/{templateId}": {
+            case "GET /day-book/reports/templates/{templateId}": {
                 const workspaceId = queryParams.workspaceId;
 
                 if (!pathParams.templateId) {
@@ -63,7 +63,7 @@ exports.handler = async (event) => {
             }
 
             // GET ALL TEMPLATES IN WORKSPACE
-            case "GET /reports/templates": {
+            case "GET /day-book/reports/templates": {
                 const workspaceId = queryParams.workspaceId;
 
                 if (!workspaceId || typeof workspaceId !== "string") {
@@ -75,7 +75,7 @@ exports.handler = async (event) => {
             }
 
             // DELETE TEMPLATE
-            case "DELETE /reports/templates/{templateId}": {
+            case "DELETE /day-book/reports/templates/{templateId}": {
                 const workspaceId = queryParams.workspaceId;
                 
                 if (!pathParams.templateId) {

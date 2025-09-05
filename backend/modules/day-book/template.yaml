@@ -232,35 +232,35 @@ Resources:
       CreateDraft:
         Type: Api 
         Properties:
-          Path: /reports/drafts
+          Path: /day-book/reports/drafts
           Method: post
           RestApiId: !Ref eTRONApi
 
       UpdateDraft:
         Type: Api 
         Properties:
-          Path: /reports/drafts/{draftId}
+          Path: /day-book/reports/drafts/{draftId}
           Method: patch
           RestApiId: !Ref eTRONApi
 
       GetDraft:
         Type: Api 
         Properties:
-          Path: /reports/drafts/{draftId}
+          Path: /day-book/reports/drafts/{draftId}
           Method: get
           RestApiId: !Ref eTRONApi
 
       GetDrafts:
         Type: Api 
         Properties:
-          Path: /reports/drafts
+          Path: /day-book/reports/drafts
           Method: get
           RestApiId: !Ref eTRONApi
 
       DeleteDraft:
         Type: Api 
         Properties:
-          Path: /reports/drafts/{draftId}
+          Path: /day-book/reports/drafts/{draftId}
           Method: delete
           RestApiId: !Ref eTRONApi
 
@@ -302,35 +302,35 @@ Resources:
       CreateTemplate:
         Type: Api 
         Properties:
-          Path: /reports/templates
+          Path: /day-book/reports/templates
           Method: post
           RestApiId: !Ref eTRONApi
 
       UpdateTemplate:
         Type: Api 
         Properties:
-          Path: /reports/templates/{templateId}
+          Path: /day-book/reports/templates/{templateId}
           Method: patch
           RestApiId: !Ref eTRONApi
 
       GetTemplate:
         Type: Api 
         Properties:
-          Path: /reports/templates/{templateId}
+          Path: /day-book/reports/templates/{templateId}
           Method: get
           RestApiId: !Ref eTRONApi
 
       GetTemplates:
         Type: Api 
         Properties:
-          Path: /reports/templates
+          Path: /day-book/reports/templates
           Method: get
           RestApiId: !Ref eTRONApi
 
       DeleteTemplate:
         Type: Api 
         Properties:
-          Path: /reports/templates/{templateId}
+          Path: /day-book/reports/templates/{templateId}
           Method: delete
           RestApiId: !Ref eTRONApi
 
