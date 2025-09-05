@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { updateDraftReport, createDraftReport, getDraftReport, getDraftReports, deleteDraftReport } = require("./draftService");
+const { createTemplateReport, updateTemplateReport, getTemplateReport, getTemplateReports, deleteTemplateReport } = require("./templateService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -20,75 +20,75 @@ exports.handler = async (event) => {
 
         switch (routeKey) {
 
-            // CREATE DRAFT
-            case "POST /reports/drafts": {
+            // CREATE TEMPLATE
+            case "POST /reports/templates": {
                 if (!requestJSON.workspaceId) {
                     throw new Error("Please specify a workspaceId");
                 }
-                body = await createDraftReport(authUserId, requestJSON);
+                body = await createTemplateReport(authUserId, requestJSON);
                 break;
             }
 
-            // UPDATE DRAFT
-            case "PATCH /reports/drafts/{draftId}": {
+            // UPDATE TEMPLATE
+            case "PATCH /reports/templates/{templateId}": {
                 if (!requestJSON.workspaceId) {
                     throw new Error("Please specify a workspaceId");
                 }
-                if (!pathParams.draftId) {
+                if (!pathParams.templateId) {
                     throw new Error("Missing required path parameters");
                 }
-                if (typeof pathParams.draftId !== "string") {
-                    throw new Error("draftId must be a UUID, 'string'");
+                if (typeof pathParams.templateId !== "string") {
+                    throw new Error("templateId must be a UUID, 'string'");
                 }
-                body = await updateDraftReport(authUserId, pathParams.draftId, requestJSON);
+                body = await updateTemplateReport(authUserId, pathParams.templateId, requestJSON);
                 break;
             }
 
-            // GET DRAFT BY ID
-            case "GET /reports/drafts/{draftId}": {
+            // GET TEMPLATE BY ID
+            case "GET /reports/templates/{templateId}": {
                 const workspaceId = queryParams.workspaceId;
 
-                if (!pathParams.draftId) {
+                if (!pathParams.templateId) {
                     throw new Error("Missing required path parameters");
                 }
-                if (typeof pathParams.draftId !== "string") {
-                    throw new Error("draftId must be a UUID, 'string'");
+                if (typeof pathParams.templateId !== "string") {
+                    throw new Error("templateId must be a UUID, 'string'");
                 }
                 if (!workspaceId || typeof workspaceId !== "string") {
                     throw new Error("Missing required query parameters");
                 }
 
-                body = await getDraftReport(authUserId, workspaceId, pathParams.draftId);
+                body = await getTemplateReport(authUserId, workspaceId, pathParams.templateId);
                 break;
             }
 
-            // GET ALL DRAFTS IN WORKSPACE
-            case "GET /reports/drafts": {
+            // GET ALL TEMPLATES IN WORKSPACE
+            case "GET /reports/templates": {
                 const workspaceId = queryParams.workspaceId;
 
                 if (!workspaceId || typeof workspaceId !== "string") {
                     throw new Error("Missing required query parameters");
                 }
 
-                body = await getDraftReports(authUserId, workspaceId);
+                body = await getTemplateReports(authUserId, workspaceId);
                 break;
             }
 
-            // DELETE DRAFT
-            case "DELETE /reports/drafts/{draftId}": {
+            // DELETE TEMPLATE
+            case "DELETE /reports/templates/{templateId}": {
                 const workspaceId = queryParams.workspaceId;
                 
-                if (!pathParams.draftId) {
+                if (!pathParams.templateId) {
                     throw new Error("Missing required path parameters");
                 }
-                if (typeof pathParams.draftId !== "string") {
-                    throw new Error("draftId must be a UUID, 'string'");
+                if (typeof pathParams.templateId !== "string") {
+                    throw new Error("templateId must be a UUID, 'string'");
                 }
                 if (!workspaceId || typeof workspaceId !== "string") {
                     throw new Error("Missing required query parameters");
                 }
 
-                body = await deleteDraftReport(authUserId, workspaceId, pathParams.draftId);
+                body = await deleteTemplateReport(authUserId, workspaceId, pathParams.templateId);
                 break;
             }
   
