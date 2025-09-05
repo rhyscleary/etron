@@ -18,7 +18,7 @@ function handleS3Error(error, message) {
 // save data polled for data sources to s3
 async function saveStoredData(workspaceId, dataSourceId, data) {
     const timestamp = new Date().toISOString();
-    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/${timestamp}.parquet`;
+    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${timestamp}.parquet`;
 
     try {
         await s3Client.send(
@@ -111,11 +111,60 @@ async function replaceStoredData(workspaceId, dataSourceId, data) {
     await saveStoredData(workspaceId, dataSourceId, data);
 }
 
+async function getDataSchema(workspaceId, dataSourceId) {
+    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/schema.json`;
+
+    try {
+        const object = await s3Client.send(
+            new GetObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+            }),
+        );
+
+        const schema = await streamToString(object.body);
+        return JSON.parse(schema);
+    } catch (error) {
+        if (error.name === "NoSuchKey") {
+            return null;
+        }
+        handleS3Error(error, `Error retrieving data schema ${key} from ${bucketName}`);
+    }
+}
+
+async function saveSchema(workspaceId, dataSourceId, schema) {
+    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/schema.json`;
+
+    try {
+        await s3Client.send(
+            new PutObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+                Body: JSON.stringify(schema, null, 2),
+                ContentType: "application/json"
+            }),
+        );
+    } catch (error) {
+        handleS3Error(error, `Error saving data schema to ${bucketName}`);
+    }
+}
+
+function streamToString(stream) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    stream.on("data", chunk => chunks.push(chunk));
+    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    stream.on("error", reject);
+  });
+}
+
 module.exports = {
     saveStoredData,
     removeAllStoredData,
     replaceStoredData,
     getUploadUrl,
     getDownloadUrl,
-    getStoredData
+    getStoredData,
+    getDataSchema,
+    saveSchema
 };

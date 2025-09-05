@@ -5,10 +5,11 @@ const dataSourceSecretsRepo = require("../repositories/dataSourceSecretsReposito
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("../adapters/adapterFactory");
-const { saveStoredData, removeAllStoredData, getUploadUrl } = require("../repositories/dataBucketRepository");
+const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema } = require("../repositories/dataBucketRepository");
 const { validateFormat } = require("../utils/validateFormat");
 const { translateData } = require("../utils/translateData");
 const { toParquet } = require("../utils/typeConversion");
+const { generateSchema } = require("../utils/generateSchema");
 
 async function createRemoteDataSource(authUserId, workspaceId, payload) {
 
@@ -352,10 +353,10 @@ function getAvailableSpreadsheets(authUserId, payload) {
     const {  } = payload;
 }
 
-async function viewData(authUserId, dataSourceId) {
-    // get the data from s3
-    const key = "";
-    // validate the data format
+async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
+    // get the schema from the dataSource
+    const schema = await getDataSchema(workspaceId, dataSourceId);
+
 
 }
 
@@ -387,7 +388,14 @@ async function fetchData() {
                 const {valid, error } = validateFormat(translatedData);
                 if (!valid) throw new Error(`Invalid data format: ${error}`);
 
+                // create the schema
+                const schema = generateSchema(translateData);
+
+                // convert the data to parquet file
                 const parquetBuffer = await toParquet(translatedData);
+
+                // save the schema to S3
+                await saveSchema(workspace.workspaceId, dataSource.dataSourceId, schema);
 
                 if (dataSource.method === "extend") {
                     // extend the data source
@@ -425,13 +433,20 @@ async function poll(adapter, config, secrets) {
     throw currentError;
 }
 
-async function localFileConversion(uploadData) {
+async function localFileConversion(workspaceId, dataSourceId, uploadData) {
     const translatedData = translateData(uploadData);
 
     // wrap it in an array
     const normalisedData = [translatedData];
 
     const {valid, error } = validateFormat(normalisedData);
+
+    // create the schema
+    const schema = generateSchema(translateData);
+
+    // save the schema to S3
+    await saveSchema(workspaceId, dataSourceId, schema);
+
     if (!valid) throw new Error(`Invalid data format: ${error}`);
 
     return toParquet(translatedData);
