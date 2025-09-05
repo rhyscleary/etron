@@ -25,6 +25,11 @@ const ViewDataSource = () => {
         async function getDataSourceInfo() {
             const workspaceId = await getWorkspaceId();
 
+            /*let result = apiPost(
+                endpoints.module.day_book.data_sources.getDataSource,
+                { workspaceId, dataSourceId }
+            )*/
+
             try {
                 const { body } = await downloadData ({
                     path: `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName}/data-source-details.json`,

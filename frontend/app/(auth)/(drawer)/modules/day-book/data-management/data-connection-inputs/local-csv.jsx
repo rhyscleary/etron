@@ -45,7 +45,7 @@ const LocalCSV = () => {
     const [isUploadingData, setIsUploadingData] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    const uploadDocument = async (sourceFilePath, /*destinationFilePath*/ uploadUrl) => {
+    const uploadDocument = async (sourceFilePath, uploadUrl) => {
         console.log('File path:', sourceFilePath);
 
         setIsUploadingData(true);
@@ -64,20 +64,7 @@ const LocalCSV = () => {
                     "Content-Type": "text/csv",
                 },
             });
-                /*path: destinationFilePath,
-                data: blob,
-                //accessLevel: 'public', // should become private or protected in future i think?
-                options: {
-                    bucket: "workspaces",
-                    contentType: "text/csv",
-                    onProgress: ({ transferredBytes, totalBytes }) => {
-                        if (totalBytes) {
-                            setUploadProgress(Math.round((transferredBytes / totalBytes) * 100));  // for some reason, transferredBytes goes to double totalBytes
-                        }
-                    }
-                }
-            }).result;*/
-            console.log('File uploaded successfully:', result);
+            console.log('File uploaded successfully');
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -99,33 +86,17 @@ const LocalCSV = () => {
 
         const workspaceId = await getWorkspaceId();
 
-        //endpoint stuff{
         try {
             let result = await apiPost(
                 endpoints.modules.day_book.data_sources.addLocal,
                 dataSourceDetails,
                 { workspaceId }
             )
-            console.log("Result:", result);
             return result;
         } catch (error) {
             console.log("Error posting via endpoint:", error);
             return null;
         }
-        //}endpoints stuff
-
-        /*const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`
-        try {
-            let result = uploadData({
-                path: S3FilePath,
-                data: JSON.stringify(dataSourceDetails),
-                options: {
-                    bucket: "workspaces"
-                }
-            }).result;
-        } catch (error) {
-            console.log("Error uploading data source info:", error);
-        };*/
     }
 
     const handleFinalise = async () => {
@@ -147,7 +118,6 @@ const LocalCSV = () => {
         }
 
         await uploadDocument(deviceFilePath, uploadUrl);
-
     }
 
     const [dataSourceName, setDataSourceName] = useState("");
