@@ -80,9 +80,8 @@ const LocalCSV = () => {
         dataSourceDetails = {
             name: dataSourceName,            
             sourceType: "local-csv",
-            method: method,
-            secrets: null
-            //expiry: TODO
+            method: method
+            //expiry: TODO,
         }
 
         const workspaceId = await getWorkspaceId();
