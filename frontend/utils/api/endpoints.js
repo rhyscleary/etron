@@ -4,6 +4,7 @@ const WORKSPACE_BASE_URL = "https://om8cd7wmkc.execute-api.ap-southeast-2.amazon
 const USER_BASE_URL = "https://jhpswpwuo4.execute-api.ap-southeast-2.amazonaws.com/dev/user";
 const DATASOURCES_BASE_URL = "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/data-sources";
 const METRICS_BASE_URL = "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/metrics";
+const REPORTS_BASE_URL = "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/reports";
 
 const endpoints = {
     workspace: {
@@ -91,18 +92,18 @@ const endpoints = {
 
             reports: {
                 drafts: {
-                    createDraft: ``,
-                    updateDraft: ``,
-                    getDraft: ``,
-                    getDrafts: ``,
-                    deleteDraft: ``,
+                    createDraft: `${REPORTS_BASE_URL}/drafts`,
+                    updateDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+                    getDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+                    getDrafts: `${REPORTS_BASE_URL}/drafts`,
+                    deleteDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
                 },
                 templates: {
-                    createTemplate: ``,
-                    updateTemplate: ``,
-                    getTemplate: ``,
-                    getTemplates: ``,
-                    deleteTemplate: ``,
+                    createTemplate: `${REPORTS_BASE_URL}/templates`,
+                    updateTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
+                    getTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
+                    getTemplates: `${REPORTS_BASE_URL}/templates`,
+                    deleteTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
                 },
                 exports: { 
                     addExport: ``,
