@@ -29,22 +29,29 @@ import { apiGet } from "../../../../../../utils/api/apiClient";
 const DataManagement = () => {
 	const [dataSourcePaths, setDataSourcePaths] = useState([]);
 	const [loadingDataSourcePaths, setLoadingDataSourcePaths] = useState(true);
+
+	const [dataSourceMappings, setDataSourceMappings] = useState([]);
 	useEffect(() => {
 		async function getWorkspaceDataSources() {
+			const workspaceId = await getWorkspaceId();
+
 			//via endpoint
 			try {
 				let result = await apiGet(
 					endpoints.modules.day_book.data_sources.getDataSources,
 					{ workspaceId }
 				)
-				console.log("apipost result:", result);
+				console.log("Api Post");
+				result.map(dataSource => console.log("Name:", dataSource.name, "  ID:", dataSource.dataSourceId));
+				setDataSourceMappings(dataSource => ({
+					name: dataSource.name,
+					id: dataSource.id
+				}));
 			} catch (error) {
 				console.log("error getting data sources from api:", error);
 			}
-
 			//
 
-			const workspaceId = await getWorkspaceId();
 			const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
 			try {
 				const result = await list ({
@@ -248,6 +255,32 @@ const DataManagement = () => {
 			{/*Temporary redirect to profile screen*/}
 			<Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
 
+			<ScrollView
+				style={styles.container}
+				showsVerticalScrollIndicator={false}
+				refreshControl={
+					<RefreshControl refreshing={loading} onRefresh={refresh} />
+				}
+			>
+				{/* Grouped Data Sources */}
+				{loadingDataSourcePaths && (
+					<ActivityIndicator />
+				)}
+				{!loadingDataSourcePaths && (
+					dataSourceMappings.map((dataSource) => { return (
+						<TouchableOpacity 
+							key = {dataSource.id}
+							onPress={() => {router.navigate(`./view-data-source/${dataSource.id}`)}}
+						>
+							<Card>
+								{<Text>
+									{dataSource.name}
+								</Text>}
+							</Card>
+						</TouchableOpacity>
+					)})
+				)}
+			</ScrollView>
 			<ScrollView
 				style={styles.container}
 				showsVerticalScrollIndicator={false}

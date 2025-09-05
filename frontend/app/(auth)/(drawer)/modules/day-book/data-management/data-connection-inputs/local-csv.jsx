@@ -81,7 +81,8 @@ const LocalCSV = () => {
             name: dataSourceName,            
             sourceType: "local-csv",
             method: method,
-            //expiry: TODO,
+            secrets: null
+            //expiry: TODO
         }
 
         const workspaceId = await getWorkspaceId();
