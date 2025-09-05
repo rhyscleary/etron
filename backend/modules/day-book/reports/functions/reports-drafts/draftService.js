@@ -1,8 +1,8 @@
 // Author(s): Rhys Cleary
 
-const reportRepo = require("../../reports-shared/repositories/reportsRepository");
+const reportRepo = require("@etron/reports-shared/repositories/reportsRepository");
 const {v4 : uuidv4} = require('uuid');
-const { deleteFolder, getUploadUrl, getDownloadUrl } = require("../../reports-shared/repositories/reportsBucketRepository");
+const { deleteFolder, getUploadUrl, getDownloadUrl } = require("@etron/reports-shared/repositories/reportsBucketRepository");
 
 async function createDraftReport(authUserId, payload) {
     const workspaceId = payload.workspaceId;
