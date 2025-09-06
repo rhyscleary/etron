@@ -194,6 +194,147 @@ Resources:
             Method: delete
             RestApiId: !Ref eTRONApi
 
+
+  ReportDraftsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./reports/functions/reports-drafts
+      Handler: draftHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        CreateDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        UpdateDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts/{draftId}
+            Method: patch
+            RestApiId: !Ref eTRONApi
+
+        GetDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts/{draftId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetDrafts:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        DeleteDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts/{draftId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
+
+
+  ReportTemplatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./reports/functions/reports-templates
+      Handler: templateHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        CreateTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        UpdateTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates/{templateId}
+            Method: patch
+            RestApiId: !Ref eTRONApi
+
+        GetTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates/{templateId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetTemplates:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        DeleteTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates/{templateId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
+
+
   DataSourcePollFunction:
     Type: AWS::Serverless::Function
     Properties:

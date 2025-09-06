@@ -10,6 +10,8 @@ import * as FileSystem from 'expo-file-system';
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import TextField from '../../../../../../../components/common/input/TextField';
 import { RadioButton } from 'react-native-paper';
+import { apiPost } from "../../../../../../../utils/api/apiClient";
+import endpoints from "../../../../../../../utils/api/endpoints"
 
 const LocalCSV = () => {
     const [deviceFilePath, setDeviceFilePath] = useState(null);
@@ -43,7 +45,7 @@ const LocalCSV = () => {
     const [isUploadingData, setIsUploadingData] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    const uploadDocument = async (sourceFilePath, destinationFilePath) => {
+    const uploadDocument = async (sourceFilePath, uploadUrl) => {
         console.log('File path:', sourceFilePath);
 
         setIsUploadingData(true);
@@ -55,21 +57,14 @@ const LocalCSV = () => {
             const blob = await response.blob();
 
             console.log('Uploading file to S3 Bucket...');
-            const result = await uploadData({
-                path: destinationFilePath,
-                data: blob,
-                //accessLevel: 'public', // should become private or protected in future i think?
-                options: {
-                    bucket: "workspaces",
-                    contentType: "text/csv",
-                    onProgress: ({ transferredBytes, totalBytes }) => {
-                        if (totalBytes) {
-                            setUploadProgress(Math.round((transferredBytes / totalBytes) * 100));  // for some reason, transferredBytes goes to double totalBytes
-                        }
-                    }
-                }
-            }).result;
-            console.log('File uploaded successfully:', result.path);
+            const result = await fetch(uploadUrl, {
+                method: "PUT",
+                body: blob,
+                headers: {
+                    "Content-Type": "text/csv",
+                },
+            });
+            console.log('File uploaded successfully');
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -78,38 +73,51 @@ const LocalCSV = () => {
     }
 
     const createDataSource = async () => {
-        const dataSourceDetails = {};
+        let dataSourceDetails = {};
 
-        const { userId } = await getCurrentUser();
-        dataSourceDetails.creator = userId;
-        dataSourceDetails.name = dataSourceName;
-        dataSourceDetails.sourceType = "local-csv"
-        dataSourceDetails.timeCreated = Date.now();
-        dataSourceDetails.method = method;
+        //const { userId } = await getCurrentUser();
+        
+        dataSourceDetails = {
+            name: dataSourceName,            
+            sourceType: "local-csv",
+            method: method
+            //expiry: TODO,
+        }
 
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceName.replace(/ /g, "_")}/data-source-details.json`
+
         try {
-            const result = uploadData({
-                path: S3FilePath,
-                data: JSON.stringify(dataSourceDetails),
-                options: {
-                    bucket: "workspaces"
-                }
-            }).result;
+            let result = await apiPost(
+                endpoints.modules.day_book.data_sources.addLocal,
+                dataSourceDetails,
+                { workspaceId }
+            )
+            return result;
         } catch (error) {
-            console.log("Error uploading data source info:", error);
-        };
+            console.log("Error posting via endpoint:", error);
+            return null;
+        }
     }
 
     const handleFinalise = async () => {
-        createDataSource();
+        /*await createDataSource();
 
         const workspaceId = await getWorkspaceId();
         const dataSourceId = dataSourceName.replace(/ /g, "_")
-        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/data-source-data.csv`;
+        const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data-source-data.csv`;
         console.log('S3 File Path:', S3FilePath);
-        uploadDocument(deviceFilePath, S3FilePath);
+        uploadDocument(deviceFilePath, S3FilePath);*/
+
+        const createResponse = await createDataSource();
+        if (!createResponse) return;
+
+        const { uploadUrl } = createResponse;
+        if (!uploadUrl) {
+            console.error("No upload URL was returned");
+            return;
+        }
+
+        await uploadDocument(deviceFilePath, uploadUrl);
     }
 
     const [dataSourceName, setDataSourceName] = useState("");

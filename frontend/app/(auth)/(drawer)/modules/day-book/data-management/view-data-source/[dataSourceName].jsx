@@ -25,9 +25,14 @@ const ViewDataSource = () => {
         async function getDataSourceInfo() {
             const workspaceId = await getWorkspaceId();
 
+            /*let result = apiPost(
+                endpoints.module.day_book.data_sources.getDataSource,
+                { workspaceId, dataSourceId }
+            )*/
+
             try {
                 const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/dataSources/${dataSourceName}/data-source-details.json`,
+                    path: `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName}/data-source-details.json`,
                     options: {
                         bucket: 'workspaces'
                     }
@@ -109,7 +114,7 @@ const ViewDataSource = () => {
 
     async function updateIntegratedMetrics() {
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/integrated-metrics/`
+        let S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/`
         let metricIds = []
         try {
             const result = await list ({
@@ -120,8 +125,8 @@ const ViewDataSource = () => {
             });
             metricIds = result.items
                 .filter(item => item.path.length > S3FilePath.length)
-                .map(item => item.path.split("/")[5]);  // 5 refers to the metricId at the end of the path
-            console.log(metricIds);
+                .map(item => item.path.split("/").at(-1));
+            console.log("metric ids:", metricIds);
             // metricId = await body.text();
         } catch (error) {
             console.log("Error downloading list of integrated metrics:", error);
@@ -140,7 +145,7 @@ const ViewDataSource = () => {
     async function CSVIntoMetricData(metricId) {
         // Get the new data
         const workspaceId = await getWorkspaceId();
-        let S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/data-source-data.csv`
+        let S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data-source-data.csv`
         const { body } = await downloadData({
             path: S3FilePath,
             options: {
@@ -161,7 +166,7 @@ const ViewDataSource = () => {
         const prunedData = {
             data: dataRows,
         }
-        S3FilePath = `workspaces/${workspaceId}/metrics/${metricId}/metric-pruned-data.json`
+        S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
         const result = uploadData({
             path: S3FilePath,
             data: JSON.stringify(prunedData),
@@ -174,7 +179,7 @@ const ViewDataSource = () => {
 
     const handleFinalise = async () => {
         const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/dataSources/${dataSourceId}/data-source-data.csv`;
+        let S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data-source-data.csv`;
         await uploadDocument(deviceFilePath, S3FilePath);
         await updateIntegratedMetrics();
     }

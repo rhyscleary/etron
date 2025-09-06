@@ -218,16 +218,17 @@ async function getDataSourcesInWorkspace(authUserId, workspaceId) {
 
     // get data source details by workspace id
     const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspaceId);
+    return dataSources;  //temporarily here until getSecretsByWorkspaceId ceases to give "ParameterNotFound:UnknownError" and halting the process
 
     // get secrets for data source
-    const dataSourceSecrets = await dataSourceSecretsRepo.getSecretsByWorkspaceId(workspaceId);
+    //const dataSourceSecrets = await dataSourceSecretsRepo.getSecretsByWorkspaceId(workspaceId);
 
-    const combinedSources = dataSources.map(source => ({
+    /*const combinedSources = dataSources.map(source => ({
         ...source,
         secrets: dataSourceSecrets[source.dataSourceId] || {}
     }));
 
-    return combinedSources;
+    return combinedSources;*/
 }
 
 async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {

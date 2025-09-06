@@ -21,12 +21,12 @@ const ViewMetric = () => {
     useEffect(() => {
         async function getMetricSettings() {
             const workspaceId = await getWorkspaceId();
-            console.log("Metric folder:", `workspaces/${workspaceId}/metrics/${metricId}`);
+            console.log("Metric folder:", `workspaces/${workspaceId}/day-book/metrics/${metricId}`);
         
             console.log("Downloading metric settings...");
             try {  // Download metric settings
                 const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric-settings.json`,
+                    path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-settings.json`,
                     options: {
                         bucket: 'workspaces'
                     }
@@ -42,7 +42,7 @@ const ViewMetric = () => {
 
             try {  // Download metric data
                 const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric-pruned-data.json`,
+                    path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`,
                     options: {
                         bucket: 'workspaces'
                     }

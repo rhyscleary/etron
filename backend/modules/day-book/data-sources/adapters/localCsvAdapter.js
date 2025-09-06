@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Noah Bradley
 
 // stub validation functions
 function validateConfig(config) {}
