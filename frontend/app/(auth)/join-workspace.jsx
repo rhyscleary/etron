@@ -12,6 +12,7 @@ import endpoints from "../../utils/api/endpoints";
 import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-amplify/auth";
 import formatTTLDate from "../../utils/format/formatTTLDate";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
+import { router } from "expo-router";
 
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
@@ -129,7 +130,7 @@ const JoinWorkspace = () => {
 
 
             // navigate to the profile
-            router.push("/profile");
+            router.navigate("/profile");
         } catch (error) {
             setJoining(false);
             console.log("Error joining workspace: ", error);

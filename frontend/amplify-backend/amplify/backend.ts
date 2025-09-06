@@ -1,12 +1,15 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
 //import { data } from './data/resource';
-import { profilePictureStorage } from './storage/resource'
+import { profilePictureStorage, workspaceReadyDataStorage, usersStorage, workspacesStorage } from './storage/resource'
 
 /**
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
  */
 defineBackend({
-  auth,
-  profilePictureStorage,
+  	auth,
+  	profilePictureStorage,
+	workspaceReadyDataStorage,
+	usersStorage,
+	workspacesStorage
 });

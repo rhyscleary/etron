@@ -88,6 +88,19 @@ export async function uploadProfilePhotoToS3(profilePhotoUri) {
         throw new Error(`Error uploading photo: ${error.message}`);
     }
 
+    try {
+        await uploadData({
+            path: `users/${userId}/accountpicture.jpg`,
+            data: Buffer.from(fileBuffer, 'base64'),
+            options: {
+                bucket: "users"
+            }
+        }).result;
+        console.log("Photo uploaded successfully TO NEW BUCKET.");
+    } catch (error) {
+        throw new Error(`Error uploading photo TO NEW BUCKET: ${error.message}`);
+    }
+
     await AsyncStorage.removeItem("profilePhotoUri");
     return S3FilePath;
 }

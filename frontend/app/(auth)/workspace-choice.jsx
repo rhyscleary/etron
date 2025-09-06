@@ -6,7 +6,7 @@ import { router } from 'expo-router';
 
 import { commonStyles } from '../../assets/styles/stylesheets/common';
 
-import WorkspaceDialog from '../../components/overlays/WorkspaceDialog';
+import DecisionDialog from '../../components/overlays/DecisionDialog';
 
 const WorkspaceChoice = () => {
   const [showWorkspaceModal, setWorkspaceModal] = useState(true);
@@ -14,13 +14,22 @@ const WorkspaceChoice = () => {
   return (
     <View style={commonStyles.screen}>
 
-        <WorkspaceDialog
-          visible={showWorkspaceModal}
-          setWorkspaceModal={setWorkspaceModal}
-          router={router}
-          showGoBack={false}
-          showSignOut={true}
-        />
+      <DecisionDialog
+        visible={showWorkspaceModal}
+        title="Workspace"
+        message="Create your own workspace or join an existing one."
+        showSignOut={true}
+        leftActionLabel="Create"
+        handleLeftAction={() => {
+          setWorkspaceModal(false);
+          router.navigate("/(auth)/create-workspace");
+        }}
+        rightActionLabel="Join"
+        handleRightAction={() => {
+          setWorkspaceModal(false);
+          router.navigate("/(auth)/join-workspace");
+        }}
+      />
 
     </View>
   );

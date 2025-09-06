@@ -1,22 +1,30 @@
-// DataManagement.js - Optimized version
-import React, { useEffect, useCallback, useState, useRef } from "react";
+// Author(s): Holly Wyatt, Noah Bradley
+
+// DataManagement.js
+import { useState, useEffect } from "react";
 import { RefreshControl, Button } from "react-native";
-import { Pressable, ScrollView, View, StyleSheet, Alert } from "react-native";
+import { Pressable, ScrollView, View, StyleSheet, Alert, TouchableOpacity } from "react-native";
+import { Card } from "react-native-paper";
 import {
-  Text,
-  ActivityIndicator,
+	Text,
+	ActivityIndicator,
 } from "react-native-paper";
 import { Link, router, useFocusEffect } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 
 import {
-  getAdapterInfo,
-  getCategoryDisplayName,
+	getAdapterInfo,
+	getCategoryDisplayName,
 } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 import { useApp } from "../../../../../../contexts/AppContext";
 
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
+
+import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
+import { list } from "aws-amplify/storage";
+import endpoints from "../../../../../../utils/api/endpoints";
+import { apiGet } from "../../../../../../utils/api/apiClient";
 
 const DataManagement = () => {
   // Use the app context
@@ -275,20 +283,20 @@ const DataManagement = () => {
     );
   }
 
-  const groupedSources = groupSourcesByCategory();
+	const groupedSources = groupSourcesByCategory();
 
-  return (
-    <View style={commonStyles.screen}>
-      <Header
-        title="Data Management"
-        showMenu
-        showPlus
-        onRightIconPress={() =>
-          router.navigate(
-            "/modules/day-book/data-management/create-data-connection"
-          )
-        }
-      />
+	return (
+		<View style={commonStyles.screen}>
+			<Header
+				title="Data Management"
+				showMenu
+				showPlus
+				onRightIconPress={() =>
+					router.navigate(
+						"/modules/day-book/data-management/create-data-connection"
+					)
+				}
+			/>
 
       {/*Temporary redirect to profile screen*/}
       <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />

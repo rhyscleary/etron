@@ -94,6 +94,7 @@ function LoginSignup() {
     }
 
     const handleResend = async () => {
+        if (resendCooldown > 0) return;
         try {
             await resendSignUpCode({username: email});
             setResendCooldown(60);

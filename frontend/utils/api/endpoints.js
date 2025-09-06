@@ -8,6 +8,8 @@ const DATASOURCES_BASE_URL =
   "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/data-sources";
 const METRICS_BASE_URL =
   "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/metrics";
+const REPORTS_BASE_URL =
+  "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/reports";
 
 const endpoints = {
   workspace: {
@@ -96,7 +98,8 @@ const endpoints = {
   modules: {
     day_book: {
       data_sources: {
-        add: `${DATASOURCES_BASE_URL}/remote`,
+        addRemote: `${DATASOURCES_BASE_URL}/remote`,
+        addLocal: `${DATASOURCES_BASE_URL}/local`,
         update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
         getDataSource: (dataSourceId) =>
           `${DATASOURCES_BASE_URL}/${dataSourceId}`,
@@ -112,6 +115,31 @@ const endpoints = {
         getMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
         getMetrics: `${METRICS_BASE_URL}`,
         removeMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
+      },
+
+      reports: {
+        drafts: {
+          createDraft: `${REPORTS_BASE_URL}/drafts`,
+          updateDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+          getDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+          getDrafts: `${REPORTS_BASE_URL}/drafts`,
+          deleteDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+        },
+        templates: {
+          createTemplate: `${REPORTS_BASE_URL}/templates`,
+          updateTemplate: (templateId) =>
+            `${REPORTS_BASE_URL}/templates/${templateId}`,
+          getTemplate: (templateId) =>
+            `${REPORTS_BASE_URL}/templates/${templateId}`,
+          getTemplates: `${REPORTS_BASE_URL}/templates`,
+          deleteTemplate: (templateId) =>
+            `${REPORTS_BASE_URL}/templates/${templateId}`,
+        },
+        exports: {
+          addExport: ``,
+          getExport: ``,
+          getExports: ``,
+        },
       },
     },
   },

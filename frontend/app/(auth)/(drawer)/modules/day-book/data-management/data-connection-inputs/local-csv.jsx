@@ -1,23 +1,25 @@
 // Author(s): Noah Bradley
 
-import { Text } from 'react-native-paper';
+import { ActivityIndicator, Text } from 'react-native-paper';
 import { useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
-import { Button } from 'react-native';
+import { Button, View } from 'react-native';
 import { uploadData } from 'aws-amplify/storage';
 import { getCurrentUser } from 'aws-amplify/auth';
 import * as FileSystem from 'expo-file-system';
-//import awsmobile from '../../../../../../../src/aws-exports';
-import amplifyOutputs from '../../../../../../../amplify_outputs.json'
+import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
+import TextField from '../../../../../../../components/common/input/TextField';
+import { RadioButton } from 'react-native-paper';
+import { apiPost } from "../../../../../../../utils/api/apiClient";
+import endpoints from "../../../../../../../utils/api/endpoints"
 
 const LocalCSV = () => {
-    const [fileUri, setFileUri] = useState(null);
-    const [fileName, setName] = useState('');
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-
-    const pickDocument = async () => {
+    const [deviceFilePath, setDeviceFilePath] = useState(null);
+    const [method, setMethod] = useState('overwrite');  // Method starts at overwrite by default
+    const [dataDetailsStatus, setDataDetailsStatus] = useState("none");
+    const userSelectDocument = async () => {
         try {
+            setDataDetailsStatus("loading");
             const result = await DocumentPicker.getDocumentAsync({
                 type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
                 copyToCacheDirectory: true  // This might be bad for large files
@@ -25,80 +27,130 @@ const LocalCSV = () => {
 
             if (result.canceled) {
                 console.log('File selection cancelled');
+                setDataDetailsStatus("none");
                 return;
             }
             
-            console.log('File selected:', result.assets[0]);
-            const file = result.assets[0];
-            console.log('Document chosen:', file.name);
-            setName(file.name.replace(/\s+/g, '_'));  // Cleans spaces into underscores
-            console.log('Document location:', file.uri);
-            setFileUri(file.uri);
+            
+            const file = result.assets[0];  // [0] means it only keeps the first file, as result will be an array of files
+            setDeviceFilePath(file.uri);
+
+            setDataDetailsStatus("loaded");
         } catch (error) {
+            setDataDetailsStatus("none");
             console.error('Error picking document:', error);
         }
     };
 
-    const handleUploadDocument = async () => {
-        console.log('Beginning upload process...');
-        if (!fileUri) {
-            console.error('No file selected to upload');
-            return;
-        } else console.log('File URI:', fileUri);
+    const [isUploadingData, setIsUploadingData] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
-        setIsUploading(true);
-        setUploadProgress(0);  // Reset progress on new file selection
+    const uploadDocument = async (sourceFilePath, uploadUrl) => {
+        console.log('File path:', sourceFilePath);
+
+        setIsUploadingData(true);
+        setUploadProgress(0);
 
         try {
-            console.log('Creating file path...');
-            const { userId } = await getCurrentUser();
-            const S3FilePath = `public/${userId}/${fileName}`;
-            console.log('S3 File Path:', S3FilePath);
-
             console.log('Retrieving file...');
-            const response = await fetch(fileUri);
+            const response = await fetch(sourceFilePath);
             const blob = await response.blob();
 
             console.log('Uploading file to S3 Bucket...');
-            const result = await uploadData({
-                path: S3FilePath,
-                data: blob,
-                //accessLevel: 'public', // should become private or protected in future i think?
-                options: {
-                    bucket: {
-                        bucketName: 'workspace-stored-data1858d-dev',
-                        region: amplifyOutputs.storage.aws_region,
-                    },
-                    contentType: 'text/csv',
-                    onProgress: ({ transferredBytes, totalBytes }) => {
-                        if (totalBytes) {
-                            setUploadProgress(Math.round((transferredBytes / totalBytes) * 100));  // for some reason, transferredBytes goes to double totalBytes
-                        }
-                    }
-                }
-            }).result;
-            console.log('File uploaded successfully:', result);
+            const result = await fetch(uploadUrl, {
+                method: "PUT",
+                body: blob,
+                headers: {
+                    "Content-Type": "text/csv",
+                },
+            });
+            console.log('File uploaded successfully');
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
-            setIsUploading(false);
+            setIsUploadingData(false);
         }
     }
 
+    const createDataSource = async () => {
+        let dataSourceDetails = {};
+
+        //const { userId } = await getCurrentUser();
+        
+        dataSourceDetails = {
+            name: dataSourceName,            
+            sourceType: "local-csv",
+            method: method
+            //expiry: TODO,
+        }
+
+        const workspaceId = await getWorkspaceId();
+
+        try {
+            let result = await apiPost(
+                endpoints.modules.day_book.data_sources.addLocal,
+                dataSourceDetails,
+                { workspaceId }
+            )
+            return result;
+        } catch (error) {
+            console.log("Error posting via endpoint:", error);
+            return null;
+        }
+    }
+
+    const handleFinalise = async () => {
+        /*await createDataSource();
+
+        const workspaceId = await getWorkspaceId();
+        const dataSourceId = dataSourceName.replace(/ /g, "_")
+        const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data-source-data.csv`;
+        console.log('S3 File Path:', S3FilePath);
+        uploadDocument(deviceFilePath, S3FilePath);*/
+
+        const createResponse = await createDataSource();
+        if (!createResponse) return;
+
+        const { uploadUrl } = createResponse;
+        if (!uploadUrl) {
+            console.error("No upload URL was returned");
+            return;
+        }
+
+        await uploadDocument(deviceFilePath, uploadUrl);
+    }
+
+    const [dataSourceName, setDataSourceName] = useState("");
+
     return (
         <>
-            <Button onPress={pickDocument} title="Pick a CSV File" disabled={isUploading} />
+            <Button onPress={userSelectDocument} title="Pick a CSV File" disabled={isUploadingData} />
             
-            <Button onPress={handleUploadDocument} title="Upload File" disabled={isUploading || !fileUri} />
-            
-            {isUploading?
-                <Text>
-                    Progress: {uploadProgress}%
-                </Text>:
-                <Text>
-                    No current upload
-                </Text>
-            }
+            {dataDetailsStatus == "none" && (
+                <Text>No data selected</Text>
+            )}
+            {dataDetailsStatus == "loading" && (
+                <ActivityIndicator />
+            )}
+            {dataDetailsStatus == "loaded" && (
+                <View>
+                    <TextField 
+                        label = "Source Name"
+                        placeholder = "Source Name"
+                        onChangeText = {setDataSourceName}
+                    />
+                    <RadioButton.Group onValueChange={newValue => setMethod(newValue)} value={method}>
+                        <RadioButton.Item label="Overwrite" value="overwrite" />
+                        <RadioButton.Item label="Extend" value="extend" />
+                    </RadioButton.Group>
+                    <Button onPress={handleFinalise} title="Create Source" disabled={isUploadingData || dataSourceName == ""} />
+                    {isUploadingData && (
+                        <Text>
+                            Progress: {uploadProgress}%
+                        </Text>
+                    )}
+                </View>
+            )}
         </>
     );
 }

@@ -11,6 +11,11 @@ Globals:
     Architectures:
       - x86_64
 
+Parameters:
+  WorkspaceBucketName:
+    Type: String
+    
+
 Resources:
 
   PermissionsBucket:
@@ -24,15 +29,18 @@ Resources:
       TemplateURL: ./workspace/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
+        
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./user/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
+        
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./modules/day-book/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
+        WorkspaceBucketName: !Ref WorkspaceBucketName
