@@ -1,15 +1,15 @@
 // Author(s): Rhys Cleary
 
-const dataSourceRepo = require("../../data-sources-shared/repositories/dataSourceRepository");
-const dataSourceSecretsRepo = require("../../data-sources-shared/repositories/dataSourceSecretsRepository");
+const dataSourceRepo = require("@etron/data-sources-shared/repositories/dataSourceRepository");
+const dataSourceSecretsRepo = require("@etron/data-sources-shared/repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const {v4 : uuidv4} = require('uuid');
-const adapterFactory = require("../adapters/adapterFactory");
-const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema } = require("../../data-sources-shared/repositories/dataBucketRepository");
-const { validateFormat } = require("../../data-sources-shared/utils/validateFormat");
-const { translateData } = require("../../data-sources-shared/utils/translateData");
-const { toParquet } = require("../../data-sources-shared/utils/typeConversion");
-const { generateSchema } = require("../../data-sources-shared/utils/generateSchema");
+const adapterFactory = require("@etron/data-sources-shared/adapters/adapterFactory");
+const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
+const { translateData } = require("@etron/data-sources-shared/utils/translateData");
+const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
+const { generateSchema } = require("@etron/data-sources-shared/utils/generateSchema");
 
 async function createRemoteDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;

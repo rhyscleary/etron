@@ -1,10 +1,10 @@
 // Author(s): Rhys Cleary
 
-const { saveSchema } = require("../../data-sources-shared/repositories/dataBucketRepository");
-const { generateSchema } = require("../../data-sources-shared/utils/generateSchema");
-const { translateData } = require("../../data-sources-shared/utils/translateData");
-const { toParquet } = require("../../data-sources-shared/utils/typeConversion");
-const { validateFormat } = require("../../data-sources-shared/utils/validateFormat");
+const { saveSchema } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { generateSchema } = require("@etron/data-sources-shared/utils/generateSchema");
+const { translateData } = require("@etron/data-sources-shared/utils/translateData");
+const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
+const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 
 
 async function localFileConversion(workspaceId, dataSourceId, uploadData) {
@@ -13,7 +13,7 @@ async function localFileConversion(workspaceId, dataSourceId, uploadData) {
     // wrap it in an array
     //const normalisedData = [translatedData];
 
-    const {valid, error } = validateFormat(normalisedData);
+    const {valid, error } = validateFormat(translatedData);
 
     // create the schema
     //const schema = generateSchema(translateData);
