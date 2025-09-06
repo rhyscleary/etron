@@ -358,7 +358,6 @@ async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
     // get the schema from the dataSource
     const schema = await getDataSchema(workspaceId, dataSourceId);
 
-
 }
 
 async function fetchData() {
