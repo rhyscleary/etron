@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { fetchData } = require("../services/dataSourceService");
+const { fetchData } = require("./pollService");
 
 exports.handler = async () => {
     let statusCode = 200;

@@ -17,12 +17,16 @@ TARGET_FOLDERS = [
     "modules/day-book/metrics",
     "modules/day-book/reports/functions/reports-drafts",
     # "modules/day-book/reports/functions/reports-exports",
-    "modules/day-book/reports/functions/reports-templates"
+    "modules/day-book/reports/functions/reports-templates",
+    "modules/day-book/data-sources/functions/data-source-core",
+    "modules/day-book/data-sources/functions/data-source-poller",
+    "modules/day-book/data-sources/functions/data-source-upload-processor"
 ]
 
 SHARED_FOLDERS = [
     "shared",
-    "modules/day-book/reports/reports-shared"
+    "modules/day-book/reports/reports-shared",
+    "modules/day-book/data-sources/data-sources-shared"
 ]
 
 # === FUNCTIONS ===
