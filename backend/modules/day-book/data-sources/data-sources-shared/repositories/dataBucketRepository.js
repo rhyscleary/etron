@@ -46,6 +46,11 @@ async function removeAllStoredData(workspaceId, dataSourceId) {
             }),
         );
 
+        if (!objectList.Contents || objectList.Contents.length === 0) {
+            console.log("No objects found for prefix:", prefix);
+            return;
+        }
+
         const deleteParams = {
             Bucket: bucketName,
             Delete: { Objects: objectList.Contents.map(object => ({ Key: object.Key })) }
