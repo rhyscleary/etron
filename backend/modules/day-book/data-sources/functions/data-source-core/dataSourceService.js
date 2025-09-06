@@ -1,17 +1,18 @@
 // Author(s): Rhys Cleary
 
-const dataSourceRepo = require("../repositories/dataSourceRepository");
-const dataSourceSecretsRepo = require("../repositories/dataSourceSecretsRepository");
+const dataSourceRepo = require("../../data-sources-shared/repositories/dataSourceRepository");
+const dataSourceSecretsRepo = require("../../data-sources-shared/repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("../adapters/adapterFactory");
-const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema } = require("../repositories/dataBucketRepository");
-const { validateFormat } = require("../utils/validateFormat");
-const { translateData } = require("../utils/translateData");
-const { toParquet } = require("../utils/typeConversion");
-const { generateSchema } = require("../utils/generateSchema");
+const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema } = require("../../data-sources-shared/repositories/dataBucketRepository");
+const { validateFormat } = require("../../data-sources-shared/utils/validateFormat");
+const { translateData } = require("../../data-sources-shared/utils/translateData");
+const { toParquet } = require("../../data-sources-shared/utils/typeConversion");
+const { generateSchema } = require("../../data-sources-shared/utils/generateSchema");
 
-async function createRemoteDataSource(authUserId, workspaceId, payload) {
+async function createRemoteDataSource(authUserId, payload) {
+    const workspaceId = payload.workspaceId;
 
     const { name, sourceType, method, expiry, config, secrets } = payload;
 
@@ -81,7 +82,8 @@ async function createRemoteDataSource(authUserId, workspaceId, payload) {
     };
 }
 
-async function createLocalDataSource(authUserId, workspaceId, payload) {
+async function createLocalDataSource(authUserId, payload) {
+    const workspaceId = payload.workspaceId;
 
     const { name, sourceType, method, expiry } = payload;
 
@@ -136,7 +138,8 @@ async function createLocalDataSource(authUserId, workspaceId, payload) {
     };
 }
 
-async function updateDataSourceInWorkspace(authUserId, workspaceId, dataSourceId, payload) {
+async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
+    const workspaceId = payload.workspaceId;
 
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
@@ -360,98 +363,6 @@ async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
 
 }
 
-async function fetchData() {
-    const workspaces = await workspaceRepo.getAllWorkspaces();
-    const allowedTypes = adapterFactory.getAllowedPollingTypes();
-
-    for (const workspace of workspaces) {
-        const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspace.workspaceId);
-
-        for (const dataSource of dataSources) {
-
-            // check if the data source is active and an allowed type
-            if (dataSource.status !== "active" || !allowedTypes.includes(dataSource.sourceType)) {
-                continue;
-            }
-
-            // get sources secrets
-            const secrets = await dataSourceSecretsRepo.getSecrets(workspace.workspaceId, dataSource.dataSourceId);
-
-            // create adapter
-            const adapter = adapterFactory.getAdapter(dataSource.sourceType);
-
-            // try polling
-            try {
-                const newData = await poll(adapter, dataSource.config, secrets);
-                const translatedData = translateData(newData);
-
-                const {valid, error } = validateFormat(translatedData);
-                if (!valid) throw new Error(`Invalid data format: ${error}`);
-
-                // create the schema
-                const schema = generateSchema(translateData);
-
-                // convert the data to parquet file
-                const parquetBuffer = await toParquet(translatedData);
-
-                // save the schema to S3
-                await saveSchema(workspace.workspaceId, dataSource.dataSourceId, schema);
-
-                if (dataSource.method === "extend") {
-                    // extend the data source
-                    await saveStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
-
-                } else {
-                    // replace data
-                    await replaceStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
-                }
-
-            } catch (error) {
-                // if the data source fails three polls update it's status to error
-                const errorItem = {
-                    status: "error",
-                    errorMessage: error.message
-                }
-
-                await dataSourceRepo.updateDataSourceStatus(workspace.workspaceId, dataSource.dataSourceId, errorItem);
-            }
-        }
-    }
-}
-
-async function poll(adapter, config, secrets) {
-    let currentError;
-
-    for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-            return await adapter.poll(config, secrets);
-        } catch (error) {
-           currentError = error;  
-        }
-    }
-
-    throw currentError;
-}
-
-async function localFileConversion(workspaceId, dataSourceId, uploadData) {
-    const translatedData = translateData(uploadData);
-
-    // wrap it in an array
-    const normalisedData = [translatedData];
-
-    const {valid, error } = validateFormat(normalisedData);
-
-    // create the schema
-    const schema = generateSchema(translateData);
-
-    // save the schema to S3
-    await saveSchema(workspaceId, dataSourceId, schema);
-
-    if (!valid) throw new Error(`Invalid data format: ${error}`);
-
-    return toParquet(translatedData);
-}
-
 module.exports = {
     createRemoteDataSource,
     createLocalDataSource,
@@ -459,8 +370,6 @@ module.exports = {
     getDataSourceInWorkspace,
     getDataSourcesInWorkspace,
     deleteDataSourceInWorkspace,
-    fetchData,
     testConnection,
-    getRemotePreview,
-    localFileConversion
+    getRemotePreview
 };

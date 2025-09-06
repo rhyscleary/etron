@@ -1,7 +1,7 @@
 // Author(s): Rhys Cleary
 const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { Readable } = require("stream");
-const { localFileConversion } = require("../services/dataSourceService");
+const { localFileConversion } = require("./fileUploadService");
 
 const s3Client = new S3Client({});
 
