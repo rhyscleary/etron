@@ -10,9 +10,11 @@ const { validateFormat } = require("@etron/data-sources-shared/utils/validateFor
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/generateSchema");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 
 async function createRemoteDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
 
     const { name, sourceType, method, expiry, config, secrets } = payload;
 
@@ -24,7 +26,7 @@ async function createRemoteDataSource(authUserId, payload) {
         throw new Error("Please specify a type of data source");
     }
 
-    if (typeof method !== "string" && (method !== "overwrite" || method !== "extend")) {
+    if (method && !["overwrite", "extend"].includes(method)) {
         throw new Error("Please specify the method 'overwrite' or 'extend'");
     }
 
@@ -84,6 +86,7 @@ async function createRemoteDataSource(authUserId, payload) {
 
 async function createLocalDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
 
     const { name, sourceType, method, expiry } = payload;
 
@@ -95,7 +98,7 @@ async function createLocalDataSource(authUserId, payload) {
         throw new Error("Please specify a type of data source");
     }
 
-    if (typeof method !== "string" && (method !== "overwrite" || method !== "extend")) {
+    if (method && !["overwrite", "extend"].includes(method)) {
         throw new Error("Please specify the method 'overwrite' or 'extend'");
     }
 
@@ -140,6 +143,7 @@ async function createLocalDataSource(authUserId, payload) {
 
 async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
     const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
 
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
@@ -149,9 +153,9 @@ async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
 
     const { name, method, expiry, config, secrets } = payload;
 
-    if (method && typeof method !== "string" && method !== "overwrite" || "extend") {
-            throw new Error("Please specify the method 'overwrite' or 'extend'");
-        }
+    if (method && !["overwrite", "extend"].includes(method)) {
+        throw new Error("Please specify the method 'overwrite' or 'extend'");
+    }
 
     if (method === "extend") {
         if (expiry && typeof expiry !== "object") {
@@ -193,7 +197,9 @@ async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
     const updatedDataSource = await dataSourceRepo.updateDataSource(workspaceId, dataSourceId, dataSourceItem);
 
     // store the secrets in parameter storage
-    await dataSourceSecretsRepo.saveSecrets(workspaceId, dataSourceId, secrets);
+    if (secrets) {
+        await dataSourceSecretsRepo.saveSecrets(workspaceId, dataSourceId, secrets);
+    }
 
     return {
         ...updatedDataSource,
@@ -202,6 +208,7 @@ async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
 }
 
 async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
+    await validateWorkspaceId(workspaceId);
 
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
@@ -218,23 +225,24 @@ async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
 }
 
 async function getDataSourcesInWorkspace(authUserId, workspaceId) {
+    await validateWorkspaceId(workspaceId);
 
     // get data source details by workspace id
     const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspaceId);
-    return dataSources;  //temporarily here until getSecretsByWorkspaceId ceases to give "ParameterNotFound:UnknownError" and halting the process
 
     // get secrets for data source
-    //const dataSourceSecrets = await dataSourceSecretsRepo.getSecretsByWorkspaceId(workspaceId);
+    const dataSourceSecrets = await dataSourceSecretsRepo.getSecretsByWorkspaceId(workspaceId);
 
-    /*const combinedSources = dataSources.map(source => ({
+    const combinedSources = dataSources.map(source => ({
         ...source,
         secrets: dataSourceSecrets[source.dataSourceId] || {}
     }));
 
-    return combinedSources;*/
+    return combinedSources;
 }
 
 async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
+    await validateWorkspaceId(workspaceId);
 
     // get data source details
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
@@ -360,7 +368,9 @@ function getAvailableSpreadsheets(authUserId, payload) {
 async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
     // get the schema from the dataSource
     const schema = await getDataSchema(workspaceId, dataSourceId);
+    if (!schema) throw new Error("Schema not found for this data source");
 
+    
 }
 
 module.exports = {

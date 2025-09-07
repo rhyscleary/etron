@@ -1,7 +1,7 @@
 // Author(s): Rhys Cleary
 const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { Readable } = require("stream");
-const { localFileConversion } = require("./fileUploadService");
+const { processUploadedFile } = require("./fileUploadService");
 
 const s3Client = new S3Client({});
 
@@ -41,7 +41,6 @@ exports.handler = async (event) => {
     }
 
     const dataSourceId = fileName.split(".")[0];
-    const timestamp = new Date().toISOString();
 
     console.log(`Processing file ${fileName} in ${workspaceId}`);
 
@@ -51,22 +50,9 @@ exports.handler = async (event) => {
         );
 
         // convert the stream to a string
-        const stringFile = await streamToString(data.Body);
+        const rawData = await streamToString(data.Body);
 
-        const parquetBuffer = await localFileConversion(workspaceId, dataSourceId, stringFile);
-
-        // upload to s3
-        const parquetKey = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${timestamp}.parquet`;
-        await s3Client.send(
-            new PutObjectCommand({ 
-                Bucket: bucket, 
-                Key: parquetKey,
-                Body: parquetBuffer, 
-            })
-        );
-
-        console.log(`Uploaded parquet file to: ${parquetKey}`);
-
+        await processUploadedFile(workspaceId, dataSourceId, rawData);
         
         // delete the original uploaded file
         await s3Client.send(
@@ -78,5 +64,4 @@ exports.handler = async (event) => {
     } catch (error) {
         console.error(`Failed to process ${fileName}:`, error);
     }
-    
 }
