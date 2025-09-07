@@ -27,15 +27,36 @@ function generateSchema(data) {
     return Object.entries(schema).map(([name, type]) => ({ name, type }));
 }
 
-function deduceType(value) {
+function deduceType(value, columnName = "") {
+
     if (typeof value === "number") {
-        return Number.isInteger(value) ? "int" : "double";
+        return Number.isInteger(value) ? "bigint" : "double";
     } else if (typeof value === "boolean") {
         return "boolean";
-    } else if (typeof value === "string" && !isNaN(Date.parse(value))) {
-        return "timestamp";
+    } else if (typeof value === "string") {
+        const trimmed = value.trim();
+        // numeric strings
+        if (!isNaN(trimmed) && trimmed !== "") {
+            if (trimmed.includes(".")) {
+                if (isMoneyField(columnName)) {
+                    return "decimal(18,2)";
+                }
+                return "double";
+            }
+            return "bigint";
+        }
+    
+        // strings that look like timestamps
+        if (!isNaN(Date.parse(value))) {
+            return "timestamp";
+        }
     }
     return "string";
+}
+
+function isMoneyField(columnName) {
+    const moneyKeywords = ["balance", "price", "amount", "cost", "total"];
+    return moneyKeywords.some(keyword => columnName.toLowerCase().includes(keyword));
 }
 
 module.exports = {

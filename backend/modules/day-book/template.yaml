@@ -360,7 +360,7 @@ Resources:
         PollEvent:
           Type: Schedule
           Properties:
-            Schedule: rate(5 minutes)
+            Schedule: rate(15 minutes)
             Name: DataSourcePollSchedule
 
   DataSourceUploadProcessorFunction:

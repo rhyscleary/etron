@@ -52,7 +52,7 @@ async function poll(config, secrets) {
 function constructHeader(authType, secrets) {
     switch (authType) {
         case "apiKey":
-            return {Authorization: `${secrets.apiKey}`};
+            return { "x-api-key": secrets.apiKey };
         case "bearer":
         case "jwt":
             return {Authorization: `Bearer ${secrets.token}`};
