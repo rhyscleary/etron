@@ -1,7 +1,7 @@
 // Author(s): Rhys Cleary
 const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { Readable } = require("stream");
-const { localFileConversion } = require("../services/dataSourceService");
+const { localFileConversion } = require("./fileUploadService");
 
 const s3Client = new S3Client({});
 
@@ -53,10 +53,10 @@ exports.handler = async (event) => {
         // convert the stream to a string
         const stringFile = await streamToString(data.Body);
 
-        const parquetBuffer = await localFileConversion(stringFile);
+        const parquetBuffer = await localFileConversion(workspaceId, dataSourceId, stringFile);
 
         // upload to s3
-        const parquetKey = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/${timestamp}.parquet`;
+        const parquetKey = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${timestamp}.parquet`;
         await s3Client.send(
             new PutObjectCommand({ 
                 Bucket: bucket, 

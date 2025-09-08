@@ -34,11 +34,11 @@ Resources:
             Identity:
               Header: Authorization
 
-  DataSourceFunction:
+  DataSourceCoreFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources
-      Handler: handlers/dataSourceHandler.handler
+      CodeUri: ./data-sources/functions/data-source-core
+      Handler: dataSourceHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
@@ -93,7 +93,7 @@ Resources:
           Type: Api 
           Properties:
             Path: /day-book/data-sources/{dataSourceId}
-            Method: put
+            Method: patch
             RestApiId: !Ref eTRONApi
 
         GetDataSourceById:
@@ -117,11 +117,11 @@ Resources:
             Method: delete
             RestApiId: !Ref eTRONApi
 
-        GetRemotePreview:
+        RemotePreview:
           Type: Api
           Properties:
             Path: /day-book/data-sources/preview/remote
-            Method: get
+            Method: post
             RestApiId: !Ref eTRONApi
             
 
@@ -338,8 +338,8 @@ Resources:
   DataSourcePollFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources
-      Handler: handlers/dataSourcePollHandler.handler
+      CodeUri: ./data-sources/functions/data-source-poller
+      Handler: dataSourcePollHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
@@ -361,11 +361,11 @@ Resources:
             Schedule: rate(5 minutes)
             Name: DataSourcePollSchedule
 
-  FileUploadProcessorFunction:
+  DataSourceUploadProcessorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources
-      Handler: handlers/fileUploadHandler.handler
+      CodeUri: ./data-sources/functions/data-source-upload-processor
+      Handler: fileUploadHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
