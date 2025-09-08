@@ -370,14 +370,22 @@ class DataSourceService {
         }
       });
 
-      // If the adapter's test returned a demo-style response (adapter fell back to demo),
-      // handle creation locally and only when per-type demo is allowed.
-  // Ignore any demo-style test response; proceed with real create
-
-  // Prepare payload matching backend contract
-  // Query param: workspaceId (added below)
-  // Body: { name, type, config }
-  const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.add);
+      // prepare payload matching backend contract
+      // query param: workspaceId
+      // body: { name, type, config }
+      // NOTE: endpoints file exposes addRemote / addLocal (no generic 'add')
+      const dataSourceEndpoints = endpoints?.modules?.day_book?.data_sources || {};
+      let endpointUrl = null;
+      // choose local vs remote creation endpoint (defaults to remote)
+      if (config?.isLocal || config?.mode === 'local') {
+        endpointUrl = this.resolveEndpoint(dataSourceEndpoints.addLocal);
+      } else {
+        endpointUrl = this.resolveEndpoint(dataSourceEndpoints.addRemote);
+      }
+      if (!endpointUrl) {
+        console.error('[DataSourceService] connectDataSource no add endpoint configured', { availableKeys: Object.keys(dataSourceEndpoints) });
+        throw new Error('Data source add endpoint not configured');
+      }
   const sanitize = (obj) => {
         if (!obj || typeof obj !== 'object') return obj;
         const out = Array.isArray(obj) ? [] : {};
@@ -396,8 +404,9 @@ class DataSourceService {
         return map[t] || t;
       };
 
-      // Build config payload per backend contract: { authType, endpoint, secrets }
-      const buildConfigPayload = (cfg) => {
+  // build config + secrets payload per backend contract:
+  // remote create expects: { name, sourceType, method, expiry, config, secrets }
+  const buildConfigAndSecrets = (cfg) => {
         const clone = cfg ? { ...cfg } : {};
         // Try to parse possible stringified fields
         const parseMaybeJSON = (val) => {
@@ -421,11 +430,11 @@ class DataSourceService {
           return String(t);
         })();
 
-        // Endpoint is optional in contract; default to empty string to match example
-        const endpoint = clone.endpoint ?? clone.url ?? '';
+  // endpoint is optional in contract -- default to empty string to match example
+  const endpoint = clone.endpoint ?? clone.url ?? '';
 
-        // Secrets nested inside config
-        const secrets = {};
+  // secrets returned separately (not in config)
+  const secrets = {};
         switch ((authType || '').toLowerCase()) {
           case 'apikey': {
             // Use provided authentication value as apiKey; do not infer from URL/connectionString
@@ -461,24 +470,28 @@ class DataSourceService {
             // No secrets
           }
         }
-
-        return sanitize({ authType, endpoint, secrets });
+  const configOut = sanitize({ authType, endpoint });
+  return { configOut, secrets };
       };
 
       const normalizedType = normalizeType(type);
-      const configPayload = buildConfigPayload(config);
+      const { configOut, secrets } = buildConfigAndSecrets(config);
 
       const payload = sanitize({
         name,
-        type: normalizedType,
-        config: configPayload || {},
+        sourceType: normalizedType,
+        method: config?.method || 'overwrite',
+        config: configOut || {},
+        secrets: secrets && Object.keys(secrets).length ? secrets : undefined,
       });
 
   const workspaceId = await getSavedWorkspaceId();
   console.log('[DataSourceService] DEBUG workspaceId for add:', workspaceId);
   console.log('[DataSourceService] DEBUG payload for add:', JSON.stringify(payload));
   if (!workspaceId) throw new Error('No workspace selected');
-  console.log('[DataSourceService] createDataSource POST', { endpointUrl, workspaceId, payload });
+  // include workspaceId in body as fallback
+  payload.workspaceId = workspaceId;
+  console.log('[DataSourceService] createDataSource POST', { endpointUrl, workspaceId, payloadSummary: { name: payload.name, sourceType: payload.sourceType, hasSecrets: !!payload.secrets, endpoint: payload.config?.endpoint } });
   try {
     const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
         // Normalize response in case server returns raw object vs { data }
@@ -488,12 +501,12 @@ class DataSourceService {
         }
         console.log("Adding!!!!!!!\n===========\n", response);
         const normalize = (s) => {
-          const type = s?.type || s?.sourceType || s?.adapterType || payload.type;
-          const name = s?.name || payload.name;
-          const status = s?.status || 'connected';
+          const typeVal = s?.type || s?.sourceType || s?.adapterType || payload.sourceType;
+          const nameVal = s?.name || payload.name;
+          const status = s?.status || 'active';
           const id = s?.id || s?._id || s?.dataSourceId || null;
-          const config = s?.config || payload.config || {};
-          return { ...s, id, type, name, status, config };
+          const configVal = s?.config || payload.config || {};
+          return { ...s, id, type: typeVal, name: nameVal, status, config: configVal };
         };
         const normalized = normalize(created);
         if (!normalized.id) {
@@ -603,7 +616,7 @@ class DataSourceService {
         const map = { 'custom-api': 'api', 'csv-file': 'csv' };
         return map[t] || t;
       };
-      const buildConfigPayload = (cfg) => {
+      const buildConfigAndSecrets = (cfg) => {
         const clone = cfg ? { ...cfg } : {};
         const parseMaybeJSON = (val) => {
           if (val == null) return val;
@@ -656,13 +669,16 @@ class DataSourceService {
           }
           default: {}
         }
-        return sanitize({ authType, endpoint, secrets });
+        const configOut = sanitize({ authType, endpoint });
+        return { configOut, secrets };
       };
 
+      const { configOut, secrets } = buildConfigAndSecrets(config);
       const payload = sanitize({
         name,
         sourceType: normalizeType(type),
-        config: buildConfigPayload(config),
+        config: configOut || {},
+        secrets: secrets && Object.keys(secrets).length ? secrets : undefined,
       });
 
       const workspaceId = await getSavedWorkspaceId();

@@ -55,10 +55,7 @@ const validateRequired = (value, fieldName) => {
 // api validation
 export const validateApiForm = (formData, returnErrors = false) => {
   const errors = {};
-  
-  const nameError = validateRequired(formData.name, "API name");
-  if (nameError) errors.name = nameError;
-  
+  // name optional, generated from url if left blank
   const urlError = validateUrl(formData.url);
   if (urlError) errors.url = urlError;
   

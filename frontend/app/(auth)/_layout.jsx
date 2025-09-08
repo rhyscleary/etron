@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { fetchAuthSession, fetchUserAttributes, getCurrentUser, signOut, updateUserAttributes } from 'aws-amplify/auth';
 import { View, Text, ActivityIndicator } from 'react-native';
-import { useVerification } from '../../components/layout/VerificationContext'; // temp until backend
+import { useVerification } from '../../contexts/VerificationContext';
 import { getWorkspaceId } from '../../storage/workspaceStorage';
 
 export default function AuthLayout() {

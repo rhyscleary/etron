@@ -142,6 +142,18 @@ const ConnectionPage = ({
     }
   };
 
+  // Auto-apply generated name to formData when URL/endpoint present and name empty
+  useEffect(() => {
+    if (!formData.name && (formData.url || formData.endpoint) && nameGenerator) {
+      try {
+        const generated = nameGenerator(formData);
+        if (generated) {
+          setFormData(prev => ({ ...prev, name: generated }));
+        }
+      } catch {}
+    }
+  }, [formData.url, formData.endpoint, formData.name, nameGenerator]);
+
   // Form validation
   const validateForm = () => {
     if (!formValidator) return true;
