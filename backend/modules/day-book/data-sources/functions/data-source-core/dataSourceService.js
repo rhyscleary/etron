@@ -403,5 +403,6 @@ module.exports = {
     getDataSourcesInWorkspace,
     deleteDataSourceInWorkspace,
     testConnection,
-    getRemotePreview
+    getRemotePreview,
+    viewData
 };
