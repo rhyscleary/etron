@@ -76,21 +76,20 @@ const LocalCSV = () => {
         let dataSourceDetails = {};
 
         //const { userId } = await getCurrentUser();
+        const workspaceId = await getWorkspaceId();
         
         dataSourceDetails = {
+            workspaceId: workspaceId,
             name: dataSourceName,            
             sourceType: "local-csv",
             method: method
             //expiry: TODO,
         }
 
-        const workspaceId = await getWorkspaceId();
-
         try {
             let result = await apiPost(
                 endpoints.modules.day_book.data_sources.addLocal,
-                dataSourceDetails,
-                { workspaceId }
+                dataSourceDetails
             )
             return result;
         } catch (error) {
