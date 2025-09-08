@@ -22,6 +22,7 @@ const ViewDataSource = () => {
     const [name, setName] = useState();
     const [sourceType, setSourceType] = useState();
     const [timeCreated, setTimeCreated] = useState();
+    const [lastUpdate, setLastUpdate] = useState();
 
     useEffect(() => {
         async function getDataSourceInfo() {
@@ -32,26 +33,17 @@ const ViewDataSource = () => {
                 console.log("dataSourceId:", dataSourceId);
 
                 let result = await apiGet(
-                    endpoints.modules.day_book.data_sources.getDataSource,
-                    { workspaceId, dataSourceId }
+                    endpoints.modules.day_book.data_sources.getDataSource(dataSourceId),
+                    { workspaceId }
                 )
                 console.log("apiget result:", result);
-
-                /*
-                const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName}/data-source-details.json`,
-                    options: {
-                        bucket: 'workspaces'
-                    }
-                }).result;
-                const dataSourceJson = JSON.parse(await body.text());
-                setCreator(dataSourceJson.creator);
-                setMethod(dataSourceJson.method);
-                setName(dataSourceJson.name);
-                setSourceType(dataSourceJson.sourceType);
-                setTimeCreated(dataSourceJson.timeCreated);
+                setCreator(result.createdBy);
+                setMethod(result.method);
+                setName(result.name);
+                setSourceType(result.sourceType);
+                setTimeCreated(result.createdAt);
+                setLastUpdate(result.lastUpdate);
                 setLoadingDataSourceInfo(false);
-                */
             } catch (error) {
                 console.log("Error downloading data source info:", error);
             }
@@ -201,6 +193,9 @@ const ViewDataSource = () => {
                 <Text>Name: {name}</Text>
                 <Text>Source type: {sourceType}</Text>
                 <Text>Method: {method}</Text>
+                <Text>Creator: {creator}</Text>
+                <Text>Time created: {timeCreated}</Text>
+                <Text>Last update: {lastUpdate}</Text>
 
                 <Button onPress={userSelectDocument} title="Pick a CSV File" disabled={isUploadingData} />{/* TODO: This is mostly a duplicate from local-csv.jsx, components to import into both would be better */}
                 {dataDetailsStatus == "none" && (
