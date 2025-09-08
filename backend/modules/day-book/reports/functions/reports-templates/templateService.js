@@ -6,6 +6,7 @@ const { deleteFolder, getUploadUrl, getDownloadUrl } = require("@etron/reports-s
 
 async function createTemplateReport(authUserId, payload) {
     const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
 
     const { name } = payload;
 
@@ -52,6 +53,7 @@ async function createTemplateReport(authUserId, payload) {
 
 async function updateTemplateReport(authUserId, templateId, payload) {
     const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
 
     const template = await reportRepo.getTemplateById(workspaceId, templateId);
 
@@ -103,6 +105,7 @@ async function updateTemplateReport(authUserId, templateId, payload) {
 }
 
 async function getTemplateReport(authUserId, workspaceId, templateId) {
+    await validateWorkspaceId(workspaceId);
     const template = await reportRepo.getTemplateById(workspaceId, templateId);
 
     if (!template) return null;
@@ -123,6 +126,7 @@ async function getTemplateReport(authUserId, workspaceId, templateId) {
 }
 
 async function getTemplateReports(authUserId, workspaceId) {
+    await validateWorkspaceId(workspaceId);
 
     // get all templates in a workspace
     const templates = await reportRepo.getTemplatesByWorkspaceId(workspaceId);
@@ -151,6 +155,7 @@ async function getTemplateReports(authUserId, workspaceId) {
 }
 
 async function deleteTemplateReport(authUserId, workspaceId, templateId) {
+    await validateWorkspaceId(workspaceId);
 
     // get template details
     const template = await reportRepo.getTemplateById(workspaceId, templateId);

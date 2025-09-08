@@ -343,6 +343,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
         - S3WritePolicy:
             BucketName: !Ref WorkspaceBucketName
         - Statement:
@@ -358,7 +360,7 @@ Resources:
         PollEvent:
           Type: Schedule
           Properties:
-            Schedule: rate(5 minutes)
+            Schedule: rate(15 minutes)
             Name: DataSourcePollSchedule
 
   DataSourceUploadProcessorFunction:

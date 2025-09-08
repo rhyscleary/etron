@@ -20,10 +20,10 @@ async function fetchData() {
         for (const dataSource of dataSources) {
 
             // check if the data source is active and an allowed type
-            if (/*dataSource.status !== "active" ||*/ !allowedTypes.includes(dataSource.sourceType)) {
+            if (!allowedTypes.includes(dataSource.sourceType)) {
                 continue;
             }
-            if (dataSource.status !== "active" || dataSource.status !== "error") {
+            if (dataSource.status !== "active" && dataSource.status !== "error") {
                 continue;
             }
 
@@ -38,17 +38,25 @@ async function fetchData() {
                 const newData = await poll(adapter, dataSource.config, secrets);
                 const translatedData = translateData(newData);
 
+                if (translatedData.length === 0) {
+                    console.warn(`No data returned for ${dataSource.dataSourceId}`);
+                    await dataSourceRepo.updateDataSourceStatus(
+                        workspace.workspaceId, 
+                        dataSource.dataSourceId, 
+                        { status: "no_data", errorMessage: "No data existent" }
+                    );
+                    continue;
+                }
+
                 const {valid, error } = validateFormat(translatedData);
                 if (!valid) throw new Error(`Invalid data format: ${error}`);
 
-                // create the schema
-                //const schema = generateSchema(translateData);
+                // create the schema and save it to s3
+                const schema = generateSchema(translatedData.slice(0, 100));
+                await saveSchema(workspace.workspaceId, dataSource.dataSourceId, schema);
 
                 // convert the data to parquet file
                 const parquetBuffer = await toParquet(translatedData);
-
-                // save the schema to S3
-                //await saveSchema(workspace.workspaceId, dataSource.dataSourceId, schema);
 
                 if (dataSource.method === "extend") {
                     // extend the data source
@@ -57,6 +65,14 @@ async function fetchData() {
                 } else {
                     // replace data
                     await replaceStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
+                }
+
+                // update status
+                if (dataSource.status !== "active" || dataSource.error !== null) {
+                    await dataSourceRepo.updateDataSourceStatus(workspace.workspaceId, dataSource.dataSourceId, {
+                        status: "active",
+                        errorMessage: null
+                    });
                 }
 
             } catch (error) {
