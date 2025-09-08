@@ -32,20 +32,30 @@ const ViewDataSource = () => {
                 console.log("workspaceId:", workspaceId);
                 console.log("dataSourceId:", dataSourceId);
 
-                let result = await apiGet(
+                let apiDataSourceInfo = await apiGet(
                     endpoints.modules.day_book.data_sources.getDataSource(dataSourceId),
                     { workspaceId }
-                )
-                console.log("apiget result:", result);
-                setCreator(result.createdBy);
-                setMethod(result.method);
-                setName(result.name);
-                setSourceType(result.sourceType);
-                setTimeCreated(result.createdAt);
-                setLastUpdate(result.lastUpdate);
+                );
+                console.log("apiget apiDataSourceInfo:", apiDataSourceInfo);
+                setCreator(apiDataSourceInfo.createdBy);
+                setMethod(apiDataSourceInfo.method);
+                setName(apiDataSourceInfo.name);
+                setSourceType(apiDataSourceInfo.sourceType);
+                setTimeCreated(apiDataSourceInfo.createdAt);
+                setLastUpdate(apiDataSourceInfo.lastUpdate);
                 setLoadingDataSourceInfo(false);
             } catch (error) {
                 console.log("Error downloading data source info:", error);
+            }
+
+            try {
+                let apiUserInfo = await apiGet(
+                    endpoints.workspace.users.getUser(workspaceId, creator)
+                );
+                console.log("apiUserInfo:", apiUserInfo);
+                setCreator(apiUserInfo.given_name + " " + apiUserInfo.family_name);
+            } catch (error) {
+                console.log("Error getting user info:", error);
             }
         }
         getDataSourceInfo();
@@ -55,18 +65,18 @@ const ViewDataSource = () => {
     const userSelectDocument = async () => {
         try {
             setDataDetailsStatus("loading");
-            const result = await DocumentPicker.getDocumentAsync({
+            const apiDataSourceInfo = await DocumentPicker.getDocumentAsync({
                 type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
                 copyToCacheDirectory: true  // This might be bad for large files
             });
 
-            if (result.canceled) {
+            if (apiDataSourceInfo.canceled) {
                 console.log('File selection cancelled');
                 setDataDetailsStatus("none");
                 return;
             }
             
-            const file = result.assets[0];  // [0] means it only keeps the first file, as result will be an array of files
+            const file = apiDataSourceInfo.assets[0];  // [0] means it only keeps the first file, as apiDataSourceInfo will be an array of files
             setDeviceFilePath(file.uri);
 
             setDataDetailsStatus("loaded");
@@ -90,7 +100,7 @@ const ViewDataSource = () => {
             const blob = await response.blob();
 
             console.log('Uploading file to S3 Bucket...');
-            const result = await uploadData({
+            const apiDataSourceInfo = await uploadData({
                 path: destinationFilePath,
                 data: blob,
                 //accessLevel: 'public', // should become private or protected in future i think?
@@ -103,8 +113,8 @@ const ViewDataSource = () => {
                         }
                     }
                 }
-            }).result;
-            console.log('File uploaded successfully:', result.path);
+            }).apiDataSourceInfo;
+            console.log('File uploaded successfully:', apiDataSourceInfo.path);
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -117,13 +127,13 @@ const ViewDataSource = () => {
         let S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/`
         let metricIds = []
         try {
-            const result = await list ({
+            const apiDataSourceInfo = await list ({
                 path: S3FilePath,
                 options: {
                     bucket: "workspaces",
                 }
             });
-            metricIds = result.items
+            metricIds = apiDataSourceInfo.items
                 .filter(item => item.path.length > S3FilePath.length)
                 .map(item => item.path.split("/").at(-1));
             console.log("metric ids:", metricIds);
@@ -151,7 +161,7 @@ const ViewDataSource = () => {
             options: {
                 bucket: "workspaces"
             }
-        }).result;
+        }).apiDataSourceInfo;
 
         // Convert the new data from csv into json
         const csvText = await body.text();
@@ -167,13 +177,13 @@ const ViewDataSource = () => {
             data: dataRows,
         }
         S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
-        const result = uploadData({
+        const apiDataSourceInfo = uploadData({
             path: S3FilePath,
             data: JSON.stringify(prunedData),
             options: {
                 bucket: 'workspaces'
             }
-        }).result;
+        }).apiDataSourceInfo;
         console.log(`Pruned data uploaded to ${metricId} successfully.`)
     }
 

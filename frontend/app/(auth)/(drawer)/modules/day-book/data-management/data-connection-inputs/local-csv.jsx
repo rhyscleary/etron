@@ -17,7 +17,7 @@ const LocalCSV = () => {
     const [deviceFilePath, setDeviceFilePath] = useState(null);
     const [method, setMethod] = useState('overwrite');  // Method starts at overwrite by default
     const [dataDetailsStatus, setDataDetailsStatus] = useState("none");
-    const userSelectDocument = async () => {
+    const userSelectFile = async () => {
         try {
             setDataDetailsStatus("loading");
             const result = await DocumentPicker.getDocumentAsync({
@@ -38,14 +38,14 @@ const LocalCSV = () => {
             setDataDetailsStatus("loaded");
         } catch (error) {
             setDataDetailsStatus("none");
-            console.error('Error picking document:', error);
+            console.error('Error picking file:', error);
         }
     };
 
     const [isUploadingData, setIsUploadingData] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
-    const uploadDocument = async (sourceFilePath, uploadUrl) => {
+    const uploadFile = async (sourceFilePath, uploadUrl) => {
         console.log('File path:', sourceFilePath);
 
         setIsUploadingData(true);
@@ -90,7 +90,7 @@ const LocalCSV = () => {
             let result = await apiPost(
                 endpoints.modules.day_book.data_sources.addLocal,
                 dataSourceDetails
-            )
+            );
             return result;
         } catch (error) {
             console.log("Error posting via endpoint:", error);
@@ -116,14 +116,14 @@ const LocalCSV = () => {
             return;
         }
 
-        await uploadDocument(deviceFilePath, uploadUrl);
+        await uploadFile(deviceFilePath, uploadUrl);
     }
 
     const [dataSourceName, setDataSourceName] = useState("");
 
     return (
         <>
-            <Button onPress={userSelectDocument} title="Pick a CSV File" disabled={isUploadingData} />
+            <Button onPress={userSelectFile} title="Pick a CSV File" disabled={isUploadingData} />
             
             {dataDetailsStatus == "none" && (
                 <Text>No data selected</Text>
