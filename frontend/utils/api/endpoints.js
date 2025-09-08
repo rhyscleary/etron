@@ -4,6 +4,7 @@ const WORKSPACE_BASE_URL = "https://om8cd7wmkc.execute-api.ap-southeast-2.amazon
 const USER_BASE_URL = "https://jhpswpwuo4.execute-api.ap-southeast-2.amazonaws.com/dev/user";
 const DATASOURCES_BASE_URL = "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/data-sources";
 const METRICS_BASE_URL = "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/metrics";
+const REPORTS_BASE_URL = "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/reports";
 
 const endpoints = {
     workspace: {
@@ -86,6 +87,12 @@ const endpoints = {
                 getMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
                 getMetrics: `${METRICS_BASE_URL}`,
                 removeMetric: (metricId) => `${METRICS_BASE_URL}/${metricId}`,
+            },
+
+            reports: {
+                getDrafts: (workspaceId) => `${REPORTS_BASE_URL}/drafts?workspaceId=${workspaceId}`,
+                //       const response = await fetch(`${baseReportsUrl}/drafts?workspaceId=${workspaceId}`, {
+
             }
         }
     }
