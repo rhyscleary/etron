@@ -9,7 +9,6 @@ import BasicButton from "../../../../../../components/common/buttons/BasicButton
 import DropDown from '../../../../../../components/common/input/DropDown';
 import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import TextField from '../../../../../../components/common/input/TextField';
-import endpoints from '../../../../../../utils/api/endpoints';
 import graphDataBySource from './graph-data';
 
 import csvtojson from 'csvtojson';
@@ -18,6 +17,8 @@ import { list, downloadData, uploadData } from 'aws-amplify/storage';
 import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
 import { ResourceSavingView } from '@react-navigation/elements';
+import endpoints from '../../../../../../utils/api/endpoints';
+import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
 
 
 import { CartesianChart, Line, useChartPressState, VictoryLabel } from "victory-native";
@@ -25,18 +26,32 @@ import { SharedValue } from "react-native-reanimated";
 import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
 import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 
+
 const CreateMetric = () => {
     const router = useRouter();
 
-    const [workspaceReadyData, setWorkspaceReadyData] = useState([]);  // Array of file paths for ready-data in the workspace
-    const [loadingWorkspaceReadyData, setLoadingWorkspaceReadyData] = useState(true);  // Flag so that the program knows that the data is still being downloaded
+    const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
+    const [loadingDataSourceMappings, setloadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
     useEffect(() => {  // When page loads, get a list of URLs for all data in the workspaces' readyData folder
         async function initialiseWorkspaceReadyData() {
             const workspaceId = await getWorkspaceId();
             const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
-                const result = await list ({
+                let dataSourcesFromApi = await apiGet(
+                    endpoints.modules.day_book.data_sources.getDataSources,
+                    { workspaceId }
+                )
+                setDataSourceMappings(dataSourcesFromApi.map(
+                    dataSource => ({
+                        id: dataSource.dataSourceId,
+                        name: dataSource.name
+                    })
+                ));
+                setloadingDataSourceMappings(false);
+                
+
+                /*const result = await list ({
                     path: filePathPrefix,
                     options: {
                         bucket: "workspaces",
@@ -53,7 +68,7 @@ const CreateMetric = () => {
                 ));
                 console.log('workspace ready data paths:', workspaceReadyDataPaths);
                 setWorkspaceReadyData(workspaceReadyDataPaths);
-                setLoadingWorkspaceReadyData(false);
+                setloadingDataSourceMappings(false);*/
             } catch (error) {
                 console.error('Error retrieving ready data:', error);
                 return;
@@ -69,12 +84,24 @@ const CreateMetric = () => {
     const [dataSourceId, setDataSourceId] = useState('');
 
     const handleWorkspaceReadyDataSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
-        setDataSourceId(source.split("/")[4]);
         console.log('Downloading ready data:', source);
+
+        const workspaceId = await getWorkspaceId();
+
         setReadyDataDownloadProgress(0);
         try {
-            const { body } = await downloadData({
-                path: source,
+            console.log("path:", `workspaces/${workspaceId}/day-book/dataSources/${source}/data/`);
+            let result = await list({  // This list is here to get the name of the data source file. When Rhys has an endpoint for viewing the data in a data source, this won't be needed.
+                path: `workspaces/${workspaceId}/day-book/dataSources/${source}/data/`,
+                options: {
+                    bucket: "workspaces"
+                }
+            })
+            let S3FilePath = result.items[0].path;
+            console.log("S3FilePath:", S3FilePath);
+
+            let { body } = await downloadData({
+                path: S3FilePath,
                 options: {
                     onProgress: (progress) => {  // This continuously returns the progress as the download occurs
                         setReadyDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
@@ -188,7 +215,7 @@ const CreateMetric = () => {
     async function uploadInfoToDataSource() {
         const workspaceId = await getWorkspaceId();
         const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/${metricId}`;
-        const result = uploadData({
+        let result = uploadData({
             path: S3FilePath,
             data: "",
             options: {
@@ -198,7 +225,7 @@ const CreateMetric = () => {
         console.log("Metric ID uploaded to data source successfully.")
     }
 
-    async function uploadPrunedData () {
+    async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
         const workspaceId = await getWorkspaceId();
         const prunedData = {
             data: dataRows,
@@ -214,7 +241,7 @@ const CreateMetric = () => {
         console.log("Pruned data uploaded successfully.")
     }
 
-    async function uploadMetricSettings() {
+    async function uploadMetricSettings() {  //TODO: needs to be updated to use endpoints
         const workspaceId = await getWorkspaceId();
             const metricSettings = {
                 independentVariable: chosenIndependentVariable,
@@ -234,8 +261,28 @@ const CreateMetric = () => {
 
     const handleFinish = async () => {
         console.log("metric name:", metricName);
-        console.log("metric id:", metricId);
-        try { await uploadInfoToDataSource() } catch (error) {
+        let workspaceId = await getWorkspaceId();
+
+        try {
+            let metricDetails = {
+                name: metricName,
+                dataSourceId: dataSourceId,
+                config: {
+                    independentVariable: chosenIndependentVariable,
+                    dependentVariables: chosenDependentVariables
+                }
+            }
+            let result = await apiPost(
+                endpoints.modules.day_book.metrics.add,
+                metricDetails,
+                { workspaceId }
+            );
+            console.log("Uploading metric details via API result:", result);
+        } catch (error) {
+            console.log("Error uploading metric details via API:", error);
+            return;
+        }
+        /*try { await uploadInfoToDataSource() } catch (error) {
             console.log("Error uploading metric id to data source:", error);
             return;
         }
@@ -246,7 +293,7 @@ const CreateMetric = () => {
         try { await uploadMetricSettings() } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;
-        }        
+        }*/   
         
         console.log("Form completed");
         router.navigate("/modules/day-book/metrics/metric-management"); 
@@ -259,7 +306,7 @@ const CreateMetric = () => {
                     <ScrollView>
                         <DropDown
                             title = "Select Data Source"
-                            items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/')[4]}))}
+                            items = {loadingDataSourceMappings ? ["Loading..."] : dataSourceMappings.map(dataSource => ({value: dataSource.id, label: dataSource.name}))}
                             onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
                         />
 

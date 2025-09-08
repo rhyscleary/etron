@@ -9,10 +9,12 @@ import { ActivityIndicator, Text } from "react-native-paper";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { downloadData, uploadData, list } from "aws-amplify/storage";
 import * as DocumentPicker from 'expo-document-picker'
+import { apiGet } from "../../../../../../../utils/api/apiClient";
+import endpoints from "../../../../../../../utils/api/endpoints";
 
 const ViewDataSource = () => {
-    const { dataSourceName } = useLocalSearchParams();
-    const dataSourceId = dataSourceName.replace(/ /g, "_")
+    const { dataSourceId } = useLocalSearchParams();
+    //const dataSourceId = dataSourceName.replace(/ /g, "_")
 
     const [loadingDataSourceInfo, setLoadingDataSourceInfo] = useState(true);
     const [creator, setCreator] = useState();
@@ -20,33 +22,40 @@ const ViewDataSource = () => {
     const [name, setName] = useState();
     const [sourceType, setSourceType] = useState();
     const [timeCreated, setTimeCreated] = useState();
+    const [lastUpdate, setLastUpdate] = useState();
 
     useEffect(() => {
         async function getDataSourceInfo() {
             const workspaceId = await getWorkspaceId();
 
-            /*let result = apiPost(
-                endpoints.module.day_book.data_sources.getDataSource,
-                dataSourceId,
-                { workspaceId }
-            )*/
-
             try {
-                const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName}/data-source-details.json`,
-                    options: {
-                        bucket: 'workspaces'
-                    }
-                }).result;
-                const dataSourceJson = JSON.parse(await body.text());
-                setCreator(dataSourceJson.creator);
-                setMethod(dataSourceJson.method);
-                setName(dataSourceJson.name);
-                setSourceType(dataSourceJson.sourceType);
-                setTimeCreated(dataSourceJson.timeCreated);
+                console.log("workspaceId:", workspaceId);
+                console.log("dataSourceId:", dataSourceId);
+
+                let apiDataSourceInfo = await apiGet(
+                    endpoints.modules.day_book.data_sources.getDataSource(dataSourceId),
+                    { workspaceId }
+                );
+                console.log("apiget apiDataSourceInfo:", apiDataSourceInfo);
+                setCreator(apiDataSourceInfo.createdBy);
+                setMethod(apiDataSourceInfo.method);
+                setName(apiDataSourceInfo.name);
+                setSourceType(apiDataSourceInfo.sourceType);
+                setTimeCreated(apiDataSourceInfo.createdAt);
+                setLastUpdate(apiDataSourceInfo.lastUpdate);
                 setLoadingDataSourceInfo(false);
             } catch (error) {
                 console.log("Error downloading data source info:", error);
+            }
+
+            try {
+                let apiUserInfo = await apiGet(
+                    endpoints.workspace.users.getUser(workspaceId, creator)
+                );
+                console.log("apiUserInfo:", apiUserInfo);
+                setCreator(apiUserInfo.given_name + " " + apiUserInfo.family_name);
+            } catch (error) {
+                console.log("Error getting user info:", error);
             }
         }
         getDataSourceInfo();
@@ -56,18 +65,18 @@ const ViewDataSource = () => {
     const userSelectDocument = async () => {
         try {
             setDataDetailsStatus("loading");
-            const result = await DocumentPicker.getDocumentAsync({
+            const apiDataSourceInfo = await DocumentPicker.getDocumentAsync({
                 type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
                 copyToCacheDirectory: true  // This might be bad for large files
             });
 
-            if (result.canceled) {
+            if (apiDataSourceInfo.canceled) {
                 console.log('File selection cancelled');
                 setDataDetailsStatus("none");
                 return;
             }
             
-            const file = result.assets[0];  // [0] means it only keeps the first file, as result will be an array of files
+            const file = apiDataSourceInfo.assets[0];  // [0] means it only keeps the first file, as apiDataSourceInfo will be an array of files
             setDeviceFilePath(file.uri);
 
             setDataDetailsStatus("loaded");
@@ -91,7 +100,7 @@ const ViewDataSource = () => {
             const blob = await response.blob();
 
             console.log('Uploading file to S3 Bucket...');
-            const result = await uploadData({
+            const apiDataSourceInfo = await uploadData({
                 path: destinationFilePath,
                 data: blob,
                 //accessLevel: 'public', // should become private or protected in future i think?
@@ -104,8 +113,8 @@ const ViewDataSource = () => {
                         }
                     }
                 }
-            }).result;
-            console.log('File uploaded successfully:', result.path);
+            }).apiDataSourceInfo;
+            console.log('File uploaded successfully:', apiDataSourceInfo.path);
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -118,13 +127,13 @@ const ViewDataSource = () => {
         let S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/`
         let metricIds = []
         try {
-            const result = await list ({
+            const apiDataSourceInfo = await list ({
                 path: S3FilePath,
                 options: {
                     bucket: "workspaces",
                 }
             });
-            metricIds = result.items
+            metricIds = apiDataSourceInfo.items
                 .filter(item => item.path.length > S3FilePath.length)
                 .map(item => item.path.split("/").at(-1));
             console.log("metric ids:", metricIds);
@@ -152,7 +161,7 @@ const ViewDataSource = () => {
             options: {
                 bucket: "workspaces"
             }
-        }).result;
+        }).apiDataSourceInfo;
 
         // Convert the new data from csv into json
         const csvText = await body.text();
@@ -168,13 +177,13 @@ const ViewDataSource = () => {
             data: dataRows,
         }
         S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
-        const result = uploadData({
+        const apiDataSourceInfo = uploadData({
             path: S3FilePath,
             data: JSON.stringify(prunedData),
             options: {
                 bucket: 'workspaces'
             }
-        }).result;
+        }).apiDataSourceInfo;
         console.log(`Pruned data uploaded to ${metricId} successfully.`)
     }
 
@@ -187,13 +196,16 @@ const ViewDataSource = () => {
 
     return (
         <View style={commonStyles.screen}>
-            <Header title={`${dataSourceName}`} showBack showEdit />
+            <Header title={`${dataSourceId}`} showBack showEdit />
             {loadingDataSourceInfo ?
                 <ActivityIndicator />
             : (<>
                 <Text>Name: {name}</Text>
                 <Text>Source type: {sourceType}</Text>
                 <Text>Method: {method}</Text>
+                <Text>Creator: {creator}</Text>
+                <Text>Time created: {timeCreated}</Text>
+                <Text>Last update: {lastUpdate}</Text>
 
                 <Button onPress={userSelectDocument} title="Pick a CSV File" disabled={isUploadingData} />{/* TODO: This is mostly a duplicate from local-csv.jsx, components to import into both would be better */}
                 {dataDetailsStatus == "none" && (

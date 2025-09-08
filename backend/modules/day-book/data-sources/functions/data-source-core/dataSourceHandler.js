@@ -71,7 +71,7 @@ exports.handler = async (event) => {
                 const workspaceId = queryParams.workspaceId;
 
                 if (!pathParams.dataSourceId) {
-                    throw new Error("Missing required path parameters");
+                    throw new Error("Missing dataSourceId in path parameters");
                 }
                 if (typeof pathParams.dataSourceId !== "string") {
                     throw new Error("dataSourceId must be a UUID, 'string'");
