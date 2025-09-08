@@ -70,7 +70,7 @@ exports.handler = async (event) => {
             // GET DATA SOURCE
             case "GET /day-book/data-sources/{dataSourceId}": {
                 if (!pathParams.dataSourceId) {
-                    throw new Error("Missing required path parameters");
+                    throw new Error("Missing dataSourceId in path parameters");
                 }
 
                 if (typeof pathParams.dataSourceId !== "string") {

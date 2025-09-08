@@ -9,10 +9,12 @@ import { ActivityIndicator, Text } from "react-native-paper";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { downloadData, uploadData, list } from "aws-amplify/storage";
 import * as DocumentPicker from 'expo-document-picker'
+import { apiGet } from "../../../../../../../utils/api/apiClient";
+import endpoints from "../../../../../../../utils/api/endpoints";
 
 const ViewDataSource = () => {
-    const { dataSourceName } = useLocalSearchParams();
-    const dataSourceId = dataSourceName.replace(/ /g, "_")
+    const { dataSourceId } = useLocalSearchParams();
+    //const dataSourceId = dataSourceName.replace(/ /g, "_")
 
     const [loadingDataSourceInfo, setLoadingDataSourceInfo] = useState(true);
     const [creator, setCreator] = useState();
@@ -25,12 +27,17 @@ const ViewDataSource = () => {
         async function getDataSourceInfo() {
             const workspaceId = await getWorkspaceId();
 
-            /*let result = apiPost(
-                endpoints.module.day_book.data_sources.getDataSource,
-                { workspaceId, dataSourceId }
-            )*/
-
             try {
+                console.log("workspaceId:", workspaceId);
+                console.log("dataSourceId:", dataSourceId);
+
+                let result = await apiGet(
+                    endpoints.modules.day_book.data_sources.getDataSource,
+                    { workspaceId, dataSourceId }
+                )
+                console.log("apiget result:", result);
+
+                /*
                 const { body } = await downloadData ({
                     path: `workspaces/${workspaceId}/day-book/dataSources/${dataSourceName}/data-source-details.json`,
                     options: {
@@ -44,6 +51,7 @@ const ViewDataSource = () => {
                 setSourceType(dataSourceJson.sourceType);
                 setTimeCreated(dataSourceJson.timeCreated);
                 setLoadingDataSourceInfo(false);
+                */
             } catch (error) {
                 console.log("Error downloading data source info:", error);
             }
@@ -186,7 +194,7 @@ const ViewDataSource = () => {
 
     return (
         <View style={commonStyles.screen}>
-            <Header title={`${dataSourceName}`} showBack showEdit />
+            <Header title={`${dataSourceId}`} showBack showEdit />
             {loadingDataSourceInfo ?
                 <ActivityIndicator />
             : (<>
