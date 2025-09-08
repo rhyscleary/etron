@@ -11,6 +11,7 @@ const { translateData } = require("@etron/data-sources-shared/utils/translateDat
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/generateSchema");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
+const { runQuery } = require("../../data-sources-shared/utils/athenaService");
 
 async function createRemoteDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;
@@ -368,9 +369,30 @@ function getAvailableSpreadsheets(authUserId, payload) {
 async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
     // get the schema from the dataSource
     const schema = await getDataSchema(workspaceId, dataSourceId);
-    if (!schema) throw new Error("Schema not found for this data source");
+    if (!schema || schema.length === 0) throw new Error("Schema not found for this data source");
 
-    
+    const columns = schema.map((column) => column.name).join(", ");
+    const tableName = `ds_${dataSourceId}`;
+    const database = process.env.ATHENA_DATABASE;
+    const outputLocation = `s3://${process.env.WORKSPACE_BUCKET}/workspaces/${workspaceId}/day-book/athenaResults/`;
+
+    const query = `SELECT ${columns} FROM ${tableName}`;
+
+    const { data, nextToken, queryExecutionId } = await runQuery(
+        query,
+        database,
+        outputLocation,
+        workspaceId,
+        options
+    );
+
+    return {
+        data,
+        schema,
+        tableName,
+        nextToken,
+        queryExecutionId
+    };
 }
 
 module.exports = {
