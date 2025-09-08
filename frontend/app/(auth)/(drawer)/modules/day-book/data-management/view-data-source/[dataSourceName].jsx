@@ -27,7 +27,8 @@ const ViewDataSource = () => {
 
             /*let result = apiPost(
                 endpoints.module.day_book.data_sources.getDataSource,
-                { workspaceId, dataSourceId }
+                dataSourceId,
+                { workspaceId }
             )*/
 
             try {

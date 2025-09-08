@@ -80,6 +80,7 @@ const endpoints = {
                 getDataSources: `${DATASOURCES_BASE_URL}`,
                 removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
+                remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
             },
 
             metrics: {
