@@ -3,7 +3,7 @@
 import { View } from "react-native";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, Link, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { downloadData } from "aws-amplify/storage";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
@@ -17,6 +17,7 @@ const ViewMetric = () => {
     const [dataRows, setDataRows] = useState([]);
     const [independentVariable, setIndependentVariable] = useState();
     const [dependentVariables, setDependentVariables] = useState([]);
+    const router = useRouter();
 
     useEffect(() => {
         async function getMetricSettings() {
@@ -59,7 +60,7 @@ const ViewMetric = () => {
 
     return (
         <View style={commonStyles.screen}>
-            <Header title={`${metricId}`} showBack showEdit />
+            <Header title={`${metricId}`} showBack showEdit onRightIconPress={() => router.navigate("/modules/day-book/metrics/edit-metric")} />
 
             <CartesianChart
                 data = {readyDataToGraphData(dataRows, independentVariable, dependentVariables)}

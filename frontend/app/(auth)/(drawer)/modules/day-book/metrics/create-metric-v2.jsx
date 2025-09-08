@@ -316,14 +316,24 @@ const CreateMetric = () => {
                 }
 
                 return (
-                    <View style={{ height: "80%", width: "80%", marginTop: 12 }}>
-                        {graphDef.render({
-                            data: readyDataToGraphData(dataRows, chosenIndependentVariable, chosenDependentVariables),
-                            xKey: "independentVariable",
-                            yKeys: chosenDependentVariables.map((_, i) => "dependentVariable" + i),
-                            colours: ["red", "blue", "green", "purple"], // pass colours
-                        })}
-                    </View>
+                    <Card style={styles.card}>
+                        <Card.Content>
+                            <View style={styles.graphCardContainer}>
+                                {graphDef.render({
+                                    data: readyDataToGraphData(
+                                        dataRows, 
+                                        chosenIndependentVariable, 
+                                        chosenDependentVariables
+                                    ),
+                                    xKey: "independentVariable",
+                                    yKeys: chosenDependentVariables.map(
+                                        (_, i) => "dependentVariable" + i
+                                    ),
+                                    colours: ["red", "blue", "green", "purple"], // pass colours
+                                })}
+                            </View>
+                        </Card.Content>
+                    </Card>
                 )
             case 3:
                 return (
@@ -365,6 +375,11 @@ export default CreateMetric;
 const styles = StyleSheet.create({
     card: {
         height: 270
+    },
+    graphCardContainer: {
+        height: "80%",
+        width: "100%",
+        marginTop: 12,
     },
     container: {
         flex: 1,
