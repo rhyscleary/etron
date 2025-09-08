@@ -583,6 +583,50 @@ class DataSourceService {
     }
   }
 
+  /**
+   * Apply data edits (add new row or modify existing row) to a data source.
+   * Backend contract (assumed): PATCH /data-sources/{id}
+   * Body shape example:
+   * {
+   *   edits: [
+   *     { action: 'add', data: { col1: 'value' }, persistent: true },
+   *     { action: 'update', rowId: 'abc123', changes: { amount: 42 }, persistent: false, ttlSeconds: 3600 }
+   *   ]
+   * }
+   * persistence rules:
+   *  - persistent true: stored permanently
+   *  - persistent false + ttlSeconds: override kept until TTL expiry or next sync refresh (server decides)
+   */
+  async applyDataEdits(sourceId, editsPayload) {
+    if (!sourceId) throw new Error('sourceId required');
+    if (!editsPayload || !Array.isArray(editsPayload.edits) || !editsPayload.edits.length) {
+      throw new Error('No edits provided');
+    }
+    const workspaceId = await getSavedWorkspaceId();
+    if (!workspaceId) throw new Error('No workspace selected');
+    const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.update, sourceId);
+    const sanitize = (obj) => {
+      if (!obj || typeof obj !== 'object') return obj;
+      const out = Array.isArray(obj) ? [] : {};
+      Object.entries(obj).forEach(([k, v]) => {
+        if (v === undefined) return;
+        if (v && typeof v === 'object') out[k] = sanitize(v);
+        else out[k] = v;
+      });
+      return out;
+    };
+    const payload = sanitize({ edits: editsPayload.edits.map((e) => sanitize(e)) });
+    console.log('[DataSourceService] applyDataEdits PATCH', { endpointUrl, sourceId, workspaceId, editsCount: payload.edits.length });
+    try {
+      const response = await this.apiClient.patch(endpointUrl, payload, { params: { workspaceId } });
+      console.log('[DataSourceService] applyDataEdits success', { status: response?.status });
+      return response?.data || response;
+    } catch (error) {
+      console.error('[DataSourceService] applyDataEdits failed', { status: error?.response?.status, message: error?.message });
+      throw new Error(error?.response?.data?.message || 'Failed to apply data edits');
+    }
+  }
+
   async disconnectDataSource(sourceId) {
     try {
       const workspaceId = await getSavedWorkspaceId();

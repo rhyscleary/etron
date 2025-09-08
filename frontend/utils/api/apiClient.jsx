@@ -54,6 +54,10 @@ export async function apiDelete(path, params = {}) {
     return request('delete', path, {}, params);
 }
 
+export async function apiPatch(path, body = {}, params = {}) {
+    return request('patch', path, body, params);
+}
+
 // Default export: axios-like client used throughout services/adapters
 const apiClient = {
     async get(url, config = {}) {
@@ -78,6 +82,12 @@ const apiClient = {
         const baseHeaders = await getHeaders();
         const headers = { ...baseHeaders, ...(config.headers || {}) };
         const resp = await axios({ method: 'delete', url, headers, params: config.params, timeout: config.timeout });
+        return { data: resp.data, status: resp.status, headers: resp.headers };
+    },
+    async patch(url, data = {}, config = {}) {
+        const baseHeaders = await getHeaders();
+        const headers = { ...baseHeaders, ...(config.headers || {}) };
+        const resp = await axios({ method: 'patch', url, data, headers, params: config.params, timeout: config.timeout });
         return { data: resp.data, status: resp.status, headers: resp.headers };
     },
 };
