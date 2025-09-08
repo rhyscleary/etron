@@ -1,11 +1,12 @@
 // Author(s): Rhys Cleary
 
-const { saveSchema, saveStoredData, replaceStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
-const { generateSchema } = require("@etron/data-sources-shared/utils/generateSchema");
+const { saveStoredData, replaceStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 const dataSourceRepo = require("@etron/data-sources-shared/repositories/dataSourceRepository");
+const { saveSchemaAndUpdateTable } = require("../../data-sources-shared/utils/schema");
 
 
 async function processUploadedFile(workspaceId, dataSourceId, rawData) {
@@ -33,7 +34,7 @@ async function processUploadedFile(workspaceId, dataSourceId, rawData) {
 
         // create the schema and save it to s3
         const schema = generateSchema(translatedData.slice(0, 100));
-        await saveSchema(workspaceId, dataSourceId, schema);
+        await saveSchemaAndUpdateTable(workspaceId, dataSourceId, schema);
 
         // convert to parquet
         const parquetBuffer = await toParquet(translatedData);

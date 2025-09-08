@@ -9,7 +9,7 @@ const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDat
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
-const { generateSchema } = require("@etron/data-sources-shared/utils/generateSchema");
+const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { runQuery } = require("../../data-sources-shared/utils/athenaService");
 
@@ -382,7 +382,6 @@ async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
         query,
         database,
         outputLocation,
-        workspaceId,
         options
     );
 
