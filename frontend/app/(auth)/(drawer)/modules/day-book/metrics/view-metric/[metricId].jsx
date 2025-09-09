@@ -79,7 +79,7 @@ const ViewMetric = () => {
     }
 
     async function deleteMetric() {
-        const confirmed = await new Promis((resolve) => {
+        const confirmed = await new Promise((resolve) => {
             Alert.alert(
                 "Delete Metric",
                 "Are you sure you want to delete this metric?",
