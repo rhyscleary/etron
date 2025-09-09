@@ -9,7 +9,7 @@ const { validateFormat } = require("@etron/data-sources-shared/utils/validateFor
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
-const { saveSchemaAndUpdateTable } = require("../../data-sources-shared/utils/schema");
+const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
 
 async function fetchData() {
     const workspaces = await workspaceRepo.getAllWorkspaces();

@@ -11,7 +11,7 @@ const { translateData } = require("@etron/data-sources-shared/utils/translateDat
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
-const { runQuery } = require("../../data-sources-shared/utils/athenaService");
+const { runQuery } = require("@etron/data-sources-shared/utils/athenaService");
 
 async function createRemoteDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;

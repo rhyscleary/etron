@@ -6,7 +6,7 @@ const { translateData } = require("@etron/data-sources-shared/utils/translateDat
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 const dataSourceRepo = require("@etron/data-sources-shared/repositories/dataSourceRepository");
-const { saveSchemaAndUpdateTable } = require("../../data-sources-shared/utils/schema");
+const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
 
 
 async function processUploadedFile(workspaceId, dataSourceId, rawData) {
