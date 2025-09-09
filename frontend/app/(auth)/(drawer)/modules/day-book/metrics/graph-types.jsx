@@ -62,7 +62,12 @@ const GraphTypes = {
                         xKey={xKey} 
                         yKeys={yKeys}
                         domain = {{y:[0]}}
-                        axisOptions={{ font }}
+                        axisOptions={{ 
+                            font,
+                            labelColor: "white",
+                            tickColor: "white",
+                            axisColor: "white",
+                        }}
                         domainPadding={{ left: 50, right: 50, top: 30 }}
                     >
                         {({ points, chartBounds }) =>

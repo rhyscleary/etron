@@ -2,7 +2,7 @@ import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip } from "react-native-paper";
+import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip, useTheme } from "react-native-paper";
 import BasicButton from "../../../../../../components/common/buttons/BasicButton";
 import DropDown from '../../../../../../components/common/input/DropDown';
 import TextField from '../../../../../../components/common/input/TextField';
@@ -27,7 +27,7 @@ import ColorPicker from 'react-native-wheel-color-picker';
 
 const CreateMetric = () => {
     const router = useRouter();
-
+    const theme = useTheme();
 
     const [workspaceReadyData, setWorkspaceReadyData] = useState([]);  // Array of file paths for ready-data in the workspace
     const [loadingWorkspaceReadyData, setLoadingWorkspaceReadyData] = useState(true);
@@ -147,7 +147,7 @@ const CreateMetric = () => {
     const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);  // Hard-coded value, but should be set by the user
     const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);  // Hard-coded values, but should be set by the user
     const colours = ["white", "red", "blue", "green", "purple", "orange"]
-
+    
     function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {
         const output = rows.map(row => { //creates a json object with 1 independent variable and several dependent variables
             let rowOutput = {independentVariable: String(row[independentColumn])}  // Issue: this doesn't resort the data, so the independentVariable can be out of order and look weird (but still correct) 
@@ -218,6 +218,9 @@ const CreateMetric = () => {
     const [activeDepVar, setActiveDepVar] = useState(0);
     const [wheelIndex, setWheelIndex] = useState(0);
 
+    const [selectedRows, setSelectedRows] = useState([]); // holds row labels (e.g. Names)
+
+
     const renderFormStep = () => {
         switch (step) {
             case 0:
@@ -226,7 +229,11 @@ const CreateMetric = () => {
                         <DropDown
                             title = "Select Data Source"
                             items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/').at(-1)}))}
-                            onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
+                            onSelect={(item) => {
+                                handleWorkspaceReadyDataSelect(item);
+                                setSelectedReadyData(item);
+                            }}
+                            value = {selectedReadyData}
                         />
 
                         <Button icon="file" mode="text" onPress={showDataModal}>
@@ -241,6 +248,7 @@ const CreateMetric = () => {
                             }))}
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
+                            value={selectedMetric}
                         />
 
                         <Text>Select Independent Variable (X-Axis)</Text>
@@ -265,6 +273,14 @@ const CreateMetric = () => {
                                     .filter((i) => i >= 0);
                                 setChosenDependentVariables(indices);
                             }}
+                        />
+
+                        {/* Row Selection */}
+                        <Text style={{ marginTop: 12 }}>Select Data Points (Rows)</Text>
+                        <MetricCheckbox
+                            items={dataRows.map((row) => row[0])} // use first column (e.g. Name)
+                            selected={selectedRows}
+                            onChange={(selection) => setSelectedRows(selection)}
                         />
 
                         <Portal>
@@ -345,22 +361,31 @@ const CreateMetric = () => {
                     setColoursState(updated);
                 };
 
+                const filteredRows = dataRows.filter(
+                    (row) => selectedRows.includes(row[0]) // assumes first column is "Name"
+                );
+
                 return (
                     <ScrollView>
                         <TextField
                             label="Metric Name"
                             placeholder="Metric Name"
                             onChangeText={setMetricName}
+                            value={metricName}
                         />
                         
                         {/* Variable selector chips */}
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 10 }}>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginTop: 10 }}>
                             {chosenDependentVariables.map((dep, index) => (
                                 <Chip
                                     key={dep}
                                     selected={wheelIndex === index}
                                     onPress={() => setWheelIndex(index)}
-                                    style={{ margin: 4 }}
+                                    style={{ 
+                                        margin: 4,
+                                        backgroundColor: wheelIndex === index ? theme.colors.primary : theme.colors.placeholder,
+                                    }}
+                                    showSelectedCheck = {false}
                                 >
                                     {dataHeader[dep] ?? `Y${i + 1}`}
                                 </Chip>
@@ -368,7 +393,7 @@ const CreateMetric = () => {
                         </View>
                         
                         {/* Single colour picker for the active variable */}
-                        <View style={{ marginTop: 10, alignItems: "center" }}>
+                        <View style={{ alignItems: "center", justifyContent: "center", flexDirection: "row" }}>
                             <ColorPicker
                                 color={coloursState[wheelIndex]}
                                 onColorChange={(newColor) => {
@@ -379,19 +404,20 @@ const CreateMetric = () => {
                                     });
                                 }}
                                 thumbSize={30}
-                                sliderSize={30}
+                                sliderSize={20}
                                 noSnap={true}
-                                row={true}
+                                gapSize={10}
+                                palette={['#000000','#ed1c24','#d11cd5','#2b5fceff','#57ff0a','#ffde17','#f26522','#888888']}
                             />
                         </View>
                         
                         {/* Graph preview */}
-                        <Card style={[styles.card, { marginTop: 20 }]}>
+                        <Card style={[styles.card]}>
                             <Card.Content>
                                 <View style={styles.graphCardContainer}>
                                     {graphDef.render({
                                         data: readyDataToGraphData(
-                                            dataRows, 
+                                            filteredRows, 
                                             chosenIndependentVariable, 
                                             chosenDependentVariables
                                         ),
@@ -443,13 +469,12 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     card: {
-        height: 270,
+        height: 260,
         marginTop: 20,
     },
     graphCardContainer: {
-        height: "80%",
+        height: "100%",
         width: "100%",
-        marginTop: 12,
     },
     container: {
         flex: 1,

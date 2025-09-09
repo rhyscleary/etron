@@ -117,7 +117,7 @@ const ViewMetric = () => {
             />
 
             <ScrollView style={commonStyles.screen}>
-                <Card style={[styles.card, { marginTop: 20 }]}>
+                <Card style={[styles.card]}>
                     <Card.Content>
                         <View style={styles.graphCardContainer}>
                             {graphDef.render({
@@ -152,17 +152,17 @@ export default ViewMetric;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        
     },
     card: {
-        height: 270,
+        height: 260,
         marginTop: 20,
         width: "90%",
         alignSelf: "center",
     },
     graphCardContainer: {
-        height: "80%",
+        height: "100%",
         width: "100%",
-        marginTop: 12,
     },
     button: {
         alignSelf: "flex-end"

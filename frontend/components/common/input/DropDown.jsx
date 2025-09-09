@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
@@ -8,10 +8,18 @@ const DropDown = ({
     items = [],
     showRouterButton=true,
     onSelect,
+    value,
 }) => {
     const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
+    
+    useEffect(() => {
+        if (value) {
+            const found = items.find((i) => i.value === value);
+            setSelectedItem(found || null);
+        }
+    }, [value, items]);
     
     const handleItemSelect = (item) => {
         setSelectedItem(item);
