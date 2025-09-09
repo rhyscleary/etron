@@ -76,12 +76,18 @@ function parseResults(results) {
     });
 }
 
-async function createAthenaTable(workspaceId, dataSourceId, schema, tableName, dataLocation, database, outputLocation) {
+function sanitiseIdentifier(name) {
+    // replace invalid characters with underscores
+    return name.replace(/[^A-Za-z0-9_]/g, "_");
+}
 
-    const columns = saveSchema.map(column => `${column.name} ${column.type}`).join(",\n    ");
+async function createAthenaTable(workspaceId, dataSourceId, schema, tableName, dataLocation, database, outputLocation) {
+    const sanitisedTableName = sanitiseIdentifier(tableName); 
+
+    const columns = schema.map(column => `${sanitiseIdentifier(column.name)} ${column.type}`).join(",\n    ");
 
     const ddl = `
-        CREATE EXTERNAL TABLE ${tableName} (
+        CREATE EXTERNAL TABLE ${sanitisedTableName} (
             ${columns}
         )
         STORED AS PARQUET
@@ -91,7 +97,7 @@ async function createAthenaTable(workspaceId, dataSourceId, schema, tableName, d
     console.log(`Creating athena table ${tableName}`);
     await runQuery(ddl, database, outputLocation);
 
-    return tableName;
+    return sanitisedTableName;
 }
 
 async function runQuery(query, database, outputLocation, options = {}) {

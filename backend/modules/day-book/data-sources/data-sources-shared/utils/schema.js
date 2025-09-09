@@ -1,5 +1,4 @@
 // Author(s): Rhys Cleary
-const {  } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
 const { getDataSchema, saveSchema } = require("../repositories/dataBucketRepository");
 const { runQuery, createAthenaTable } = require("./athenaService");
 
@@ -9,7 +8,7 @@ async function saveSchemaAndUpdateTable(workspaceId, dataSourceId, newSchema) {
     const dataLocation = `s3://${process.env.WORKSPACE_BUCKET}/workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/`
     const outputLocation = `s3://${process.env.WORKSPACE_BUCKET}/workspaces/${workspaceId}/day-book/athenaResults/`;
 
-    const existingSchema = getDataSchema(workspaceId, dataSourceId);
+    const existingSchema = await getDataSchema(workspaceId, dataSourceId);
 
     if (!hasSchemaChanged(existingSchema, newSchema)) {
         console.log("No changes between schemas");
@@ -20,16 +19,17 @@ async function saveSchemaAndUpdateTable(workspaceId, dataSourceId, newSchema) {
     await updateTable(workspaceId, dataSourceId, newSchema, tableName, database, outputLocation, dataLocation);
 
     // save the new schema
-    saveSchema(newSchema);
+    await saveSchema(workspaceId, dataSourceId, newSchema);
 
     return;
 }
 
 async function updateTable(workspaceId, dataSourceId, newSchema, tableName, database, outputLocation, dataLocation) {
+    const sanitisedTablename = sanitiseIdentifier(tableName);
     //const { added, removed, };
     
     // recreate table
-    await runQuery(`DROP TABLE IF EXISTS ${tableName}`, database, outputLocation);
+    await runQuery(`DROP TABLE IF EXISTS ${sanitisedTablename}`, database, outputLocation);
     await createAthenaTable(workspaceId, dataSourceId, newSchema, tableName, dataLocation, database, outputLocation);
 }
 
@@ -106,6 +106,11 @@ function deduceType(value, columnName = "") {
 function isMoneyField(columnName) {
     const moneyKeywords = ["balance", "price", "amount", "cost", "total"];
     return moneyKeywords.some(keyword => columnName.toLowerCase().includes(keyword));
+}
+
+
+function sanitiseIdentifier(name) {
+    return name.replace(/[^A-Za-z0-9_]/g, "_");
 }
 
 module.exports = {
