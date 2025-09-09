@@ -2,7 +2,7 @@ import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { Text, Card, ActivityIndicator, DataTable } from "react-native-paper";
+import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip } from "react-native-paper";
 import BasicButton from "../../../../../../components/common/buttons/BasicButton";
 import DropDown from '../../../../../../components/common/input/DropDown';
 import TextField from '../../../../../../components/common/input/TextField';
@@ -23,6 +23,7 @@ import { CartesianChart, Line, useChartPressState, VictoryLabel, Bar } from "vic
 import { SharedValue } from "react-native-reanimated";
 import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
 import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
+import ColorPicker from 'react-native-wheel-color-picker';
 
 const CreateMetric = () => {
     const router = useRouter();
@@ -160,7 +161,7 @@ const CreateMetric = () => {
 
 
     const [step, setStep] = useState(0);
-    const totalSteps = 4;
+    const totalSteps = 2;
 
     const handleBack = () => {
         if (step === 0) {
@@ -184,16 +185,15 @@ const CreateMetric = () => {
                 data: dataRows,
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
+                colours: coloursState,
             }
             const workspaceId = await getWorkspaceId();
             const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_settings.json`
             console.log("File path:", S3FilePath)
-            const result = uploadData({
+            await uploadData({
                 path: S3FilePath,
                 data: JSON.stringify(metricSettings),
-                options: {
-                    bucket: "workspaces"
-                }
+                options: { bucket: "workspaces" },
             }).result;
             console.log("File uploaded successfully.");
         } catch (error) {
@@ -204,6 +204,19 @@ const CreateMetric = () => {
         //router.navigate("/modules/day-book/metrics/metric-management"); 
         router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround?    
     }
+
+    const [dataVisible, setDataVisible] = React.useState(false);
+    const showDataModal = () => setDataVisible(true);
+    const hideDataModal = () => setDataVisible(false);
+
+    const [graphVisible, setGraphVisible] = React.useState(false);
+    const showGraphModal = () => setGraphVisible(true);
+    const hideGraphModal = () => setGraphVisible(false);
+
+    const [selectedColor, setSelectedColor] = useState("#ffffffff");
+    const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
+    const [activeDepVar, setActiveDepVar] = useState(0);
+    const [wheelIndex, setWheelIndex] = useState(0);
 
     const renderFormStep = () => {
         switch (step) {
@@ -216,6 +229,10 @@ const CreateMetric = () => {
                             onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
                         />
 
+                        <Button icon="file" mode="text" onPress={showDataModal}>
+                            Validate Data
+                        </Button>
+
                         <DropDown
                             title = "Select Metric"
                             items={Object.values(GraphTypes).map((g) => ({
@@ -225,66 +242,7 @@ const CreateMetric = () => {
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
                         />
-                                                   
-                        <Card style={styles.card}>
-                            <Card.Content>
-                                {readyDataDownloadProgress == 0 && (
-                                    <Text>Display preview here</Text>
-                                )}
-                                {readyDataDownloadProgress > 0 && readyDataDownloadProgress < 100 && (
-                                    <Text>Downloading data source: {readyDataDownloadProgress}%</Text>
-                                )}
-                                {readyDataDownloadProgress == 100 && loadingStoredData && (
-                                    <ActivityIndicator size="large" color="#0000ff" />
-                                )}
-                                {readyDataDownloadProgress == 100 && !loadingStoredData && (
-                                    <ScrollView horizontal
-                                        showsHorizontalScrollIndicator
-                                    >
-                                        <View style={{ minWidth: (dataHeader?.length ?? 0) * 100 }}>
-                                            <DataTable>{/* Displays a preview of the data as a table */} 
-                                                <DataTable.Header>
-                                                    {dataHeader.map((header, index) => (
-                                                        <DataTable.Title key={index} numberOfLines={1}>
-                                                            <Text>{String(header)}</Text>
-                                                        </DataTable.Title>
-                                                    ))}
-                                                </DataTable.Header>
-                                                <FlatList
-                                                    data={displayedRows}
-                                                    renderItem={({ item }) => (
-                                                        <DataTable.Row>
-                                                            {item.map((cell, index) => (
-                                                                <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
-                                                                    <Text>{String(cell)}</Text>
-                                                                </DataTable.Cell>
-                                                            ))}
-                                                        </DataTable.Row>
-                                                    )}
-                                                    nestedScrollEnabled={true}
-                                                    style={{ maxHeight: 180 /*shouldn't be hardcoded*/}}
-                                                    initialNumToRender={5}
-                                                    windowSize={10}
-                                                    removeClippedSubviews={true}
-                                                    onEndReached={onPreviewBottomReached}
-                                                    onEndReachedThreshold={0.1} 
-                                                    ListFooterComponent={
-                                                        loadingMoreRows ? (
-                                                            <ActivityIndicator size="small" color="#0000ff" />
-                                                        ) : null
-                                                    }
-                                                />
-                                            </DataTable>
-                                        </View>
-                                    </ScrollView>
-                                )}
-                            </Card.Content>
-                        </Card>
-                    </ScrollView>
-                )
-            case 1:
-                return (
-                    <ScrollView>
+
                         <Text>Select Independent Variable (X-Axis)</Text>
                         <MetricRadioButton
                             items={dataHeader}
@@ -308,43 +266,147 @@ const CreateMetric = () => {
                                 setChosenDependentVariables(indices);
                             }}
                         />
+
+                        <Portal>
+                            <Modal 
+                                visible={dataVisible} 
+                                onDismiss={hideDataModal} 
+                                style={styles.modalContainer}
+                            >
+                                <Card style={styles.card}>
+                                    <Card.Content>
+                                        {readyDataDownloadProgress == 0 && (
+                                            <Text>Display preview here</Text>
+                                        )}
+                                        {readyDataDownloadProgress > 0 && readyDataDownloadProgress < 100 && (
+                                            <Text>Downloading data source: {readyDataDownloadProgress}%</Text>
+                                        )}
+                                        {readyDataDownloadProgress == 100 && loadingStoredData && (
+                                            <ActivityIndicator size="large" color="#0000ff" />
+                                        )}
+                                        {readyDataDownloadProgress == 100 && !loadingStoredData && (
+                                            <ScrollView horizontal
+                                                showsHorizontalScrollIndicator
+                                            >
+                                                <View style={{ minWidth: (dataHeader?.length ?? 0) * 100 }}>
+                                                    <DataTable>{/* Displays a preview of the data as a table */} 
+                                                        <DataTable.Header>
+                                                            {dataHeader.map((header, index) => (
+                                                                <DataTable.Title key={index} numberOfLines={1}>
+                                                                    <Text>{String(header)}</Text>
+                                                                </DataTable.Title>
+                                                            ))}
+                                                        </DataTable.Header>
+                                                        <FlatList
+                                                            data={displayedRows}
+                                                            renderItem={({ item }) => (
+                                                                <DataTable.Row>
+                                                                    {item.map((cell, index) => (
+                                                                        <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
+                                                                            <Text>{String(cell)}</Text>
+                                                                        </DataTable.Cell>
+                                                                    ))}
+                                                                </DataTable.Row>
+                                                            )}
+                                                            nestedScrollEnabled={true}
+                                                            style={{ maxHeight: 180 /*shouldn't be hardcoded*/}}
+                                                            initialNumToRender={5}
+                                                            windowSize={10}
+                                                            removeClippedSubviews={true}
+                                                            onEndReached={onPreviewBottomReached}
+                                                            onEndReachedThreshold={0.1} 
+                                                            ListFooterComponent={
+                                                                loadingMoreRows ? (
+                                                                    <ActivityIndicator size="small" color="#0000ff" />
+                                                                ) : null
+                                                            }
+                                                        />
+                                                    </DataTable>
+                                                </View>
+                                            </ScrollView>
+                                        )}
+                                    </Card.Content>
+                                </Card>
+                            </Modal>
+                        </Portal>
                     </ScrollView>
                 )
-            case 2:
+            case 1:
                 const graphDef = GraphTypes[selectedMetric]; // Get chosen graph definition
                 if (!graphDef) {
                     return <Text>Please select a metric to preview</Text>;
                 }
 
+                const handleColorChange = (color) => {
+                    setSelectedColor(color);
+                    // For now, replace the first colour (or you could extend this to pick which line to recolor)
+                    const updated = [...coloursState];
+                    updated[0] = color;
+                    setColoursState(updated);
+                };
+
                 return (
-                    <Card style={styles.card}>
-                        <Card.Content>
-                            <View style={styles.graphCardContainer}>
-                                {graphDef.render({
-                                    data: readyDataToGraphData(
-                                        dataRows, 
-                                        chosenIndependentVariable, 
-                                        chosenDependentVariables
-                                    ),
-                                    xKey: "independentVariable",
-                                    yKeys: chosenDependentVariables.map(
-                                        (_, i) => "dependentVariable" + i
-                                    ),
-                                    colours: ["red", "blue", "green", "purple"], // pass colours
-                                })}
-                            </View>
-                        </Card.Content>
-                    </Card>
-                )
-            case 3:
-                return (
-                    <View>
+                    <ScrollView>
                         <TextField
                             label="Metric Name"
                             placeholder="Metric Name"
                             onChangeText={setMetricName}
                         />
-                    </View>
+                        
+                        {/* Variable selector chips */}
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 10 }}>
+                            {chosenDependentVariables.map((dep, index) => (
+                                <Chip
+                                    key={dep}
+                                    selected={wheelIndex === index}
+                                    onPress={() => setWheelIndex(index)}
+                                    style={{ margin: 4 }}
+                                >
+                                    {dataHeader[dep] ?? `Y${i + 1}`}
+                                </Chip>
+                            ))}
+                        </View>
+                        
+                        {/* Single colour picker for the active variable */}
+                        <View style={{ marginTop: 10, alignItems: "center" }}>
+                            <ColorPicker
+                                color={coloursState[wheelIndex]}
+                                onColorChange={(newColor) => {
+                                    setColoursState((prev) => {
+                                        const updated = [...prev];
+                                        updated[wheelIndex] = newColor;
+                                        return updated;
+                                    });
+                                }}
+                                thumbSize={30}
+                                sliderSize={30}
+                                noSnap={true}
+                                row={true}
+                            />
+                        </View>
+                        
+                        {/* Graph preview */}
+                        <Card style={[styles.card, { marginTop: 20 }]}>
+                            <Card.Content>
+                                <View style={styles.graphCardContainer}>
+                                    {graphDef.render({
+                                        data: readyDataToGraphData(
+                                            dataRows, 
+                                            chosenIndependentVariable, 
+                                            chosenDependentVariables
+                                        ),
+                                        xKey: "independentVariable",
+                                        yKeys: chosenDependentVariables.map(
+                                            (_, i) => "dependentVariable" + i
+                                        ),
+                                        colours: coloursState, // dynamic per-variable colours
+                                    })}
+                                </View>
+                            </Card.Content>
+                        </Card>
+
+                        
+                    </ScrollView>
                 )
             default:
                 return null;
@@ -374,8 +436,15 @@ const CreateMetric = () => {
 export default CreateMetric;
 
 const styles = StyleSheet.create({
+    modalContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
     card: {
-        height: 270
+        height: 270,
+        marginTop: 20,
     },
     graphCardContainer: {
         height: "80%",

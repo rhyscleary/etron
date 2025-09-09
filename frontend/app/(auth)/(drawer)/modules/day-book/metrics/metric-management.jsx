@@ -73,7 +73,8 @@ const MetricManagement = () => {
         }
         getWorkspaceMetrics();
     }, []);
-    
+
+    const [color, setColor] = useState('#ff0000');
 
     return (
         <View style={commonStyles.screen}>

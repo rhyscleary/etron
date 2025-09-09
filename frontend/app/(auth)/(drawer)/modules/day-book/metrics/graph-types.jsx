@@ -1,6 +1,6 @@
 import React from "react";
-import { CartesianChart, Line, Bar } from "victory-native";
-import { Pie, LinearGradient, vec, useFont } from "@shopify/react-native-skia";
+import { CartesianChart, Line, Bar, VictoryPie } from "victory-native";
+import { LinearGradient, vec, useFont } from "@shopify/react-native-skia";
 import { Text } from "react-native";
 import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
 
@@ -12,7 +12,7 @@ const GraphTypes = {
         label: "Line Graph",
         value: "line",
         previewImage: require("../../../../../../assets/images/lineChart.png"),
-        render: ({ data, xKey, yKeys }) => {
+        render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
                 const font = useFont(inter, 12);
                 if (!font) return null;
@@ -22,7 +22,12 @@ const GraphTypes = {
                         data={data}
                         xKey={xKey}
                         yKeys={yKeys}
-                        axisOptions={{ font }}
+                        axisOptions={{ 
+                            font,
+                            labelColor: "white",
+                            tickColor: "white",
+                            axisColor: "white",
+                        }}
                         domain={{ y: [0] }}
                     >
                         {({ points }) =>
@@ -30,7 +35,9 @@ const GraphTypes = {
                                 <Line 
                                     key={i} 
                                     points={points[key]} 
-                                    strokeWidth={3} />
+                                    strokeWidth={3}
+                                    color={colours[i] || "black" }
+                                />
                             ))
                         }
                     </CartesianChart>
@@ -44,7 +51,7 @@ const GraphTypes = {
         label: "Bar Chart",
         value: "bar",
         previewImage: require("../../../../../../assets/images/barChart.png"),
-        render: ({ data, xKey, yKeys }) => {
+        render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
                 const font = useFont(inter, 12);
                 if (!font) return null;
@@ -66,6 +73,7 @@ const GraphTypes = {
                                     points={points[key]}
                                     roundedCorners={{ topLeft: 5, topRight: 5 }}
                                     barWidth={12}
+                                    color={colours[i] || "black" }
                                 />
                             ))
                         }
@@ -80,13 +88,25 @@ const GraphTypes = {
         label: "Pie Chart",
         value: "pie",
         previewImage: require("../../../../../../assets/images/pieChart.png"),
-        render: ({ data, yKeys }) => {
-            <Pie
-                data={data}
-                valueKey={yKeys[0]} // only one metric for pie
-                innerRadius={20}
-                outerRadius={100}
-            />
+        render: ({ data, xKey, yKeys, colours }) => {
+            if (!xKey || !yKeys?.[0]) return <Text>No variable selected</Text>;
+            
+            const pieData = data.map((row) => ({
+                x: String(row[xKey]),   // independent variable used as label
+                y: String(row[yKeys[0]]), // dependent variable determines slice size
+            }));
+
+            return (
+                <VictoryPie
+                    data={pieData}
+                    innerRadius={50}
+                    labelRadius={80}
+                    colorScale={colours && colours.length > 0 ? colours : ["red", "blue", "green", "purple"]}                
+                    style={{
+                        labels: { fill: "white", fontSize: 14, fontWeight: "bold" },
+                    }}
+                />
+            )
         },
     },
 };
