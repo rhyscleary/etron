@@ -91,8 +91,7 @@ const endpoints = {
 
             reports: {
                 getDrafts: (workspaceId) => `${REPORTS_BASE_URL}/drafts?workspaceId=${workspaceId}`,
-                //       const response = await fetch(`${baseReportsUrl}/drafts?workspaceId=${workspaceId}`, {
-
+                createDraft: `${REPORTS_BASE_URL}/drafts`
             }
         }
     }
