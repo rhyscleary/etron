@@ -24,7 +24,7 @@ const ViewMetric = () => {
     const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);
     const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
-    
+    const [filteredRows, setFilteredRows] = useState([]);
     
     const font = useFont(inter, 12);
 
@@ -40,9 +40,10 @@ const ViewMetric = () => {
                 const metricJson = JSON.parse(await body.text());
                 setMetricSettings(metricJson);
                 setDataRows(metricJson.data || []);
-                setIndependentVariable(metricJson.independentVariable);
-                setDependentVariables(metricJson.dependentVariables || []);
+                setChosenIndependentVariable(metricJson.independentVariable || [0]);
+                setChosenDependentVariables(metricJson.dependentVariables || [1]);
                 setColoursState(metricJson.colours || ["red", "blue", "green", "purple"]);
+                setFilteredRows(metricJson.filteredRows || metricJson.data || []);
             } catch (error) {
                 console.error("Error downloading metric data:", error);
             }
@@ -122,7 +123,7 @@ const ViewMetric = () => {
                         <View style={styles.graphCardContainer}>
                             {graphDef.render({
                                 data: readyDataToGraphData(
-                                    dataRows, 
+                                    filteredRows, 
                                     chosenIndependentVariable, 
                                     chosenDependentVariables
                                 ),

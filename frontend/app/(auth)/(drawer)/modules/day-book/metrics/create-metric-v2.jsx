@@ -186,6 +186,7 @@ const CreateMetric = () => {
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
                 colours: coloursState,
+                filteredRows,
             }
             const workspaceId = await getWorkspaceId();
             const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_settings.json`
@@ -208,10 +209,6 @@ const CreateMetric = () => {
     const [dataVisible, setDataVisible] = React.useState(false);
     const showDataModal = () => setDataVisible(true);
     const hideDataModal = () => setDataVisible(false);
-
-    const [graphVisible, setGraphVisible] = React.useState(false);
-    const showGraphModal = () => setGraphVisible(true);
-    const hideGraphModal = () => setGraphVisible(false);
 
     const [selectedColor, setSelectedColor] = useState("#ffffffff");
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
