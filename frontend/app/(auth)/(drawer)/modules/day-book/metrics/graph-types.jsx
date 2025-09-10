@@ -9,7 +9,7 @@ import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf"
 // Each entry has: `label`, `value`, and a `render` function for later expansion
 const GraphTypes = {
     line: {
-        label: "Line Graph",
+        label: "Line Chart",
         value: "line",
         previewImage: require("../../../../../../assets/images/lineChart.png"),
         render: ({ data, xKey, yKeys, colours }) => {

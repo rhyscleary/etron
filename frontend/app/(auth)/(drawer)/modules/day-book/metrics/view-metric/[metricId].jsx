@@ -13,19 +13,32 @@ import inter from "../../../../../../../assets/styles/fonts/Inter_18pt-Regular.t
 import { useFont } from "@shopify/react-native-skia";
 import BasicButton from "../../../../../../../components/common/buttons/BasicButton";
 
+/*
+import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
+
+const [profilePhotoUri, setProfilePhotoUri] = useState(null);
+
+<AvatarButton
+    type={profilePhotoUri ? "image" : "text"}
+    imageSource={profilePhotoUri ? {uri: profilePhotoUri} : undefined}
+    firstName={!profilePhotoUri ? originalData.firstName : firstName}
+    lastName={!profilePhotoUri ? originalData.lastName : lastName}
+    badgeType="edit"
+    onPress={handleUploadPhoto}
+/>
+*/
+
+
 const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
     const [metricSettings, setMetricSettings] = useState({});
     const [dataRows, setDataRows] = useState([]);
-    const [independentVariable, setIndependentVariable] = useState();
-    const [dependentVariables, setDependentVariables] = useState([]);
-    const router = useRouter();
-    
     const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);
-    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([1]);
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
-    const [filteredRows, setFilteredRows] = useState([]);
-    
+    const [selectedRows, setSelectedRows] = useState([]);
+    const router = useRouter();
+
     const font = useFont(inter, 12);
 
     useEffect(() => {
@@ -43,12 +56,11 @@ const ViewMetric = () => {
                 setChosenIndependentVariable(metricJson.independentVariable || [0]);
                 setChosenDependentVariables(metricJson.dependentVariables || [1]);
                 setColoursState(metricJson.colours || ["red", "blue", "green", "purple"]);
-                setFilteredRows(metricJson.filteredRows || metricJson.data || []);
+                setSelectedRows(metricJson.selectedRows || []);
             } catch (error) {
                 console.error("Error downloading metric data:", error);
             }
         }
-
         getMetricSettings();
     }, [metricId]);
 
@@ -78,6 +90,10 @@ const ViewMetric = () => {
             </View>
         );
     }
+
+    const filteredRows = dataRows.filter(
+        (row) => selectedRows.includes(row[0])
+    );
 
     async function deleteMetric() {
         const confirmed = await new Promise((resolve) => {
@@ -123,15 +139,13 @@ const ViewMetric = () => {
                         <View style={styles.graphCardContainer}>
                             {graphDef.render({
                                 data: readyDataToGraphData(
-                                    filteredRows, 
+                                    filteredRows,
                                     chosenIndependentVariable, 
                                     chosenDependentVariables
                                 ),
                                 xKey: "independentVariable",
-                                yKeys: chosenDependentVariables.map(
-                                    (_, i) => "dependentVariable" + i
-                                ),
-                                colours: coloursState, // dynamic per-variable colours
+                                yKeys: chosenDependentVariables.map((_, i) => "dependentVariable" + i),
+                                colours: coloursState,
                             })}
                         </View>
                     </Card.Content>
@@ -139,7 +153,7 @@ const ViewMetric = () => {
             </ScrollView>
 
             <BasicButton
-                label = "Delete"
+                label="Delete"
                 onPress={deleteMetric}
                 style={styles.button}
                 danger
@@ -151,21 +165,8 @@ const ViewMetric = () => {
 export default ViewMetric;
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        
-    },
-    card: {
-        height: 260,
-        marginTop: 20,
-        width: "90%",
-        alignSelf: "center",
-    },
-    graphCardContainer: {
-        height: "100%",
-        width: "100%",
-    },
-    button: {
-        alignSelf: "flex-end"
-    },
-})
+    container: { flex: 1 },
+    card: { height: 260, marginTop: 20, width: "90%", alignSelf: "center" },
+    graphCardContainer: { height: "100%", width: "100%" },
+    button: { alignSelf: "flex-end" },
+});

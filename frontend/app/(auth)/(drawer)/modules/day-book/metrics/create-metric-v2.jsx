@@ -2,27 +2,18 @@ import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip, useTheme } from "react-native-paper";
+import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip, useTheme, IconButton } from "react-native-paper";
 import BasicButton from "../../../../../../components/common/buttons/BasicButton";
 import DropDown from '../../../../../../components/common/input/DropDown';
 import TextField from '../../../../../../components/common/input/TextField';
 import MetricCheckbox from '../../../../../../components/common/buttons/MetricCheckbox';
 import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
 import GraphTypes from './graph-types';
-import endpoints from '../../../../../../utils/api/endpoints';
 
-import csvtojson from 'csvtojson';
 
 import { list, downloadData, uploadData } from 'aws-amplify/storage';
-import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
-import { ResourceSavingView } from '@react-navigation/elements';
 
-
-import { CartesianChart, Line, useChartPressState, VictoryLabel, Bar } from "victory-native";
-import { SharedValue } from "react-native-reanimated";
-import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
-import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 import ColorPicker from 'react-native-wheel-color-picker';
 
 const CreateMetric = () => {
@@ -126,37 +117,17 @@ const CreateMetric = () => {
         });
     }, [dataRows.length, rowLimit]);
 
-
-    const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})
-    const font = useFont(inter, 12);
-
-    function GraphTooltip({text, xPosition, yPosition}) {
-        return (<>
-            <SkiaText
-                color = "grey"
-                font = {font}
-                text = {"test"}
-                x = {xPosition}
-                y = {yPosition - 15}
-            />
-            <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
-        </>)
-    }
-
-
-    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);  // Hard-coded value, but should be set by the user
-    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);  // Hard-coded values, but should be set by the user
-    const colours = ["white", "red", "blue", "green", "purple", "orange"]
+    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([]);  // Hard-coded value, but should be set by the user
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([]);  // Hard-coded values, but should be set by the user
     
     function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {
-        const output = rows.map(row => { //creates a json object with 1 independent variable and several dependent variables
-            let rowOutput = {independentVariable: String(row[independentColumn])}  // Issue: this doesn't resort the data, so the independentVariable can be out of order and look weird (but still correct) 
-            for (let i = 0; i < dependentColumns.length; i++) (
-                rowOutput["dependentVariable" + (i)] = Number(row[dependentColumns[i]])
-            );
+        return rows.map(row => {
+            let rowOutput = { independentVariable: String(row[independentColumn]) };
+            for (let i = 0; i < dependentColumns.length; i++) {
+                rowOutput["dependentVariable" + i] = Number(row[dependentColumns[i]]);
+            }
             return rowOutput;
         });
-        return output;
     }
 
 
@@ -176,6 +147,9 @@ const CreateMetric = () => {
     };
 
     const [metricName, setMetricName] = React.useState('');
+    const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
+    const [wheelIndex, setWheelIndex] = useState(0);
+    const [selectedRows, setSelectedRows] = useState([]);
 
     const handleFinish = async () => {
         // Upload metric settings
@@ -186,7 +160,7 @@ const CreateMetric = () => {
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
                 colours: coloursState,
-                filteredRows,
+                selectedRows,
             }
             const workspaceId = await getWorkspaceId();
             const S3FilePath = `workspaces/${workspaceId}/metrics/${metricName.replace(/ /g, "_")}/metric_settings.json`
@@ -210,13 +184,13 @@ const CreateMetric = () => {
     const showDataModal = () => setDataVisible(true);
     const hideDataModal = () => setDataVisible(false);
 
-    const [selectedColor, setSelectedColor] = useState("#ffffffff");
-    const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
-    const [activeDepVar, setActiveDepVar] = useState(0);
-    const [wheelIndex, setWheelIndex] = useState(0);
+    const [showChecklist, setShowChecklist] = useState(false);
 
-    const [selectedRows, setSelectedRows] = useState([]); // holds row labels (e.g. Names)
-
+    useEffect(() => {
+        if (dataRows.length > 0 && selectedRows.length === 0) {
+            setSelectedRows(dataRows.map((row) => row[0]));
+        }
+    }, [dataRows]);
 
     const renderFormStep = () => {
         switch (step) {
@@ -234,7 +208,7 @@ const CreateMetric = () => {
                         />
 
                         <Button icon="file" mode="text" onPress={showDataModal}>
-                            Validate Data
+                            View Data
                         </Button>
 
                         <DropDown
@@ -260,25 +234,72 @@ const CreateMetric = () => {
                         />
 
                         <Text style={{ marginTop: 12 }}>Select Dependent Variables (Y-Axis)</Text>
-                        <MetricCheckbox
-                            items={dataHeader}
-                            selected={chosenDependentVariables.map((i) => dataHeader[i])}
-                            onChange={(selection) => {
-                                // Convert names back into indices
-                                const indices = selection
-                                    .map((h) => dataHeader.findIndex((x) => x === h))
-                                    .filter((i) => i >= 0);
-                                setChosenDependentVariables(indices);
-                            }}
-                        />
+                        {["bar", "pie"].includes(selectedMetric) ? (
+                            <MetricRadioButton
+                                items={dataHeader}
+                                selected={dataHeader[chosenDependentVariables[0]]}
+                                onChange={(selection) => {
+                                    const index = dataHeader.findIndex((h) => h === selection);
+                                    setChosenDependentVariables(index >= 0 ? [index] : []);
+                                }}
+                            />
+                        ) : (
+                            <MetricCheckbox
+                                items={dataHeader}
+                                selected={chosenDependentVariables.map((i) => dataHeader[i])}
+                                onChange={(selection) => {
+                                    // Convert names back into indices
+                                    const indices = selection
+                                        .map((h) => dataHeader.findIndex((x) => x === h))
+                                        .filter((i) => i >= 0);
+                                    setChosenDependentVariables(indices);
+                                }}
+                            />
+                        )}
 
                         {/* Row Selection */}
-                        <Text style={{ marginTop: 12 }}>Select Data Points (Rows)</Text>
-                        <MetricCheckbox
-                            items={dataRows.map((row) => row[0])} // use first column (e.g. Name)
-                            selected={selectedRows}
-                            onChange={(selection) => setSelectedRows(selection)}
-                        />
+                        <View 
+                            style={{ 
+                                flexDirection: "row", 
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                marginBottom: -7
+                            }}
+                        >
+                            <Text>Select Data Points (Optional)</Text>
+                            
+                            <Chip
+                                onPress={() => {
+                                    if (selectedRows.length === dataRows.length) {
+                                        setSelectedRows([]);
+                                    } else {
+                                        setSelectedRows(dataRows.map((row) => row[0]));
+                                    }
+                                }}
+                                style={{
+                                    backgroundColor: theme.colors.background,
+                                }}
+                                textStyle={{
+                                    color: theme.colors.primary
+                                }}
+                            >
+                                {selectedRows.length === dataRows.length ? "Deselect All" : "Select All"}
+                            </Chip>
+
+                            <IconButton
+                                icon={showChecklist ? "chevron-up" : "chevron-down"}
+                                size={20}
+                                onPress={() => setShowChecklist(!showChecklist)}
+                            />
+                        </View>
+
+                        {showChecklist && (
+                            <MetricCheckbox
+                                items={dataRows.map((row) => row[0])} // use first column (e.g. Name)
+                                selected={selectedRows}
+                                onChange={(selection) => setSelectedRows(selection)}
+                            />
+                        )}
 
                         <Portal>
                             <Modal 
