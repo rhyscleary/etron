@@ -32,12 +32,12 @@ async function processUploadedFile(workspaceId, dataSourceId, rawData) {
         const {valid, error } = validateFormat(translatedData);
         if (!valid) throw new Error(`Invalid data format: ${error}`);
 
-        // create the schema and save it to s3
+        // create the schema 
         const schema = generateSchema(translatedData.slice(0, 100));
-        await saveSchemaAndUpdateTable(workspaceId, dataSourceId, schema);
 
         // convert to parquet
-        const parquetBuffer = await toParquet(translatedData);
+        const parquetBuffer = await toParquet(translatedData, schema);
+        console.log(parquetBuffer);
 
         // save data depending on method
         if (dataSource.method === "extend") {
@@ -45,6 +45,11 @@ async function processUploadedFile(workspaceId, dataSourceId, rawData) {
         } else {
             await replaceStoredData(workspaceId, dataSourceId, parquetBuffer);
         }
+
+        // save the schema to S3
+        console.log("Before saving schema and updating table");
+        await saveSchemaAndUpdateTable(workspaceId, dataSourceId, schema);
+        console.log("After saving schema and updating table");
 
         // update status
         await dataSourceRepo.updateDataSourceStatus(workspaceId, dataSourceId, {

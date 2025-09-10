@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 const { getDataSchema, saveSchema } = require("../repositories/dataBucketRepository");
-const { runQuery, createAthenaTable } = require("./athenaService");
+const { createAthenaTable, runDDL } = require("./athenaService");
 
 async function saveSchemaAndUpdateTable(workspaceId, dataSourceId, newSchema) {
     const tableName = `ds_${dataSourceId}`;
@@ -16,31 +16,23 @@ async function saveSchemaAndUpdateTable(workspaceId, dataSourceId, newSchema) {
     }
 
     // update the athena table
-    await updateTable(workspaceId, dataSourceId, newSchema, tableName, database, outputLocation, dataLocation);
+    console.log("Updating Athena table:", tableName);
+
+    await runDDL(`DROP TABLE IF EXISTS ${sanitiseIdentifier(tableName)}`, database, outputLocation);
+
+    // create table with the new schema
+    console.log(newSchema);
+    await createAthenaTable(newSchema, tableName, dataLocation, database, outputLocation);
 
     // save the new schema
+    console.log("Saving schema to S3");
     await saveSchema(workspaceId, dataSourceId, newSchema);
-
-    return;
-}
-
-async function updateTable(workspaceId, dataSourceId, newSchema, tableName, database, outputLocation, dataLocation) {
-    const sanitisedTablename = sanitiseIdentifier(tableName);
-    //const { added, removed, };
-    
-    // recreate table
-    await runQuery(`DROP TABLE IF EXISTS ${sanitisedTablename}`, database, outputLocation);
-    await createAthenaTable(workspaceId, dataSourceId, newSchema, tableName, dataLocation, database, outputLocation);
 }
 
 function hasSchemaChanged(oldSchema, newSchema) {
     // if theres not an existing schema flag as changed
     if (!oldSchema) return true;
-
-    const oldSchemaNormalised = normaliseSchema(oldSchema);
-    const newSchemaNormalised = normaliseSchema(newSchema);
-
-    return JSON.stringify(oldSchemaNormalised) !== JSON.stringify(newSchemaNormalised);
+    return JSON.stringify(normaliseSchema(oldSchema)) !== JSON.stringify(normaliseSchema(newSchema));
 }
 
 function normaliseSchema(schema) {

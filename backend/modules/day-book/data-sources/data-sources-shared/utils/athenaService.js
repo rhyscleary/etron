@@ -5,51 +5,49 @@ const {
     GetQueryExecutionCommand,
     GetQueryResultsCommand,
 } = require("@aws-sdk/client-athena");
-const { saveSchema } = require("../repositories/dataBucketRepository");
 
 const client = new AthenaClient({});
 
-function handleQueryError(error, message) {
-    console.error(`${message}:`, error);
-    throw new Error(message);
+function sanitiseIdentifier(name) {
+    // replace invalid characters with underscores
+    return name.replace(/[^A-Za-z0-9_]/g, "_");
 }
 
 async function startQuery(query, database, outputLocation) {
-    try {
-        const response = await client.send(
-            new StartQueryExecutionCommand({
-                QueryString: query,
-                QueryExecutionContext: { Database: database },
-                ResultConfiguration: { OutputLocation: outputLocation }
-            }),
+    const response = await client.send(
+        new StartQueryExecutionCommand({
+            QueryString: query,
+            QueryExecutionContext: { Database: database },
+            ResultConfiguration: { OutputLocation: outputLocation }
+        }),
+    );
+
+    const queryExecutionId = response.QueryExecutionId;
+
+    // poll until the qery completes
+    let queryState = "RUNNING";
+    while (queryState === "RUNNING" || queryState === "QUEUED") {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const statusResponse = await client.send(
+            new GetQueryExecutionCommand({ QueryExecutionId: queryExecutionId })
         );
+        console.log(statusResponse);
+        queryState = statusResponse.QueryExecution.Status.State;
 
-        const queryExecutionId = response.QueryExecutionId;
-
-        // poll until the qery completes
-        let queryState = "RUNNING";
-        while (queryState === "RUNNING" || queryState === "QUEUED") {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            const statusResponse = await client.send(
-                new GetQueryExecutionCommand({ QueryExecutionId: queryExecutionId })
+        if (queryState === "FAILED") {
+            throw new Error(
+                `Athena query failed: ${statusResponse.QueryExecution.Status.StateChangeReason}`
             );
-            queryState = statusResponse.QueryExecution.Status.State;
-
-            if (queryState === "FAILED") {
-                throw new Error(
-                    `Athena query failed: ${statusResponse.QueryExecution.Status.StateChangeReason}`
-                );
-            }
-
-            if (queryState === "CANCELLED") {
-                throw new Error("Athena query was cancelled");
-            }
         }
 
-        return queryExecutionId;
-    } catch (error) {
-        handleQueryError(error, `Error querying the database, ${database}`);
+        if (queryState === "CANCELLED") {
+            throw new Error("Athena query was cancelled");
+        }
+
+        console.log(`Query ${queryExecutionId} is ${queryState}`);
     }
+
+    return queryExecutionId;
 }
 
 async function getQueryResults(queryExecutionId, nextToken, maxResults = 50) {
@@ -63,63 +61,80 @@ async function getQueryResults(queryExecutionId, nextToken, maxResults = 50) {
 }
 
 function parseResults(results) {
-    const columns = results.ResultSetMetadata.ColumnInfo.map((column) => column.Name);
-    const rows = results.Rows;
-    const dataRows = rows.slice(1);
+    const columnInfo = results.ResultSet?.ResultSetMetadata?.ColumnInfo;
+    if (!columnInfo || columnInfo.length === 0) return [];
+    
+    const columns = columnInfo.map(column => column.Name);
+    const rows = results.ResultSet?.Rows || [];
+    const dataRows = rows.slice(1); // remove header row
 
-    return dataRows.map((row) => {
+    return dataRows.map(row => {
         const object = {};
         row.Data.forEach((field, i) => {
-            object[columns[i]] = field.VarCharValue ?? null;
+            object[columns[i]] = 
+                field.VarCharValue ??
+                field.BooleanValue ??
+                field.DoubleValue ??
+                field.LongValue ?? 
+                null;
         });
         return object;
     });
 }
 
-function sanitiseIdentifier(name) {
-    // replace invalid characters with underscores
-    return name.replace(/[^A-Za-z0-9_]/g, "_");
-}
-
-async function createAthenaTable(workspaceId, dataSourceId, schema, tableName, dataLocation, database, outputLocation) {
-    const sanitisedTableName = sanitiseIdentifier(tableName); 
-
-    const columns = schema.map(column => `${sanitiseIdentifier(column.name)} ${column.type}`).join(",\n    ");
-
-    const ddl = `
-        CREATE EXTERNAL TABLE ${sanitisedTableName} (
-            ${columns}
-        )
-        STORED AS PARQUET
-        LOCATION '${dataLocation}'
-    `;
-
-    console.log(`Creating athena table ${tableName}`);
-    await runQuery(ddl, database, outputLocation);
-
-    return sanitisedTableName;
-}
-
 async function runQuery(query, database, outputLocation, options = {}) {
-    const { pageSize = 50, nextToken } = options;
+    const { pageSize = 50, maxPages = 1, nextToken } = options;
 
     let queryExecutionId = options.queryExecutionId;
     if (!queryExecutionId) {
         queryExecutionId = await startQuery(query, database, outputLocation);
     }
 
+    let allData = [];
+    let token = nextToken;
+    let pageCount = 0;
+
     // fetch the results
-    const results = await getQueryResults(queryExecutionId, nextToken, pageSize);
-    const parsed = parseResults(results);
+    do {
+        const results = await getQueryResults(queryExecutionId, token, pageSize);
+        const parsed = parseResults(results);
+        allData = allData.concat(parsed);
+
+        token = results.NextToken;
+        pageCount++;
+    } while (token && pageCount < maxPages);
 
     return {
-        data: parsed,
+        data: allData,
         queryExecutionId,
-        nextToken: results.NextToken
+        nextToken: token
     };
+}
+
+async function runDDL(query, database, outputLocation) {
+    const queryExecutionId = await startQuery(query, database, outputLocation);
+    console.log(`DDL completed: ${queryExecutionId}`);
+    return queryExecutionId;
+}
+
+async function createAthenaTable(schema, tableName, dataLocation, database, outputLocation) {
+    if (!Array.isArray(schema) || schema.length === 0) {
+        throw new Error("Cannot create Athena table: the schema is empty");
+    }
+    const sanitisedTableName = sanitiseIdentifier(tableName); 
+    const columns = schema.map(column => `${sanitiseIdentifier(column.name)} ${column.type}`).join(", ");
+
+    const ddl = `CREATE EXTERNAL TABLE ${sanitisedTableName} (${columns}) STORED AS PARQUET LOCATION '${dataLocation}'`;
+
+    console.log("Athena DDL:\n", ddl);
+
+    await runDDL(ddl, database, outputLocation);
+
+    return sanitisedTableName;
 }
 
 module.exports = {
     runQuery,
-    createAthenaTable
+    createAthenaTable,
+    runDDL
 }

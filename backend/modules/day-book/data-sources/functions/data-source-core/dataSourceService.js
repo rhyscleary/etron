@@ -366,13 +366,17 @@ function getAvailableSpreadsheets(authUserId, payload) {
     const {  } = payload;
 }
 
+function sanitiseIdentifier(name) {
+    return name.replace(/[^A-Za-z0-9_]/g, "_");
+}
+
 async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
     // get the schema from the dataSource
     const schema = await getDataSchema(workspaceId, dataSourceId);
     if (!schema || schema.length === 0) throw new Error("Schema not found for this data source");
 
-    const columns = schema.map((column) => column.name).join(", ");
-    const tableName = `ds_${dataSourceId}`;
+    const columns = schema.map(column => sanitiseIdentifier(column.name)).join(", ");
+    const tableName = sanitiseIdentifier(`ds_${dataSourceId}`);
     const database = process.env.ATHENA_DATABASE;
     const outputLocation = `s3://${process.env.WORKSPACE_BUCKET}/workspaces/${workspaceId}/day-book/athenaResults/`;
 

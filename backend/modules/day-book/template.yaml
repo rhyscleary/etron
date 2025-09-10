@@ -64,6 +64,7 @@ Resources:
                 - s3:PutObject
                 - s3:ListBucket
                 - s3:DeleteObject
+                - s3:GetBucketLocation
               Resource: "*"
             - Effect: Allow
               Action:
@@ -371,6 +372,7 @@ Resources:
     Properties:
       CodeUri: ./data-sources/functions/data-source-poller
       Handler: dataSourcePollHandler.handler
+      Timeout: 900
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
@@ -420,6 +422,7 @@ Resources:
     Properties:
       CodeUri: ./data-sources/functions/data-source-upload-processor
       Handler: fileUploadHandler.handler
+      Timeout: 120
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
