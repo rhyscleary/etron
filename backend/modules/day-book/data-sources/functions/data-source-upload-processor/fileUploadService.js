@@ -5,7 +5,7 @@ const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
-const dataSourceRepo = require("@etron/data-sources-shared/repositories/dataSourceRepository");
+const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
 const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
 
 
