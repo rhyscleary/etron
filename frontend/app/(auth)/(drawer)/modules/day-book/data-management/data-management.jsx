@@ -41,12 +41,10 @@ const DataManagement = () => {
 					endpoints.modules.day_book.data_sources.getDataSources,
 					{ workspaceId }
 				)
-				console.log("Api Post");
-				result.map(dataSource => console.log("Name:", dataSource.name, "  ID:", dataSource.dataSourceId));
-				setDataSourceMappings(dataSource => ({
+				setDataSourceMappings(result.map(dataSource => ({
 					name: dataSource.name,
-					id: dataSource.id
-				}));
+					id: dataSource.dataSourceId
+				})));
 			} catch (error) {
 				console.log("error getting data sources from api:", error);
 			}
