@@ -14,6 +14,9 @@ Globals:
 Parameters:
   WorkspaceBucketName:
     Type: String
+  AthenaDatabaseName:
+    Type: String
+    Default: etron_day_book_db
     
 
 Resources:
@@ -22,6 +25,13 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub etron-permissions-bucket-${AWS::AccountId}-${AWS::Region}
+
+  AthenaGlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Ref AthenaDatabaseName
 
   WorkspaceDomainFunctions:
     Type: AWS::CloudFormation::Stack
@@ -44,3 +54,4 @@ Resources:
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
         WorkspaceBucketName: !Ref WorkspaceBucketName
+        AthenaDatabaseName: !Ref AthenaDatabaseName

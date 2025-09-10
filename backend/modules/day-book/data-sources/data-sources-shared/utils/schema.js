@@ -1,4 +1,45 @@
 // Author(s): Rhys Cleary
+const { getDataSchema, saveSchema } = require("../repositories/dataBucketRepository");
+const { createAthenaTable, runDDL } = require("./athenaService");
+
+async function saveSchemaAndUpdateTable(workspaceId, dataSourceId, newSchema) {
+    const tableName = `ds_${dataSourceId}`;
+    const database = process.env.ATHENA_DATABASE;
+    const dataLocation = `s3://${process.env.WORKSPACE_BUCKET}/workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/`
+    const outputLocation = `s3://${process.env.WORKSPACE_BUCKET}/workspaces/${workspaceId}/day-book/athenaResults/`;
+
+    const existingSchema = await getDataSchema(workspaceId, dataSourceId);
+
+    if (!hasSchemaChanged(existingSchema, newSchema)) {
+        console.log("No changes between schemas");
+        return;
+    }
+
+    // update the athena table
+    console.log("Updating Athena table:", tableName);
+
+    await runDDL(`DROP TABLE IF EXISTS ${sanitiseIdentifier(tableName)}`, database, outputLocation);
+
+    // create table with the new schema
+    console.log(newSchema);
+    await createAthenaTable(newSchema, tableName, dataLocation, database, outputLocation);
+
+    // save the new schema
+    console.log("Saving schema to S3");
+    await saveSchema(workspaceId, dataSourceId, newSchema);
+}
+
+function hasSchemaChanged(oldSchema, newSchema) {
+    // if theres not an existing schema flag as changed
+    if (!oldSchema) return true;
+    return JSON.stringify(normaliseSchema(oldSchema)) !== JSON.stringify(normaliseSchema(newSchema));
+}
+
+function normaliseSchema(schema) {
+    return schema
+        .map(column => ({ name: column.name, type: column.type }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+}
 
 function generateSchema(data) {
     if (!Array.isArray(data) || data.length === 0) {
@@ -59,6 +100,12 @@ function isMoneyField(columnName) {
     return moneyKeywords.some(keyword => columnName.toLowerCase().includes(keyword));
 }
 
+
+function sanitiseIdentifier(name) {
+    return name.replace(/[^A-Za-z0-9_]/g, "_");
+}
+
 module.exports = {
-    generateSchema
+    generateSchema,
+    saveSchemaAndUpdateTable
 };

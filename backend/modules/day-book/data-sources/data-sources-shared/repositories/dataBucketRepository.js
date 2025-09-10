@@ -127,7 +127,7 @@ async function getDataSchema(workspaceId, dataSourceId) {
             }),
         );
 
-        const schema = await streamToString(object.body);
+        const schema = await streamToString(object.Body);
         return JSON.parse(schema);
     } catch (error) {
         if (error.name === "NoSuchKey") {

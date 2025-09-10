@@ -4,11 +4,12 @@ const dataSourceRepo = require("@etron/data-sources-shared/repositories/dataSour
 const dataSourceSecretsRepo = require("@etron/data-sources-shared/repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const adapterFactory = require("@etron/data-sources-shared/adapters/adapterFactory");
-const { saveStoredData, saveSchema } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { saveStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
-const { generateSchema } = require("@etron/data-sources-shared/utils/generateSchema");
+const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
+const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
 
 async function fetchData() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
@@ -53,7 +54,7 @@ async function fetchData() {
 
                 // create the schema and save it to s3
                 const schema = generateSchema(translatedData.slice(0, 100));
-                await saveSchema(workspace.workspaceId, dataSource.dataSourceId, schema);
+                await saveSchemaAndUpdateTable(workspace.workspaceId, dataSource.dataSourceId, schema);
 
                 // convert the data to parquet file
                 const parquetBuffer = await toParquet(translatedData);
