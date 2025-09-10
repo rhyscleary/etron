@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const dataSourceRepo = require("@etron/data-sources-shared/repositories/dataSourceRepository");
+const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
 const dataSourceSecretsRepo = require("@etron/data-sources-shared/repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const adapterFactory = require("@etron/data-sources-shared/adapters/adapterFactory");
