@@ -208,6 +208,24 @@ async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
     };
 }
 
+async function getLocalDataSourceUploadUrl(authUserId, workspaceId, dataSourceId) {
+    await validateWorkspaceId(workspaceId);
+
+    const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
+
+    if (!dataSource) throw new Error("DataSource not found");
+
+    if (dataSource.type != "local-csv") {
+        throw new Error("Invalid data source type. Must be local.");
+    }
+
+    const fileUploadUrl = await getUploadUrl(workspaceId, dataSourceId);
+    
+    return {
+        fileUploadUrl
+    };
+}
+
 async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
     await validateWorkspaceId(workspaceId);
 
@@ -407,5 +425,6 @@ module.exports = {
     deleteDataSourceInWorkspace,
     testConnection,
     getRemotePreview,
-    viewData
+    viewData,
+    getLocalDataSourceUploadUrl
 };

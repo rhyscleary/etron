@@ -37,7 +37,6 @@ async function processUploadedFile(workspaceId, dataSourceId, rawData) {
 
         // convert to parquet
         const parquetBuffer = await toParquet(translatedData, schema);
-        console.log(parquetBuffer);
 
         // save data depending on method
         if (dataSource.method === "extend") {
@@ -47,9 +46,7 @@ async function processUploadedFile(workspaceId, dataSourceId, rawData) {
         }
 
         // save the schema to S3
-        console.log("Before saving schema and updating table");
         await saveSchemaAndUpdateTable(workspaceId, dataSourceId, schema);
-        console.log("After saving schema and updating table");
 
         // update status
         await dataSourceRepo.updateDataSourceStatus(workspaceId, dataSourceId, {
