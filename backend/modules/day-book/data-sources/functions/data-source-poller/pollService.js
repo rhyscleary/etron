@@ -10,6 +10,7 @@ const { translateData } = require("@etron/data-sources-shared/utils/translateDat
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
+const { appendToStoredData } = require("../../data-sources-shared/repositories/dataBucketRepository");
 
 async function fetchData() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
@@ -60,8 +61,7 @@ async function fetchData() {
 
                 if (dataSource.method === "extend") {
                     // extend the data source
-                    await saveStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
-
+                    await appendToStoredData(workspace.workspaceId, dataSource.dataSourceId, translatedData, schema);
                 } else {
                     // replace data
                     await replaceStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);

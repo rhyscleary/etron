@@ -135,6 +135,13 @@ Resources:
             Method: get
             RestApiId: !Ref eTRONApi
 
+        GetUploadUrl:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/upload
+            Method: get
+            RestApiId: !Ref eTRONApi
+
         ViewData:
           Type: Api 
           Properties:
