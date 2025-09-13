@@ -30,49 +30,8 @@ const MetricManagement = () => {
                     endpoints.modules.day_book.metrics.getMetrics,
                     { workspaceId }
                 );
-                console.log("result:", result);
+                console.log("result:", metricData);
                 setMetrics(metricData);
-                /*const result = await list ({
-                    path: filePathPrefix,
-                    options: {
-                        bucket: 'workspaces',
-                        //subpathStrategy: { strategy:'exclude' }
-                    }
-                })
-                const uniqueMetrics = Array.from(
-                    new Set(
-                        result.items.map((item) =>
-                            item.path
-                                .slice(filePathPrefix.length)
-                                .split("/")[0]
-                        )
-                    )
-                )
-                const metricData = await Promise.all(
-                    uniqueMetrics.map(async (metricName) => {
-                        try {
-                            const { body } = await downloadData({
-                                path: `${filePathPrefix}${metricName}/metric_settings.json`,
-                                options: { bucket: "workspaces" },
-                            }).result;
-
-                            const text = await body.text();
-                            const settings = JSON.parse(text);
-
-                            return {
-                                name: metricName,
-                                type: settings.type || "line", // fallback if missing
-                            };
-                        } catch (err) {
-                            console.log("Error loading metric settings for", metricName, err);
-                            return {
-                                name: metricName,
-                                type: "line", // fallback
-                            };
-                        }
-                    })
-                );
-                setMetrics(metricData);*/
             } catch (error) {
                 console.log("Error getting workspace metrics:", error);
             } finally {
@@ -123,7 +82,7 @@ const MetricManagement = () => {
                                                     width: "48%",
                                                 }}
                                                 onPress={() =>
-                                                    router.navigate(`./view-metric/${metric.name}`)
+                                                    router.navigate(`./view-metric/${metric.metricId}`)
                                                 }
                                             >
                                                 <Card

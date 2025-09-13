@@ -12,6 +12,8 @@ import GraphTypes from '../graph-types';
 import inter from "../../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
 import { useFont } from "@shopify/react-native-skia";
 import BasicButton from "../../../../../../../components/common/buttons/BasicButton";
+import endpoints from "../../../../../../../utils/api/endpoints";
+import { apiGet, apiDelete } from "../../../../../../../utils/api/apiClient";
 
 /*
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
@@ -32,23 +34,31 @@ const [profilePhotoUri, setProfilePhotoUri] = useState(null);
 const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
     
-    const [dataRows, setDataRows] = useState([]);
-    const [independentVariable, setIndependentVariable] = useState([0]);
-    const [dependentVariables, setDependentVariables] = useState([1]);
+    const [metricSettings, setMetricSettings] = useState(null);
+    const [metricData, setMetricData] = useState(null);
+    const [metricDownloadStatus, setMetricDownloadStatus] = useState("unstarted");
+
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
-    const [selectedRows, setSelectedRows] = useState([]);
     const router = useRouter();
 
     const font = useFont(inter, 12);
 
     useEffect(() => {
         async function getMetricSettings() {
+            setMetricDownloadStatus("downloading");
             const workspaceId = await getWorkspaceId();
-            console.log("Metric folder:", `workspaces/${workspaceId}/day-book/metrics/${metricId}`);
         
             console.log("Downloading metric settings...");
+            let apiResultMetric;
             try {  // Download metric settings
-                const { body } = await downloadData ({
+                console.log("metric id:", metricId);
+                apiResultMetric = await apiGet(
+                    endpoints.modules.day_book.metrics.getMetric(metricId),
+                    { workspaceId }
+                )
+                console.log("metric details:", apiResultMetric);
+                setMetricSettings(apiResultMetric);
+                /*const { body } = await downloadData ({
                     path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-settings.json`,
                     options: {
                         bucket: 'workspaces'
@@ -56,7 +66,7 @@ const ViewMetric = () => {
                 }).result;
                 const metricSettingsJson = JSON.parse(await body.text());
                 setDependentVariables(metricSettingsJson.dependentVariables);
-                setIndependentVariable(metricSettingsJson.independentVariable);
+                setIndependentVariable(metricSettingsJson.independentVariable);*/
             } catch (error) {
                 console.log("Error downloading metric settings:", error);
                 return;
@@ -64,34 +74,46 @@ const ViewMetric = () => {
             console.log("Metric settings downloaded successfully");
 
             try {  // Download metric data
-                const { body } = await downloadData ({
+                let apiResultData = await apiGet(
+                    endpoints.modules.day_book.data_sources.viewData(apiResultMetric.dataSourceId),
+                    { workspaceId }
+                )
+                console.log("data:", apiResultData.data);
+                setMetricData(apiResultData.data);
+                /*const { body } = await downloadData ({
                     path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`,
                     options: {
                         bucket: 'workspaces'
                     }
                 }).result;
                 const metricPrunedDataJson = JSON.parse(await body.text());
-                setDataRows(metricPrunedDataJson.data);
+                setDataRows(metricPrunedDataJson.data);*/
             } catch (error) {
                 console.log("Error downloading pruned data:", error);
+                setMetricDownloadStatus("failed");
                 return;
             }
             console.log("Metric pruned data downloaded successfully");
+            setMetricDownloadStatus("downloaded");
         }
         getMetricSettings();
     }, [metricId]);
 
-    function readyDataToGraphData(rows, independentColumn, dependentColumns = []) {
-        return rows.map(row => {
-            const rowOutput = { independentVariable: String(row[independentColumn]) };
-            dependentColumns.forEach((colIndex, i) => {
-                rowOutput["dependentVariables" + i] = Number(row[colIndex]);
-            });
-            return rowOutput;
-        });
+    function convertToGraphData(rows) {
+        console.log("rows:", rows);
+        let output = rows.map(row => {
+            const newRow = {};
+            for (const [key, value] of Object.entries(row)) {
+                const valueAsNumber = Number(value);
+                newRow[key] = !isNaN(valueAsNumber) ? valueAsNumber : value  // If the value can be turned into a number, do so
+            }
+            return newRow;
+        })
+        console.log("output:", output);
+        return output;
     }
 
-    if (!metricSettings || !font) {
+    if (metricDownloadStatus != "downloaded" || !font) {
         return (
             <View style={commonStyles.screen}>
                 <Header title="Loading..." showBack />
@@ -99,7 +121,7 @@ const ViewMetric = () => {
         );
     }
 
-    const graphDef = GraphTypes[metricSettings.type];
+    const graphDef = GraphTypes[metricSettings.config.type];
     if (!graphDef) {
         return (
             <View style={commonStyles.screen}>
@@ -107,10 +129,6 @@ const ViewMetric = () => {
             </View>
         );
     }
-
-    const filteredRows = dataRows.filter(
-        (row) => selectedRows.includes(row[0])
-    );
 
     async function deleteMetric() {
         const confirmed = await new Promise((resolve) => {
@@ -126,57 +144,60 @@ const ViewMetric = () => {
 
         if (!confirmed) return;
 
-        try {
+        try {  // TODO: Convert this to using endpoint
             const workspaceId = await getWorkspaceId();
-            await remove({
+            await apiDelete(
+                endpoints.modules.day_book.metrics.removeMetric(metricId),
+                { workspaceId }
+            )
+            console.log("Successfully deleted metric.")
+            /*await remove({
                 path: `workspaces/${workspaceId}/metrics/${metricId}/metric_settings.json`,
                 options: { bucket: 'workspaces' }
-            });
-            router.push("/modules/day-book/metrics/metric-management");
+            });*/
+            router.navigate("/modules/day-book/metrics/metric-management");
         } catch (error) {
             console.error("Error deleting metric:", error);
             Alert.alert("Error", "Failed to delete the metric. Please try again.");
         }
     }
 
-    return (
-        <View style={styles.container}>
-            <Header
-                title={`${metricId}`}
-                showBack
-                showEdit
-                onRightIconPress={() =>
-                    router.navigate("/modules/day-book/metrics/edit-metric")
-                }
-            />
+    if (metricDownloadStatus == "downloaded") {
+        return (
+            <View style={styles.container}>
+                <Header
+                    title={`${metricSettings.name}`}
+                    showBack
+                    showEdit
+                    onRightIconPress={() =>
+                        router.navigate("/modules/day-book/metrics/edit-metric")
+                    }
+                />
 
-            <ScrollView style={commonStyles.screen}>
-                <Card style={[styles.card]}>
-                    <Card.Content>
-                        <View style={styles.graphCardContainer}>
-                            {graphDef.render({
-                                data: readyDataToGraphData(
-                                    filteredRows,
-                                    independentVariable, 
-                                    dependentVariables
-                                ),
-                                xKey: "independentVariable",
-                                yKeys: dependentVariables.map((_, i) => "dependentVariables" + i),
-                                colours: coloursState,
-                            })}
-                        </View>
-                    </Card.Content>
-                </Card>
-            </ScrollView>
+                <ScrollView style={commonStyles.screen}>
+                    <Card style={[styles.card]}>
+                        <Card.Content>
+                            {/*<View style={styles.graphCardContainer}>
+                                {graphDef.render({
+                                    data: convertToGraphData(metricData),
+                                    xKey: metricSettings.independentVariable,
+                                    yKeys: metricSettings.dependentVariables,
+                                    colours: coloursState,
+                                })}
+                            </View>*/}
+                        </Card.Content>
+                    </Card>
+                </ScrollView>
 
-            <BasicButton
-                label="Delete"
-                onPress={deleteMetric}
-                style={styles.button}
-                danger
-            />
-        </View>
-    );
+                <BasicButton
+                    label="Delete"
+                    onPress={deleteMetric}
+                    style={styles.button}
+                    danger
+                />
+            </View>
+        );
+    }
 };
 
 export default ViewMetric;
