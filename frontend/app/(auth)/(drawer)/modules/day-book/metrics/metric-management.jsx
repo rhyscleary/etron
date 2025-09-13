@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage.jsx";
 import { list, downloadData } from 'aws-amplify/storage';
 import GraphTypes from "./graph-types.jsx";
+import endpoints from "../../../../../../utils/api/endpoints.js";
+import { apiGet } from "../../../../../../utils/api/apiClient.jsx";
 
 const MetricManagement = () => {
     const router = useRouter();
@@ -24,7 +26,13 @@ const MetricManagement = () => {
             const filePathPrefix = `workspaces/${workspaceId}/day-book/metrics/`
 
             try {
-                const result = await list ({
+                const metricData = await apiGet(
+                    endpoints.modules.day_book.metrics.getMetrics,
+                    { workspaceId }
+                );
+                console.log("result:", result);
+                setMetrics(metricData);
+                /*const result = await list ({
                     path: filePathPrefix,
                     options: {
                         bucket: 'workspaces',
@@ -64,11 +72,11 @@ const MetricManagement = () => {
                         }
                     })
                 );
-                setMetrics(metricData);
+                setMetrics(metricData);*/
             } catch (error) {
                 console.log("Error getting workspace metrics:", error);
             } finally {
-                setLoadingMetrics(false); //  ensure it turns off either way
+                setLoadingMetrics(false);
             }
         }
         getWorkspaceMetrics();
@@ -106,11 +114,11 @@ const MetricManagement = () => {
                             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
                                 {!loadingMetrics &&
                                     metrics.map((metric) => {
-                                        const previewImage = GraphTypes[metric.type]?.previewImage;
+                                        const previewImage = GraphTypes[metric.config.type]?.previewImage;
 
                                         return (
                                             <TouchableOpacity
-                                                key={metric.name}
+                                                key={metric.metricId}
                                                 style={{
                                                     width: "48%",
                                                 }}
