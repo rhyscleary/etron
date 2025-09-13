@@ -4,7 +4,7 @@ import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { Text, Card, ActivityIndicator, DataTable } from "react-native-paper";
+import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip, useTheme, IconButton } from "react-native-paper";
 import BasicButton from "../../../../../../components/common/buttons/BasicButton";
 import DropDown from '../../../../../../components/common/input/DropDown';
 import TextField from '../../../../../../components/common/input/TextField';
@@ -36,7 +36,7 @@ const CreateMetric = () => {
     const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
     useEffect(() => {  // When page loads, get a list of URLs for all data in the workspaces' readyData folder
-        async function initialiseWorkspaceReadyData() {
+        async function initialiseDataSourceList() {
             const workspaceId = await getWorkspaceId();
             const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
@@ -56,20 +56,27 @@ const CreateMetric = () => {
                 return;
             }
         }
-        initialiseWorkspaceReadyData();
+        initialiseDataSourceList();
     }, []);
 
 
-    const [readyDataDownloadProgress, setReadyDataDownloadProgress] = useState(0);
-    const [storedData, setStoredData] = useState(null);  // Data chosen by the user to be loaded into the graph
-    const [loadingStoredData, setLoadingStoredData] = useState(false);  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
+    const [dataSourceDataDownloadProgress, setDataSourceDataDownloadProgress] = useState(0);
+    const [dataSourceId, setDataSourceId] = useState();  // Id of data source chosen by user
+    const [dataSourceData, setDataSourceData] = useState(null);  // Data chosen by the user to be loaded into the graph
+    const [loadingDataSourceData, setLoadingDataSourceData] = useState(false);  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
 
-    const handleWorkspaceReadyDataSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
+    const handleDataSourceSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
         console.log('Downloading ready data:', source);
+        setDataSourceId(source);
+
         const workspaceId = await getWorkspaceId();
-        setReadyDataDownloadProgress(0);
+        setDataSourceDataDownloadProgress(0);
         try {
-            let result = await list({  // This list function is here to get the name of the data source file. When Rhys has an endpoint for viewing the data in a data source, this won't be needed.
+            /*let result = await apiGet(
+                endpoints.modules.day_book.data_sources.view
+            )*/
+
+            /*let result = await list({  // This list function is here to get the name of the data source file. When Rhys has an endpoint for viewing the data in a data source, this won't be needed.
                 path: `workspaces/${workspaceId}/day-book/dataSources/${source}/data/`,
                 options: {
                     bucket: "workspaces"
@@ -82,14 +89,14 @@ const CreateMetric = () => {
                 path: S3FilePath,
                 options: {
                     onProgress: (progress) => {  // This continuously returns the progress as the download occurs
-                        setReadyDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
+                        setDataSourceDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
                         console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
                     },
                     bucket: "workspaces"
                 }
             }).result;
-            setReadyDataDownloadProgress(100);  // Not necessary; just makes sure it gets set to 100% in case something weird happens
-            setLoadingStoredData(true);
+            setDataSourceDataDownloadProgress(100);  // Not necessary; just makes sure it gets set to 100% in case something weird happens
+            setLoadingDataSourceData(true);
 
             const csvText = await body.text();
             console.log('Download length: ', csvText.length);
@@ -100,12 +107,12 @@ const CreateMetric = () => {
                 output: 'csv',
             }).fromString(csvText)
             
-            setStoredData(csvRow);
-            setLoadingStoredData(false);
-            console.log("Stored data length:", csvRow.length);
+            setDataSourceData(csvRow);
+            setLoadingDataSourceData(false);
+            console.log("Stored data length:", csvRow.length);*/
         } catch (error) {
-            console.error('Error downloading data source:', error);
-            setLoadingStoredData(false);
+            console.error("Error downloading data source's data:", error);
+            setLoadingDataSourceData(false);
         }
     }
 
@@ -117,8 +124,8 @@ const CreateMetric = () => {
     const rowLoadAmount = 5;  // How many rows are loaded at a time in the data preview
     const [rowLimit, setRowLimit] = useState(rowLoadAmount);  // How many roads are loaded total (will update over time)
     // useMemo caches the result so that it doesn't keep recalculating
-    const dataHeader = useMemo(() => storedData?.[0] ?? [], [storedData]);  // Automatically loads the first row of data as headers
-    const dataRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);  // Automatically loads everything except the first row of data
+    const dataHeader = useMemo(() => dataSourceData?.[0] ?? [], [dataSourceData]);  // Automatically loads the first row of data as headers
+    const dataRows = useMemo(() => dataSourceData?.slice(1) ?? [], [dataSourceData]);  // Automatically loads everything except the first row of data
     const displayedRows = useMemo(() => dataRows.slice(0, rowLimit), [dataRows, rowLimit]);  // Loads only the data that will be displayed
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);
 
@@ -305,7 +312,7 @@ const CreateMetric = () => {
                         <DropDown
                             title = "Select Data Source"
                             items = {loadingDataSourceMappings ? ["Loading..."] : dataSourceMappings.map(dataSource => ({value: dataSource.id, label: dataSource.name}))}
-                            onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
+                            onSelect={(item) => handleDataSourceSelect(item)}
                         />
 
                         <Button icon="file" mode="text" onPress={showDataModal}>
@@ -354,16 +361,16 @@ const CreateMetric = () => {
                             >
                                 <Card style={styles.card}>
                                     <Card.Content>
-                                        {readyDataDownloadProgress == 0 && (
+                                        {dataSourceDataDownloadProgress == 0 && (
                                             <Text>Display preview here</Text>
                                         )}
-                                        {readyDataDownloadProgress > 0 && readyDataDownloadProgress < 100 && (
-                                            <Text>Downloading data source: {readyDataDownloadProgress}%</Text>
+                                        {dataSourceDataDownloadProgress > 0 && dataSourceDataDownloadProgress < 100 && (
+                                            <Text>Downloading data source: {dataSourceDataDownloadProgress}%</Text>
                                         )}
-                                        {readyDataDownloadProgress == 100 && loadingStoredData && (
+                                        {dataSourceDataDownloadProgress == 100 && loadingDataSourceData && (
                                             <ActivityIndicator size="large" color="#0000ff" />
                                         )}
-                                        {readyDataDownloadProgress == 100 && !loadingStoredData && (
+                                        {dataSourceDataDownloadProgress == 100 && !loadingDataSourceData && (
                                             <ScrollView horizontal
                                                 showsHorizontalScrollIndicator
                                             >
