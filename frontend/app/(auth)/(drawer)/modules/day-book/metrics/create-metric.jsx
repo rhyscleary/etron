@@ -72,9 +72,11 @@ const CreateMetric = () => {
         const workspaceId = await getWorkspaceId();
         setDataSourceDataDownloadProgress(0);
         try {
-            /*let result = await apiGet(
-                endpoints.modules.day_book.data_sources.view
-            )*/
+            let result = await apiGet(
+                endpoints.modules.day_book.data_sources.viewData(source),
+                { workspaceId }
+            )
+            console.log("result:", result);
 
             /*let result = await list({  // This list function is here to get the name of the data source file. When Rhys has an endpoint for viewing the data in a data source, this won't be needed.
                 path: `workspaces/${workspaceId}/day-book/dataSources/${source}/data/`,
