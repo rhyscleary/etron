@@ -11,6 +11,14 @@ Globals:
     Architectures:
       - x86_64
 
+Parameters:
+  WorkspaceBucketName:
+    Type: String
+  AthenaDatabaseName:
+    Type: String
+    Default: etron_day_book_db
+    
+
 Resources:
 
   PermissionsBucket:
@@ -18,21 +26,32 @@ Resources:
     Properties:
       BucketName: !Sub etron-permissions-bucket-${AWS::AccountId}-${AWS::Region}
 
+  AthenaGlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Ref AthenaDatabaseName
+
   WorkspaceDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./workspace/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
+        
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./user/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
+        
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./modules/day-book/template.yaml
       Parameters:
         PermissionsBucketName: !Ref PermissionsBucket
+        WorkspaceBucketName: !Ref WorkspaceBucketName
+        AthenaDatabaseName: !Ref AthenaDatabaseName

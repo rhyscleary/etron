@@ -73,12 +73,14 @@ const endpoints = {
     modules: {
         day_book: {
             data_sources: {
-                add: `${DATASOURCES_BASE_URL}`,
+                addRemote: `${DATASOURCES_BASE_URL}/remote`,
+                addLocal: `${DATASOURCES_BASE_URL}/local`,
                 update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 getDataSources: `${DATASOURCES_BASE_URL}`,
                 removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
+                remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
             },
 
             metrics: {
@@ -90,9 +92,26 @@ const endpoints = {
             },
 
             reports: {
-                getDrafts: (workspaceId) => `${REPORTS_BASE_URL}/drafts?workspaceId=${workspaceId}`,
-                createDraft: `${REPORTS_BASE_URL}/drafts`
-            }
+                drafts: {
+                    createDraft: `${REPORTS_BASE_URL}/drafts`,
+                    updateDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+                    getDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+                    getDrafts: `${REPORTS_BASE_URL}/drafts`,
+                    deleteDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
+                },
+                templates: {
+                    createTemplate: `${REPORTS_BASE_URL}/templates`,
+                    updateTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
+                    getTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
+                    getTemplates: `${REPORTS_BASE_URL}/templates`,
+                    deleteTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
+                },
+                exports: { 
+                    addExport: ``,
+                    getExport: ``,
+                    getExports: ``,
+                }
+            },
         }
     }
 

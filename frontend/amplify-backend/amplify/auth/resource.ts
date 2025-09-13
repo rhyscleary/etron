@@ -33,6 +33,11 @@ export const auth = defineAuth({
       dataType: "String",
       mutable: true,
     },
+
+    "custom:country_code": {
+      dataType: "String",
+      mutable: true,
+    },
   },
 
 });

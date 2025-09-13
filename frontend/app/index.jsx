@@ -1,18 +1,16 @@
 // Author(s): Noah Bradley
 
-import { Redirect, useRouter, router, Link, Slot } from "expo-router";
-import { ActivityIndicator, PaperProvider, Text } from 'react-native-paper';
-import React, { useEffect, useState } from "react";
-import { Button, TextInput, View, Pressable } from 'react-native';
+import { Redirect } from "expo-router";
+import { ActivityIndicator } from 'react-native-paper';
+import { useEffect, useState } from "react";
 
 import { Amplify } from 'aws-amplify';
-import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react-native';
+import { useAuthenticator } from '@aws-amplify/ui-react-native';
 
 // TOOD: make sure all app-wide initialisations are in here
 
 //import awsmobile from '../src/aws-exports';
 import amplifyOutputs from '../amplify_outputs.json'
-import { fetchUserAttributes, updateUserAttributes } from "aws-amplify/auth";
 /*Amplify.configure({
     ...awsmobile,
     oauth: {
@@ -35,7 +33,7 @@ function App() {
         console.log("(index.jsx). Auth status:", authStatus);
         if (authStatus === 'authenticated') {
             //if (router.canDismiss()) router.dismissAll();
-            console.log("Redirection to auth root page.");
+            console.log("Redirecting to auth root page.");
             setTarget("/(auth)/profile")
             //router.replace('/(auth)/profile');
         } else if (authStatus === `configuring`) {
