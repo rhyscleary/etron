@@ -70,8 +70,8 @@ function translateData(rawData) {
         }
 
         // add a timestamp to each row
-        const timestamp = new Date().toISOString();
-        rows = rows.map((row) => ({ ...row, timestamp }));
+        const _timestamp = new Date().toISOString();
+        rows = rows.map((row) => ({ ...row, _timestamp }));
 
         return rows;
     } catch (error) {

@@ -123,4 +123,18 @@ async function toParquet(data, schema) {
     return Buffer.concat(chunks);
 }
 
-module.exports = { toParquet };
+async function fromParquet(buffer) {
+    const reader = await parquet.ParquetReader.openBuffer(buffer);
+    const cursor = reader.getCursor();
+    const records = [];
+
+    let record = null;
+    while (record = await cursor.next()) {
+        records.push(record);
+    }
+
+    await reader.close();
+    return records;
+}
+
+module.exports = { toParquet, fromParquet };
