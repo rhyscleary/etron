@@ -12,18 +12,13 @@ import MetricCheckbox from '../../../../../../components/common/buttons/MetricCh
 import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
 import GraphTypes from './graph-types';
 
-import csvtojson from 'csvtojson';
-
 import { list, downloadData, uploadData } from 'aws-amplify/storage';
-import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
-import { ResourceSavingView } from '@react-navigation/elements';
 import endpoints from '../../../../../../utils/api/endpoints';
 import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
 
 
-import { CartesianChart, Line, useChartPressState, VictoryLabel } from "victory-native";
-import { SharedValue } from "react-native-reanimated";
+import { useChartPressState } from "victory-native";
 import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
 import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 import ColorPicker from 'react-native-wheel-color-picker';
@@ -31,11 +26,12 @@ import ColorPicker from 'react-native-wheel-color-picker';
 
 const CreateMetric = () => {
     const router = useRouter();
+    const theme = useTheme();
 
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
     const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
-    useEffect(() => {  // When page loads, get a list of URLs for all data in the workspaces' readyData folder
+    useEffect(() => {  // When page loads, load a list of all data sources
         async function initialiseDataSourceList() {
             const workspaceId = await getWorkspaceId();
             const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
@@ -60,15 +56,10 @@ const CreateMetric = () => {
     }, []);
 
 
-    const [dataSourceDataDownloadProgress, setDataSourceDataDownloadProgress] = useState(0);
     const [dataSourceId, setDataSourceId] = useState();  // Id of data source chosen by user
     const [dataSourceData, setDataSourceData] = useState([]);  // Data from the chosen data source
-    const [dataSourceSchema, setDataSourceSchema] = useState([]);  // Data schema (aka headers) of the chosen data source
+    const [dataSourceVariableNames, setDataSourceVariableNames] = useState([])
     const [dataSourceDataDownloadStatus, setDataSourceDataDownloadStatus] = useState("unstarted");  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
-
-    useEffect(() => {
-        console.log("Download status:", dataSourceDataDownloadStatus);
-    }, [dataSourceDataDownloadStatus])
 
     const handleDataSourceSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
         console.log('Downloading ready data:', source);
@@ -81,46 +72,9 @@ const CreateMetric = () => {
                 endpoints.modules.day_book.data_sources.viewData(source),
                 { workspaceId }
             )
-            console.log("data:", result.data);
-            console.log("schema:", result.schema);
             setDataSourceData(result.data);
-            setDataSourceSchema(result.schema);
+            setDataSourceVariableNames(result.schema.map(variable => variable.name));
             setDataSourceDataDownloadStatus("downloaded");
-
-            /*let result = await list({  // This list function is here to get the name of the data source file. When Rhys has an endpoint for viewing the data in a data source, this won't be needed.
-                path: `workspaces/${workspaceId}/day-book/dataSources/${source}/data/`,
-                options: {
-                    bucket: "workspaces"
-                }
-            })
-            let S3FilePath = result.items[0].path;
-            console.log("S3FilePath:", S3FilePath);
-
-            let { body } = await downloadData({  // TODO: Replace this with endpoint call using Rhy's endpoint for viewing the data of a data source
-                path: S3FilePath,
-                options: {
-                    onProgress: (progress) => {  // This continuously returns the progress as the download occurs
-                        setDataSourceDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
-                        console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
-                    },
-                    bucket: "workspaces"
-                }
-            }).result;
-            setDataSourceDataDownloadProgress(100);  // Not necessary; just makes sure it gets set to 100% in case something weird happens
-            setLoadingDataSourceData(true);
-
-            const csvText = await body.text();
-            console.log('Download length: ', csvText.length);
-            
-            const csv = require('csvtojson');
-            const csvRow = await csv({
-                noheader: true,
-                output: 'csv',
-            }).fromString(csvText)
-            
-            setDataSourceData(csvRow);
-            setLoadingDataSourceData(false);
-            console.log("Stored data length:", csvRow.length);*/
         } catch (error) {
             console.error("Error downloading data source's data:", error);
             setDataSourceDataDownloadStatus("unstarted");
@@ -129,30 +83,27 @@ const CreateMetric = () => {
 
 
     const [selectedMetric, setSelectedMetric] = useState(null);
-
+    const [selectedReadyData, setSelectedReadyData] = useState(null);
 
     // This stuff is for the data preview that appears on the page
     const rowLoadAmount = 5;  // How many rows are loaded at a time in the data preview
     const [rowLimit, setRowLimit] = useState(rowLoadAmount);  // How many roads are loaded total (will update over time)
-    // useMemo caches the result so that it doesn't keep recalculating
-    const dataVariableNames = useMemo(() => dataSourceSchema.map(variable => variable.name), [dataSourceSchema]);  // Automatically loads the headers from the schema
-    const dataRows = useMemo(() => dataSourceData, [dataSourceData]);  // Automatically loads everything except the first row of data
-    const displayedRows = useMemo(() => dataRows.slice(0, rowLimit), [dataRows, rowLimit]);  // Loads only the data that will be displayed
+    const displayedRows = useMemo(() => dataSourceData.slice(0, rowLimit), [dataSourceData, rowLimit]);  // Loads only the data that will be displayed in the "view data" popup
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);
 
     const onPreviewBottomReached = useCallback(() => {  // When the user scrolls to the bottom, loads more rows
         if (loadingMoreRows) return;
-        if (rowLimit >= dataRows.length) return;
+        if (rowLimit >= dataSourceData.length) return;
 
         setLoadingMoreRows(true);
         requestAnimationFrame(() => {
-            setRowLimit((prev) => Math.min(prev + rowLoadAmount, dataRows.length));
+            setRowLimit((prev) => Math.min(prev + rowLoadAmount, dataSourceData.length));
             setLoadingMoreRows(false);
         });
-    }, [dataRows.length, rowLimit]);
+    }, [dataSourceData.length, rowLimit]);
 
 
-    const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
+    /*const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
     const font = useFont(inter, 12);
 
     function GraphTooltip({text, xPosition, yPosition}) {  // Creates a small overlay for the graph at the specified position (usually where the user clicks)
@@ -166,19 +117,15 @@ const CreateMetric = () => {
             />
             <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
         </>)
-    }
+    }*/
 
-
-    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([]);
-    const [chosenDependentVariables, setChosenDependentVariables] = useState([]);
-    const colours = ["white", "red", "blue", "green", "purple", "orange"]
 
     function convertToGraphData(rows) {
         let output = rows.map(row => {
             const newRow = {};
             for (const [key, value] of Object.entries(row)) {
                 const valueAsNumber = Number(value);
-                newRow[key] = !isNaN(number) ? valueAsNumber : value  // If the value can be turned into a number, do so
+                newRow[key] = !isNaN(valueAsNumber) ? valueAsNumber : value  // If the value can be turned into a number, do so
             }
             return newRow;
         })
@@ -202,13 +149,7 @@ const CreateMetric = () => {
         setStep((prev) => prev + 1);
     };
 
-    const [metricName, setMetricName] = useState('');
-    const [metricId, setMetricId] = useState('');  //TODO: replace metricId stuff with instead getting the metricId from the create metric endpoint (which creates an id for it)
-    useEffect(() => {
-        setMetricId(metricName.replace(/ /g, "_"));
-    }, [metricName]) 
-
-    async function uploadInfoToDataSource() {
+    /*async function uploadInfoToDataSource() {
         const workspaceId = await getWorkspaceId();
         const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/${metricId}`;
         let result = uploadData({
@@ -219,12 +160,12 @@ const CreateMetric = () => {
             }
         })
         console.log("Metric ID uploaded to data source successfully.")
-    }
+    }*/
 
-    async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
+    /*async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
         const workspaceId = await getWorkspaceId();
         const prunedData = {
-            data: dataRows,
+            data: dataSourceData,
         }
         const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
         const result = uploadData({
@@ -235,53 +176,33 @@ const CreateMetric = () => {
             }
         }).result;
         console.log("Pruned data uploaded successfully.")
-    }
+    }*/
 
     async function uploadMetricSettings() {  //TODO: needs to be updated to use endpoints
-        const workspaceId = await getWorkspaceId();
-            const metricSettings = {
+        console.log("Uploading metric details...");
+        let workspaceId = await getWorkspaceId();
+        let metricDetails = {
+            name: metricName,
+            dataSourceId: dataSourceId,
+            config: {
+                type: selectedMetric,
+                //data: dataSourceData,  // TODO: implement separate function using an endpoint to upload the data to S3
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
+                colours: coloursState,
+                //selectedRows,  // TODO: implement separate function to prune the data when it gets uploaded
             }
-            const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-settings.json`
-            const result = uploadData({
-                path: S3FilePath,
-                data: JSON.stringify(metricSettings),
-                options: {
-                    bucket: "workspaces"
-                }
-            }).result;
-            console.log("Metric settings uploaded successfully.");
-        
+        }
+        let result = await apiPost(
+            endpoints.modules.day_book.metrics.add,
+            metricDetails,
+            { workspaceId }
+        );
+        console.log("Uploading metric details via API result:", result);
     }
 
     const handleFinish = async () => {
-        console.log("metric name:", metricName);
-        let workspaceId = await getWorkspaceId();
-
-        // Upload metric details
-        try {
-            let metricDetails = {
-                name: metricName,
-                dataSourceId: dataSourceId,
-                config: {
-                    type: selectedMetric,
-                    //data: dataRows,  // TODO: implement separate function using an endpoint to upload the data to S3
-                    independentVariable: chosenIndependentVariable,
-                    dependentVariables: chosenDependentVariables,
-                    colours: coloursState,
-                }
-            }
-            let result = await apiPost(
-                endpoints.modules.day_book.metrics.add,
-                metricDetails,
-                { workspaceId }
-            );
-            console.log("Uploading metric details via API result:", result);
-        } catch (error) {
-            console.log("Error uploading metric details via API:", error);
-            return;
-        }
+        
         //TODO: Upload metric details to the data source as well
 
         //TODO: Upload metric pruned data
@@ -293,11 +214,11 @@ const CreateMetric = () => {
         try { await uploadPrunedData() } catch (error) {
             console.log("Error uploading pruned data:", error);
             return;
-        }
+        }*/
         try { await uploadMetricSettings() } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;
-        }*/   
+        }  
         
         console.log("Form completed");
         //router.navigate("/modules/day-book/metrics/metric-management"); 
@@ -305,19 +226,17 @@ const CreateMetric = () => {
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
-    const showDataModal = () => {
-        setDataVisible(true);
-    }
+    const showDataModal = () => {setDataVisible(true)};
     const hideDataModal = () => setDataVisible(false);
 
-    const [graphVisible, setGraphVisible] = React.useState(false);
-    const showGraphModal = () => setGraphVisible(true);
-    const hideGraphModal = () => setGraphVisible(false);
+    const [showChecklist, setShowChecklist] = useState(false);
 
-    const [selectedColor, setSelectedColor] = useState("#ffffffff");
+    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([]);
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([]);
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
-    const [activeDepVar, setActiveDepVar] = useState(0);
     const [wheelIndex, setWheelIndex] = useState(0);
+    const [metricName, setMetricName] = useState('');
+    const [selectedRows, setSelectedRows] = useState([]);
 
     const renderFormStep = () => {
         switch (step) {
@@ -327,7 +246,11 @@ const CreateMetric = () => {
                         <DropDown
                             title = "Select Data Source"
                             items = {loadingDataSourceMappings ? ["Loading..."] : dataSourceMappings.map(dataSource => ({value: dataSource.id, label: dataSource.name}))}
-                            onSelect={(item) => handleDataSourceSelect(item)}
+                            onSelect={(item) => {
+                                handleDataSourceSelect(item);
+                                setSelectedReadyData(item);
+                            }}
+                            value = {selectedReadyData}
                         />
 
                         <Button icon="file" mode="text" onPress={showDataModal}>
@@ -342,11 +265,12 @@ const CreateMetric = () => {
                             }))}
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
+                            value={selectedMetric}
                         />
 
                         <Text>Select Independent Variable (X-Axis)</Text>
                         <MetricRadioButton
-                            items={dataVariableNames}
+                            items={dataSourceVariableNames}
                             selected={chosenIndependentVariable}
                             onChange={(selection) => {
                                 setChosenIndependentVariable(selection);
@@ -354,14 +278,67 @@ const CreateMetric = () => {
                         />
 
                         <Text style={{ marginTop: 12 }}>Select Dependent Variables (Y-Axis)</Text>
-                        <MetricCheckbox
-                            items={dataVariableNames}
-                            selected={chosenDependentVariables}
-                            onChange={(selection) => {
-                                // Convert names back into indices
-                                setChosenDependentVariables(selection);
+                        {["bar", "pie"].includes(selectedMetric) ? (
+                            <MetricRadioButton
+                                items={dataSourceVariableNames}
+                                selected={chosenDependentVariables}
+                                onChange={(selection) => {
+                                    setChosenDependentVariables(selection);
+                                }}
+                            />
+                        ) : (
+                            <MetricCheckbox
+                                items={dataSourceVariableNames}
+                                selected={chosenDependentVariables}
+                                onChange={(selection) => {
+                                    setChosenDependentVariables(selection);
+                                }}
+                            />
+                        )}
+
+                        {/* Row Selection */}
+                        <View 
+                            style={{ 
+                                flexDirection: "row", 
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                marginBottom: -7
                             }}
-                        />
+                        >
+                            <Text>Select Data Points (Optional)</Text>
+                            
+                            <Chip
+                                onPress={() => {
+                                    if (selectedRows.length === dataSourceData.length) {
+                                        setSelectedRows([]);
+                                    } else {
+                                        setSelectedRows(dataSourceData.map((row) => row[0]));
+                                    }
+                                }}
+                                style={{
+                                    backgroundColor: theme.colors.background,
+                                }}
+                                textStyle={{
+                                    color: theme.colors.primary
+                                }}
+                            >
+                                {selectedRows.length === dataSourceData.length ? "Deselect All" : "Select All"}
+                            </Chip>
+
+                            <IconButton
+                                icon={showChecklist ? "chevron-up" : "chevron-down"}
+                                size={20}
+                                onPress={() => setShowChecklist(!showChecklist)}
+                            />
+                        </View>
+
+                        {showChecklist && (
+                            <MetricCheckbox
+                                items={dataSourceData.map((row) => row[0])} // use first column (e.g. Name)
+                                selected={selectedRows}
+                                onChange={(selection) => setSelectedRows(selection)}
+                            />
+                        )}
                                                    
                         <Portal>
                             <Modal 
@@ -381,10 +358,10 @@ const CreateMetric = () => {
                                             <ScrollView horizontal
                                                 showsHorizontalScrollIndicator
                                             >
-                                                <View style={{ minWidth: (dataVariableNames.length) * 100 }}>
+                                                <View style={{ minWidth: (dataSourceVariableNames.length) * 100 }}>
                                                     <DataTable>{/* Displays a preview of the data as a table */} 
                                                         <DataTable.Header>
-                                                            {dataVariableNames.map((variableName, index) => (
+                                                            {dataSourceVariableNames.map((variableName, index) => (
                                                                 <DataTable.Title key={index} numberOfLines={1}>
                                                                     <Text>{String(variableName)}</Text>
                                                                 </DataTable.Title>
@@ -394,7 +371,7 @@ const CreateMetric = () => {
                                                             data={displayedRows}
                                                             renderItem={({ item }) => (
                                                                 <DataTable.Row>
-                                                                    {dataVariableNames.map((variableName, index) => (
+                                                                    {dataSourceVariableNames.map((variableName, index) => (
                                                                         <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
                                                                             <Text>{String(item[variableName])}</Text>
                                                                         </DataTable.Cell>
@@ -438,22 +415,31 @@ const CreateMetric = () => {
                     setColoursState(updated);
                 };
 
+                const filteredRows = dataSourceVariableNames.filter(
+                    (row) => selectedRows.includes(row[0]) // assumes first column is "Name"
+                );
+
                 return (
                     <ScrollView>
                         <TextField
                             label="Metric Name"
                             placeholder="Metric Name"
                             onChangeText={setMetricName}
+                            value={metricName}
                         />
                         
                         {/* Variable selector chips */}
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 10 }}>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 10 }}>
                             {chosenDependentVariables.map((variable, index) => (
                                 <Chip
                                     key={variable}
                                     selected={wheelIndex === index}
                                     onPress={() => setWheelIndex(index)}
-                                    style={{ margin: 4 }}
+                                    style={{ 
+                                        margin: 4,
+                                        backgroundColor: wheelIndex === index ? theme.colors.primary : theme.colors.placeholder,
+                                    }}
+                                    showSelectedCheck = {false}
                                 >
                                     {variable ?? `Y${index + 1}`}
                                 </Chip>
@@ -461,7 +447,7 @@ const CreateMetric = () => {
                         </View>
                         
                         {/* Single colour picker for the active variable */}
-                        <View style={{ marginTop: 10, alignItems: "center" }}>
+                        <View style={{ marginTop: 10, justifyContent: "center", flexDirection: "row" }}>
                             <ColorPicker
                                 color={coloursState[wheelIndex]}
                                 onColorChange={(newColor) => {
@@ -474,16 +460,17 @@ const CreateMetric = () => {
                                 thumbSize={30}
                                 sliderSize={30}
                                 noSnap={true}
-                                row={true}
+                                gapSize={10}
+                                palette={['#000000','#ed1c24','#d11cd5','#2b5fceff','#57ff0a','#ffde17','#f26522','#888888']}
                             />
                         </View>
                         
                         {/* Graph preview */}
-                        <Card style={[styles.card, { marginTop: 20 }]}>
+                        <Card style={[styles.card]}>
                             <Card.Content>
                                 <View style={styles.graphCardContainer}>
                                     {graphDef.render({
-                                        data: convertToGraphData(dataRows),
+                                        data: convertToGraphData(dataSourceData),
                                         xKey: chosenIndependentVariable,
                                         yKeys: chosenDependentVariables,
                                         colours: coloursState, // dynamic per-variable colours
@@ -530,13 +517,12 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     card: {
-        height: 270,
+        height: 260,
         marginTop: 20,
     },
     graphCardContainer: {
-        height: "80%",
+        height: "100%",
         width: "100%",
-        marginTop: 12,
     },
     container: {
         flex: 1,
