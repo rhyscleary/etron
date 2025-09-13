@@ -26,7 +26,8 @@ TARGET_FOLDERS = [
 SHARED_FOLDERS = [
     "shared",
     "modules/day-book/reports/reports-shared",
-    "modules/day-book/data-sources/data-sources-shared"
+    "modules/day-book/data-sources/data-sources-shared",
+    "modules/day-book/day-book-shared"
 ]
 
 # === FUNCTIONS ===
