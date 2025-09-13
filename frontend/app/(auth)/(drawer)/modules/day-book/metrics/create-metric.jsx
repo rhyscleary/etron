@@ -169,18 +169,20 @@ const CreateMetric = () => {
     }
 
 
-    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);  // Hard-coded value, but should be set by the user
-    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);  // Hard-coded values, but should be set by the user
+    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([]);
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([]);
     const colours = ["white", "red", "blue", "green", "purple", "orange"]
 
-    function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {  // Transforms the rows into a json object (which the graph needs)
-        const output = rows.map(row => {
-            let rowOutput = {independentVariable: String(row[independentColumn])}  // Issue: this doesn't sort the data, so the independentVariable can be out of order and look weird (but still correct) 
-            for (let i = 0; i < dependentColumns.length; i++) (
-                rowOutput["dependentVariable" + (i)] = Number(row[dependentColumns[i]])
-            );
-            return rowOutput;
-        });
+    function convertToGraphData(rows) {
+        let output = rows.map(row => {
+            const newRow = {};
+            for (const [key, value] of Object.entries(row)) {
+                const valueAsNumber = Number(value);
+                newRow[key] = !isNaN(number) ? valueAsNumber : value  // If the value can be turned into a number, do so
+            }
+            return newRow;
+        })
+        console.log("output:", output);
         return output;
     }
 
@@ -345,24 +347,19 @@ const CreateMetric = () => {
                         <Text>Select Independent Variable (X-Axis)</Text>
                         <MetricRadioButton
                             items={dataVariableNames}
-                            selected={dataVariableNames[chosenIndependentVariable[0]]}
+                            selected={chosenIndependentVariable}
                             onChange={(selection) => {
-                                // Find the column index for the chosen independent variable
-                                const index = dataVariableNames.findIndex((h) => h === selection);
-                                setChosenIndependentVariable(index >= 0 ? [index] : []);
+                                setChosenIndependentVariable(selection);
                             }}
                         />
 
                         <Text style={{ marginTop: 12 }}>Select Dependent Variables (Y-Axis)</Text>
                         <MetricCheckbox
                             items={dataVariableNames}
-                            selected={chosenDependentVariables.map((i) => dataVariableNames[i])}
+                            selected={chosenDependentVariables}
                             onChange={(selection) => {
                                 // Convert names back into indices
-                                const indices = selection
-                                    .map((h) => dataVariableNames.findIndex((x) => x === h))
-                                    .filter((i) => i >= 0);
-                                setChosenDependentVariables(indices);
+                                setChosenDependentVariables(selection);
                             }}
                         />
                                                    
@@ -451,14 +448,14 @@ const CreateMetric = () => {
                         
                         {/* Variable selector chips */}
                         <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 10 }}>
-                            {chosenDependentVariables.map((dep, index) => (
+                            {chosenDependentVariables.map((variable, index) => (
                                 <Chip
-                                    key={dep}
+                                    key={variable}
                                     selected={wheelIndex === index}
                                     onPress={() => setWheelIndex(index)}
                                     style={{ margin: 4 }}
                                 >
-                                    {dataVariableNames[dep] ?? `Y${i + 1}`}
+                                    {variable ?? `Y${index + 1}`}
                                 </Chip>
                             ))}
                         </View>
@@ -486,15 +483,9 @@ const CreateMetric = () => {
                             <Card.Content>
                                 <View style={styles.graphCardContainer}>
                                     {graphDef.render({
-                                        data: readyDataToGraphData(
-                                            dataRows, 
-                                            chosenIndependentVariable, 
-                                            chosenDependentVariables
-                                        ),
-                                        xKey: "independentVariable",
-                                        yKeys: chosenDependentVariables.map(
-                                            (_, i) => "dependentVariable" + i
-                                        ),
+                                        data: convertToGraphData(dataRows),
+                                        xKey: chosenIndependentVariable,
+                                        yKeys: chosenDependentVariables,
                                         colours: coloursState, // dynamic per-variable colours
                                     })}
                                 </View>

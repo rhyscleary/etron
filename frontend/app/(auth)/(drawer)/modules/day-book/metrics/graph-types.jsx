@@ -13,6 +13,7 @@ const GraphTypes = {
         value: "line",
         previewImage: require("../../../../../../assets/images/lineChart.png"),
         render: ({ data, xKey, yKeys, colours }) => {
+            console.log("data:", data);
             const ChartComponent = () => {
                 const font = useFont(inter, 12);
                 if (!font) return null;
@@ -34,14 +35,16 @@ const GraphTypes = {
                             yKeys.map((key, i) => (
                                 <Line 
                                     key={i} 
-                                    points={points[key]} 
+                                    points= {points[key]}
                                     strokeWidth={3}
                                     color={colours[i] || "black" }
                                 />
+                                
                             ))
                         }
                     </CartesianChart>
                 );
+                    
             };
             return <ChartComponent/>;
         },
