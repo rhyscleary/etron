@@ -16,6 +16,7 @@ const Profile = () => {
         { icon: "", label: "Collaboration", onPress: () => router.navigate("/collaboration/collaboration") },
         { icon: "", label: "Testing - Account Settings", onPress: () => router.navigate("/account-settings") },
         { icon: "", label: "Testing - Example Graph Display", onPress: () => router.navigate("/graphs") },
+        { icon: "", label: "Reports", onPress:() => router.navigate("/modules/day-book/reports/report-management") },
         { icon: "", label: "Testing - Endpoints", onPress: () => router.navigate("/test-endpoints/endpoints") },
         { icon: "", label: "Testing - Create Workspace", onPress: () => router.navigate("../create-workspace") },
         { icon: "", label: "Testing - Join Workspace", onPress: () => router.navigate("../join-workspace") },

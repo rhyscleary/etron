@@ -21,7 +21,7 @@ const MetricManagement = () => {
     useEffect(() => {
         async function getWorkspaceMetrics() {
             const workspaceId = await getWorkspaceId();
-            const filePathPrefix = `workspaces/${workspaceId}/metrics/`
+            const filePathPrefix = `workspaces/${workspaceId}/day-book/metrics/`
 
             try {
                 const result = await list ({

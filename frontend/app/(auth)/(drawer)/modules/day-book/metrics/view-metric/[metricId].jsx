@@ -31,10 +31,10 @@ const [profilePhotoUri, setProfilePhotoUri] = useState(null);
 
 const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
-    const [metricSettings, setMetricSettings] = useState({});
+    
     const [dataRows, setDataRows] = useState([]);
-    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);
-    const [chosenDependentVariables, setChosenDependentVariables] = useState([1]);
+    const [independentVariable, setIndependentVariable] = useState([0]);
+    const [dependentVariables, setDependentVariables] = useState([1]);
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
     const [selectedRows, setSelectedRows] = useState([]);
     const router = useRouter();
@@ -43,23 +43,40 @@ const ViewMetric = () => {
 
     useEffect(() => {
         async function getMetricSettings() {
-            try {
-                const workspaceId = await getWorkspaceId();
-                const { body } = await downloadData({
-                    path: `workspaces/${workspaceId}/metrics/${metricId}/metric_settings.json`,
-                    options: { bucket: 'workspaces' }
+            const workspaceId = await getWorkspaceId();
+            console.log("Metric folder:", `workspaces/${workspaceId}/day-book/metrics/${metricId}`);
+        
+            console.log("Downloading metric settings...");
+            try {  // Download metric settings
+                const { body } = await downloadData ({
+                    path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-settings.json`,
+                    options: {
+                        bucket: 'workspaces'
+                    }
                 }).result;
-            
-                const metricJson = JSON.parse(await body.text());
-                setMetricSettings(metricJson);
-                setDataRows(metricJson.data || []);
-                setChosenIndependentVariable(metricJson.independentVariable || [0]);
-                setChosenDependentVariables(metricJson.dependentVariables || [1]);
-                setColoursState(metricJson.colours || ["red", "blue", "green", "purple"]);
-                setSelectedRows(metricJson.selectedRows || []);
+                const metricSettingsJson = JSON.parse(await body.text());
+                setDependentVariables(metricSettingsJson.dependentVariables);
+                setIndependentVariable(metricSettingsJson.independentVariable);
             } catch (error) {
-                console.error("Error downloading metric data:", error);
+                console.log("Error downloading metric settings:", error);
+                return;
             }
+            console.log("Metric settings downloaded successfully");
+
+            try {  // Download metric data
+                const { body } = await downloadData ({
+                    path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`,
+                    options: {
+                        bucket: 'workspaces'
+                    }
+                }).result;
+                const metricPrunedDataJson = JSON.parse(await body.text());
+                setDataRows(metricPrunedDataJson.data);
+            } catch (error) {
+                console.log("Error downloading pruned data:", error);
+                return;
+            }
+            console.log("Metric pruned data downloaded successfully");
         }
         getMetricSettings();
     }, [metricId]);
@@ -68,7 +85,7 @@ const ViewMetric = () => {
         return rows.map(row => {
             const rowOutput = { independentVariable: String(row[independentColumn]) };
             dependentColumns.forEach((colIndex, i) => {
-                rowOutput["dependentVariable" + i] = Number(row[colIndex]);
+                rowOutput["dependentVariables" + i] = Number(row[colIndex]);
             });
             return rowOutput;
         });
@@ -140,11 +157,11 @@ const ViewMetric = () => {
                             {graphDef.render({
                                 data: readyDataToGraphData(
                                     filteredRows,
-                                    chosenIndependentVariable, 
-                                    chosenDependentVariables
+                                    independentVariable, 
+                                    dependentVariables
                                 ),
                                 xKey: "independentVariable",
-                                yKeys: chosenDependentVariables.map((_, i) => "dependentVariable" + i),
+                                yKeys: dependentVariables.map((_, i) => "dependentVariables" + i),
                                 colours: coloursState,
                             })}
                         </View>
