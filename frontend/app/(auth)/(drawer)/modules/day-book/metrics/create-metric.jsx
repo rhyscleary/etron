@@ -62,21 +62,30 @@ const CreateMetric = () => {
 
     const [dataSourceDataDownloadProgress, setDataSourceDataDownloadProgress] = useState(0);
     const [dataSourceId, setDataSourceId] = useState();  // Id of data source chosen by user
-    const [dataSourceData, setDataSourceData] = useState(null);  // Data chosen by the user to be loaded into the graph
-    const [loadingDataSourceData, setLoadingDataSourceData] = useState(false);  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
+    const [dataSourceData, setDataSourceData] = useState([]);  // Data from the chosen data source
+    const [dataSourceSchema, setDataSourceSchema] = useState([]);  // Data schema (aka headers) of the chosen data source
+    const [dataSourceDataDownloadStatus, setDataSourceDataDownloadStatus] = useState("unstarted");  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
+
+    useEffect(() => {
+        console.log("Download status:", dataSourceDataDownloadStatus);
+    }, [dataSourceDataDownloadStatus])
 
     const handleDataSourceSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
         console.log('Downloading ready data:', source);
         setDataSourceId(source);
+        setDataSourceDataDownloadStatus("downloading");
 
         const workspaceId = await getWorkspaceId();
-        setDataSourceDataDownloadProgress(0);
         try {
             let result = await apiGet(
                 endpoints.modules.day_book.data_sources.viewData(source),
                 { workspaceId }
             )
-            console.log("result:", result);
+            console.log("data:", result.data);
+            console.log("schema:", result.schema);
+            setDataSourceData(result.data);
+            setDataSourceSchema(result.schema);
+            setDataSourceDataDownloadStatus("downloaded");
 
             /*let result = await list({  // This list function is here to get the name of the data source file. When Rhys has an endpoint for viewing the data in a data source, this won't be needed.
                 path: `workspaces/${workspaceId}/day-book/dataSources/${source}/data/`,
@@ -114,7 +123,7 @@ const CreateMetric = () => {
             console.log("Stored data length:", csvRow.length);*/
         } catch (error) {
             console.error("Error downloading data source's data:", error);
-            setLoadingDataSourceData(false);
+            setDataSourceDataDownloadStatus("unstarted");
         }
     }
 
@@ -126,8 +135,8 @@ const CreateMetric = () => {
     const rowLoadAmount = 5;  // How many rows are loaded at a time in the data preview
     const [rowLimit, setRowLimit] = useState(rowLoadAmount);  // How many roads are loaded total (will update over time)
     // useMemo caches the result so that it doesn't keep recalculating
-    const dataHeader = useMemo(() => dataSourceData?.[0] ?? [], [dataSourceData]);  // Automatically loads the first row of data as headers
-    const dataRows = useMemo(() => dataSourceData?.slice(1) ?? [], [dataSourceData]);  // Automatically loads everything except the first row of data
+    const dataVariableNames = useMemo(() => dataSourceSchema.map(variable => variable.name), [dataSourceSchema]);  // Automatically loads the headers from the schema
+    const dataRows = useMemo(() => dataSourceData, [dataSourceData]);  // Automatically loads everything except the first row of data
     const displayedRows = useMemo(() => dataRows.slice(0, rowLimit), [dataRows, rowLimit]);  // Loads only the data that will be displayed
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);
 
@@ -294,7 +303,9 @@ const CreateMetric = () => {
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
-    const showDataModal = () => setDataVisible(true);
+    const showDataModal = () => {
+        setDataVisible(true);
+    }
     const hideDataModal = () => setDataVisible(false);
 
     const [graphVisible, setGraphVisible] = React.useState(false);
@@ -333,23 +344,23 @@ const CreateMetric = () => {
 
                         <Text>Select Independent Variable (X-Axis)</Text>
                         <MetricRadioButton
-                            items={dataHeader}
-                            selected={dataHeader[chosenIndependentVariable[0]]}
+                            items={dataVariableNames}
+                            selected={dataVariableNames[chosenIndependentVariable[0]]}
                             onChange={(selection) => {
                                 // Find the column index for the chosen independent variable
-                                const index = dataHeader.findIndex((h) => h === selection);
+                                const index = dataVariableNames.findIndex((h) => h === selection);
                                 setChosenIndependentVariable(index >= 0 ? [index] : []);
                             }}
                         />
 
                         <Text style={{ marginTop: 12 }}>Select Dependent Variables (Y-Axis)</Text>
                         <MetricCheckbox
-                            items={dataHeader}
-                            selected={chosenDependentVariables.map((i) => dataHeader[i])}
+                            items={dataVariableNames}
+                            selected={chosenDependentVariables.map((i) => dataVariableNames[i])}
                             onChange={(selection) => {
                                 // Convert names back into indices
                                 const indices = selection
-                                    .map((h) => dataHeader.findIndex((x) => x === h))
+                                    .map((h) => dataVariableNames.findIndex((x) => x === h))
                                     .filter((i) => i >= 0);
                                 setChosenDependentVariables(indices);
                             }}
@@ -363,25 +374,22 @@ const CreateMetric = () => {
                             >
                                 <Card style={styles.card}>
                                     <Card.Content>
-                                        {dataSourceDataDownloadProgress == 0 && (
-                                            <Text>Display preview here</Text>
+                                        {dataSourceDataDownloadStatus == "unstarted" && (
+                                            <Text>No data source selected</Text>
                                         )}
-                                        {dataSourceDataDownloadProgress > 0 && dataSourceDataDownloadProgress < 100 && (
-                                            <Text>Downloading data source: {dataSourceDataDownloadProgress}%</Text>
-                                        )}
-                                        {dataSourceDataDownloadProgress == 100 && loadingDataSourceData && (
+                                        {dataSourceDataDownloadStatus == "downloading" && (
                                             <ActivityIndicator size="large" color="#0000ff" />
                                         )}
-                                        {dataSourceDataDownloadProgress == 100 && !loadingDataSourceData && (
+                                        {dataSourceDataDownloadStatus == "downloaded" && (
                                             <ScrollView horizontal
                                                 showsHorizontalScrollIndicator
                                             >
-                                                <View style={{ minWidth: (dataHeader?.length ?? 0) * 100 }}>
+                                                <View style={{ minWidth: (dataVariableNames.length) * 100 }}>
                                                     <DataTable>{/* Displays a preview of the data as a table */} 
                                                         <DataTable.Header>
-                                                            {dataHeader.map((header, index) => (
+                                                            {dataVariableNames.map((variableName, index) => (
                                                                 <DataTable.Title key={index} numberOfLines={1}>
-                                                                    <Text>{String(header)}</Text>
+                                                                    <Text>{String(variableName)}</Text>
                                                                 </DataTable.Title>
                                                             ))}
                                                         </DataTable.Header>
@@ -389,9 +397,9 @@ const CreateMetric = () => {
                                                             data={displayedRows}
                                                             renderItem={({ item }) => (
                                                                 <DataTable.Row>
-                                                                    {item.map((cell, index) => (
+                                                                    {dataVariableNames.map((variableName, index) => (
                                                                         <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
-                                                                            <Text>{String(cell)}</Text>
+                                                                            <Text>{String(item[variableName])}</Text>
                                                                         </DataTable.Cell>
                                                                     ))}
                                                                 </DataTable.Row>
@@ -450,7 +458,7 @@ const CreateMetric = () => {
                                     onPress={() => setWheelIndex(index)}
                                     style={{ margin: 4 }}
                                 >
-                                    {dataHeader[dep] ?? `Y${i + 1}`}
+                                    {dataVariableNames[dep] ?? `Y${i + 1}`}
                                 </Chip>
                             ))}
                         </View>
