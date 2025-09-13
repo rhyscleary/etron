@@ -35,7 +35,6 @@ const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
     
     const [metricSettings, setMetricSettings] = useState(null);
-    const [metricData, setMetricData] = useState(null);
     const [metricDownloadStatus, setMetricDownloadStatus] = useState("unstarted");
 
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
@@ -80,14 +79,6 @@ const ViewMetric = () => {
                 )
                 console.log("data:", apiResultData.data);
                 setMetricData(apiResultData.data);
-                /*const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`,
-                    options: {
-                        bucket: 'workspaces'
-                    }
-                }).result;
-                const metricPrunedDataJson = JSON.parse(await body.text());
-                setDataRows(metricPrunedDataJson.data);*/
             } catch (error) {
                 console.log("Error downloading pruned data:", error);
                 setMetricDownloadStatus("failed");
@@ -151,10 +142,6 @@ const ViewMetric = () => {
                 { workspaceId }
             )
             console.log("Successfully deleted metric.")
-            /*await remove({
-                path: `workspaces/${workspaceId}/metrics/${metricId}/metric_settings.json`,
-                options: { bucket: 'workspaces' }
-            });*/
             router.navigate("/modules/day-book/metrics/metric-management");
         } catch (error) {
             console.error("Error deleting metric:", error);
