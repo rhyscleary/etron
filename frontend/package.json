@@ -75,7 +75,7 @@
     "react-native-webview": "^13.13.5",
     "react-oidc-context": "^3.3.0",
     "uuid": "^11.0.0",
-    "victory-native": "^41.19.3"
+    "victory-native": "^41.20.1"
   },
   "overrides": {
     "uuid": "^11.0.0"
