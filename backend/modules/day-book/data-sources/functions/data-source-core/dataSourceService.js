@@ -12,6 +12,7 @@ const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion")
 const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { runQuery } = require("@etron/data-sources-shared/utils/athenaService");
+const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 
 async function createRemoteDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;
@@ -208,6 +209,24 @@ async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
     };
 }
 
+async function getLocalDataSourceUploadUrl(authUserId, workspaceId, dataSourceId) {
+    await validateWorkspaceId(workspaceId);
+
+    const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
+
+    if (!dataSource) throw new Error("DataSource not found");
+
+    if (dataSource.sourceType != "local-csv") {
+        throw new Error("Invalid data source type. Must be local.");
+    }
+
+    const fileUploadUrl = await getUploadUrl(workspaceId, dataSourceId);
+    
+    return {
+        fileUploadUrl
+    };
+}
+
 async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
     await validateWorkspaceId(workspaceId);
 
@@ -389,8 +408,11 @@ async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
         options
     );
 
+    // cast received data to schema
+    const castedData = castDataToSchema(data, schema);
+
     return {
-        data,
+        data: castedData,
         schema,
         tableName,
         nextToken,
@@ -407,5 +429,6 @@ module.exports = {
     deleteDataSourceInWorkspace,
     testConnection,
     getRemotePreview,
-    viewData
+    viewData,
+    getLocalDataSourceUploadUrl
 };

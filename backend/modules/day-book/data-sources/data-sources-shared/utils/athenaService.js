@@ -24,7 +24,7 @@ async function startQuery(query, database, outputLocation) {
 
     const queryExecutionId = response.QueryExecutionId;
 
-    // poll until the qery completes
+    // poll until the query completes
     let queryState = "RUNNING";
     while (queryState === "RUNNING" || queryState === "QUEUED") {
         await new Promise(resolve => setTimeout(resolve, 1000));
