@@ -4,9 +4,6 @@ import { ActivityIndicator, Text } from 'react-native-paper';
 import { useState } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import { Button, View } from 'react-native';
-import { uploadData } from 'aws-amplify/storage';
-import { getCurrentUser } from 'aws-amplify/auth';
-import * as FileSystem from 'expo-file-system';
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import TextField from '../../../../../../../components/common/input/TextField';
 import { RadioButton } from 'react-native-paper';
@@ -31,7 +28,6 @@ const LocalCSV = () => {
                 return;
             }
             
-            
             const file = result.assets[0];  // [0] means it only keeps the first file, as result will be an array of files
             setDeviceFilePath(file.uri);
 
@@ -43,14 +39,11 @@ const LocalCSV = () => {
     };
 
     const [isUploadingData, setIsUploadingData] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
 
     const uploadFile = async (sourceFilePath, uploadUrl) => {
         console.log('File path:', sourceFilePath);
 
         setIsUploadingData(true);
-        setUploadProgress(0);
-
         try {
             console.log('Retrieving file...');
             const response = await fetch(sourceFilePath);
@@ -99,14 +92,6 @@ const LocalCSV = () => {
     }
 
     const handleFinalise = async () => {
-        /*await createDataSource();
-
-        const workspaceId = await getWorkspaceId();
-        const dataSourceId = dataSourceName.replace(/ /g, "_")
-        const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data-source-data.csv`;
-        console.log('S3 File Path:', S3FilePath);
-        uploadDocument(deviceFilePath, S3FilePath);*/
-
         const createResponse = await createDataSource();
         if (!createResponse) return;
 
@@ -143,11 +128,6 @@ const LocalCSV = () => {
                         <RadioButton.Item label="Extend" value="extend" />
                     </RadioButton.Group>
                     <Button onPress={handleFinalise} title="Create Source" disabled={isUploadingData || dataSourceName == ""} />
-                    {isUploadingData && (
-                        <Text>
-                            Progress: {uploadProgress}%
-                        </Text>
-                    )}
                 </View>
             )}
         </>

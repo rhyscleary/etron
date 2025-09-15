@@ -14,7 +14,6 @@ import endpoints from "../../../../../../../utils/api/endpoints";
 
 const ViewDataSource = () => {
     const { dataSourceId } = useLocalSearchParams();
-    //const dataSourceId = dataSourceName.replace(/ /g, "_")
 
     const [loadingDataSourceInfo, setLoadingDataSourceInfo] = useState(true);
     const [creator, setCreator] = useState();
@@ -28,15 +27,12 @@ const ViewDataSource = () => {
         async function getDataSourceInfo() {
             const workspaceId = await getWorkspaceId();
 
+            let apiDataSourceInfo;
             try {
-                console.log("workspaceId:", workspaceId);
-                console.log("dataSourceId:", dataSourceId);
-
-                let apiDataSourceInfo = await apiGet(
+                apiDataSourceInfo = await apiGet(
                     endpoints.modules.day_book.data_sources.getDataSource(dataSourceId),
                     { workspaceId }
                 );
-                console.log("apiget apiDataSourceInfo:", apiDataSourceInfo);
                 setCreator(apiDataSourceInfo.createdBy);
                 setMethod(apiDataSourceInfo.method);
                 setName(apiDataSourceInfo.name);
@@ -45,17 +41,16 @@ const ViewDataSource = () => {
                 setLastUpdate(apiDataSourceInfo.lastUpdate);
                 setLoadingDataSourceInfo(false);
             } catch (error) {
-                console.log("Error downloading data source info:", error);
+                console.error("Error downloading data source info:", error);
             }
 
             try {
                 let apiUserInfo = await apiGet(
-                    endpoints.workspace.users.getUser(workspaceId, creator)
+                    endpoints.workspace.users.getUser(workspaceId, apiDataSourceInfo.createdBy)
                 );
-                console.log("apiUserInfo:", apiUserInfo);
                 setCreator(apiUserInfo.given_name + " " + apiUserInfo.family_name);
             } catch (error) {
-                console.log("Error getting user info:", error);
+                console.error("Error getting user info:", error);
             }
         }
         getDataSourceInfo();
@@ -87,34 +82,25 @@ const ViewDataSource = () => {
     };
 
     const [isUploadingData, setIsUploadingData] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
 
     const [dataDetailsStatus, setDataDetailsStatus] = useState("none");
-    const uploadDocument = async (sourceFilePath, destinationFilePath) => {
+    
+    const uploadFile = async (sourceFilePath, uploadUrl) => {
         setIsUploadingData(true);
-        setUploadProgress(0);
-
         try {
             console.log('Retrieving file...');
             const response = await fetch(sourceFilePath);
             const blob = await response.blob();
 
             console.log('Uploading file to S3 Bucket...');
-            const apiDataSourceInfo = await uploadData({
-                path: destinationFilePath,
-                data: blob,
-                //accessLevel: 'public', // should become private or protected in future i think?
-                options: {
-                    bucket: "workspaces",
-                    contentType: "text/csv",
-                    onProgress: ({ transferredBytes, totalBytes }) => {
-                        if (totalBytes) {
-                            setUploadProgress(Math.round((transferredBytes / totalBytes) * 100));  // for some reason, transferredBytes goes to double totalBytes
-                        }
-                    }
-                }
-            }).apiDataSourceInfo;
-            console.log('File uploaded successfully:', apiDataSourceInfo.path);
+            const result = await fetch(uploadUrl, {
+                method: "PUT",
+                body: blob,
+                headers: {
+                    "Content-Type": "text/csv",
+                },
+            });
+            console.log('File uploaded successfully');
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -139,7 +125,7 @@ const ViewDataSource = () => {
             console.log("metric ids:", metricIds);
             // metricId = await body.text();
         } catch (error) {
-            console.log("Error downloading list of integrated metrics:", error);
+            console.error("Error downloading list of integrated metrics:", error);
             return;
         }
 
@@ -147,7 +133,7 @@ const ViewDataSource = () => {
             try { 
                 await CSVIntoMetricData(metricId);
             } catch (error) {
-                console.log(`Error uploading pruned data for ${metricId} from csv file:`, error);
+                console.error(`Error uploading pruned data for ${metricId} from csv file:`, error);
             }
         })
     }
@@ -189,14 +175,22 @@ const ViewDataSource = () => {
 
     const handleFinalise = async () => {
         const workspaceId = await getWorkspaceId();
+        const uploadUrlApiResponse = await apiGet(
+            endpoints.modules.day_book.data_sources.getUploadUrl(dataSourceId),
+            { workspaceId }
+        )
+        const uploadUrl = uploadUrlApiResponse.fileUploadUrl;
+        await uploadFile(deviceFilePath, uploadUrl);
+        /*const workspaceId = await getWorkspaceId();
         let S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data-source-data.csv`;
-        await uploadDocument(deviceFilePath, S3FilePath);
-        await updateIntegratedMetrics();
+        await uploadFile(deviceFilePath, S3FilePath);*/
+        
+        //await updateIntegratedMetrics();
     }
 
     return (
         <View style={commonStyles.screen}>
-            <Header title={`${dataSourceId}`} showBack showEdit />
+            <Header title={`${name}`} showBack showEdit />
             {loadingDataSourceInfo ?
                 <ActivityIndicator />
             : (<>
@@ -216,12 +210,7 @@ const ViewDataSource = () => {
                 )}
                 {dataDetailsStatus == "loaded" && (
                     <View>
-                        <Button onPress={handleFinalise} title="Upload data" disabled={isUploadingData || dataSourceName == ""} />
-                        {isUploadingData && (
-                            <Text>
-                                Progress: {uploadProgress}%
-                            </Text>
-                        )}
+                        <Button onPress={handleFinalise} title="Upload data" disabled={isUploadingData} />
                     </View>
                 )}
             </>)}
