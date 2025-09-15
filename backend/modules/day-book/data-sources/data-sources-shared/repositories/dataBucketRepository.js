@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { GetObjectCommand, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, NoSuchKey, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
+const { GetObjectCommand, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, NoSuchKey, S3Client, S3ServiceException, HeadObjectCommand } = require("@aws-sdk/client-s3");
 const s3Client = new S3Client({});
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { toParquet, fromParquet } = require("../utils/typeConversion");
@@ -22,11 +22,16 @@ async function saveStoredData(workspaceId, dataSourceId, data) {
     const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${date}.parquet`;
 
     try {
+        let body = data;
+        if (data && typeof data.pipe === "function") {
+            body = await streamToBuffer(data);
+        }
+
         await s3Client.send(
             new PutObjectCommand({
                 Bucket: bucketName,
                 Key: key,
-                Body: data,
+                Body: body,
                 ContentType: "application/octet-stream"
             }),
         );
@@ -36,13 +41,30 @@ async function saveStoredData(workspaceId, dataSourceId, data) {
     }
 }
 
+async function doesObjectExist(bucket, key) {
+    try {
+        await s3Client.send(
+            new HeadObjectCommand({
+                Bucket: bucket,
+                Key: key
+            })
+        );
+        return true;
+    } catch (error) {
+        if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
+            return false;
+        }
+        handleS3Error(error, `Error checking existence of ${key} in ${bucket}`);
+    }
+}
+
 // extend data. Append to existing S3 data
-async function appendToStoredData(workspaceId, dataSourceId, newData) {
+async function appendToStoredData(workspaceId, dataSourceId, newData, schema) {
     const date = new Date().toISOString().split('T')[0];
     const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${date}.parquet`;
 
     try {
-        let finalBuffer = [];
+        let finalBuffer = null;
 
         // check if data exists
         const exists = await doesObjectExist(bucketName, key);
@@ -59,11 +81,13 @@ async function appendToStoredData(workspaceId, dataSourceId, newData) {
             const existingBuffer = await streamToBuffer(existingFile.Body);
             
             // convert existing data from parquet to json
-            const existingData = await fromParquet(existingBuffer);
+            const existingData = await fromParquet(existingBuffer, schema);
 
             const mergedData = [...existingData, ...newData];
 
             finalBuffer = await toParquet(mergedData, schema);
+        } else {
+            finalBuffer = await toParquet(newData, schema);
         }
 
         await saveStoredData(workspaceId, dataSourceId, finalBuffer);

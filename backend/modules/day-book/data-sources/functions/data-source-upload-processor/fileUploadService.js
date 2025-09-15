@@ -7,7 +7,8 @@ const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion")
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
 const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
-const { appendToStoredData } = require("../../data-sources-shared/repositories/dataBucketRepository");
+const { appendToStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 
 
 async function processUploadedFile(workspaceId, dataSourceId, rawData) {
@@ -36,12 +37,15 @@ async function processUploadedFile(workspaceId, dataSourceId, rawData) {
         // create the schema 
         const schema = generateSchema(translatedData.slice(0, 100));
 
+        // cast rows to the schema
+        const castedData = castDataToSchema(translatedData, schema);
+
         // convert to parquet
-        const parquetBuffer = await toParquet(translatedData, schema);
+        const parquetBuffer = await toParquet(castedData, schema);
 
         // save data depending on method
         if (dataSource.method === "extend") {
-            await appendToStoredData(workspaceId, dataSourceId, translatedData, schema);
+            await appendToStoredData(workspaceId, dataSourceId, castedData, schema);
         } else {
             await replaceStoredData(workspaceId, dataSourceId, parquetBuffer);
         }

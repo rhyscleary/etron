@@ -10,7 +10,8 @@ const { translateData } = require("@etron/data-sources-shared/utils/translateDat
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
-const { appendToStoredData } = require("../../data-sources-shared/repositories/dataBucketRepository");
+const { appendToStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 
 async function fetchData() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
@@ -56,12 +57,15 @@ async function fetchData() {
                 // create the schema
                 const schema = generateSchema(translatedData.slice(0, 100));
 
+                // cast rows to the schema
+                const castedData = castDataToSchema(translatedData, schema);
+
                 // convert the data to parquet file
-                const parquetBuffer = await toParquet(translatedData, schema);
+                const parquetBuffer = await toParquet(castedData, schema);
 
                 if (dataSource.method === "extend") {
                     // extend the data source
-                    await appendToStoredData(workspace.workspaceId, dataSource.dataSourceId, translatedData, schema);
+                    await appendToStoredData(workspace.workspaceId, dataSource.dataSourceId, castedData, schema);
                 } else {
                     // replace data
                     await replaceStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
