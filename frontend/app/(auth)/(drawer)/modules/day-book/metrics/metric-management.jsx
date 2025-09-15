@@ -9,7 +9,6 @@ import { Link, useRouter } from "expo-router";
 import { Text, useTheme, Card } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage.jsx";
-import { list, downloadData } from 'aws-amplify/storage';
 import GraphTypes from "./graph-types.jsx";
 import endpoints from "../../../../../../utils/api/endpoints.js";
 import { apiGet } from "../../../../../../utils/api/apiClient.jsx";

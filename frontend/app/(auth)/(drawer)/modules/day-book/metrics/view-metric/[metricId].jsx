@@ -6,7 +6,6 @@ import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { downloadData, remove } from "aws-amplify/storage";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import GraphTypes from '../graph-types';
 import inter from "../../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";

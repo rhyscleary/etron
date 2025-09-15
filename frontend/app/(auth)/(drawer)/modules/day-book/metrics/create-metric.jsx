@@ -12,15 +12,10 @@ import MetricCheckbox from '../../../../../../components/common/buttons/MetricCh
 import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
 import GraphTypes from './graph-types';
 
-import { list, downloadData, uploadData } from 'aws-amplify/storage';
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
 import endpoints from '../../../../../../utils/api/endpoints';
 import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
 
-
-import { useChartPressState } from "victory-native";
-import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
-import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 import ColorPicker from 'react-native-wheel-color-picker';
 
 
