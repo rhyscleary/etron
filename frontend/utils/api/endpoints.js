@@ -81,6 +81,8 @@ const endpoints = {
                 removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
                 testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
                 remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
+                viewData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
+                getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`
             },
 
             metrics: {

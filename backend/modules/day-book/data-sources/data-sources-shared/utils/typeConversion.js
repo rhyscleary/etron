@@ -1,47 +1,6 @@
 const parquet = require('parquetjs-lite');
 const { Writable } = require('stream');
 
-/*async function toParquet(data) {
-    if (!Array.isArray(data) || data.length === 0) {
-        throw new Error("The data must be a non-empty array");
-    }
-
-    const firstRow = data[0];
-    const schemaDef = {};
-
-    for (const [key, value] of Object.entries(firstRow)) {
-        if (typeof value === "number" && Number.isInteger(value)) {
-            schemaDef[key] = { type: 'INT64' };
-        } else if (typeof value === "number") {
-            schemaDef[key] = { type: 'DOUBLE' };
-        } else if (typeof value === "boolean") {
-            schemaDef[key] = { type: 'BOOLEAN' };
-        } else {
-            schemaDef[key] = { type: 'UTF8' };
-        }
-    }
-
-    const schema = new parquet.ParquetSchema(schemaDef);
-
-    let chunks = [];
-    const writable = new Writable({
-        write(chunk, encoding, callback) {
-            chunks.push(chunk);
-            callback();
-        }
-    });
-
-    const writer = await parquet.ParquetWriter.openStream(schema, writable);
-
-    for (const row of data) {
-        await writer.appendRow(row);
-    }
-
-    await writer.close();
-
-    return Buffer.concat(chunks);
-}*/
-
 async function toParquet(data, schema) {
     if (!Array.isArray(data) || data.length === 0) {
         throw new Error("The data must be a non-empty array");
@@ -123,4 +82,44 @@ async function toParquet(data, schema) {
     return Buffer.concat(chunks);
 }
 
-module.exports = { toParquet };
+async function fromParquet(buffer, schema) {
+    const reader = await parquet.ParquetReader.openBuffer(buffer);
+    const cursor = reader.getCursor();
+    const records = [];
+
+    let record;
+    while (record = await cursor.next()) {
+        const casted = {};
+        for (const column of schema) {
+            let val = record[column.name];
+            if (val == null) {
+                casted[column.name] = null;
+                continue;
+            }
+            switch (column.type) {
+                case "bigint":
+                    casted[column.name] = Number(val);
+                    break;
+                case "double":
+                case "decimal(18,2)":
+                    casted[column.name] = Number(val);
+                    break;
+                case "boolean":
+                    casted[column.name] = Boolean(val);
+                    break;
+                case "timestamp":
+                    casted[column.name] = new Date(val);
+                    break;
+                case "string":
+                default:
+                    casted[column.name] = String(val);
+            }
+        }
+        records.push(record);
+    }
+
+    await reader.close();
+    return records;
+}
+
+module.exports = { toParquet, fromParquet };

@@ -6,11 +6,10 @@ function validateConfig(config) {
     if (!config) return { valid: false, error: "Config is missing"};
 
     // define required fields
-    const requiredFields = ["host", "port", "databaseName", "tables"];
+    const requiredFields = ["hostname", "port", "databaseName"];
     for (const field of requiredFields) {
         if (!config[field]) return { valid: false, error: `${field} is required`};
     }
-    if (!Array.isArray(config.tables)) return { valid: false, error: "A list of tables is required"};
 
     return { valid: true };
 }
@@ -18,20 +17,10 @@ function validateConfig(config) {
 // validate the secrets before creating the data source
 function validateSecrets(secrets) {
     if (!secrets) return { valid: false, error: "Secrets are missing"};
-    if (!secrets.username || !secrets.password) return { valid: false, error: "username and password are required"};
+    if (!secrets.username || !secrets.password) {
+        return { valid: false, error: "username and password are required"};
+    }
     return { valid: true };
-}
-
-// validate the data fetched
-function validateData(data) {
-    // stub implementation 
-    return { valid: true };
-}
-
-// normalize data
-function translateData(data) {
-    // stub implementation
-    return data;
 }
 
 
@@ -41,7 +30,7 @@ async function poll(config, secrets) {
     try {
         // construct options
         const options = {
-            host: config.host,
+            host: config.hostname,
             port: config.port,
             user: secrets.username,
             password: secrets.password,
@@ -51,21 +40,29 @@ async function poll(config, secrets) {
 
         connection = await mysql.createConnection(options);
 
-        // get query and query table
+        // create query and query table
+        const query = `
+            SELECT t.table_name,
+                k.constraint_name,
+                k.column_name,
+                k.referenced_table_name,
+                k.referenced_column_name
+            FROM information_schema.tables t
+            LEFT JOIN information_schema.key_column_usage k
+            ON k.table_schema = t.table_schema
+            AND k.table_name = t.table_name
+            WHERE t.table_schema = 'sample_db'
+            AND t.table_type='BASE TABLE'
+            AND (k.constraint_name='PRIMARY' OR k.referenced_table_name IS NOT NULL)
+            ORDER BY t.table_name, (k.constraint_name <> 'PRIMARY'), k.constraint_name, k.ordinal_position;
+        `;
 
-        
+        const [rows] = await connection.execute(query, [config.database]);
 
-        // validate the response data
-        const dataValidation = validateDataStructure(rawData);
-        if (!dataValidation.valid) {
-            throw new Error(`Validation failed: ${dataValidation.error}`);
-        }
-
-        // translate the fetched data
-        return translateData(rawData);
+        return rows;
 
     } catch (error) {
-        throw new Error(error.message);
+        throw new Error(`Poll failed: ${error.message}`);
     } finally {
         if (connection) await connection.end();
     }
@@ -74,8 +71,6 @@ async function poll(config, secrets) {
 module.exports = {
     validateConfig,
     validateSecrets,
-    validateData,
-    translateData,
     supportsPolling: true,
     poll
 };

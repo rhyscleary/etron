@@ -10,6 +10,8 @@ const { translateData } = require("@etron/data-sources-shared/utils/translateDat
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
+const { appendToStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 
 async function fetchData() {
     const workspaces = await workspaceRepo.getAllWorkspaces();
@@ -52,21 +54,25 @@ async function fetchData() {
                 const {valid, error } = validateFormat(translatedData);
                 if (!valid) throw new Error(`Invalid data format: ${error}`);
 
-                // create the schema and save it to s3
+                // create the schema
                 const schema = generateSchema(translatedData.slice(0, 100));
-                await saveSchemaAndUpdateTable(workspace.workspaceId, dataSource.dataSourceId, schema);
+
+                // cast rows to the schema
+                const castedData = castDataToSchema(translatedData, schema);
 
                 // convert the data to parquet file
-                const parquetBuffer = await toParquet(translatedData);
+                const parquetBuffer = await toParquet(castedData, schema);
 
                 if (dataSource.method === "extend") {
                     // extend the data source
-                    await saveStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
-
+                    await appendToStoredData(workspace.workspaceId, dataSource.dataSourceId, castedData, schema);
                 } else {
                     // replace data
                     await replaceStoredData(workspace.workspaceId, dataSource.dataSourceId, parquetBuffer);
                 }
+
+                // save the schema to S3
+                await saveSchemaAndUpdateTable(workspace.workspaceId, dataSource.dataSourceId, schema);
 
                 // update status
                 if (dataSource.status !== "active" || dataSource.error !== null) {
