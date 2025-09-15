@@ -129,7 +129,6 @@ const CreateMetric = () => {
             }
             return newRow;
         })
-        console.log("output:", output);
         return output;
     }
 
@@ -178,15 +177,19 @@ const CreateMetric = () => {
         console.log("Pruned data uploaded successfully.")
     }*/
 
-    async function uploadMetricSettings() {  //TODO: needs to be updated to use endpoints
+    async function uploadMetricSettings() {
         console.log("Uploading metric details...");
+        if (!metricName) {
+            throw new Error("Metric is missing a name.")
+        }
+
         let workspaceId = await getWorkspaceId();
         let metricDetails = {
             name: metricName,
             dataSourceId: dataSourceId,
             config: {
                 type: selectedMetric,
-                //data: dataSourceData,  // TODO: implement separate function using an endpoint to upload the data to S3
+                //data: dataSourceData,  // TODO: implement separate function using an endpoint to upload the pruned data to S3
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
                 colours: coloursState,
@@ -198,7 +201,7 @@ const CreateMetric = () => {
             metricDetails,
             { workspaceId }
         );
-        console.log("Uploading metric details via API result:", result);
+        console.log("Uploaded metric details via API result:", result);
     }
 
     const handleFinish = async () => {

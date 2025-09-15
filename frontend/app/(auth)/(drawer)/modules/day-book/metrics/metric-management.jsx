@@ -30,7 +30,6 @@ const MetricManagement = () => {
                     endpoints.modules.day_book.metrics.getMetrics,
                     { workspaceId }
                 );
-                console.log("result:", metricData);
                 setMetrics(metricData);
             } catch (error) {
                 console.log("Error getting workspace metrics:", error);

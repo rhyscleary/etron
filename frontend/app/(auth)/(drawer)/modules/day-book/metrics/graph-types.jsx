@@ -13,7 +13,6 @@ const GraphTypes = {
         value: "line",
         previewImage: require("../../../../../../assets/images/lineChart.png"),
         render: ({ data, xKey, yKeys, colours }) => {
-            console.log("data:", data);
             const ChartComponent = () => {
                 const font = useFont(inter, 12);
                 if (!font) return null;

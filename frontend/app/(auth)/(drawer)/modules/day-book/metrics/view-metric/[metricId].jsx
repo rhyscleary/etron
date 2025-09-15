@@ -35,6 +35,7 @@ const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
     
     const [metricSettings, setMetricSettings] = useState(null);
+    const [metricData, setMetricData] = useState(null);
     const [metricDownloadStatus, setMetricDownloadStatus] = useState("unstarted");
 
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
@@ -50,24 +51,14 @@ const ViewMetric = () => {
             console.log("Downloading metric settings...");
             let apiResultMetric;
             try {  // Download metric settings
-                console.log("metric id:", metricId);
                 apiResultMetric = await apiGet(
                     endpoints.modules.day_book.metrics.getMetric(metricId),
                     { workspaceId }
                 )
-                console.log("metric details:", apiResultMetric);
                 setMetricSettings(apiResultMetric);
-                /*const { body } = await downloadData ({
-                    path: `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-settings.json`,
-                    options: {
-                        bucket: 'workspaces'
-                    }
-                }).result;
-                const metricSettingsJson = JSON.parse(await body.text());
-                setDependentVariables(metricSettingsJson.dependentVariables);
-                setIndependentVariable(metricSettingsJson.independentVariable);*/
             } catch (error) {
-                console.log("Error downloading metric settings:", error);
+                console.error("Error downloading metric settings:", error);
+                setMetricDownloadStatus("failed");
                 return;
             }
             console.log("Metric settings downloaded successfully");
@@ -77,10 +68,9 @@ const ViewMetric = () => {
                     endpoints.modules.day_book.data_sources.viewData(apiResultMetric.dataSourceId),
                     { workspaceId }
                 )
-                console.log("data:", apiResultData.data);
                 setMetricData(apiResultData.data);
             } catch (error) {
-                console.log("Error downloading pruned data:", error);
+                console.error("Error downloading pruned data:", error);
                 setMetricDownloadStatus("failed");
                 return;
             }
@@ -91,7 +81,6 @@ const ViewMetric = () => {
     }, [metricId]);
 
     function convertToGraphData(rows) {
-        console.log("rows:", rows);
         let output = rows.map(row => {
             const newRow = {};
             for (const [key, value] of Object.entries(row)) {
@@ -100,7 +89,6 @@ const ViewMetric = () => {
             }
             return newRow;
         })
-        console.log("output:", output);
         return output;
     }
 
@@ -135,7 +123,7 @@ const ViewMetric = () => {
 
         if (!confirmed) return;
 
-        try {  // TODO: Convert this to using endpoint
+        try {
             const workspaceId = await getWorkspaceId();
             await apiDelete(
                 endpoints.modules.day_book.metrics.removeMetric(metricId),
@@ -164,14 +152,14 @@ const ViewMetric = () => {
                 <ScrollView style={commonStyles.screen}>
                     <Card style={[styles.card]}>
                         <Card.Content>
-                            {/*<View style={styles.graphCardContainer}>
+                            <View style={styles.graphCardContainer}>
                                 {graphDef.render({
                                     data: convertToGraphData(metricData),
-                                    xKey: metricSettings.independentVariable,
-                                    yKeys: metricSettings.dependentVariables,
+                                    xKey: metricSettings.config.independentVariable,
+                                    yKeys: metricSettings.config.dependentVariables,
                                     colours: coloursState,
                                 })}
-                            </View>*/}
+                            </View>
                         </Card.Content>
                     </Card>
                 </ScrollView>
