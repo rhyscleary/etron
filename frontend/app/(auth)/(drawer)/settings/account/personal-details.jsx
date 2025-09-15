@@ -11,7 +11,6 @@ import { Pressable, View, Button, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { Image } from 'expo-image';
-import { uploadData, getUrl } from 'aws-amplify/storage';
 import { Buffer } from 'buffer';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { apiPost, apiPut} from "../../../../../utils/api/apiClient";

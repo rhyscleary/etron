@@ -22,12 +22,10 @@ import useDataSources from "../../../../../../hooks/useDataSource";
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
 
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
-import { list } from "aws-amplify/storage";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet } from "../../../../../../utils/api/apiClient";
 
 const DataManagement = () => {
-	const [dataSourcePaths, setDataSourcePaths] = useState([]);
 	const [loadingDataSourcePaths, setLoadingDataSourcePaths] = useState(true);
 
 	const [dataSourceMappings, setDataSourceMappings] = useState([]);
@@ -48,26 +46,7 @@ const DataManagement = () => {
 			} catch (error) {
 				console.log("error getting data sources from api:", error);
 			}
-			//
-
-			const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
-			try {
-				const result = await list ({
-					path: filePathPrefix,
-					options: {
-						bucket: 'workspaces',
-					}
-				});
-				setDataSourcePaths(Array.from(new Set(	// Set prevents duplicates
-					result.items.map((item) => item.path
-						.slice(filePathPrefix.length)	// Cuts off file path
-						.split('/')[0]	// Cuts off everything inside the folder
-					)
-				)));
-				setLoadingDataSourcePaths(false);
-			} catch (error) {
-				console.log("Error getting workspace data sources:", error);
-			}
+			setLoadingDataSourcePaths(false);
 		}
 		getWorkspaceDataSources();
 	}, []);
@@ -286,24 +265,6 @@ const DataManagement = () => {
 					<RefreshControl refreshing={loading} onRefresh={refresh} />
 				}
 			>
-				{/* Grouped Data Sources */}
-				{loadingDataSourcePaths && (
-					<ActivityIndicator />
-				)}
-				{!loadingDataSourcePaths && (
-					dataSourcePaths.map((path) => { return (
-						<TouchableOpacity 
-							key = {path}
-							onPress={() => {router.navigate(`./view-data-source/${path}`)}}
-						>
-							<Card>
-								{<Text>
-									{path}
-								</Text>}
-							</Card>
-						</TouchableOpacity>
-					)})
-				)}
 				{Object.entries(groupedSources).map(([category, sources]) => (
 					<View key={category} style={styles.categorySection}>
 						<Text variant="titleMedium" style={styles.categoryTitle}>
