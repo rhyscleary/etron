@@ -6,11 +6,6 @@ const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
 async function createMetricInWorkspace(authUserId, workspaceId, payload) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const { name, dataSourceId, config } = payload;
 
@@ -31,7 +26,7 @@ async function createMetricInWorkspace(authUserId, workspaceId, payload) {
     await metricRepo.addMetric(metricItem);
 
     // add metricId to the associated data source
-    await dataSourceRepo.addMetricToDataSource(dataSourceId, metricId);
+    await dataSourceRepo.addMetricToDataSource(workspaceId, dataSourceId, metricId);
 
     return metricItem;
 }
@@ -89,11 +84,6 @@ async function getMetricsInWorkspace(authUserId, workspaceId) {
 }
 
 async function deleteMetricInWorkspace(authUserId, workspaceId, metricId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     // get metric
     const metric = await metricRepo.getMetricById(workspaceId, metricId);
@@ -101,6 +91,10 @@ async function deleteMetricInWorkspace(authUserId, workspaceId, metricId) {
     if (!metric) {
         throw new Error("Metric not found");
     }
+
+    // remove the metric from the associated data source
+    await dataSourceRepo.removeMetricFromDataSource(workspaceId, metric.dataSourceId, metric.metricId);
+
 
     // remove metric from repo
     await metricRepo.removeMetric(workspaceId, metricId);

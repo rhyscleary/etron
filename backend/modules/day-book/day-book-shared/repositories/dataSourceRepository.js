@@ -24,8 +24,72 @@ async function addDataSource(dataSourceItem) {
 }
 
 // add metric to data source
-async function addMetricToDataSource(dataSourceId, metricId) {
-    //ADD TO AN ARRAY OF METRICS IN THE DATA SOURCE? MAYBE THERE'S A BETTER WAY OF DOING THIS
+async function addMetricToDataSource(workspaceId, dataSourceId, metricId) {
+    const result = await dynamoDB.send(
+        new UpdateCommand( {
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                dataSourceId: dataSourceId
+            },
+            UpdateExpression: `
+                SET #metrics = list_append(if_not_exists(#metrics, :empty), :metric),
+                    #lastUpdate = :lastUpdate
+            `,
+            ExpressionAttributeNames: { "#metrics": "metrics", "#lastUpdate": "lastUpdate" },
+            ExpressionAttributeValues: {
+                ":metric": [metricId],
+                ":empty": [],
+                ":lastUpdate": new Date().toISOString()
+            },
+            ReturnValues: "ALL_NEW"
+        })
+    );
+
+    return result.Attributes;
+}
+
+// remove metric from data source
+async function removeMetricFromDataSource(workspaceId, dataSourceId, metricId) {
+    const getResult = await dynamoDB.send(
+        new GetCommand({
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                dataSourceId: dataSourceId
+            },
+            ProjectionExpression: "#metrics",
+            ExpressionAttributeNames: { "#metrics": "metrics" }
+        })
+    );
+
+    const metrics = getResult.Item?.metrics || [];
+    const index = metrics.indexOf(metricId);
+
+    if (index === -1) {
+        throw new Error(`Metric ${metricId} not found in this dataSource ${dataSourceId}`);
+    }
+
+    const updateResult = await dynamoDB.send(
+        new UpdateCommand( {
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                dataSourceId: dataSourceId
+            },
+            UpdateExpression: `
+                REMOVE #metrics[${index}]
+                SET #lastUpdate = :lastUpdate
+            `,
+            ExpressionAttributeNames: { "#metrics": "metrics", "#lastUpdate": "lastUpdate" },
+            ExpressionAttributeValues: {
+                ":lastUpdate": new Date().toISOString()
+            },
+            ReturnValues: "ALL_NEW"
+        })
+    );
+
+    return updateResult.Attributes;
 }
 
 // update datasource
@@ -150,5 +214,6 @@ module.exports = {
     getDataSourceById,
     getDataSourcesByWorkspaceId,
     updateDataSourceStatus,
-    addMetricToDataSource
+    addMetricToDataSource,
+    removeMetricFromDataSource
 }
