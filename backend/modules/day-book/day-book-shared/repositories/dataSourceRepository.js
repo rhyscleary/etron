@@ -23,6 +23,11 @@ async function addDataSource(dataSourceItem) {
     );
 }
 
+// add metric to data source
+async function addMetricToDataSource(dataSourceId, metricId) {
+    //ADD TO AN ARRAY OF METRICS IN THE DATA SOURCE? MAYBE THERE'S A BETTER WAY OF DOING THIS
+}
+
 // update datasource
 async function updateDataSource(workspaceId, dataSourceId, dataSourceItem) {
     const updateFields = [];
@@ -144,5 +149,6 @@ module.exports = {
     removeDataSource,
     getDataSourceById,
     getDataSourcesByWorkspaceId,
-    updateDataSourceStatus
+    updateDataSourceStatus,
+    addMetricToDataSource
 }

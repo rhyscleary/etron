@@ -1,6 +1,7 @@
 // Author(s): Rhys Cleary
 
 const metricRepo = require("../repositories/metricRepository");
+const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
@@ -28,6 +29,9 @@ async function createMetricInWorkspace(authUserId, workspaceId, payload) {
     };
 
     await metricRepo.addMetric(metricItem);
+
+    // add metricId to the associated data source
+    await dataSourceRepo.addMetricToDataSource(dataSourceId, metricId);
 
     return metricItem;
 }
