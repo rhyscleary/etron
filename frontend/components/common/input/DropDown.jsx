@@ -66,7 +66,7 @@ const DropDown = ({
                         
                         return (
                             <List.Item 
-                                key={item.value}
+                                key={index}
                                 title={item.label}
                                 style={[
                                     styles.items,
