@@ -45,7 +45,6 @@ const MetricManagement = () => {
     useEffect(() => {
         async function sortMetrics() {
             const { userId } = await getCurrentUser();
-            console.log(metrics);
             setMetricsUser(metrics.filter(metric => metric.createdBy = userId))
             setMetricsOther(metrics.filter(metric => metric.createdBy != userId))
         }
@@ -61,78 +60,83 @@ const MetricManagement = () => {
             <View style={{ flex: 1 }}>
                 <SearchBar/>
 
-            {/*Temporary redirect to profile screen*/}
-            <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
-
+                {/*Temporary redirect to profile screen*/}
+                <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
 
                 <ScrollView>
 
                     <View style={{ paddingHorizontal: 20, gap: 30 }}>
-                        <View>
-                            <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
-                                Created by you
-                            </Text>
-                        </View>
+                        <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
+                            Created by you
+                        </Text>
+                        {loadingMetrics && <ActivityIndicator />}
+                        {metricCardList(loadingMetrics, metricsUser)}
 
                         <Divider/>
-
                         
-                            <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
-                                Created by others
-                            </Text>
-                            {loadingMetrics && <ActivityIndicator />}
-                            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
-                                {!loadingMetrics &&
-                                    metrics.map((metric) => {
-                                        const previewImage = GraphTypes[metric.config.type]?.previewImage;
-
-                                        return (
-                                            <TouchableOpacity
-                                                key={metric.metricId}
-                                                style={{
-                                                    width: "45%"
-                                                }}
-                                                onPress={() =>
-                                                    router.navigate(`./view-metric/${metric.metricId}`)
-                                                }
-                                            >
-                                                <Card
-                                                    style={{
-                                                        borderRadius: 5,
-                                                        paddingVertical: 10
-                                                    }}
-                                                >
-                                                    {previewImage && (
-                                                        <Card.Cover
-                                                            source={previewImage}
-                                                            style={{ height: 150, backgroundColor: theme.colors.placeholder, opacity: 0.5 }}
-                                                        />
-                                                    )}
-                                                    <Card.Content
-                                                        style={{
-                                                            position: "absolute",
-                                                            bottom: 10
-                                                        }}
-                                                    >
-                                                        <Text
-                                                            style={{
-                                                                color: "white",
-                                                                fontSize: 16,
-                                                                fontWeight: "bold",
-                                                            }}
-                                                        >
-                                                            {metric.name}
-                                                        </Text>
-                                                    </Card.Content>
-                                                </Card>
-                                            </TouchableOpacity>
-                                        );
-                                    })
-                                }
-                        </View>
+                        <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
+                            Created by others
+                        </Text>
+                        {loadingMetrics && <ActivityIndicator />}
+                        {metricCardList(loadingMetrics, metricsOther)}
                     </View>
                 </ScrollView>
             </View>
+        </View>
+    )
+}
+
+const metricCardList = (loadingMetrics, metrics) => {
+    const theme = useTheme();
+    return (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+            {!loadingMetrics &&
+                metrics.map((metric) => {
+                    const previewImage = GraphTypes[metric.config.type]?.previewImage;
+
+                    return (
+                        <TouchableOpacity
+                            key={metric.metricId}
+                            style={{
+                                width: "45%"
+                            }}
+                            onPress={() =>
+                                router.navigate(`./view-metric/${metric.metricId}`)
+                            }
+                        >
+                            <Card
+                                style={{
+                                    borderRadius: 5,
+                                    paddingVertical: 10
+                                }}
+                            >
+                                {previewImage && (
+                                    <Card.Cover
+                                        source={previewImage}
+                                        style={{ height: 150, backgroundColor: theme.colors.placeholder, opacity: 0.5 }}
+                                    />
+                                )}
+                                <Card.Content
+                                    style={{
+                                        position: "absolute",
+                                        bottom: 10
+                                    }}
+                                >
+                                    <Text
+                                        style={{
+                                            color: "white",
+                                            fontSize: 16,
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        {metric.name}
+                                    </Text>
+                                </Card.Content>
+                            </Card>
+                        </TouchableOpacity>
+                    );
+                })
+            }
         </View>
     )
 }
