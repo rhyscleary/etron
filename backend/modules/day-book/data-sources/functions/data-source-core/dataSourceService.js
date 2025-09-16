@@ -3,6 +3,7 @@
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
 const dataSourceSecretsRepo = require("@etron/data-sources-shared/repositories/dataSourceSecretsRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
+const metricRepo = require("@etron/day-book-shared/repositories/metricRepository")
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("@etron/data-sources-shared/adapters/adapterFactory");
 const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
@@ -391,7 +392,7 @@ function sanitiseIdentifier(name) {
     return name.replace(/[^A-Za-z0-9_]/g, "_");
 }
 
-async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
+async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {  // Grabs the data from a data source
     // get the schema from the dataSource
     const schema = await getDataSchema(workspaceId, dataSourceId);
     if (!schema || schema.length === 0) throw new Error("Schema not found for this data source");
@@ -422,6 +423,41 @@ async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {
     };
 }
 
+async function viewDataForMetric(authUserId, workspaceId, dataSourceId, metricId, options = {}) {  // Grabs only the data in the source used by a metric (less data transferred)
+    // get the schema from the dataSource
+    const schema = await getDataSchema(workspaceId, dataSourceId);
+    if (!schema || schema.length === 0) throw new Error("Schema not found for this data source");
+
+    // get the metric columns
+    const metricColumns = await metricRepo.getMetricVariableNames(workspaceId, metricId);
+
+    const filteredSchema = schema.filter(column => metricColumns.includes(column.name))
+    const columns = filteredSchema.map(column => sanitiseIdentifier(column.name)).join(", ");
+    const tableName = sanitiseIdentifier(`ds_${dataSourceId}`);
+    const database = process.env.ATHENA_DATABASE;
+    const outputLocation = `s3://${process.env.WORKSPACE_BUCKET}/workspaces/${workspaceId}/day-book/athenaResults/`;
+
+    const query = `SELECT ${columns} FROM ${tableName}`;
+
+    const { data, nextToken, queryExecutionId } = await runQuery(
+        query,
+        database,
+        outputLocation,
+        options
+    );
+
+    // cast received data to schema
+    const castedData = castDataToSchema(data, filteredSchema);
+
+    return {
+        data: castedData,
+        schema,
+        tableName,
+        nextToken,
+        queryExecutionId
+    };
+}
+
 module.exports = {
     createRemoteDataSource,
     createLocalDataSource,
@@ -432,5 +468,6 @@ module.exports = {
     testConnection,
     getRemotePreview,
     viewData,
+    viewDataForMetric,
     getLocalDataSourceUploadUrl
 };

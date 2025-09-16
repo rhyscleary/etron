@@ -47,6 +47,8 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: DataSources
         - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
             TableName: Workspaces
         - DynamoDBCrudPolicy:
             TableName: WorkspaceUsers
@@ -147,6 +149,13 @@ Resources:
           Type: Api 
           Properties:
             Path: /day-book/data-sources/{dataSourceId}/view-data
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        ViewDataForMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/view-data-for-metric/{metricId}
             Method: get
             RestApiId: !Ref eTRONApi
 

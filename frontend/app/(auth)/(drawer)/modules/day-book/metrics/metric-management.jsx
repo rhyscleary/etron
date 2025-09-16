@@ -88,6 +88,7 @@ const MetricManagement = () => {
 
 const metricCardList = (loadingMetrics, metrics) => {
     const theme = useTheme();
+    const router = useRouter();
     return (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
             {!loadingMetrics &&
