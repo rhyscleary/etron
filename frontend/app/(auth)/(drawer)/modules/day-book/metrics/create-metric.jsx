@@ -412,7 +412,7 @@ const CreateMetric = () => {
                         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 10 }}>
                             {chosenDependentVariables.map((variable, index) => (
                                 <Chip
-                                    key={variable}
+                                    key={index}
                                     selected={wheelIndex === index}
                                     onPress={() => setWheelIndex(index)}
                                     style={{ 
