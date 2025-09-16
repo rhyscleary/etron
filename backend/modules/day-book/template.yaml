@@ -174,6 +174,8 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: Metrics
         - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
             TableName: Workspaces
         - DynamoDBCrudPolicy:
             TableName: WorkspaceUsers

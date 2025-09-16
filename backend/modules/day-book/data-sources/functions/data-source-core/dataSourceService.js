@@ -72,7 +72,8 @@ async function createRemoteDataSource(authUserId, payload) {
         createdBy: authUserId,
         config,
         createdAt: date,
-        lastUpdate: date
+        lastUpdate: date,
+        associatedMetrics: [],
     };
 
     await dataSourceRepo.addDataSource(dataSourceItem);
@@ -131,7 +132,8 @@ async function createLocalDataSource(authUserId, payload) {
         status: "pending_upload",
         createdBy: authUserId,
         createdAt: date,
-        lastUpdate: date
+        lastUpdate: date,
+        associatedMetrics: [],
     };
 
     await dataSourceRepo.addDataSource(dataSourceItem);

@@ -9,11 +9,11 @@ import TextField from '../../../../../../../components/common/input/TextField';
 import { RadioButton } from 'react-native-paper';
 import { apiPost } from "../../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../../utils/api/endpoints"
+import { router } from 'expo-router';
 
 const LocalCSV = () => {
     const [deviceFilePath, setDeviceFilePath] = useState(null);
-    const [method, setMethod] = useState('overwrite');  // Method starts at overwrite by default
-    const [dataDetailsStatus, setDataDetailsStatus] = useState("none");
+    const [dataDetailsStatus, setDataDetailsStatus] = useState("unstarted");
     const userSelectFile = async () => {
         try {
             setDataDetailsStatus("loading");
@@ -24,7 +24,7 @@ const LocalCSV = () => {
 
             if (result.canceled) {
                 console.log('File selection cancelled');
-                setDataDetailsStatus("none");
+                setDataDetailsStatus("unstarted");
                 return;
             }
             
@@ -33,7 +33,7 @@ const LocalCSV = () => {
 
             setDataDetailsStatus("loaded");
         } catch (error) {
-            setDataDetailsStatus("none");
+            setDataDetailsStatus("unstarted");
             console.error('Error picking file:', error);
         }
     };
@@ -41,8 +41,6 @@ const LocalCSV = () => {
     const [isUploadingData, setIsUploadingData] = useState(false);
 
     const uploadFile = async (sourceFilePath, uploadUrl) => {
-        console.log('File path:', sourceFilePath);
-
         setIsUploadingData(true);
         try {
             console.log('Retrieving file...');
@@ -50,7 +48,7 @@ const LocalCSV = () => {
             const blob = await response.blob();
 
             console.log('Uploading file to S3 Bucket...');
-            const result = await fetch(uploadUrl, {
+            await fetch(uploadUrl, {
                 method: "PUT",
                 body: blob,
                 headers: {
@@ -66,12 +64,9 @@ const LocalCSV = () => {
     }
 
     const createDataSource = async () => {
-        let dataSourceDetails = {};
-
-        //const { userId } = await getCurrentUser();
         const workspaceId = await getWorkspaceId();
         
-        dataSourceDetails = {
+        let dataSourceDetails = {
             workspaceId: workspaceId,
             name: dataSourceName,            
             sourceType: "local-csv",
@@ -80,7 +75,7 @@ const LocalCSV = () => {
         }
 
         try {
-            let result = await apiPost(
+            let result = await apiPost(  // Returns an object containing an upload URL
                 endpoints.modules.day_book.data_sources.addLocal,
                 dataSourceDetails
             );
@@ -92,18 +87,26 @@ const LocalCSV = () => {
     }
 
     const handleFinalise = async () => {
-        const createResponse = await createDataSource();
-        if (!createResponse) return;
+        try {
+            const createResponse = await createDataSource();
+            if (!createResponse) {
+                throw new Error("No response from API.")
+            }
 
-        const { uploadUrl } = createResponse;
-        if (!uploadUrl) {
-            console.error("No upload URL was returned");
-            return;
+            const { uploadUrl } = createResponse;
+            if (!uploadUrl) {
+                throw new Error("No upload URL in API response.");
+            }
+
+            await uploadFile(deviceFilePath, uploadUrl);
+
+            router.navigate('../data-management');
+        } catch (error) {
+            console.error("Error finalising CSV upload:", error);
         }
-
-        await uploadFile(deviceFilePath, uploadUrl);
     }
-
+    
+    const [method, setMethod] = useState('overwrite');
     const [dataSourceName, setDataSourceName] = useState("");
 
     return (
