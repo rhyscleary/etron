@@ -49,11 +49,15 @@ const EditUser = () => {
         const user = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
         setUserType(user.type || "employee");
         setSelectedRole(user.roleId || "");
-
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+      
+      try {
         const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
         setRoles(fetchedRoles || []);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching roles:", error);
       }
     };
     fetchData();
@@ -163,7 +167,7 @@ const EditUser = () => {
           firstName={firstName}
           lastName={lastName}
           badgeType={profilePicture ? "remove" : "plus"}
-          onPress={handleChoosePhoto}
+          //onPress={handleChoosePhoto}
         />
         {profilePicture && (
           <Button title="Remove Photo" onPress={handleRemovePhoto} />

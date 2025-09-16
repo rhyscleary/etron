@@ -45,7 +45,7 @@ const MetricManagement = () => {
     useEffect(() => {
         async function sortMetrics() {
             const { userId } = await getCurrentUser();
-            setMetricsUser(metrics.filter(metric => metric.createdBy = userId))
+            setMetricsUser(metrics.filter(metric => metric.createdBy == userId))
             setMetricsOther(metrics.filter(metric => metric.createdBy != userId))
         }
         sortMetrics();
