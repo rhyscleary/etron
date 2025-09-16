@@ -1,6 +1,7 @@
 // Author(s): Rhys Cleary
 const { Client } = require("basic-ftp");
 const fs = require("fs");
+const { Writable } = require("stream");
 
 // validate the configurations before creating the data source
 function validateConfig(config) {
@@ -21,6 +22,28 @@ function validateSecrets(secrets) {
     if (!secrets.username || !secrets.password) return { valid: false, error: "username and password are required"};
     return { valid: true };
 }
+
+async function downloadFileToMemory(client, remotePath) {
+    return new Promise(async (resolve, reject) => {
+        let chunks = [];
+
+        const writable = new Writable({
+            write(chunk, encoding, callback) {
+                chunks.push(chunk);
+                callback();
+            }
+        });
+
+        try {
+            await client.downloadTo(writable, remotePath);
+            const buffer = Buffer.concat(chunks);
+            resolve(buffer.toString("utf-8"));
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
 
 // poll server
 async function poll(config, secrets) {
@@ -43,18 +66,8 @@ async function poll(config, secrets) {
 
         await client.access(accessOptions);
 
-        const remoteDirectory = config.directory || "/";
-        const fileList = await client.list(remoteDirectory);
-
-        const results = [];
-
-        for (const file of fileList) {
-            if (file.isDirectory) continue;
-
-
-        }
+        const rawData = await downloadFileToMemory(client, config.filePath);
         
-
         // return the data to be translated
         return rawData;
 

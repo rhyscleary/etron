@@ -8,6 +8,9 @@ Parameters:
     Type: String
   WorkspaceBucketName:
     Type: String
+  AthenaDatabaseName:
+    Type: String
+    Default: etron_day_book_db
 
 Globals:
   Function:
@@ -19,6 +22,7 @@ Globals:
       Variables:
         PERMISSIONS_BUCKET: !Ref PermissionsBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
+        ATHENA_DATABASE: !Ref AthenaDatabaseName
 
 Resources:
 
@@ -60,7 +64,29 @@ Resources:
                 - s3:PutObject
                 - s3:ListBucket
                 - s3:DeleteObject
+                - s3:GetBucketLocation
+                - s3:HeadObject
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:GetWorkGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetDatabases
+                - glue:GetTable
+                - glue:GetTables
+                - glue:CreateTable
+                - glue:UpdateTable
+                - glue:DeleteTable
+              Resource:
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
             - Effect: Allow
               Action:
                 - cognito-idp:ListUsers
@@ -107,6 +133,20 @@ Resources:
           Type: Api 
           Properties:
             Path: /day-book/data-sources
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetUploadUrl:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/upload
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        ViewData:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/view-data
             Method: get
             RestApiId: !Ref eTRONApi
 
@@ -340,9 +380,12 @@ Resources:
     Properties:
       CodeUri: ./data-sources/functions/data-source-poller
       Handler: dataSourcePollHandler.handler
+      Timeout: 900
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
         - S3WritePolicy:
             BucketName: !Ref WorkspaceBucketName
         - Statement:
@@ -353,12 +396,42 @@ Resources:
                 - ssm:DeleteParameter
                 - ssm:GetParameters
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+                - s3:GetBucketLocation
+                - s3:HeadObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:GetWorkGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetDatabases
+                - glue:GetTable
+                - glue:GetTables
+                - glue:CreateTable
+                - glue:UpdateTable
+                - glue:DeleteTable
+              Resource:
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
+            
 
       Events:
         PollEvent:
           Type: Schedule
           Properties:
-            Schedule: rate(5 minutes)
+            Schedule: rate(15 minutes)
             Name: DataSourcePollSchedule
 
   DataSourceUploadProcessorFunction:
@@ -366,6 +439,7 @@ Resources:
     Properties:
       CodeUri: ./data-sources/functions/data-source-upload-processor
       Handler: fileUploadHandler.handler
+      Timeout: 120
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
@@ -377,4 +451,29 @@ Resources:
             - Effect: Allow
               Action:
                 - s3:DeleteObject
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:GetBucketLocation
+                - s3:HeadObject
               Resource: !Sub arn:aws:s3:::${WorkspaceBucketName}/*
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:GetWorkGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetDatabases
+                - glue:GetTable
+                - glue:GetTables
+                - glue:CreateTable
+                - glue:UpdateTable
+                - glue:DeleteTable
+              Resource:
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*

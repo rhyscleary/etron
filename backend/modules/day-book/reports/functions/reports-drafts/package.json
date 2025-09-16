@@ -7,7 +7,8 @@
     "axios": ">=1.6.0",
     "uuid": "^11.1.0",
     "@etron/shared": "file:../../../../../shared/etron-shared-1.0.0.tgz",
-    "@etron/reports-shared": "file:../../reports-shared/etron-reports-shared-1.0.0.tgz"
+    "@etron/reports-shared": "file:../../reports-shared/etron-reports-shared-1.0.0.tgz",
+    "@etron/day-book-shared": "file:../../../day-book-shared/etron-day-book-shared-1.0.0.tgz"
   },
   "scripts": {},
   "main": "draftHandler.js",

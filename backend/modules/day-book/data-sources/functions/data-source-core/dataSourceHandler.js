@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview } = require("./dataSourceService");
+const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview, viewData, getLocalDataSourceUploadUrl } = require("./dataSourceService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -71,7 +71,7 @@ exports.handler = async (event) => {
                 const workspaceId = queryParams.workspaceId;
 
                 if (!pathParams.dataSourceId) {
-                    throw new Error("Missing required path parameters");
+                    throw new Error("Missing dataSourceId in path parameters");
                 }
                 if (typeof pathParams.dataSourceId !== "string") {
                     throw new Error("dataSourceId must be a UUID, 'string'");
@@ -81,6 +81,42 @@ exports.handler = async (event) => {
                 }
 
                 body = await getDataSourceInWorkspace(authUserId, workspaceId, pathParams.dataSourceId);
+                break;
+            }
+
+            // GET UPLOAD URL FOR LOCAL DATASOURCE
+            case "GET /day-book/data-sources/{dataSourceId}/upload": {
+                const workspaceId = queryParams.workspaceId;
+
+                if (!pathParams.dataSourceId) {
+                    throw new Error("Missing dataSourceId in path parameters");
+                }
+                if (typeof pathParams.dataSourceId !== "string") {
+                    throw new Error("dataSourceId must be a UUID, 'string'");
+                }
+                if (!workspaceId || typeof workspaceId !== "string") {
+                    throw new Error("Missing required query parameters");
+                }
+
+                body = await getLocalDataSourceUploadUrl(authUserId, workspaceId, pathParams.dataSourceId);
+                break;
+            }
+
+            // VIEW DATA SOURCE
+            case "GET /day-book/data-sources/{dataSourceId}/view-data": {
+                const workspaceId = queryParams.workspaceId;
+
+                if (!pathParams.dataSourceId) {
+                    throw new Error("Missing required path parameters");
+                }
+                if (typeof pathParams.dataSourceId !== "string") {
+                    throw new Error("dataSourceId must be a UUID, 'string'");
+                }
+                if (!workspaceId || typeof workspaceId !== "string") {
+                    throw new Error("Missing required query parameters");
+                }
+
+                body = await viewData(authUserId, workspaceId, pathParams.dataSourceId);
                 break;
             }
 

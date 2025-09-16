@@ -4,134 +4,101 @@ import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { Text, Card, ActivityIndicator, DataTable } from "react-native-paper";
+import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip, useTheme, IconButton } from "react-native-paper";
 import BasicButton from "../../../../../../components/common/buttons/BasicButton";
 import DropDown from '../../../../../../components/common/input/DropDown';
-import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import TextField from '../../../../../../components/common/input/TextField';
-import endpoints from '../../../../../../utils/api/endpoints';
-import graphDataBySource from './graph-data';
+import MetricCheckbox from '../../../../../../components/common/buttons/MetricCheckbox';
+import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
+import GraphTypes from './graph-types';
 
-import csvtojson from 'csvtojson';
-
-import { list, downloadData, uploadData } from 'aws-amplify/storage';
-import amplifyOutputs from '../../../../../../amplify_outputs.json'
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
-import { ResourceSavingView } from '@react-navigation/elements';
+import endpoints from '../../../../../../utils/api/endpoints';
+import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
 
+import ColorPicker from 'react-native-wheel-color-picker';
 
-import { CartesianChart, Line, useChartPressState, VictoryLabel } from "victory-native";
-import { SharedValue } from "react-native-reanimated";
-import inter from "../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
-import { useFont, Circle, Text as SkiaText } from "@shopify/react-native-skia";
 
 const CreateMetric = () => {
     const router = useRouter();
+    const theme = useTheme();
 
-    const [workspaceReadyData, setWorkspaceReadyData] = useState([]);  // Array of file paths for ready-data in the workspace
-    const [loadingWorkspaceReadyData, setLoadingWorkspaceReadyData] = useState(true);  // Flag so that the program knows that the data is still being downloaded
+    const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
+    const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
-    useEffect(() => {  // When page loads, get a list of URLs for all data in the workspaces' readyData folder
-        async function initialiseWorkspaceReadyData() {
+    useEffect(() => {  // When page loads, load a list of all data sources
+        async function initialiseDataSourceList() {
             const workspaceId = await getWorkspaceId();
             const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
-                const result = await list ({
-                    path: filePathPrefix,
-                    options: {
-                        bucket: "workspaces",
-                        //subpathStrategy: { strategy:'exclude' }
-                    }
-                });
-                const workspaceReadyDataPaths = Array.from(new Set(  // Using a Set prevents duplicates
-                    result.items.map(item => item.path
-                        .split('/')  // Turn into array of each component of directory
-                        .slice(0, 5)  // Keeps up to and including the dataSourceId
-                        .join('/')
-                        + "/data-source-data.csv"
-                    )
+                let dataSourcesFromApi = await apiGet(
+                    endpoints.modules.day_book.data_sources.getDataSources,
+                    { workspaceId }
+                )
+                setDataSourceMappings(dataSourcesFromApi.map(
+                    dataSource => ({
+                        id: dataSource.dataSourceId,
+                        name: dataSource.name
+                    })
                 ));
-                console.log('workspace ready data paths:', workspaceReadyDataPaths);
-                setWorkspaceReadyData(workspaceReadyDataPaths);
-                setLoadingWorkspaceReadyData(false);
+                setLoadingDataSourceMappings(false);
             } catch (error) {
                 console.error('Error retrieving ready data:', error);
                 return;
             }
         }
-        initialiseWorkspaceReadyData();
+        initialiseDataSourceList();
     }, []);
 
 
-    const [readyDataDownloadProgress, setReadyDataDownloadProgress] = useState(0);
-    const [storedData, setStoredData] = useState(null);  // Data chosen by the user to be loaded into the graph
-    const [loadingStoredData, setLoadingStoredData] = useState(false);  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
-    const [dataSourceId, setDataSourceId] = useState('');
+    const [dataSourceId, setDataSourceId] = useState();  // Id of data source chosen by user
+    const [dataSourceData, setDataSourceData] = useState([]);  // Data from the chosen data source
+    const [dataSourceVariableNames, setDataSourceVariableNames] = useState([])
+    const [dataSourceDataDownloadStatus, setDataSourceDataDownloadStatus] = useState("unstarted");  // Flag so the program knows the data is being *loaded* (not downloaded), the program has to put the data into variables
 
-    const handleWorkspaceReadyDataSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
-        setDataSourceId(source.split("/")[4]);
+    const handleDataSourceSelect = async (source) => {  // When the user selects one of the data sources from the drop down, the program downloads that data
         console.log('Downloading ready data:', source);
-        setReadyDataDownloadProgress(0);
-        try {
-            const { body } = await downloadData({
-                path: source,
-                options: {
-                    onProgress: (progress) => {  // This continuously returns the progress as the download occurs
-                        setReadyDataDownloadProgress(Math.round((progress.transferredBytes / progress.totalBytes) * 100));
-                        console.log(`Download progress: ${(progress.transferredBytes/progress.totalBytes) * 100}% bytes`);
-                    },
-                    bucket: "workspaces"
-                }
-            }).result;
-            setReadyDataDownloadProgress(100);  // Not necessary; just makes sure it gets set to 100% in case something weird happens
-            setLoadingStoredData(true);
+        setDataSourceId(source);
+        setDataSourceDataDownloadStatus("downloading");
 
-            const csvText = await body.text();
-            console.log('Download length: ', csvText.length);
-            
-            const csv = require('csvtojson');
-            const csvRow = await csv({
-                noheader: true,
-                output: 'csv',
-            }).fromString(csvText)
-            
-            setStoredData(csvRow);
-            setLoadingStoredData(false);
-            console.log("Stored data length:", csvRow.length);
+        const workspaceId = await getWorkspaceId();
+        try {
+            let result = await apiGet(
+                endpoints.modules.day_book.data_sources.viewData(source),
+                { workspaceId }
+            )
+            setDataSourceData(result.data);
+            setDataSourceVariableNames(result.schema.map(variable => variable.name));
+            setDataSourceDataDownloadStatus("downloaded");
         } catch (error) {
-            console.error('Error downloading data source:', error);
-            setLoadingStoredData(false);
+            console.error("Error downloading data source's data:", error);
+            setDataSourceDataDownloadStatus("unstarted");
         }
     }
 
 
-    const [metrics] = useState(['Bar Chart', 'Line Chart', 'Pie Chart']);
     const [selectedMetric, setSelectedMetric] = useState(null);
     const [selectedReadyData, setSelectedReadyData] = useState(null);
-
 
     // This stuff is for the data preview that appears on the page
     const rowLoadAmount = 5;  // How many rows are loaded at a time in the data preview
     const [rowLimit, setRowLimit] = useState(rowLoadAmount);  // How many roads are loaded total (will update over time)
-    // useMemo caches the result so that it doesn't keep recalculating
-    const dataHeader = useMemo(() => storedData?.[0] ?? [], [storedData]);  // Automatically loads the first row of data as headers
-    const dataRows = useMemo(() => storedData?.slice(1) ?? [], [storedData]);  // Automatically loads everything except the first row of data
-    const displayedRows = useMemo(() => dataRows.slice(0, rowLimit), [dataRows, rowLimit]);  // Loads only the data that will be displayed
+    const displayedRows = useMemo(() => dataSourceData.slice(0, rowLimit), [dataSourceData, rowLimit]);  // Loads only the data that will be displayed in the "view data" popup
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);
 
     const onPreviewBottomReached = useCallback(() => {  // When the user scrolls to the bottom, loads more rows
         if (loadingMoreRows) return;
-        if (rowLimit >= dataRows.length) return;
+        if (rowLimit >= dataSourceData.length) return;
 
         setLoadingMoreRows(true);
         requestAnimationFrame(() => {
-            setRowLimit((prev) => Math.min(prev + rowLoadAmount, dataRows.length));
+            setRowLimit((prev) => Math.min(prev + rowLoadAmount, dataSourceData.length));
             setLoadingMoreRows(false);
         });
-    }, [dataRows.length, rowLimit]);
+    }, [dataSourceData.length, rowLimit]);
 
 
-    const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
+    /*const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
     const font = useFont(inter, 12);
 
     function GraphTooltip({text, xPosition, yPosition}) {  // Creates a small overlay for the graph at the specified position (usually where the user clicks)
@@ -145,27 +112,24 @@ const CreateMetric = () => {
             />
             <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
         </>)
-    }
+    }*/
 
 
-    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([0]);  // Hard-coded value, but should be set by the user
-    const [chosenDependentVariables, setChosenDependentVariables] = useState([1, 2, 3]);  // Hard-coded values, but should be set by the user
-    const colours = ["white", "red", "blue", "green", "purple", "orange"]
-
-    function readyDataToGraphData(rows, independentColumn, dependentColumns=[]) {  // Transforms the rows into a json object (which the graph needs)
-        const output = rows.map(row => {
-            let rowOutput = {independentVariable: String(row[independentColumn])}  // Issue: this doesn't sort the data, so the independentVariable can be out of order and look weird (but still correct) 
-            for (let i = 0; i < dependentColumns.length; i++) (
-                rowOutput["dependentVariable" + (i)] = Number(row[dependentColumns[i]])
-            );
-            return rowOutput;
-        });
+    function convertToGraphData(rows) {
+        let output = rows.map(row => {
+            const newRow = {};
+            for (const [key, value] of Object.entries(row)) {
+                const valueAsNumber = Number(value);
+                newRow[key] = !isNaN(valueAsNumber) ? valueAsNumber : value  // If the value can be turned into a number, do so
+            }
+            return newRow;
+        })
         return output;
     }
 
 
     const [step, setStep] = useState(0);
-    const totalSteps = 4;
+    const totalSteps = 2;
 
     const handleBack = () => {
         if (step === 0) {
@@ -179,16 +143,10 @@ const CreateMetric = () => {
         setStep((prev) => prev + 1);
     };
 
-    const [metricName, setMetricName] = useState('');
-    const [metricId, setMetricId] = useState('');
-    useEffect(() => {
-        setMetricId(metricName.replace(/ /g, "_"));
-    }, [metricName]) 
-
-    async function uploadInfoToDataSource() {
+    /*async function uploadInfoToDataSource() {
         const workspaceId = await getWorkspaceId();
         const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/${metricId}`;
-        const result = uploadData({
+        let result = uploadData({
             path: S3FilePath,
             data: "",
             options: {
@@ -196,12 +154,12 @@ const CreateMetric = () => {
             }
         })
         console.log("Metric ID uploaded to data source successfully.")
-    }
+    }*/
 
-    async function uploadPrunedData () {
+    /*async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
         const workspaceId = await getWorkspaceId();
         const prunedData = {
-            data: dataRows,
+            data: dataSourceData,
         }
         const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
         const result = uploadData({
@@ -212,45 +170,71 @@ const CreateMetric = () => {
             }
         }).result;
         console.log("Pruned data uploaded successfully.")
-    }
+    }*/
 
     async function uploadMetricSettings() {
-        const workspaceId = await getWorkspaceId();
-            const metricSettings = {
+        console.log("Uploading metric details...");
+        if (!metricName) {
+            throw new Error("Metric is missing a name.")
+        }
+
+        let workspaceId = await getWorkspaceId();
+        let metricDetails = {
+            name: metricName,
+            dataSourceId: dataSourceId,
+            config: {
+                type: selectedMetric,
+                //data: dataSourceData,  // TODO: implement separate function using an endpoint to upload the pruned data to S3
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
+                colours: coloursState,
+                //selectedRows,  // TODO: implement separate function to prune the data when it gets uploaded
             }
-            const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-settings.json`
-            const result = uploadData({
-                path: S3FilePath,
-                data: JSON.stringify(metricSettings),
-                options: {
-                    bucket: "workspaces"
-                }
-            }).result;
-            console.log("Metric settings uploaded successfully.");
-        
+        }
+        let result = await apiPost(
+            endpoints.modules.day_book.metrics.add,
+            metricDetails,
+            { workspaceId }
+        );
+        console.log("Uploaded metric details via API result:", result);
     }
 
     const handleFinish = async () => {
-        console.log("metric name:", metricName);
-        console.log("metric id:", metricId);
-        try { await uploadInfoToDataSource() } catch (error) {
+        
+        //TODO: Upload metric details to the data source as well
+
+        //TODO: Upload metric pruned data
+
+        /*try { await uploadInfoToDataSource() } catch (error) {
             console.log("Error uploading metric id to data source:", error);
             return;
         }
         try { await uploadPrunedData() } catch (error) {
             console.log("Error uploading pruned data:", error);
             return;
-        }
+        }*/
         try { await uploadMetricSettings() } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;
-        }        
+        }  
         
         console.log("Form completed");
-        router.navigate("/modules/day-book/metrics/metric-management"); 
+        //router.navigate("/modules/day-book/metrics/metric-management"); 
+        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround?
     }
+
+    const [dataVisible, setDataVisible] = React.useState(false);
+    const showDataModal = () => {setDataVisible(true)};
+    const hideDataModal = () => setDataVisible(false);
+
+    const [showChecklist, setShowChecklist] = useState(false);
+
+    const [chosenIndependentVariable, setChosenIndependentVariable] = useState([]);
+    const [chosenDependentVariables, setChosenDependentVariables] = useState([]);
+    const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
+    const [wheelIndex, setWheelIndex] = useState(0);
+    const [metricName, setMetricName] = useState('');
+    const [selectedRows, setSelectedRows] = useState([]);
 
     const renderFormStep = () => {
         switch (step) {
@@ -259,139 +243,247 @@ const CreateMetric = () => {
                     <ScrollView>
                         <DropDown
                             title = "Select Data Source"
-                            items = {loadingWorkspaceReadyData ? ["Loading..."] : workspaceReadyData.map(URL => ({value: URL, label: URL.split('/')[4]}))}
-                            onSelect={(item) => handleWorkspaceReadyDataSelect(item)}
+                            items = {loadingDataSourceMappings ? ["Loading..."] : dataSourceMappings.map(dataSource => ({value: dataSource.id, label: dataSource.name}))}
+                            onSelect={(item) => {
+                                handleDataSourceSelect(item);
+                                setSelectedReadyData(item);
+                            }}
+                            value = {selectedReadyData}
                         />
+
+                        <Button icon="file" mode="text" onPress={showDataModal}>
+                            Validate Data
+                        </Button>
 
                         <DropDown
                             title = "Select Metric"
-                            items = {metrics.map((metric) => ({value: metric, label: metric}))}
+                            items={Object.values(GraphTypes).map((g) => ({
+                                value: g.value,
+                                label: g.label,
+                            }))}
                             showRouterButton={false}
                             onSelect={(item) => setSelectedMetric(item)}
+                            value={selectedMetric}
                         />
+
+                        <Text>Select Independent Variable (X-Axis)</Text>
+                        <MetricRadioButton
+                            items={dataSourceVariableNames}
+                            selected={chosenIndependentVariable}
+                            onChange={(selection) => {
+                                setChosenIndependentVariable(selection);
+                            }}
+                        />
+
+                        <Text style={{ marginTop: 12 }}>Select Dependent Variables (Y-Axis)</Text>
+                        {["bar", "pie"].includes(selectedMetric) ? (
+                            <MetricRadioButton
+                                items={dataSourceVariableNames}
+                                selected={chosenDependentVariables}
+                                onChange={(selection) => {
+                                    setChosenDependentVariables(selection);
+                                }}
+                            />
+                        ) : (
+                            <MetricCheckbox
+                                items={dataSourceVariableNames}
+                                selected={chosenDependentVariables}
+                                onChange={(selection) => {
+                                    setChosenDependentVariables(selection);
+                                }}
+                            />
+                        )}
+
+                        {/* Row Selection */}
+                        <View 
+                            style={{ 
+                                flexDirection: "row", 
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                marginBottom: -7
+                            }}
+                        >
+                            <Text>Select Data Points (Optional)</Text>
+                            
+                            <Chip
+                                onPress={() => {
+                                    if (selectedRows.length === dataSourceData.length) {
+                                        setSelectedRows([]);
+                                    } else {
+                                        setSelectedRows(dataSourceData.map((row) => row[0]));
+                                    }
+                                }}
+                                style={{
+                                    backgroundColor: theme.colors.background,
+                                }}
+                                textStyle={{
+                                    color: theme.colors.primary
+                                }}
+                            >
+                                {selectedRows.length === dataSourceData.length ? "Deselect All" : "Select All"}
+                            </Chip>
+
+                            <IconButton
+                                icon={showChecklist ? "chevron-up" : "chevron-down"}
+                                size={20}
+                                onPress={() => setShowChecklist(!showChecklist)}
+                            />
+                        </View>
+
+                        {showChecklist && (
+                            <MetricCheckbox
+                                items={dataSourceData.map((row) => row[0])} // use first column (e.g. Name)
+                                selected={selectedRows}
+                                onChange={(selection) => setSelectedRows(selection)}
+                            />
+                        )}
                                                    
-                        <Card style={styles.card}>
-                            <Card.Content>
-                                {readyDataDownloadProgress == 0 && (
-                                    <Text>Display preview here</Text>
-                                )}
-                                {readyDataDownloadProgress > 0 && readyDataDownloadProgress < 100 && (
-                                    <Text>Downloading data source: {readyDataDownloadProgress}%</Text>
-                                )}
-                                {readyDataDownloadProgress == 100 && loadingStoredData && (
-                                    <ActivityIndicator size="large" color="#0000ff" />
-                                )}
-                                {readyDataDownloadProgress == 100 && !loadingStoredData && (
-                                    <ScrollView horizontal
-                                        showsHorizontalScrollIndicator
-                                    >
-                                        <View style={{ minWidth: (dataHeader?.length ?? 0) * 100 }}>
-                                            <DataTable>{/* Displays a preview of the data as a table */} 
-                                                <DataTable.Header>
-                                                    {dataHeader.map((header, index) => (
-                                                        <DataTable.Title key={index} numberOfLines={1}>
-                                                            <Text>{String(header)}</Text>
-                                                        </DataTable.Title>
-                                                    ))}
-                                                </DataTable.Header>
-                                                <FlatList
-                                                    data={displayedRows}
-                                                    renderItem={({ item }) => (
-                                                        <DataTable.Row>
-                                                            {item.map((cell, index) => (
-                                                                <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
-                                                                    <Text>{String(cell)}</Text>
-                                                                </DataTable.Cell>
+                        <Portal>
+                            <Modal 
+                                visible={dataVisible} 
+                                onDismiss={hideDataModal} 
+                                style={styles.modalContainer}
+                            >
+                                <Card style={styles.card}>
+                                    <Card.Content>
+                                        {dataSourceDataDownloadStatus == "unstarted" && (
+                                            <Text>No data source selected</Text>
+                                        )}
+                                        {dataSourceDataDownloadStatus == "downloading" && (
+                                            <ActivityIndicator size="large" color="#0000ff" />
+                                        )}
+                                        {dataSourceDataDownloadStatus == "downloaded" && (
+                                            <ScrollView horizontal
+                                                showsHorizontalScrollIndicator
+                                            >
+                                                <View style={{ minWidth: (dataSourceVariableNames.length) * 100 }}>
+                                                    <DataTable>{/* Displays a preview of the data as a table */} 
+                                                        <DataTable.Header>
+                                                            {dataSourceVariableNames.map((variableName, index) => (
+                                                                <DataTable.Title key={index} numberOfLines={1}>
+                                                                    <Text>{String(variableName)}</Text>
+                                                                </DataTable.Title>
                                                             ))}
-                                                        </DataTable.Row>
-                                                    )}
-                                                    nestedScrollEnabled={true}
-                                                    style={{ maxHeight: 180 /*shouldn't be hardcoded*/}}
-                                                    initialNumToRender={5}
-                                                    windowSize={10}
-                                                    removeClippedSubviews={true}
-                                                    onEndReached={onPreviewBottomReached}
-                                                    onEndReachedThreshold={0.1} 
-                                                    ListFooterComponent={
-                                                        loadingMoreRows ? (
-                                                            <ActivityIndicator size="small" color="#0000ff" />
-                                                        ) : null
-                                                    }
-                                                />
-                                            </DataTable>
-                                        </View>
-                                    </ScrollView>
-                                )}
-                            </Card.Content>
-                        </Card>
+                                                        </DataTable.Header>
+                                                        <FlatList
+                                                            data={displayedRows}
+                                                            renderItem={({ item }) => (
+                                                                <DataTable.Row>
+                                                                    {dataSourceVariableNames.map((variableName, index) => (
+                                                                        <DataTable.Cell key={index} style={{ width: 100 }} numberOfLines={1}>
+                                                                            <Text>{String(item[variableName])}</Text>
+                                                                        </DataTable.Cell>
+                                                                    ))}
+                                                                </DataTable.Row>
+                                                            )}
+                                                            nestedScrollEnabled={true}
+                                                            style={{ maxHeight: 180 /*shouldn't be hardcoded*/}}
+                                                            initialNumToRender={5}
+                                                            windowSize={10}
+                                                            removeClippedSubviews={true}
+                                                            onEndReached={onPreviewBottomReached}
+                                                            onEndReachedThreshold={0.1} 
+                                                            ListFooterComponent={
+                                                                loadingMoreRows ? (
+                                                                    <ActivityIndicator size="small" color="#0000ff" />
+                                                                ) : null
+                                                            }
+                                                        />
+                                                    </DataTable>
+                                                </View>
+                                            </ScrollView>
+                                        )}
+                                    </Card.Content>
+                                </Card>
+                            </Modal>
+                        </Portal>
                     </ScrollView>
                 )
             case 1:
+                const graphDef = GraphTypes[selectedMetric]; // Get chosen graph definition
+                if (!graphDef) {
+                    return <Text>Please select a metric to preview</Text>;
+                }
+
+                const handleColorChange = (color) => {
+                    setSelectedColor(color);
+                    // For now, replace the first colour (or you could extend this to pick which line to recolor)
+                    const updated = [...coloursState];
+                    updated[0] = color;
+                    setColoursState(updated);
+                };
+
+                const filteredRows = dataSourceVariableNames.filter(
+                    (row) => selectedRows.includes(row[0]) // assumes first column is "Name"
+                );
+
                 return (
-                    <View>
-                        <Text>
-                            Pick dependent variables and graph styling here
-                        </Text>
-                    </View>
-                )
-            case 2:
-                return (
-                    <View style={{height:"80%", width:"80%", marginTop:12}}>
-                        <CartesianChart
-                            data = {readyDataToGraphData(dataRows, chosenIndependentVariable, chosenDependentVariables)}
-                            xKey = "independentVariable"
-                            yKeys = {chosenDependentVariables.map((_, index) => "dependentVariable" + index) /* Just sets the yKeys to dependentVariable0, dependentVariable1, etc*/}
-                            axisOptions = {{ font }}
-                            chartPressState = { chartPressState /* Enables tracking where the user taps on the graph */}
-                            domain = {{y:[0]} /* Forces the graph to show down to 0, even if the data is all in the 100s */}
-                            renderOutside = {({ chartBounds }) => (  // This stuff has to be outside because you can't render text inside the graph
-                                <>
-                                    {chartPressIsActive && (  // When the user taps on the graph, this stuff is rendered
-                                        <>
-                                            <GraphTooltip
-                                                xPosition={chartPressState.x.position.value}
-                                                yPosition={chartPressState.y.dependentVariable0.position.value}
-                                            />
-                                        </>
-                                    )}
-                                </>
-                            )}
-                        >
-                            {({ points }) => (
-                                <>
-                                    {chosenDependentVariables.map((_, index) => {
-                                        return (
-                                            <Line  // Creates a line on the graph for each dependent variable
-                                                points = {points["dependentVariable" + index]}
-                                                color = {colours[index]}
-                                                strokeWidth = {3}
-                                            />
-                                        )
-                                    })}
-                                    
-                                    {chartPressIsActive ? (
-                                        <>
-                                            
-                                        </>
-                                    ) : null}
-                                </>
-                            )}
-                        </CartesianChart>
-                    </View>
-                )
-            case 3:
-                return (
-                    <View>
+                    <ScrollView>
                         <TextField
                             label="Metric Name"
                             placeholder="Metric Name"
                             onChangeText={setMetricName}
+                            value={metricName}
                         />
-                    </View>
+                        
+                        {/* Variable selector chips */}
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 10 }}>
+                            {chosenDependentVariables.map((variable, index) => (
+                                <Chip
+                                    key={variable}
+                                    selected={wheelIndex === index}
+                                    onPress={() => setWheelIndex(index)}
+                                    style={{ 
+                                        margin: 4,
+                                        backgroundColor: wheelIndex === index ? theme.colors.primary : theme.colors.placeholder,
+                                    }}
+                                    showSelectedCheck = {false}
+                                >
+                                    {variable ?? `Y${index + 1}`}
+                                </Chip>
+                            ))}
+                        </View>
+                        
+                        {/* Single colour picker for the active variable */}
+                        <View style={{ marginTop: 10, justifyContent: "center", flexDirection: "row" }}>
+                            <ColorPicker
+                                color={coloursState[wheelIndex]}
+                                onColorChange={(newColor) => {
+                                    setColoursState((prev) => {
+                                        const updated = [...prev];
+                                        updated[wheelIndex] = newColor;
+                                        return updated;
+                                    });
+                                }}
+                                thumbSize={30}
+                                sliderSize={30}
+                                noSnap={true}
+                                gapSize={10}
+                                palette={['#000000','#ed1c24','#d11cd5','#2b5fceff','#57ff0a','#ffde17','#f26522','#888888']}
+                            />
+                        </View>
+                        
+                        {/* Graph preview */}
+                        <Card style={[styles.card]}>
+                            <Card.Content>
+                                <View style={styles.graphCardContainer}>
+                                    {graphDef.render({
+                                        data: convertToGraphData(dataSourceData),
+                                        xKey: chosenIndependentVariable,
+                                        yKeys: chosenDependentVariables,
+                                        colours: coloursState, // dynamic per-variable colours
+                                    })}
+                                </View>
+                            </Card.Content>
+                        </Card>
+
+                        
+                    </ScrollView>
                 )
             default:
                 return null;
         }
+        
     };
 
     return (
@@ -416,8 +508,19 @@ const CreateMetric = () => {
 export default CreateMetric;
 
 const styles = StyleSheet.create({
+    modalContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
     card: {
-        height: 270
+        height: 260,
+        marginTop: 20,
+    },
+    graphCardContainer: {
+        height: "100%",
+        width: "100%",
     },
     container: {
         flex: 1,

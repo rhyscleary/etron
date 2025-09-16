@@ -41,25 +41,40 @@ async function saveSecrets(workspaceId, dataSourceId, secrets) {
 async function getSecrets(workspaceId, dataSourceId) {
     const path = `/workspace/${workspaceId}/datasources`;
 
-    const result = await client.send(new GetParameterCommand({
-        Name: path,
-        WithDecryption: true
-    }));
+    try {
+        const result = await client.send(new GetParameterCommand({
+            Name: path,
+            WithDecryption: true
+        }));
 
-    const dataSourceRecords = JSON.parse(result.Parameter.Value);
+        const dataSourceRecords = JSON.parse(result.Parameter.Value);
 
-    return dataSourceRecords[dataSourceId] || null;
+        return dataSourceRecords[dataSourceId] || {};
+    } catch (error) {
+        if (error.name === "ParameterNotFound") {
+            return {};
+        }
+        throw error;
+    }
 }
 
 async function getSecretsByWorkspaceId(workspaceId) {
     const path = `/workspace/${workspaceId}/datasources`;
 
-    const result = await client.send(new GetParameterCommand({
-        Name: path,
-        WithDecryption: true
-    }));
+    try {
+        const result = await client.send(new GetParameterCommand({
+            Name: path,
+            WithDecryption: true
+        }));
 
-    return JSON.parse(result.Parameter.Value);
+        return JSON.parse(result.Parameter.Value) || {};
+    } catch (error) {
+        if (error.name === "ParameterNotFound") {
+            // there are not secrets for the workspace so return an empty object
+            return {};
+        }
+        throw error;
+    }
 }
 
 async function removeSecrets(workspaceId, dataSourceId) {
