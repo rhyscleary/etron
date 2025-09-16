@@ -24,6 +24,7 @@ async function createMetricInWorkspace(authUserId, workspaceId, payload) {
         name: name,
         config: config,
         createdAt: date,
+        createdBy: authUserId,
         updatedAt: date
     };
 

@@ -2,21 +2,24 @@
 
 import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
 import Divider from "../../../../../../components/layout/Divider.jsx";
-import { Pressable, View, Button, ActivityIndicator, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Button, ActivityIndicator, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { Text, useTheme, Card } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage.jsx";
 import GraphTypes from "./graph-types.jsx";
 import endpoints from "../../../../../../utils/api/endpoints.js";
 import { apiGet } from "../../../../../../utils/api/apiClient.jsx";
+import { getCurrentUser } from "aws-amplify/auth";
 
 const MetricManagement = () => {
     const router = useRouter();
     const theme = useTheme();
     const [metrics, setMetrics] = useState([]);
+    const [metricsUser, setMetricsUser] = useState([]);
+    const [metricsOther, setMetricsOther] = useState([]);
     const [loadingMetrics, setLoadingMetrics] = useState(true);
 
     useEffect(() => {
@@ -38,6 +41,16 @@ const MetricManagement = () => {
         }
         getWorkspaceMetrics();
     }, []);
+
+    useEffect(() => {
+        async function sortMetrics() {
+            const { userId } = await getCurrentUser();
+            console.log(metrics);
+            setMetricsUser(metrics.filter(metric => metric.createdBy = userId))
+            setMetricsOther(metrics.filter(metric => metric.createdBy != userId))
+        }
+        sortMetrics();
+    }, [metrics])
 
     const [color, setColor] = useState('#ff0000');
 
@@ -77,7 +90,7 @@ const MetricManagement = () => {
                                             <TouchableOpacity
                                                 key={metric.metricId}
                                                 style={{
-                                                    width: "48%",
+                                                    width: "45%"
                                                 }}
                                                 onPress={() =>
                                                     router.navigate(`./view-metric/${metric.metricId}`)
