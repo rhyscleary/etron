@@ -98,7 +98,7 @@ const endpoints = {
                     createDraft: `${REPORTS_BASE_URL}/drafts`,
                     updateDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
                     getDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
-                    getDrafts: `${REPORTS_BASE_URL}/drafts`,
+                    getDrafts: (workspaceId) => `${REPORTS_BASE_URL}/drafts?workspaceId=${workspaceId}`,
                     deleteDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
                 },
                 templates: {

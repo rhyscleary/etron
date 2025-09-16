@@ -5,7 +5,7 @@ import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import { Text } from "react-native-paper";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
@@ -28,37 +28,41 @@ const Reports = () => {
     fetchWorkspaceId();
   }, []);
 
-  // Fetch reports
-  useEffect(() => {
-    const fetchReports = async () => {
-      if (!workspaceId) return;
-      try {
-        setLoading(true);
-        const result = await apiGet(
-          endpoints.modules.day_book.reports.getDrafts(workspaceId)
-        );
-        setReports(Array.isArray(result) ? result : []);
-      } catch (error) {
-        console.error("Error fetching reports:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
+  const fetchReports = useCallback(async () => {
+    if (!workspaceId) return;
+    try {
+      setLoading(true);
+      const result = await apiGet(
+        endpoints.modules.day_book.reports.drafts.getDrafts(workspaceId)
+      );
+      setReports(Array.isArray(result) ? result : []);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [workspaceId]);
+
+  // Run fetch on mount + whenever workspaceId changes
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
 
   // Create test report
   const createTestReport = async () => {
     if (!workspaceId) return;
     try {
       const newReport = await apiPost(
-        endpoints.modules.day_book.reports.createDraft,
+        endpoints.modules.day_book.reports.drafts.createDraft,
         {
           workspaceId,
           name: "My Report 122",
         }
       );
       console.log("Created report:", newReport);
+
+      // Refreshes list immediately after creation
+      await fetchReports();
     } catch (error) {
       console.error("Error creating report:", error);
     }

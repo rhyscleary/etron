@@ -8,8 +8,9 @@ import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
 import { Portal, Dialog, Button } from "react-native-paper";
-import { apiGet, apiPost, apiPut } from "../../../../../../utils/api/apiClient";
+import { apiPost, apiPut } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 
 const CreateReport = () => {
     const [editorContent, setEditorContent] = useState("");
@@ -20,14 +21,11 @@ const CreateReport = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
     const webViewRef = useRef(null);
 
-    // Fetch workspace ID
     useEffect(() => {
         const fetchWorkspaceId = async () => {
             try {
-                const result = await apiGet(endpoints.workspace.list);
-                if (result && result.length > 0) {
-                    setWorkspaceId(result[0].id); // take first workspace
-                }
+                const id = await getWorkspaceId();
+                setWorkspaceId(id);
             } catch (err) {
                 console.error("Failed to fetch workspace ID:", err);
             }
@@ -150,7 +148,7 @@ const CreateReport = () => {
                     name: fileName.trim() || "Report",
                     content: editorContent,
                 };
-                const result = await apiPost(endpoints.reports.createDraft, body);
+                const result = await apiPost(endpoints.modules.day_book.reports.drafts.createDraft, body);
                 setReportId(result.id);
                 Alert.alert("Success", "Report created successfully.");
             } else {
@@ -161,7 +159,7 @@ const CreateReport = () => {
                     name: fileName.trim() || "Report",
                     content: editorContent,
                 };
-                await apiPut(endpoints.reports.update(reportId), body);
+                await apiPut(endpoints.modules.day_book.reports.drafts.update(reportId), body);
                 Alert.alert("Success", "Report updated successfully.");
             }
         } catch (err) {
