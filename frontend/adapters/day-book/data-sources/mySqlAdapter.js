@@ -3,11 +3,11 @@ import { delay, validateSourceId, formatDate } from "./baseAdapter";
 const parseConnectionConfig = (config) => {
   if (!config) return {};
   return {
-    host: config.host || "localhost",
+    host: config.host || config.hostname || "localhost",
     port: config.port || 3306,
     username: config.username || "root",
     password: config.password || "",
-    database: config.database || "",
+    database: config.database || config.databaseName || "",
   };
 };
 
@@ -21,6 +21,10 @@ export const createMySqlAdapter = (authService, apiClient, options = {}) => {
 
   const connect = async (connectionData) => {
     try {
+      // Accept either host or hostname from UI/service
+      if (connectionData && !connectionData.host && connectionData.hostname) {
+        connectionData.host = connectionData.hostname;
+      }
       if (
         !connectionData ||
         !connectionData.host ||
@@ -41,10 +45,10 @@ export const createMySqlAdapter = (authService, apiClient, options = {}) => {
       const newConnection = {
         id: `mysql_${Date.now()}`,
         name: connectionData.name,
-        host: connectionData.host,
+        host: connectionData.host || connectionData.hostname,
         port: connectionData.port || 3306,
         username: connectionData.username || "root",
-        database: connectionData.database || "",
+        database: connectionData.database || connectionData.databaseName || "",
         status: "active",
         createdAt: new Date().toISOString(),
         lastTested: new Date().toISOString(),
@@ -79,6 +83,10 @@ export const createMySqlAdapter = (authService, apiClient, options = {}) => {
 
   const testConnection = async (connectionData) => {
     try {
+      // Normalize hostname -> host for convenience
+      if (connectionData && !connectionData.host && connectionData.hostname) {
+        connectionData.host = connectionData.hostname;
+      }
       const {
         host,
         port = 3306,

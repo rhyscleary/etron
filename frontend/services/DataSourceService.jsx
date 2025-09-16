@@ -370,7 +370,7 @@ class DataSourceService {
         }
       });
 
-      // prepare payload matching backend contract
+  // prepare payload matching backend contract
       // query param: workspaceId
       // body: { name, type, config }
       // NOTE: endpoints file exposes addRemote / addLocal (no generic 'add')
@@ -406,7 +406,7 @@ class DataSourceService {
 
   // build config + secrets payload per backend contract:
   // remote create expects: { name, sourceType, method, expiry, config, secrets }
-  const buildConfigAndSecrets = (cfg) => {
+  const buildConfigAndSecrets = (cfg, srcType) => {
         const clone = cfg ? { ...cfg } : {};
         // Try to parse possible stringified fields
         const parseMaybeJSON = (val) => {
@@ -430,11 +430,28 @@ class DataSourceService {
           return String(t);
         })();
 
-  // endpoint is optional in contract -- default to empty string to match example
-  const endpoint = clone.endpoint ?? clone.url ?? '';
+        // MySQL: include hostname and database fields; keep password in secrets only
+        if ((srcType || '').toLowerCase() === 'mysql' || clone.host || clone.hostname || clone.database || clone.databaseName) {
+          const hostname = clone.hostname || clone.host || clone.server;
+          const port = clone.port != null ? String(clone.port) : '3306';
+          const username = clone.username;
+          const database = clone.databaseName || clone.database;
 
-  // secrets returned separately (not in config)
-  const secrets = {};
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          if (user != null) secrets.username = String(user);
+          const pw = clone.password ?? clone.secrets?.password;
+          if (pw != null) secrets.password = String(pw);
+
+          const configOut = sanitize({ hostname, port, username, database, databaseName: database });
+          return { configOut, secrets };
+        }
+
+        // Default API-like case
+        // endpoint is optional in contract -- default to empty string to match example
+        const endpoint = clone.endpoint ?? clone.url ?? '';
+
+        const secrets = {};
         switch ((authType || '').toLowerCase()) {
           case 'apikey': {
             // Use provided authentication value as apiKey; do not infer from URL/connectionString
@@ -442,40 +459,40 @@ class DataSourceService {
               ? auth.value
               : (typeof authRaw === 'string' && authRaw.trim())
                 ? authRaw.trim()
-        : (clone.apiKey ?? clone.secrets?.apiKey);
+                : (clone.apiKey ?? clone.secrets?.apiKey);
             if (apiKeyValue != null) secrets.apiKey = String(apiKeyValue);
             break;
           }
           case 'bearer': {
-      if (auth?.token != null) secrets.token = String(auth.token);
-      else if (clone.token != null) secrets.token = String(clone.token);
-      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
+            if (auth?.token != null) secrets.token = String(auth.token);
+            else if (clone.token != null) secrets.token = String(clone.token);
+            else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
             break;
           }
           case 'basic': {
-      if (auth?.username != null) secrets.username = String(auth.username);
-      if (auth?.password != null) secrets.password = String(auth.password);
-      if (clone.username != null) secrets.username = String(clone.username);
-      if (clone.password != null) secrets.password = String(clone.password);
-      if (clone.secrets?.username != null) secrets.username = String(clone.secrets.username);
-      if (clone.secrets?.password != null) secrets.password = String(clone.secrets.password);
+            if (auth?.username != null) secrets.username = String(auth.username);
+            if (auth?.password != null) secrets.password = String(auth.password);
+            if (clone.username != null) secrets.username = String(clone.username);
+            if (clone.password != null) secrets.password = String(clone.password);
+            if (clone.secrets?.username != null) secrets.username = String(clone.secrets.username);
+            if (clone.secrets?.password != null) secrets.password = String(clone.secrets.password);
             break;
           }
           case 'query': {
-      if (auth?.value != null) secrets.token = String(auth.value);
-      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
+            if (auth?.value != null) secrets.token = String(auth.value);
+            else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
             break;
           }
           default: {
             // No secrets
           }
         }
-  const configOut = sanitize({ authType, endpoint });
-  return { configOut, secrets };
+        const configOut = sanitize({ authType, endpoint });
+        return { configOut, secrets };
       };
 
       const normalizedType = normalizeType(type);
-      const { configOut, secrets } = buildConfigAndSecrets(config);
+      const { configOut, secrets } = buildConfigAndSecrets(config, normalizedType);
 
       const payload = sanitize({
         name,
@@ -491,7 +508,7 @@ class DataSourceService {
   if (!workspaceId) throw new Error('No workspace selected');
   // include workspaceId in body as fallback
   payload.workspaceId = workspaceId;
-  console.log('[DataSourceService] createDataSource POST', { endpointUrl, workspaceId, payloadSummary: { name: payload.name, sourceType: payload.sourceType, hasSecrets: !!payload.secrets, endpoint: payload.config?.endpoint } });
+  console.log('[DataSourceService] createDataSource POST', { endpointUrl, workspaceId, payloadSummary: { name: payload.name, sourceType: payload.sourceType, hasSecrets: !!payload.secrets, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database } });
   try {
     const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
         // Normalize response in case server returns raw object vs { data }
@@ -616,7 +633,7 @@ class DataSourceService {
         const map = { 'custom-api': 'api', 'csv-file': 'csv' };
         return map[t] || t;
       };
-      const buildConfigAndSecrets = (cfg) => {
+      const buildConfigAndSecrets = (cfg, srcType) => {
         const clone = cfg ? { ...cfg } : {};
         const parseMaybeJSON = (val) => {
           if (val == null) return val;
@@ -635,6 +652,20 @@ class DataSourceService {
           if (lc === 'jwt' || lc === 'jwt bearer' || lc === 'jwt-bearer') return 'bearer';
           return String(t);
         })();
+        // MySQL specific mapping first
+        if ((srcType || '').toLowerCase() === 'mysql' || clone.host || clone.hostname || clone.database || clone.databaseName) {
+          const hostname = clone.hostname || clone.host || clone.server;
+          const port = clone.port != null ? String(clone.port) : '3306';
+          const username = clone.username;
+          const database = clone.databaseName || clone.database;
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          if (user != null) secrets.username = String(user);
+          const pw = clone.password ?? clone.secrets?.password;
+          if (pw != null) secrets.password = String(pw);
+          const configOut = { hostname, port, username, database, databaseName: database };
+          return { configOut, secrets };
+        }
         const endpoint = clone.endpoint ?? clone.url ?? '';
         const secrets = {};
         switch ((authType || '').toLowerCase()) {
@@ -673,7 +704,7 @@ class DataSourceService {
         return { configOut, secrets };
       };
 
-      const { configOut, secrets } = buildConfigAndSecrets(config);
+      const { configOut, secrets } = buildConfigAndSecrets(config, normalizeType(type));
       const payload = sanitize({
         name,
         sourceType: normalizeType(type),
@@ -685,7 +716,7 @@ class DataSourceService {
       if (!workspaceId) throw new Error('No workspace selected');
       const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.testConnection);
       console.log(payload);
-      console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.sourceType, hasConfig: !!payload.config, endpoint: payload.config?.endpoint } });
+  console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.sourceType, hasConfig: !!payload.config, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database } });
       const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
       const testResult = response?.data ?? response;
       console.log('[DataSourceService] testConnection success', { status: response?.status });
