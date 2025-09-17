@@ -239,7 +239,6 @@ const DataManagement = () => {
 					<RefreshControl refreshing={loading} onRefresh={refresh} />
 				}
 			>
-				{/* Grouped Data Sources */}
 				{loadingDataSourcePaths && (
 					<ActivityIndicator />
 				)}
@@ -257,14 +256,6 @@ const DataManagement = () => {
 						</TouchableOpacity>
 					)})
 				)}
-			</ScrollView>
-			<ScrollView
-				style={styles.container}
-				showsVerticalScrollIndicator={false}
-				refreshControl={
-					<RefreshControl refreshing={loading} onRefresh={refresh} />
-				}
-			>
 				{Object.entries(groupedSources).map(([category, sources]) => (
 					<View key={category} style={styles.categorySection}>
 						<Text variant="titleMedium" style={styles.categoryTitle}>

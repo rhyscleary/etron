@@ -143,19 +143,6 @@ const CreateMetric = () => {
         setStep((prev) => prev + 1);
     };
 
-    /*async function uploadInfoToDataSource() {
-        const workspaceId = await getWorkspaceId();
-        const S3FilePath = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/integrated-metrics/${metricId}`;
-        let result = uploadData({
-            path: S3FilePath,
-            data: "",
-            options: {
-                bucket: 'workspaces'
-            }
-        })
-        console.log("Metric ID uploaded to data source successfully.")
-    }*/
-
     /*async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
         const workspaceId = await getWorkspaceId();
         const prunedData = {
@@ -200,15 +187,10 @@ const CreateMetric = () => {
     }
 
     const handleFinish = async () => {
-        
-        //TODO: Upload metric details to the data source as well
 
         //TODO: Upload metric pruned data
 
-        /*try { await uploadInfoToDataSource() } catch (error) {
-            console.log("Error uploading metric id to data source:", error);
-            return;
-        }
+        /*
         try { await uploadPrunedData() } catch (error) {
             console.log("Error uploading pruned data:", error);
             return;
@@ -430,7 +412,7 @@ const CreateMetric = () => {
                         <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 10 }}>
                             {chosenDependentVariables.map((variable, index) => (
                                 <Chip
-                                    key={variable}
+                                    key={index}
                                     selected={wheelIndex === index}
                                     onPress={() => setWheelIndex(index)}
                                     style={{ 
