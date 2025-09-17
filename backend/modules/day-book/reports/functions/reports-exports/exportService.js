@@ -35,12 +35,12 @@ async function addExportedReport(authUserId, payload) {
         createdAt: currentDate,
     };
 
-    const fileKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/report.docx`;
+    const fileKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/report.html`;
 
     exportItem.fileKey = fileKey;
 
     const fileUploadUrl = await getUploadUrl(fileKey, { 
-        ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ContentType: "text/html"
     });
 
     await reportRepo.addExport(exportItem);

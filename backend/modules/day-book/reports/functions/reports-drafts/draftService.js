@@ -29,14 +29,14 @@ async function createDraftReport(authUserId, payload) {
         lastEdited: currentDate
     };
 
-    const fileKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/report.docx`;
+    const fileKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/report.html`;
     const thumbnailKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/thumbnail.jpeg`;
 
     draftItem.fileKey = fileKey;
     draftItem.thumbnailKey = thumbnailKey;
 
     const fileUploadUrl = await getUploadUrl(fileKey, { 
-        ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ContentType: "text/html"
     });
 
     const thumbnailUrl = await getUploadUrl(thumbnailKey, {
@@ -81,7 +81,7 @@ async function updateDraftReport(authUserId, draftId, payload) {
 
     if (isFileUpdated) {
         fileUploadUrl = await getUploadUrl(draft.fileKey, {
-            ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ContentType: "text/html"
         });
     }
 

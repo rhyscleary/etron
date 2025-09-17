@@ -28,14 +28,14 @@ async function createTemplateReport(authUserId, payload) {
         lastEdited: currentDate
     };
 
-    const fileKey = `workspaces/${workspaceId}/day-book/reports/templates/${templateId}/report.docx`;
+    const fileKey = `workspaces/${workspaceId}/day-book/reports/templates/${templateId}/report.html`;
     const thumbnailKey = `workspaces/${workspaceId}/day-book/reports/templates/${templateId}/thumbnail.jpeg`;
 
     templateItem.fileKey = fileKey;
     templateItem.thumbnailKey = thumbnailKey;
 
     const fileUploadUrl = await getUploadUrl(fileKey, { 
-        ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ContentType: "text/html"
     });
 
     const thumbnailUrl = await getUploadUrl(thumbnailKey, {
@@ -80,7 +80,7 @@ async function updateTemplateReport(authUserId, templateId, payload) {
 
     if (isFileUpdated) {
         fileUploadUrl = await getUploadUrl(template.fileKey, {
-            ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ContentType: "text/html"
         });
     }
 
