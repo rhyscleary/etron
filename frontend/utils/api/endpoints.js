@@ -110,9 +110,10 @@ const endpoints = {
                     deleteTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
                 },
                 exports: { 
-                    addExport: ``,
-                    getExport: ``,
-                    getExports: ``,
+                    addExport: `${REPORTS_BASE_URL}/exports`,
+                    getExport: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}`,
+                    getExports: `${REPORTS_BASE_URL}/exports`,
+                    getExportDownloadUrl: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}/download`,
                 }
             },
         }
