@@ -12,7 +12,7 @@ async function createDraftReport(authUserId, payload) {
     const { name } = payload;
 
     if (!name || typeof name !== "string") {
-        throw new Error("There is no name specified for the draft");
+        throw new Error("No name for the draft");
     }
 
     const draftId = uuidv4();

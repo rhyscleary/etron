@@ -4,6 +4,7 @@ const reportRepo = require("@etron/reports-shared/repositories/reportsRepository
 const {v4 : uuidv4} = require('uuid');
 const { getUploadUrl, getDownloadUrl } = require("@etron/reports-shared/repositories/reportsBucketRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
+const { getFileConfig } = require("@etron/reports-shared/utils/exportTypes");
 
 async function addExportedReport(authUserId, payload) {
     const workspaceId = payload.workspaceId;
@@ -14,11 +15,16 @@ async function addExportedReport(authUserId, payload) {
     const draft = await reportRepo.getDraftById(workspaceId, draftId);
 
     if (!draft) {
-        throw new Error("Export does not exist");
+        throw new Error("Draft does not exist");
     }
 
     if (!name || typeof name !== "string") {
-        throw new Error("There is no name specified for the draft");
+        throw new Error("No name for this export");
+    }
+
+    const fileConfig = getFileConfig(fileType);
+    if (!fileConfig.valid) {
+        throw new Error(fileConfig.error);
     }
 
     const exportId = uuidv4();
@@ -30,17 +36,17 @@ async function addExportedReport(authUserId, payload) {
         exportId,
         name,
         draftId,
-        fileType,
+        fileType: fileConfig.extension,
         exportedBy: authUserId,
         createdAt: currentDate,
     };
 
-    const fileKey = `workspaces/${workspaceId}/day-book/reports/drafts/${draftId}/report.html`;
+    const fileKey = `workspaces/${workspaceId}/day-book/reports/exports/${exportId}/${name}.${fileConfig.extension}`;
 
     exportItem.fileKey = fileKey;
 
     const fileUploadUrl = await getUploadUrl(fileKey, { 
-        ContentType: "text/html"
+        ContentType: fileConfig.contentType
     });
 
     await reportRepo.addExport(exportItem);
