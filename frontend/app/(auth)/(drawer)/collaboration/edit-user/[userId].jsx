@@ -17,7 +17,7 @@ import AvatarButton from "../../../../../components/common/buttons/AvatarButton"
 import { updateUserAttribute } from "aws-amplify/auth";
 
 const EditUser = () => {
-	const { id: userId } = useLocalSearchParams();
+	const { userId } = useLocalSearchParams();
 	const router = useRouter();
 	const theme = useTheme();
 
@@ -36,64 +36,68 @@ const EditUser = () => {
 	});
 
 	useEffect(() => {
-		const init = async () => {
-			const id = await getWorkspaceId();
-			setWorkspaceId(id);
-		};
-		init();
-	}, []);
+		const initialise = async () => {
+			const workspaceIdTemp = await getWorkspaceId();
+			setWorkspaceId(workspaceIdTemp);
 
-	useEffect(() => {
-		const fetchData = async () => {
 			try {
-				const user = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
+				console.log("workspaceId:", workspaceIdTemp);
+				console.log("userId:", userId);
+				const user = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
+				console.log("user:", user);
 				setUserType(user.type || "employee");
+				setFirstName(user.given_name);
+				setLastName(user.family_name);
 				setSelectedRole(user.roleId || "");
 			} catch (error) {
 				console.error("Error fetching user:", error);
+				return;
 			}
 			
 			try {
-				const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+				console.log("workspaceId:", workspaceIdTemp);
+				const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
+				console.log("fetchedRoles:", fetchedRoles);
 				setRoles(fetchedRoles || []);
 			} catch (error) {
 				console.error("Error fetching roles:", error);
+				return;
 			}
 		};
-		fetchData();
-	}, [workspaceId, userId]);
+		initialise();
+	}, []);
 
 	// updates user details
 	async function handleUpdateUserAttribute(attributeKey, value) {
-			try {
-					const output = await updateUserAttribute({
-							userAttribute: {
-									attributeKey,
-									value
-							}
-					});
+		try {
+			const output = await updateUserAttribute({
+				userAttribute: {
+					attributeKey,
+					value
+				}
+			});
 
-					const { nextStep } = output;
+			const { nextStep } = output;
 
-					switch (nextStep.updateAttributeStep) {
-							case 'CONFIRM_ATTRIBUTE_WITH_CODE':
-									const codeDeliveryDetails = nextStep.codeDeliveryDetails;
-									console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
-									return { needsConfirmation: true };
-							case 'DONE':
-									const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-									console.log(`${fieldName} updated successfully`);
-									return { needsConfirmation: false };
-							default:
-									console.log(`${attributeKey.replace('_', ' ')} update completed`);
-									return { needsConfirmation: false };
-					}
-			} catch (error) {
-					console.log("Error updating user attribute:", error);
+			switch (nextStep.updateAttributeStep) {
+				case 'CONFIRM_ATTRIBUTE_WITH_CODE':
+					const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+					console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
+					return { needsConfirmation: true };
+				case 'DONE':
 					const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-					setMessage(`Error updating ${fieldName}: ${error.message}`);
-					return { needsConfirmation: false, error: true };
+					console.log(`${fieldName} updated successfully`);
+					return { needsConfirmation: false };
+				default:
+					console.log(`${attributeKey.replace('_', ' ')} update completed`);
+					return { needsConfirmation: false };
 			}
+		} catch (error) {
+			console.log("Error updating user attribute:", error);
+			const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+			setMessage(`Error updating ${fieldName}: ${error.message}`);
+			return { needsConfirmation: false, error: true };
+		}
 	}
 
 	async function handleSaveUserAttributes() {
@@ -120,13 +124,15 @@ const EditUser = () => {
 
 	const handleUpdate = async () => {
 		const newErrors = {
-						firstName: !firstName.trim(),
-						lastName: !lastName.trim(),
+			firstName: !firstName.trim(),
+			lastName: !lastName.trim(),
 		};
 		setErrors(newErrors);
 
 		try {
 			const data = {
+				given_name: firstName.trim(),
+				family_name: lastName.trim(),
 				type: userType,
 				roleId: selectedRole
 			};
@@ -153,7 +159,7 @@ const EditUser = () => {
 	};
 
 	const handleRemovePhoto = () => {
-			setProfilePicture(null);
+		setProfilePicture(null);
 	};
 
 	return (
@@ -182,7 +188,7 @@ const EditUser = () => {
 			/>
 
 			{errors.firstName && (
-				<Text style={{ color: theme.colors.error }}>Please enter a first name</Text>
+				<Text style={{ color: theme.colors.error }}>Please enter a valid first name</Text>
 			)}
 
 			<TextField
@@ -193,7 +199,7 @@ const EditUser = () => {
 			/>
 
 			{errors.lastName && (
-				<Text style={{ color: theme.colors.error }}>Please enter a last name</Text>
+				<Text style={{ color: theme.colors.error }}>Please enter a valid last name</Text>
 			)}
 
 			<Text style={{ marginBottom: 4 }}>User Type</Text>
