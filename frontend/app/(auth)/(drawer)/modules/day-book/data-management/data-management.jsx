@@ -260,7 +260,6 @@ const DataManagement = () => {
 					<RefreshControl refreshing={loading} onRefresh={refresh} />
 				}
 			>
-				{/* Grouped Data Sources */}
 				{loadingDataSourcePaths && (
 					<ActivityIndicator />
 				)}
@@ -273,32 +272,6 @@ const DataManagement = () => {
 							<Card>
 								{<Text>
 									{dataSource.name}
-								</Text>}
-							</Card>
-						</TouchableOpacity>
-					)})
-				)}
-			</ScrollView>
-			<ScrollView
-				style={styles.container}
-				showsVerticalScrollIndicator={false}
-				refreshControl={
-					<RefreshControl refreshing={loading} onRefresh={refresh} />
-				}
-			>
-				{/* Grouped Data Sources */}
-				{loadingDataSourcePaths && (
-					<ActivityIndicator />
-				)}
-				{!loadingDataSourcePaths && (
-					dataSourcePaths.map((path) => { return (
-						<TouchableOpacity 
-							key = {path}
-							onPress={() => {router.navigate(`./view-data-source/${path}`)}}
-						>
-							<Card>
-								{<Text>
-									{path}
 								</Text>}
 							</Card>
 						</TouchableOpacity>

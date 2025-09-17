@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview, viewData, getLocalDataSourceUploadUrl } = require("./dataSourceService");
+const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview, viewData, viewDataForMetric, getLocalDataSourceUploadUrl } = require("./dataSourceService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -102,7 +102,7 @@ exports.handler = async (event) => {
                 break;
             }
 
-            // VIEW DATA SOURCE
+            // VIEW DATA SOURCE DATA
             case "GET /day-book/data-sources/{dataSourceId}/view-data": {
                 const workspaceId = queryParams.workspaceId;
 
@@ -117,6 +117,30 @@ exports.handler = async (event) => {
                 }
 
                 body = await viewData(authUserId, workspaceId, pathParams.dataSourceId);
+                break;
+            }
+
+            // VIEW DATA SOURCE DATA (EXCLUDING DATA NOT RELEVANT TO METRIC)
+            case "GET /day-book/data-sources/{dataSourceId}/view-data-for-metric/{metricId}": {
+                const workspaceId = queryParams.workspaceId;
+
+                if (!pathParams.dataSourceId) {
+                    throw new Error("Missing dataSourceId in path parameters");
+                }
+                if (typeof pathParams.dataSourceId !== "string") {
+                    throw new Error("dataSourceId must be a UUID, 'string'");
+                }
+                if (!pathParams.metricId) {
+                    throw new Error("Missing metricId in path parameters");
+                }
+                if (typeof pathParams.metricId !== "string") {
+                    throw new Error("metricId must be a UUID, 'string'");
+                }
+                if (!workspaceId || typeof workspaceId !== "string") {
+                    throw new Error("Missing workspaceId from query parameters");
+                }
+
+                body = await viewDataForMetric(authUserId, workspaceId, pathParams.dataSourceId, pathParams.metricId);
                 break;
             }
 
