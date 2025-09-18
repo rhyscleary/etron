@@ -1,12 +1,9 @@
-import { Pressable, View, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
 import Header from "../../../components/layout/Header";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
-import { Link, router } from "expo-router";
-import { Text } from "react-native-paper";
+import { router } from "expo-router";
 import StackLayout from "../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
-import { getUserType } from "../../../storage/userStorage";
-import { useEffect } from "react";
 
 const Profile = () => {
     const settingOptionButtons = [

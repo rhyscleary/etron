@@ -1,7 +1,7 @@
 // Author(s): Matthew Page
 
-import React, { useState, useEffect } from "react";
-import { View, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { useState, useEffect } from "react";
+import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
