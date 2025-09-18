@@ -16,7 +16,8 @@ const TextField = ({
     onFocus,
     onBlur,
     autoCapitalize = 'none',
-    contentStyle
+    contentStyle,
+    isDisabled = false
 }) => {
     const theme = useTheme();
     const [hidePassword, setHidePassword] = useState(secureTextEntry);
@@ -51,6 +52,7 @@ const TextField = ({
 
             <TextInput
                 mode="outlined"
+                disabled={isDisabled}
                 dense={dense}
                 autoCapitalize={autoCapitalize}
                 value={value}

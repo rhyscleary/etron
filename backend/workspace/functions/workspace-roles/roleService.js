@@ -2,14 +2,22 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepository = require ("@etron/shared/repositories/workspaceUsersRepository");
-const { isOwner, isManager, getDefaultPermissions } = require("@etron/shared/utils/permissions");
+const { getDefaultPermissions } = require("@etron/shared/utils/permissions");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
 
-async function createRoleInWorkspace(authUserId, workspaceId, data) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+async function createRoleInWorkspace(authUserId, workspaceId, payload) {
+    await validateWorkspaceId(workspaceId);
 
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
+    const { name, permissions } = payload;
+
+    if (!name || typeof name !== "string") {
+        throw new Error("Please specify a name");
+    }
+
+    if (!permissions) {
+        // get the default permissions
+        
     }
 
     const roleId = uuidv4();
@@ -19,8 +27,8 @@ async function createRoleInWorkspace(authUserId, workspaceId, data) {
     const roleItem = {
         workspaceId: workspaceId,
         roleId: roleId,
-        name: data.name,
-        permissions: data.permissions,
+        name: name,
+        permissions: permissions,
         createdAt: date,
         updatedAt: date
     };
@@ -31,20 +39,19 @@ async function createRoleInWorkspace(authUserId, workspaceId, data) {
 }
 
 async function deleteRoleInWorkspace(authUserId, workspaceId, roleId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
+    await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
 
     if (!role) {
-        throw new Error("Role not found");
+        throw new Error("Role not found:", roleId);
     }
 
-    if (role.name === "Owner" || role.name === "Manager") {
-        throw new Error("You cannot delete this role")
+    // get the owner role id
+    const ownerRoleId = await workspaceRepo.getOwnerRoleId(workspaceId);
+
+    if (role.roleId === ownerRoleId) {
+        throw new Error("You cannot delete this role");
     }
 
     await workspaceRepo.removeRole(workspaceId, roleId);
@@ -74,16 +81,12 @@ async function mergePermissions(role) {
 }
 
 async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
+    await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
 
     if (!role) {
-        return null;
+        throw new Error("Role not found:", roleId);
     }
 
     // merge the roles permissions and return it
@@ -91,6 +94,8 @@ async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
 }
 
 async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
+    await validateWorkspaceId(workspaceId);
+    
     const userRole = await workspaceUsersRepository.getUserByUserId(authUserId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, userRole.roleId);
@@ -104,11 +109,7 @@ async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
 }
 
 async function getRolesInWorkspace(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
+    await validateWorkspaceId(workspaceId);
 
     const roles = await workspaceRepo.getRolesByWorkspaceId(workspaceId);
 
@@ -121,20 +122,16 @@ async function getRolesInWorkspace(authUserId, workspaceId) {
     return mergedRoles;
 }
 
-async function updateRoleInWorkspace(authUserId, workspaceId, roleId, data) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
+async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
+    await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
 
     if (!role) {
-        throw new Error("Role not found");
+        throw new Error("Role not found:", roleId);
     }
 
-    return workspaceRepo.updateRole(workspaceId, roleId, data);
+    return workspaceRepo.updateRole(workspaceId, roleId, payload);
 }
 
 module.exports = {

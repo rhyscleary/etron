@@ -13,7 +13,7 @@ const endpoints = {
             update: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getWorkspace: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getByUserId: (userId) => `${WORKSPACE_BASE_URL}/users/${userId}`,
-            transfer: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/transfer/${userId}`,
+            transfer: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/transfer`,
             delete: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getDefaultPermissions: `${WORKSPACE_BASE_URL}/permissions` 
         },
@@ -36,7 +36,7 @@ const endpoints = {
         },
 
         users: {
-            add: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/invites/${inviteId}`,
+            add: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users`,
             update: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             remove: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             getUser: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,

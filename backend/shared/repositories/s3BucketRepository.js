@@ -29,33 +29,6 @@ async function getAppModules() {
     }
 }
 
-// save data polled for data sources to s3
-async function saveSourcedData(workspaceId, dataSourceId, data) {
-    const bucketName = "etron-day-book-sourced-data";
-    const timestamp = new Date().toISOString();
-    const key = `${workspaceId}/${dataSourceId}/${timestamp}.json`;
-
-    try {
-        await s3Client.send(
-            new PutObjectCommand({
-                Bucket: bucketName,
-                Key: key,
-                Body: JSON.stringify(data),
-                ContentType: "application/json"
-            }),
-        );
-
-    } catch (error) {
-        if (error instanceof S3ServiceException) {
-            console.error(`Error from S3 while saving data to ${bucketName}`);
-            throw new Error(`Error from S3 while saving data to ${bucketName}`);
-        } else {
-            throw error;
-        }
-    }
-}
-
 module.exports = {
-    getAppModules,
-    saveSourcedData
+    getAppModules
 };

@@ -20,8 +20,8 @@ exports.handler = async (event) => {
         switch (routeKey) {
         
             // ADD USER TO WORKSPACE
-            case "POST /workspace/{workspaceId}/users/invites/{inviteId}": {
-                if (!pathParams.workspaceId || !pathParams.inviteId) {
+            case "POST /workspace/{workspaceId}/users": {
+                if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
 
@@ -29,16 +29,12 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof pathParams.inviteId !== "string") {
-                    throw new Error("inviteId must be a UUID, 'string'");
-                }
-
-                body = await addUserToWorkspace(pathParams.workspaceId, pathParams.inviteId);
+                body = await addUserToWorkspace(pathParams.workspaceId, requestJSON);
                 break;
             }
 
             // UPDATE USER IN WORKSPACE
-            case "PUT /workspace/{workspaceId}/users/{userId}": {
+            case "PATCH /workspace/{workspaceId}/users/{userId}": {
                 if (!pathParams.workspaceId || !pathParams.userId) {
                     throw new Error("Missing required path parameters");
                 }

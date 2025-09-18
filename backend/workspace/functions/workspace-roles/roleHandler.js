@@ -35,7 +35,7 @@ exports.handler = async (event) => {
             }
 
             // UPDATE ROLE
-            case "PUT /workspace/{workspaceId}/roles/{roleId}": {
+            case "PATCH /workspace/{workspaceId}/roles/{roleId}": {
                 if (!pathParams.workspaceId || !pathParams.roleId) {
                     throw new Error("Missing required path parameters");
                 }
