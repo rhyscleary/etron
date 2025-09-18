@@ -146,6 +146,23 @@ async function getRolesByWorkspaceId(workspaceId) {
     }));
 }
 
+// get owner role id
+async function getOwnerRoleId(workspaceId) {
+    const result = await dynamoDB.send(
+            new QueryCommand({
+                TableName: tableName,
+                KeyConditionExpression: "workspaceId = :workspaceId AND begins_with(sk, :prefix)",
+                ExpressionAttributeValues: {
+                    ":workspaceId": workspaceId,
+                    ":prefix": "role#"
+                }
+            })
+        );
+
+    const owner = (result.Items || []).find(item => item.name === "Owner");
+    return owner ? owner.sk.replace("role#", "") : null;
+}
+
 // PROFILES
 
 // add profile to workspace
@@ -515,6 +532,7 @@ module.exports = {
     removeRole,
     getRoleById,
     getRolesByWorkspaceId,
+    getOwnerRoleId,
     addProfile,
     updateProfile,
     removeProfile,

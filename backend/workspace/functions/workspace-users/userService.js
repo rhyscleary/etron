@@ -4,29 +4,26 @@ const { UserType } = require("@etron/shared/constants/enums");
 const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { getUserByEmail } = require("@etron/shared/utils/auth");
 const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
-async function addUserToWorkspace(workspaceId, inviteId) {
+async function addUserToWorkspace(workspaceId, payload) {
+    await validateWorkspaceId(workspaceId);
+
+    const { inviteId } = payload;
+
+    if (!inviteId || typeof inviteId !== "string") {
+        throw new Error("Please specify a inviteId");
+    }
+
     // get invite
     const invite = await workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
 
     if (!invite) {
         throw new Error("Invite not found");
     }
-
-    // check if the user type is valid
-    if (!Object.values(UserType).includes(invite.type)) {
-        throw new Error(`Invalid type of user: ${invite.type}`);
-    }
-
-    // check if role is specified
-    if (!invite.roleId) {
-        throw new Error("No roleId specified");
-    }
-
-    
 
     // get cognito user by email
     const userProfile = await getUserByEmail(invite.email);
@@ -60,10 +57,12 @@ async function addUserToWorkspace(workspaceId, inviteId) {
     }
 
     return userItem;
-
 }
 
-async function updateUserInWorkspace(authUserId, workspaceId, userId, updateData) {
+async function updateUserInWorkspace(authUserId, workspaceId, userId, payload) {
+    await validateWorkspaceId(workspaceId);
+
+    const { roleId } = payload;
 
     // check if the user exists
     const user = await workspaceUsersRepo.getUser(workspaceId, userId);
@@ -72,35 +71,42 @@ async function updateUserInWorkspace(authUserId, workspaceId, userId, updateData
         throw new Error("User not found");
     }
 
-    if (updateData.type) {
-        // convert type to lowercase
-        const type = updateData.type.toLowerCase();
-
-        // check if the user type is valid
-        if (!Object.values(UserType).includes(type)) {
-            throw new Error(`Invalid type of user: ${type}`);
-        }
-
-        updateData.type = type;
-    }
-
     // check if the role exists
-    if (updateData.roleId !== undefined) {
-        
+    const role = await workspaceRepo.getRoleById(workspaceId, roleId);
+
+    if (!role) {
+        throw new Error("Role not found:", roleId);
     }
 
-    return workspaceUsersRepo.updateUser(workspaceId, userId, updateData);
+    // check that the roleId isn't the owner
+    // fetch the owner role id
+    const ownerRoleId = await workspaceRepo.getOwnerRoleId(workspaceId);
+
+    if (ownerRoleId === roleId) {
+        throw new Error("A workspace is limited to one owner");
+    }
+
+    const updatedUserItem = {
+        roleId
+    };
+
+    return workspaceUsersRepo.updateUser(workspaceId, userId, updatedUserItem);
 }
 
 async function getUserInWorkspace(authUserId, workspaceId, userId) {
+    await validateWorkspaceId(workspaceId);
+
     return workspaceUsersRepo.getUser(workspaceId, userId);
 }
 
 async function getUsersInWorkspace(authUserId, workspaceId) {
+    await validateWorkspaceId(workspaceId);
+
     return workspaceUsersRepo.getUsersByWorkspaceId(workspaceId);
 }
 
 async function removeUserFromWorkspace(authUserId, workspaceId, userId) {
+    await validateWorkspaceId(workspaceId);
 
     await workspaceUsersRepo.removeUser(workspaceId, userId);
 

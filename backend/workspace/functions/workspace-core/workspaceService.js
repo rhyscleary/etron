@@ -255,10 +255,10 @@ async function transferWorkspaceOwnership(authUserId, workspaceId, payload) {
     }
 
     // fetch the owner role
-    const ownerRole = await workspaceRepo.getOwnerRoleId(workspaceId);
+    const ownerRoleId = await workspaceRepo.getOwnerRoleId(workspaceId);
 
     const targetUserItem = {
-        roleId: ownerRole.roleId
+        roleId: ownerRoleId
     };
 
     // update the user to owner

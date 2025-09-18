@@ -205,7 +205,7 @@ Resources:
         AddUser:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/users/invites/{inviteId}
+            Path: /workspace/{workspaceId}/users
             Method: post
             RestApiId: !Ref eTRONApi
 
@@ -213,7 +213,7 @@ Resources:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/users/{userId}
-            Method: put
+            Method: patch
             RestApiId: !Ref eTRONApi
 
         RemoveUser:
@@ -278,7 +278,7 @@ Resources:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/roles/{roleId}
-            Method: put
+            Method: patch
             RestApiId: !Ref eTRONApi
 
         DeleteRole:

@@ -21,11 +21,19 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, payload) {
         throw new Error("Please specify a roleId");
     }
 
-    // if a role is specified check if it's valid
+    // check the role is valid
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
 
     if (!role) {
         throw new Error("Role not found:", roleId);
+    }
+
+    // check that the roleId isn't the owner
+    // fetch the owner role
+    const ownerRoleId = await workspaceRepo.getOwnerRoleId(workspaceId);
+
+    if (ownerRoleId === roleId) {
+        throw new Error("A workspace is limited to one owner");
     }
 
     // check if the user exists in the workspace
