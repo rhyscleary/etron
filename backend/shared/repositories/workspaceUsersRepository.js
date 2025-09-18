@@ -140,7 +140,7 @@ async function getUserByUserId(userId) {
         })
     );
 
-    return result.Items || null
+    return result.Items[0] || null
 }
 
 // get all users in a workspace

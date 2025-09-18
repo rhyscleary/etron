@@ -5,6 +5,8 @@ import { fetchUserAttributes, signOut, updateUserAttributes } from 'aws-amplify/
 import { useVerification } from '../../components/layout/VerificationContext'; // temp until backend
 import { getWorkspaceId } from '../../storage/workspaceStorage';
 import { saveUserInfo } from '../../storage/userStorage';
+import { savePermissions } from '../../storage/permissionsStorage';
+import { getPermissions } from '../../storage/permissionsStorage';
 import { apiGet } from '../../utils/api/apiClient';
 import endpoints from '../../utils/api/endpoints';
 
@@ -49,6 +51,16 @@ export default function AuthLayout() {
             const workspaceId = await getWorkspaceId();
             if (workspaceId) {
                 console.log("WorkspaceId received from local storage:", workspaceId);
+
+                // Save user's role details
+                try {
+                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
+                    await savePermissions(userRole);
+                    const temp = await getPermissions();
+                } catch (error) {
+                    console.log("Error saving user's role details into local storage:", error);
+                }                
+
                 return true;
             }
 
