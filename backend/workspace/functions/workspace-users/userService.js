@@ -1,13 +1,10 @@
 // Author(s): Rhys Cleary
 
-const { UserType } = require("@etron/shared/constants/enums");
 const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { getUserByEmail } = require("@etron/shared/utils/auth");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
-const {v4 : uuidv4} = require('uuid');
 
 async function addUserToWorkspace(workspaceId, payload) {
     await validateWorkspaceId(workspaceId);

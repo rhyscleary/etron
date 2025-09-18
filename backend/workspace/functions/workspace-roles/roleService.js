@@ -2,7 +2,7 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepository = require ("@etron/shared/repositories/workspaceUsersRepository");
-const { isOwner, isManager, getDefaultPermissions } = require("@etron/shared/utils/permissions");
+const { getDefaultPermissions } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
 

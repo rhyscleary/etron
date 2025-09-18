@@ -4,7 +4,7 @@ const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const { getUserById, updateUser } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
-const { isOwner, isManager, getDefaultPermissions } = require("@etron/shared/utils/permissions");
+const { getDefaultPermissions } = require("@etron/shared/utils/permissions");
 
 async function createWorkspace(authUserId, data) {
     if (!data.name) {

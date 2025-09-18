@@ -1,7 +1,6 @@
 // Author(s): Rhys Cleary
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 const { getAppModules } = require("@etron/shared/repositories/s3BucketRepository");
 
