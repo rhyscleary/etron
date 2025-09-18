@@ -127,21 +127,23 @@ async function createWorkspace(authUserId, data) {
     };
 }
 
-async function updateWorkspace(authUserId, workspaceId, data) { 
+async function updateWorkspace(authUserId, workspaceId, payload) {
+    
+    const { name, location, description } = payload;
 
     // validate data
     // if a name is specified check if it's valid
-    if (data.name != null && typeof data.name !== "string") {
+    if (name != null && typeof name !== "string") {
         throw new Error("Workspace description must be a 'string'");
     }
 
     // if a location is specified check if it's valid
-    if (data.location != null && typeof data.location !== "string") {
+    if (location != null && typeof location !== "string") {
         throw new Error("Workspace location must be a 'string'");
     }
 
     // if a description is specified check if it's valid
-    if (data.description != null && typeof data.description !== "string") {
+    if (description != null && typeof description !== "string") {
         throw new Error("Workspace description must be a 'string'");
     }
 
@@ -151,7 +153,7 @@ async function updateWorkspace(authUserId, workspaceId, data) {
         throw new Error("Workspace not found");
     }
 
-    return workspaceRepo.updateWorkspace(workspaceId, data);
+    return workspaceRepo.updateWorkspace(workspaceId, payload);
 }
 
 async function deleteWorkspace(authUserId, workspaceId) {
@@ -201,12 +203,12 @@ async function getWorkspaceByUserId(userId) {
     // get user data
     const user = await workspaceUsersRepo.getUserByUserId(userId);
 
-    if (!user?.[0]) {
+    if (!user) {
         throw new Error("No user found");
     }
 
     // get workspace data  
-    const workspace = await workspaceRepo.getWorkspaceById(user[0].workspaceId);
+    const workspace = await workspaceRepo.getWorkspaceById(user.workspaceId);
 
     if (!workspace) {
         throw new Error("Workspace not found");

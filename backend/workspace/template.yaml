@@ -148,7 +148,7 @@ Resources:
         CancelUsersInvites:
           Type: Api 
           Properties:
-            Path: /workspace/invites/{email}
+            Path: /workspace/invites
             Method: delete
             RestApiId: !Ref eTRONApi
 

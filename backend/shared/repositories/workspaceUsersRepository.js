@@ -140,7 +140,7 @@ async function getUserByUserId(userId) {
         })
     );
 
-    return result.Items || null
+    return result.Items[0];
 }
 
 // get all users in a workspace
@@ -163,8 +163,8 @@ async function getUsersByWorkspaceId(workspaceId) {
     return result.Items || null;
 }
 
-// get users by workspaceId and email
-async function getUsersByWorkspaceIdAndEmail(workspaceId, email) {
+// get user by workspaceId and email
+async function getUserByWorkspaceIdAndEmail(workspaceId, email) {
     const result = await dynamoDB.send(
         new QueryCommand({
             TableName: tableName,
@@ -177,7 +177,7 @@ async function getUsersByWorkspaceIdAndEmail(workspaceId, email) {
         })
     );
 
-    return result.Items;
+    return result.Items[0];
 }
 
 module.exports = {
@@ -187,5 +187,5 @@ module.exports = {
     getUser,
     getUserByUserId,
     getUsersByWorkspaceId,
-    getUsersByWorkspaceIdAndEmail
+    getUserByWorkspaceIdAndEmail
 }
