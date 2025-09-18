@@ -94,6 +94,8 @@ async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
 }
 
 async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
+    await validateWorkspaceId(workspaceId);
+    
     const userRole = await workspaceUsersRepository.getUserByUserId(authUserId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, userRole.roleId);
