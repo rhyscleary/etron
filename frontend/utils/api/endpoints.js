@@ -31,6 +31,7 @@ const endpoints = {
             update: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
             delete: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
             getRole: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
+            getRoleOfUser: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roleOfUser`,
             getRoles: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles`,
         },
 

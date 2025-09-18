@@ -1,6 +1,7 @@
 // Author(s): Rhys Cleary
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
+const workspaceUsersRepository = require ("@etron/shared/repositories/workspaceUsersRepository");
 const { isOwner, isManager, getDefaultPermissions } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
@@ -85,7 +86,20 @@ async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
         return null;
     }
 
-    // merge the roles pemrissions and return it
+    // merge the roles permissions and return it
+    return mergePermissions(role);
+}
+
+async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
+    const userRole = await workspaceUsersRepository.getUserByUserId(authUserId);
+
+    const role = await workspaceRepo.getRoleById(workspaceId, userRole.roleId);
+
+    if (!role) {
+        return null;
+    }
+
+    // merge the roles permissions and return it
     return mergePermissions(role);
 }
 
@@ -127,6 +141,7 @@ module.exports = {
     createRoleInWorkspace,
     deleteRoleInWorkspace,
     getRoleInWorkspace,
+    getRoleOfUserInWorkspace,
     getRolesInWorkspace,
     updateRoleInWorkspace
 };

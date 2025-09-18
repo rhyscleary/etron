@@ -1,19 +1,16 @@
 // Author(s): Matthew Parkinson, Holly Wyatt, Rhys Cleary
 
-import { Redirect, useRouter, router, Link, useLocalSearchParams } from "expo-router";
-import { PaperProvider, Text } from 'react-native-paper';
-import React, { useEffect, useState } from "react";
-import { TextInput, View, Modal, Linking } from 'react-native';
+import { useRouter, Link, useLocalSearchParams } from "expo-router";
+import { Text } from 'react-native-paper';
+import { useEffect, useState } from "react";
+import { View, Linking } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import GoogleButton from '../components/common/buttons/GoogleButton';
 import MicrosoftButton from '../components/common/buttons/MicrosoftButton';
 import Divider from "../components/layout/Divider";
-import Header from "../components/layout/Header";
 import { commonStyles } from "../assets/styles/stylesheets/common";
-
-import { Amplify } from 'aws-amplify';
 
 import { 
     signIn, 
@@ -30,6 +27,7 @@ import {
 import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../storage/workspaceStorage";
+import { saveUserInfo } from "../storage/userStorage";
 import VerificationDialog from "../components/overlays/VerificationDialog";
 
 //Amplify.configure(awsmobile);
@@ -220,7 +218,7 @@ function LoginSignup() {
             try {
                 const currentUser = await getCurrentUser();
                 if (currentUser) {
-                    console.log("User is already signed in. Signing out..");
+                    console.log("User is already signed in. Signing out before continuing..");
                     await signOut();
                 }
             } catch {
@@ -238,15 +236,13 @@ function LoginSignup() {
 
             if (isSignedIn) {
                 const user = await getCurrentUser();
-                console.log(user);
-                console.log(user.userId);
                 const userAttributes = await fetchUserAttributes();
-
+                
                 const hasGivenName = userAttributes["given_name"];
                 const hasFamilyName = userAttributes["family_name"];
                 let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
 
-                // if the attribute doesn't exist set it to false
+                // If the attribute doesn't exist, set it to false
                 if (hasWorkspaceAttribute == null) {
                     await setHasWorkspaceAttribute(false);
                     hasWorkspaceAttribute = "false";
