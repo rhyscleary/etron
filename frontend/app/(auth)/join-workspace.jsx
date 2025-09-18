@@ -109,9 +109,14 @@ const JoinWorkspace = () => {
             const workspaceId = selectedInvite.workspaceId;
             const inviteId = selectedInvite.inviteId;
 
+            const payload = {
+                inviteId
+            }
+
             // try adding user to the workspace
             await apiPost(
-                endpoints.workspace.users.add(workspaceId, inviteId)
+                endpoints.workspace.users.add(workspaceId),
+                payload
             )
 
             // if successful store workspace info
