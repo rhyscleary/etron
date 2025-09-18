@@ -1,10 +1,12 @@
 import { Slot, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
-import { fetchAuthSession, fetchUserAttributes, getCurrentUser, signOut, updateUserAttributes } from 'aws-amplify/auth';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { fetchUserAttributes, signOut, updateUserAttributes } from 'aws-amplify/auth';
 import { useVerification } from '../../components/layout/VerificationContext'; // temp until backend
 import { getWorkspaceId } from '../../storage/workspaceStorage';
+import { saveUserInfo } from '../../storage/userStorage';
+import { apiGet } from '../../utils/api/apiClient';
+import endpoints from '../../utils/api/endpoints';
 
 export default function AuthLayout() {
 
@@ -65,6 +67,15 @@ export default function AuthLayout() {
             const hasGivenName = userAttributes["given_name"];
             const hasFamilyName = userAttributes["family_name"];
 
+            // Save user's info into local storage
+            const workspaceId = await getWorkspaceId();
+            try {
+                const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
+                await saveUserInfo(userInfo);  // Saves into local storage
+            } catch (error) {
+                console.log("Error saving user info into storage:", error);
+            }
+
             // if the name attributes don't exist return false
             if (!hasGivenName || !hasFamilyName) {
                 return false;
@@ -77,6 +88,10 @@ export default function AuthLayout() {
         }
     }
 
+    const saveUserInfoIntoStorage = async() => {
+        
+    }
+
     useEffect(() => {
         //if (checked) return;
 
@@ -86,6 +101,8 @@ export default function AuthLayout() {
             if (authStatus === 'authenticated') {
                 const workspaceExists = await checkWorkspaceExists().catch(() => false);
                 const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
+
+                saveUserInfoIntoStorage();
 
                 if (!workspaceExists && !personalDetailsExists) {
                     console.log("User authenticated but no workspace or personal details found. Redirecting..");

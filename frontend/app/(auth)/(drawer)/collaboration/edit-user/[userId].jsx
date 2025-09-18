@@ -15,6 +15,7 @@ import BasicButton from "../../../../../components/common/buttons/BasicButton";
 import { uploadProfilePhotoFromDevice } from "../../../../../utils/profilePhoto";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { updateUserAttribute } from "aws-amplify/auth";
+import { getUserType } from "../../../../../storage/userStorage";
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -37,6 +38,8 @@ const EditUser = () => {
 
 	useEffect(() => {
 		const initialise = async () => {
+			const userType = await getUserType();
+			console.log("userType:", userType);
 			const workspaceIdTemp = await getWorkspaceId();
 			setWorkspaceId(workspaceIdTemp);
 

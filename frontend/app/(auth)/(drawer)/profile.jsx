@@ -5,6 +5,8 @@ import { Link, router } from "expo-router";
 import { Text } from "react-native-paper";
 import StackLayout from "../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
+import { getUserType } from "../../../storage/userStorage";
+import { useEffect } from "react";
 
 const Profile = () => {
     const settingOptionButtons = [
