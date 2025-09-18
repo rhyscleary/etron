@@ -295,6 +295,13 @@ Resources:
             Method: get
             RestApiId: !Ref eTRONApi
 
+        GetRoleOfUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roleOfUser
+            Method: get
+            RestApiId: !Ref eTRONApi
+
         GetRoles:
           Type: Api 
           Properties:

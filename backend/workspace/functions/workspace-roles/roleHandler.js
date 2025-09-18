@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { createRoleInWorkspace, updateRoleInWorkspace, deleteRoleInWorkspace, getRoleInWorkspace, getRolesInWorkspace } = require("./roleService");
+const { createRoleInWorkspace, updateRoleInWorkspace, deleteRoleInWorkspace, getRoleInWorkspace, getRoleOfUserInWorkspace, getRolesInWorkspace } = require("./roleService");
 
 
 exports.handler = async (event) => {
@@ -85,6 +85,20 @@ exports.handler = async (event) => {
                 }
 
                 body = await getRoleInWorkspace(authUserId, pathParams.workspaceId, pathParams.roleId);
+                break;
+            }
+
+            // GET ROLE OF USER IN WORKSPACE
+            case "GET /workspace/{workspaceId}/roleOfUser": {
+                if (!pathParams.workspaceId) {
+                    throw new Error("Missing workspaceId");
+                }
+
+                if (typeof pathParams.workspaceId !== "string") {
+                    throw new Error("workspaceId must be a UUID, 'string'");
+                }
+
+                body = await getRoleOfUserInWorkspace(authUserId, pathParams.workspaceId);
                 break;
             }
 
