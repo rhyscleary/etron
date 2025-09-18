@@ -71,7 +71,7 @@ Resources:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}
-            Method: put
+            Method: patch
             RestApiId: !Ref eTRONApi
 
         GetWorkspace:
@@ -91,7 +91,7 @@ Resources:
         TransferOwnership:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/transfer/{userId}
+            Path: /workspace/{workspaceId}/transfer
             Method: put
             RestApiId: !Ref eTRONApi
 

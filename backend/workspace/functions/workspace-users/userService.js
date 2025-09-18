@@ -21,10 +21,12 @@ async function addUserToWorkspace(workspaceId, inviteId) {
         throw new Error(`Invalid type of user: ${invite.type}`);
     }
 
-    // if role is specified check if it's valid
-    if (invite.roleId !== undefined) {
-    
+    // check if role is specified
+    if (!invite.roleId) {
+        throw new Error("No roleId specified");
     }
+
+    
 
     // get cognito user by email
     const userProfile = await getUserByEmail(invite.email);
@@ -38,8 +40,7 @@ async function addUserToWorkspace(workspaceId, inviteId) {
         email: userProfile.email,
         given_name: userProfile.given_name,
         family_name: userProfile.family_name,
-        type: invite.type,
-        roleId: invite.roleId || null,
+        roleId: invite.roleId,
         joinedAt: date,
         updatedAt: date
     };
@@ -63,11 +64,6 @@ async function addUserToWorkspace(workspaceId, inviteId) {
 }
 
 async function updateUserInWorkspace(authUserId, workspaceId, userId, updateData) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     // check if the user exists
     const user = await workspaceUsersRepo.getUser(workspaceId, userId);
@@ -105,11 +101,6 @@ async function getUsersInWorkspace(authUserId, workspaceId) {
 }
 
 async function removeUserFromWorkspace(authUserId, workspaceId, userId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     await workspaceUsersRepo.removeUser(workspaceId, userId);
 

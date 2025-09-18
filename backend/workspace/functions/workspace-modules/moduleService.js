@@ -6,11 +6,6 @@ const {v4 : uuidv4} = require('uuid');
 const { getAppModules } = require("@etron/shared/repositories/s3BucketRepository");
 
 async function installModule(authUserId, workspaceId, moduleKey) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const appModules = await getAppModules();
 
@@ -47,11 +42,6 @@ async function installModule(authUserId, workspaceId, moduleKey) {
 }
 
 async function toggleModule(authUserId, workspaceId, moduleKey) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const [module] = await workspaceRepo.getModuleByKey(workspaceId, moduleKey);
 
@@ -66,11 +56,6 @@ async function toggleModule(authUserId, workspaceId, moduleKey) {
 }
 
 async function uninstallModule(authUserId, workspaceId, moduleKey) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const [module] = await workspaceRepo.getModuleByKey(workspaceId, moduleKey);
 
@@ -84,11 +69,6 @@ async function uninstallModule(authUserId, workspaceId, moduleKey) {
 }
 
 async function getAvailableModules(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const appModules = await getAppModules();
 
@@ -104,11 +84,6 @@ async function getAvailableModules(authUserId, workspaceId) {
 }
 
 async function getInstalledModules(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     return workspaceRepo.getModulesByWorkspaceId(workspaceId);
 }
