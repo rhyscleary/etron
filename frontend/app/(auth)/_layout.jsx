@@ -55,6 +55,7 @@ export default function AuthLayout() {
                 // Save user's role details
                 try {
                     const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
+                    console.log(userRole);
                     await savePermissions(userRole);
                     const temp = await getPermissions();
                 } catch (error) {
