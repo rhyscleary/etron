@@ -12,10 +12,10 @@ import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import TextField from "../../../../../components/common/input/TextField";
 import BasicButton from "../../../../../components/common/buttons/BasicButton";
-import { uploadProfilePhotoFromDevice } from "../../../../../utils/profilePhoto";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { updateUserAttribute } from "aws-amplify/auth";
 import { getUserType } from "../../../../../storage/userStorage";
+import { saveProfilePhoto } from "../../../../../utils/profilePhoto";
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -114,7 +114,7 @@ const EditUser = () => {
 			};
 
 			if (!profilePicture) {
-				const removed = await uploadProfilePhotoToS3();
+				const removed = await saveProfilePhoto();
 				if (removed) {
 					await handleUpdateUserAttribute('picture', "");
 				}

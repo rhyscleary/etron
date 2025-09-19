@@ -8,35 +8,29 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 global.Buffer = global.Buffer || Buffer
 
+const profilePhotoUriKey = "profilePhotoUri"
+
 export async function loadProfilePhoto() {
     try {
         // Load the photo from local storage if possible
-        const cachedUri = await AsyncStorage.getItem('profilePhotoUri');
-        if (cachedUri) {
-            console.log("Profile photo loaded from cache.");
-            console.log(cachedUri);
-            return cachedUri;
-        }
+        const cachedUri = await AsyncStorage.getItem(profilePhotoUriKey);
+        if (cachedUri) return cachedUri;
 
         // If not in local storage, then get from S3
-        console.log("Fetching from S3...")
         const userAttributes = await fetchUserAttributes();
         const S3Path = userAttributes.picture;
-        if (!S3Path) {
-            console.log("Profile photo URL not found.");
-            return null;
-        }
+        if (!S3Path) return null;
+        
         const S3UrlResult = await getUrl({path: S3Path});
-        await AsyncStorage.setItem('profilePhotoUri', S3UrlResult.url.toString());
-        console.log("New profile photo URL fetched and cached.");
+        await AsyncStorage.setItem(profilePhotoUriKey, S3UrlResult.url.toString());
         return S3UrlResult.url.toString();
     } catch (error) {
-        console.log("Profile photo URL fetch unsuccessful:", error);
+        console.error("Error fetching profile photo URL:", error);
         return null;
     }
 }
 
-export async function uploadProfilePhotoFromDevice() {
+export async function getPhotoFromDevice() {
     // Get photo library access permission
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
@@ -56,37 +50,20 @@ export async function uploadProfilePhotoFromDevice() {
 
     // Get the selected photo URI from the device 
     const asset = result.assets[0];
-    console.log("Local URI of photo obtained.");
     return asset.uri;
 }
 
-export async function uploadProfilePhotoToS3(profilePhotoUri) {
-    
+export async function saveProfilePhoto(profilePhotoUri) {
     // Get the destination S3 path
     const { userId } = await getCurrentUser();
     const fileName = `${userId}.jpg`;
     const S3FilePath = `profile-pictures/${fileName}`;
-    console.log("S3 file path created.");
 
     // Upload the photo to S3
-    console.log("Uploading photo to S3 bucket...");
 
     const fileBuffer = await FileSystem.readAsStringAsync(profilePhotoUri, {
         encoding: FileSystem.EncodingType.Base64,
     });
-
-    try {
-        await uploadData({
-            path: S3FilePath,
-            data: Buffer.from(fileBuffer, 'base64'),
-            options: {
-                bucket: "profilePictures"
-            }
-        }).result;
-        console.log("Photo uploaded successfully.");
-    } catch (error) {
-        throw new Error(`Error uploading photo: ${error.message}`);
-    }
 
     try {
         await uploadData({
@@ -96,21 +73,22 @@ export async function uploadProfilePhotoToS3(profilePhotoUri) {
                 bucket: "users"
             }
         }).result;
-        console.log("Photo uploaded successfully TO NEW BUCKET.");
     } catch (error) {
-        throw new Error(`Error uploading photo TO NEW BUCKET: ${error.message}`);
+        throw new Error(`Error uploading photo: ${error.message}`);
     }
 
-    await AsyncStorage.removeItem("profilePhotoUri");
+    // Replace local storage of photo
+    await AsyncStorage.removeItem(profilePhotoUriKey);
+    await AsyncStorage.setItem(profilePhotoUriKey, profilePhotoUri);
     return S3FilePath;
 }
 
 export async function removeProfilePhotoFromLocalStorage() {
     try {
-        await AsyncStorage.removeItem("profilePhotoUri");
+        await AsyncStorage.removeItem(profilePhotoUriKey);
         return null;
     } catch (error) {
-        console.log("Error removing profile photo:", error);
+        console.error("Error removing profile photo:", error);
         return null;
     }
 }

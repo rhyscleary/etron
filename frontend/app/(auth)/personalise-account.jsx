@@ -12,7 +12,7 @@ import { commonStyles } from '../../assets/styles/stylesheets/common';
 import StackLayout from '../../components/layout/StackLayout';
 import { Auth } from 'aws-amplify';
 import AvatarButton from '../../components/common/buttons/AvatarButton';
-import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhotoFromDevice, uploadProfilePhotoToS3 } from '../../utils/profilePhoto';
+import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, getPhotoFromDevice, saveProfilePhoto } from '../../utils/profilePhoto';
 import { fetchUserAttributes, getCurrentUser, updateUserAttribute, updateUserAttributes } from 'aws-amplify/auth';
 import DecisionDialog from '../../components/overlays/DecisionDialog';
 
@@ -36,7 +36,7 @@ const PersonaliseAccount = () => {
 
   async function handleChoosePhoto() {
     try {
-      const uri = await uploadProfilePhotoFromDevice();
+      const uri = await getPhotoFromDevice();
       setProfilePicture(uri);
       setPictureChanged(true);
     } catch (error) {
@@ -132,7 +132,7 @@ const PersonaliseAccount = () => {
 
       if (pictureChanged) {
         if (profilePicture) {
-          const s3Url = await uploadProfilePhotoToS3(profilePicture);
+          const s3Url = await saveProfilePhoto(profilePicture);
           if (s3Url) {
             await handleUpdateUserAttribute('picture', s3Url);
           }
