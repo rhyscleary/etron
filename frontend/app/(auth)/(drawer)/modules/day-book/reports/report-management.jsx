@@ -3,18 +3,77 @@
 import { View, ScrollView, Button, StyleSheet } from "react-native";
 import Header from "../../../../../../components/layout/Header";
 import DecisionDialog from "../../../../../../components/overlays/DecisionDialog";
+import TextField from "../../../../../../components/common/input/TextField";
+
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
 import StackLayout from "../../../../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../../../../components/common/buttons/DescriptiveButton";
 import { Portal, Dialog, Text } from "react-native-paper";
-import React, { useState } from "react";
+import React, {useState, useEffect} from "react";
+import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
+import endpoints from "../../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
+
+
+
 
 const ReportManagement = () => {
     const [dialogVisible, setDialogVisible] = useState(false);
+    const [nameDialogVisible, setNameDialogVisible] = useState(false);
+    const [reportName, setReportName] = useState("");
+    const [workspaceId, setWorkspaceId] = useState(null);
+
+    useEffect(() => {
+    const fetchWorkspace = async () => {
+        try {
+        const id = await getWorkspaceId();
+        if (id) {
+            setWorkspaceId(id);
+        } else {
+            console.error("No workspace ID found");
+        }
+        } catch (err) {
+        console.error("Error fetching workspace ID:", err);
+        }
+    };
+    fetchWorkspace();
+    }, []);
+
 
     const showDialog = () => setDialogVisible(true);
     const hideDialog = () => setDialogVisible(false);
+
+const handleReportCreation = async () => {
+  if (!reportName.trim()) return;
+
+  try {
+    const body = {
+      workspaceId,
+      name: reportName,
+    };
+
+    const result = await apiPost(
+      endpoints.modules.day_book.reports.drafts.createDraft,
+      body
+    );
+
+    console.log("Report created:", result);
+
+    if (result?.draftId) {
+      setNameDialogVisible(false);
+      // Navigate straight to edit-report page for the created draft
+      router.push(`/modules/day-book/reports/edit-report/${result.draftId}`);
+    } else {
+      console.error("Draft created but no ID returned:", result);
+    }
+  } catch (err) {
+    console.error("Error creating report:", err);
+  }
+};
+
+    
+
 
     const settingOptionButtons = [
         { icon: "", label: "Export Metric", description: "Export selected metrics as an image", onPress: () => router.navigate("/modules/day-book/metrics/metric-management") },
@@ -48,17 +107,16 @@ const ReportManagement = () => {
                 </StackLayout>
             </ScrollView>
 
-
-            {/* Dialog */}
+            {/* New/Existing Choice Dialog */}
             <DecisionDialog
-                visible={dialogVisible} 
+                visible={dialogVisible}
                 title="Would you like to use a template?"
                 message="Create a new report or use an existing template."
                 showGoBack={true}
                 leftActionLabel="New"
                 handleLeftAction={() => {
                     hideDialog();
-                    router.navigate("/modules/day-book/reports/create-report");
+                    setNameDialogVisible(true);
                 }}
                 rightActionLabel="Existing"
                 handleRightAction={() => {
@@ -66,41 +124,37 @@ const ReportManagement = () => {
                     router.navigate("/modules/day-book/reports/templates");
                 }}
                 handleGoBack={() => {
-                    hideDialog(); // closes the modal
+                    hideDialog();
                 }}
             />
 
-
-
+            {/* Report Name Dialog */}
+            <Portal>
+                <Dialog visible={nameDialogVisible} onDismiss={() => setNameDialogVisible(false)}>
+                    <Dialog.Title>Name Your Report</Dialog.Title>
+                    <Dialog.Content>
+                        <TextField
+                            label="Report Name"
+                            value={reportName}
+                            onChangeText={setReportName}
+                            placeholder="Enter report name"
+                        />
+                    </Dialog.Content>
+                    <Dialog.Actions style={styles.centerActionsRow}>
+                        <Button title="Cancel" onPress={() => setNameDialogVisible(false)} />
+                        <Button title="Confirm" onPress={handleReportCreation} />
+                    </Dialog.Actions>
+                </Dialog>
+            </Portal>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    dialogBox: {
-        alignSelf: "center",
-        width: 300, // makes it square-ish
-        borderRadius: 8,
-    },
-    centerText: {
-        textAlign: "center",
-    },
     centerActionsRow: {
         flexDirection: "row",
         justifyContent: "space-evenly",
         marginTop: 10,
-    },
-    centerActionsColumn: {
-        justifyContent: "center",
-        marginTop: 10,
-    },
-    buttonWrapper: {
-        flex: 1,
-        marginHorizontal: 5,
-    },
-    singleButtonWrapper: {
-        width: "50%", // adjust width to match row buttons
-        alignSelf: "center",
     },
 });
 

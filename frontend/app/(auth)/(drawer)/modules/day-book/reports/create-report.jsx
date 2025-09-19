@@ -305,3 +305,8 @@ const styles = StyleSheet.create({
 });
 
 export default CreateReport;
+
+
+
+// To be replaced by edit-report/[draftId]
+// Needs to be removed later; keep for now!
