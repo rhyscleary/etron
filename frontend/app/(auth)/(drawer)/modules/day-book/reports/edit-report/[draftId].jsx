@@ -11,7 +11,7 @@ import { Portal, Dialog, Button } from "react-native-paper";
 import { useLocalSearchParams } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
-import { apiPut, apiGet } from "../../../../../../../utils/api/apiClient";
+import { apiPut, apiGet, apiPatch } from "../../../../../../../utils/api/apiClient";
 
 const EditReport = () => {
   const { draftId } = useLocalSearchParams();
@@ -161,9 +161,9 @@ const EditReport = () => {
     }
 
     // Update data and get upload URL
-    let uploadUrl;
+    let fileUploadUrl;
     try {
-      const updateResult = await apiPut(
+      const updateResult = await apiPatch(
         endpoints.modules.day_book.reports.drafts.updateDraft(draftId),
         {
           workspaceId,
@@ -171,13 +171,16 @@ const EditReport = () => {
         }
       );
 
-      uploadUrl = updateResult.uploadUrl;
+      console.log(updateResult);
 
-      if (!uploadUrl) {
-        console.error("No uploadUrl returned form API");
+      fileUploadUrl = updateResult.fileUploadUrl;
+
+      if (!fileUploadUrl) {
+        console.error("No fileUploadUrl returned from the API");
+        return;
       }
 
-      console.log("Received upload URL:", uploadUrl);
+      console.log("Received upload URL:", fileUploadUrl);
     } catch (error) {
       console.error("Failed to get upload URL:", error);
       Alert.alert("Error", "Could not get upload URL from server");
@@ -189,7 +192,7 @@ const EditReport = () => {
       const fileBlob = await RNFS.readFile(filePath, "utf-8");
 
       const uploadResult = await apiPut(
-        uploadUrl,
+        fileUploadUrl,
         fileBlob
       );
 
@@ -204,7 +207,7 @@ const EditReport = () => {
       console.error("Failed to upload file:", error);
       Alert.alert("Error", "Could not upload draft file");
     }
-    
+
   };
 
   return (
