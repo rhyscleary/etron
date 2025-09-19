@@ -2,6 +2,7 @@
 const workspaceUsersRepo = require("../repositories/workspaceUsersRepository");
 const workspaceRepo = require("../repositories/workspaceRepository");
 const { GetObjectCommand, NoSuchKey, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
+const { getAppPermissions } = require("../repositories/appConfigBucketRepository");
 const s3Client = new S3Client({});
 
 async function isManager(userId, workspaceId) {
@@ -32,30 +33,17 @@ async function isOwner(userId, workspaceId) {
     return user?.type === "owner";
 }
 
-// get permissions from s3
+// get the default permissions. Permissions with defaultStatus: true
 async function getDefaultPermissions() {
-    const bucketName = process.env.PERMISSIONS_BUCKET;
-    const key = "default-permissions.json";
-    try {
-        const response = await s3Client.send(
-            new GetObjectCommand({
-                Bucket: bucketName,
-                Key: key,
-            }),
-        );
+    const permissionConfig = await getAppPermissions();
 
-        const jsonString = await response.Body.transformToString();
-        const parsed = JSON.parse(jsonString);
-
-        return parsed.permissions || [];
-    } catch (error) {
-        if (error instanceof S3ServiceException) {
-            console.error(`Error from S3 while fetching the permissions from ${bucketName}`);
-            throw new Error(`Error from S3 while fetching the permissions from ${bucketName}`);
-        } else {
-            throw error;
-        }
+    if (!config) {
+        return [];
     }
+
+    const result = [];
+
+    
 }
 
 // check if the user has permissions
@@ -85,6 +73,6 @@ async function hasPermission(userId, workspaceId, permissionKey) {
 module.exports = {
     isManager,
     isOwner,
-    hasPermission,
-    getDefaultPermissions
+    getDefaultPermissions,
+    hasPermission
 };

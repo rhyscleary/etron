@@ -1,0 +1,13 @@
+{
+  "manager": [
+    "app.workspace.create_workspace",
+    "app.billing.view_billing",
+    "app.collaboration.view_users",
+    "modules.daybook.entries.create_entries"
+  ],
+  "viewer": [
+    "app.collaboration.view_users",
+    "modules.daybook.entries.view_entries",
+    "modules.daybook.reports.view_reports"
+  ]
+}
