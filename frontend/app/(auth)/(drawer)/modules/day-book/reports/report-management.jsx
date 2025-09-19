@@ -14,6 +14,7 @@ import React, {useState, useEffect} from "react";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
+import { createNewReport } from "../../../../../../utils/reportUploader";
 
 
 
@@ -48,26 +49,15 @@ const handleReportCreation = async () => {
   if (!reportName.trim()) return;
 
   try {
-    const body = {
-      workspaceId,
-      name: reportName,
-    };
+    const newDraftId = await createNewReport({
+        workspaceId,
+        reportName
+    });
 
-    const result = await apiPost(
-      endpoints.modules.day_book.reports.drafts.createDraft,
-      body
-    );
-
-    console.log("Report created:", result);
-
-    // TODO: Upload a html file here to the uploadUrl
-
-    if (result?.draftId) {
+    if (newDraftId) {
       setNameDialogVisible(false);
       // Navigate straight to edit-report page for the created draft
-      router.push(`/modules/day-book/reports/edit-report/${result.draftId}`);
-    } else {
-      console.error("Draft created but no ID returned:", result);
+      router.push(`/modules/day-book/reports/edit-report/${newDraftId}`);
     }
   } catch (err) {
     console.error("Error creating report:", err);

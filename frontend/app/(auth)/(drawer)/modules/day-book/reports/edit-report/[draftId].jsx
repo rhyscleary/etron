@@ -12,6 +12,7 @@ import { useLocalSearchParams } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiPut, apiGet, apiPatch } from "../../../../../../../utils/api/apiClient";
+import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
 
 const EditReport = () => {
   const { draftId } = useLocalSearchParams();
@@ -44,19 +45,18 @@ const EditReport = () => {
 
         const response = await apiGet(
           endpoints.modules.day_book.reports.drafts.getDraft(draftId), 
-          workspaceId
+          { workspaceId }
         );
-        const data = await response.json();
-        console.log("Draft metadata response:", data);
+        console.log("Draft metadata response:", response);
 
-        if (!data) return;
+        if (!response) return;
 
-        setReportId(data.draftId);
-        setFileName(data.name || "Report");
+        setReportId(response.draftId);
+        setFileName(response.name || "Report");
 
-        if (data.fileUrl) {
-          console.log("Fetching HTML file from fileUrl:", data.fileUrl);
-          const fileResponse = await fetch(data.fileUrl);
+        if (response.fileUrl) {
+          console.log("Fetching HTML file from fileUrl:", response.fileUrl);
+          const fileResponse = await fetch(response.fileUrl);
           const fileText = await fileResponse.text();
           console.log("Fetched HTML content length:", fileText.length);
 
@@ -139,80 +139,28 @@ const EditReport = () => {
     exportAsPDF(fileName.trim() || "Report");
   };
 
-  // Save (PUT) report draft
-  const saveReport = async () => {
+  // Save report draft
+  const handleSaveReport = async () => {
     if (!workspaceId || !draftId) {
       Alert.alert("Error", "Missing workspace or draft ID.");
       console.log("Workspace Id or draftId missing", workspaceId, draftId)
       return;
     }
 
-    const trimmedFileName = fileName.trim() || "Report";
-    const filePath = `${RNFS.CachesDirectoryPath}/${trimmedFileName}.html`;
+    const success = await uploadUpdatedReport({
+      workspaceId,
+      reportId: draftId,
+      reportName: fileName,
+      editorContent
+    });
 
-    // write editor content to local file store
-    try {
-      await RNFS.writeFile(filePath, editorContent || "<p>No content</p>", "utf8");
-      console.log("Local HTML file written at:", filePath);
-    } catch (error) {
-      console.error("Failed to write local file:", error);
-      Alert.alert("Error", "Could not save local file");
-      return;
-    }
-
-    // Update data and get upload URL
-    let fileUploadUrl;
-    try {
-      const updateResult = await apiPatch(
-        endpoints.modules.day_book.reports.drafts.updateDraft(draftId),
-        {
-          workspaceId,
-          name: trimmedFileName
-        }
-      );
-
-      console.log(updateResult);
-
-      fileUploadUrl = updateResult.fileUploadUrl;
-
-      if (!fileUploadUrl) {
-        console.error("No fileUploadUrl returned from the API");
-        return;
-      }
-
-      console.log("Received upload URL:", fileUploadUrl);
-    } catch (error) {
-      console.error("Failed to get upload URL:", error);
-      Alert.alert("Error", "Could not get upload URL from server");
-      return;
-    }
-
-    // Upload the file to S3
-    try {
-      const fileBlob = await RNFS.readFile(filePath, "utf-8");
-
-      const uploadResult = await apiPut(
-        fileUploadUrl,
-        fileBlob
-      );
-
-      if (!uploadResult.ok) {
-        console.error(`Upload to S3 failed with response status: ${uploadResult.status}`);
-      }
-
-      console.log("File uploaded successfully to S3");
-
-      Alert.alert("Success", "Report updated successfully.");
-    } catch (error) {
-      console.error("Failed to upload file:", error);
-      Alert.alert("Error", "Could not upload draft file");
-    }
+    if (success) Alert.alert("Success", "Report updated successfully");
 
   };
 
   return (
     <View style={commonStyles.screen}>
-      <Header title={reportId ? "Edit Report" : "New Report"} showBack showCheck onRightIconPress={saveReport} />
+      <Header title={reportId ? "Edit Report" : "New Report"} showBack showCheck onRightIconPress={handleSaveReport} />
 
       {/* Buttons row */}
       <View style={styles.buttonRow}>
@@ -220,7 +168,7 @@ const EditReport = () => {
           <Text style={styles.exportButtonText}>Export PDF</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveButton} onPress={saveReport}>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
           <Text style={styles.saveButtonText}>{reportId ? "Update" : "Save"} Report</Text>
         </TouchableOpacity>
       </View>
