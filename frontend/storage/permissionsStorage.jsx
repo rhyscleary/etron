@@ -2,23 +2,32 @@
 
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
-const permissionsKey = "permissions";
+const roleKey = "role";
 
-export async function savePermissions(permissions) {
+export async function saveRole(role) {
     try {
-        const value = JSON.stringify(permissions);
-        await AsyncStorage.setItem(permissionsKey, value);
+        const roleValue = JSON.stringify(role);
+        await AsyncStorage.setItem(roleKey, roleValue);
     } catch (error) {
-        console.log("Error saving permissions: ", error);
+        console.log("Error saving role: ", error);
+    }
+}
+
+export async function getRole() {
+    try {
+        const roleValue = await AsyncStorage.getItem(roleKey);
+        return roleValue != null ? JSON.parse(roleValue) : null;
+    } catch (error) {
+        console.log("Error retrieving role:", error);
+        return null;
     }
 }
 
 export async function getPermissions() {
     try {
-        const value = await AsyncStorage.getItem(permissionsKey);
-        return value != null ? JSON.parse(value) : null;
+        const roleValue = await AsyncStorage.getItem(roleKey);
+        return roleValue != null ? JSON.parse(roleValue).permissions : null;
     } catch (error) {
-        console.log("Error retrieving permissions: ", error);
-        return null;
+        console.log("Error retrieving permissions:", error);
     }
 }
