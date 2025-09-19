@@ -35,7 +35,7 @@ async function isOwner(userId, workspaceId) {
 
 // get the default permissions. Permissions with defaultStatus: true
 async function getDefaultPermissions() {
-    const permissionConfig = await getAppPermissions();
+    const config = await getAppPermissions();
 
     if (!config) {
         return [];
@@ -43,7 +43,39 @@ async function getDefaultPermissions() {
 
     const result = [];
 
-    
+    // get keys from the categories
+    function getKeysFromCategories(categories, prefix) {
+        if (!categories) return;
+
+        for (const [categoryName, category] of Object.entries(categories)) {
+            if (category.permissions) {
+                for (const perm of category.permissions) {
+                    if (perm.defaultStatus) {
+                        result.push(`${prefix}.${perm.key}`);
+                    }
+                }
+            }
+
+            // recursive if nested category
+            if (category.categories) {
+                getKeysFromCategories(category.categories, `${prefix}.${categoryName}`);
+            }
+        }
+    }
+
+    // get app permission keys
+    if (config.app?.categories) {
+        getKeysFromCategories(config.app.categories, "app");
+    }
+
+    // handle the modules
+    if (config.modules) {
+        for (const [moduleName, module] of Object.entries(config.modules)) {
+            getKeysFromCategories(module.categories, `modules.${moduleName}`);
+        }
+    }
+
+    return result;
 }
 
 // check if the user has permissions
