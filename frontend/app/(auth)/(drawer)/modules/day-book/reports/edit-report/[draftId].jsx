@@ -141,46 +141,75 @@ const EditReport = () => {
 
   // Save (PUT) report draft
   const saveReport = async () => {
-    if (!workspaceId || !reportId) {
+    if (!workspaceId || !draftId) {
       Alert.alert("Error", "Missing workspace or draft ID.");
-      console.log("Workspace Id or draftId missing", workspaceId, reportId)
+      console.log("Workspace Id or draftId missing", workspaceId, draftId)
       return;
     }
 
+    const trimmedFileName = fileName.trim() || "Report";
+    const filePath = `${RNFS.CachesDirectoryPath}/${trimmedFileName}.html`;
+
+    // write editor content to local file store
     try {
-      const filePath = `${RNFS.CachesDirectoryPath}/${fileName.trim() || "Report"}.html`;
       await RNFS.writeFile(filePath, editorContent || "<p>No content</p>", "utf8");
+      console.log("Local HTML file written at:", filePath);
+    } catch (error) {
+      console.error("Failed to write local file:", error);
+      Alert.alert("Error", "Could not save local file");
+      return;
+    }
 
-      const formData = new FormData();
-      formData.append("workspaceId", workspaceId);
-      formData.append("name", fileName.trim() || "Report");
-      formData.append("file", {
-        uri: Platform.OS === "android" ? `file://${filePath}` : filePath,
-        type: "text/html",
-        name: `${fileName.trim() || "Report"}.html`,
-      });
+    // Update data and get upload URL
+    let uploadUrl;
+    try {
+      const updateResult = await apiPut(
+        endpoints.modules.day_book.reports.drafts.updateDraft(draftId),
+        {
+          workspaceId,
+          name: trimmedFileName
+        }
+      );
 
-      console.log("Saving draft with formData:", formData);
+      uploadUrl = updateResult.uploadUrl;
 
-      const response = await apiPut(endpoints.modules.day_book.reports.drafts.updateDraft(reportId), {
-        method: "PUT",
-        headers: { "Content-Type": "multipart/form-data" },
-        body: formData,
-      });
+      if (!uploadUrl) {
+        console.error("No uploadUrl returned form API");
+      }
 
-      const result = await response.json();
-      console.log("Update result:", result);
+      console.log("Received upload URL:", uploadUrl);
+    } catch (error) {
+      console.error("Failed to get upload URL:", error);
+      Alert.alert("Error", "Could not get upload URL from server");
+      return;
+    }
+
+    // Upload the file to S3
+    try {
+      const fileBlob = await RNFS.readFile(filePath, "utf-8");
+
+      const uploadResult = await apiPut(
+        uploadUrl,
+        fileBlob
+      );
+
+      if (!uploadResult.ok) {
+        console.error(`Upload to S3 failed with response status: ${uploadResult.status}`);
+      }
+
+      console.log("File uploaded successfully to S3");
 
       Alert.alert("Success", "Report updated successfully.");
-    } catch (err) {
-      console.error("Report update failed:", err);
-      Alert.alert("Error", "Could not update report.");
+    } catch (error) {
+      console.error("Failed to upload file:", error);
+      Alert.alert("Error", "Could not upload draft file");
     }
+    
   };
 
   return (
     <View style={commonStyles.screen}>
-      <Header title={reportId ? "Edit Report" : "New Report"} showBack />
+      <Header title={reportId ? "Edit Report" : "New Report"} showBack showCheck onRightIconPress={saveReport} />
 
       {/* Buttons row */}
       <View style={styles.buttonRow}>
