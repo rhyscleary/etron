@@ -60,6 +60,8 @@ const handleReportCreation = async () => {
 
     console.log("Report created:", result);
 
+    // TODO: Upload a html file here to the uploadUrl
+
     if (result?.draftId) {
       setNameDialogVisible(false);
       // Navigate straight to edit-report page for the created draft

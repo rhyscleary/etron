@@ -37,42 +37,46 @@ const EditReport = () => {
   // If draftId is not "new", fetch existing draft metadata and file
   useEffect(() => {
     const fetchDraft = async () => {
-      if (draftId && draftId !== "new") {
-        try {
-          console.log("Fetching draft metadata for:", draftId);
-          const response = await apiGet(endpoints.modules.day_book.reports.drafts.getDraft(draftId));
-          const data = await response.json();
-          console.log("Draft metadata response:", data);
+      if (!draftId || !workspaceId) return;
+      
+      try {
+        console.log("Fetching draft metadata for:", draftId, "workspaceId:", workspaceId);
 
-          if (data) {
-            setReportId(data.draftId);
-            setFileName(data.name || "Report");
+        const response = await apiGet(
+          endpoints.modules.day_book.reports.drafts.getDraft(draftId), 
+          workspaceId
+        );
+        const data = await response.json();
+        console.log("Draft metadata response:", data);
 
-            if (data.fileUrl) {
-              console.log("Fetching HTML file from fileUrl:", data.fileUrl);
-              const fileResponse = await fetch(data.fileUrl);
-              const fileText = await fileResponse.text();
-              console.log("Fetched HTML content length:", fileText.length);
+        if (!data) return;
 
-              setEditorContent(fileText);
+        setReportId(data.draftId);
+        setFileName(data.name || "Report");
 
-              // Inject into Pell editor
-              webViewRef.current?.injectJavaScript(`
-                document.querySelector(".pell-content").innerHTML = ${JSON.stringify(fileText)};
-                true;
-              `);
-            } else {
-              console.warn("No fileUrl found in draft data");
-            }
-          }
-        } catch (err) {
-          console.error("Failed to fetch draft:", err);
+        if (data.fileUrl) {
+          console.log("Fetching HTML file from fileUrl:", data.fileUrl);
+          const fileResponse = await fetch(data.fileUrl);
+          const fileText = await fileResponse.text();
+          console.log("Fetched HTML content length:", fileText.length);
+
+          setEditorContent(fileText);
+
+          // Inject into Pell editor
+          webViewRef.current?.injectJavaScript(`
+            document.querySelector(".pell-content").innerHTML = ${JSON.stringify(fileText)};
+            true;
+          `);
+        } else {
+          console.warn("No fileUrl found in draft data");
         }
+      } catch (err) {
+        console.error("Failed to fetch draft:", err);
       }
     };
 
     fetchDraft();
-  }, [draftId]);
+  }, [draftId, workspaceId]);
 
   const pellHtml = `
     <!DOCTYPE html>
