@@ -44,8 +44,8 @@ async function getAuthenticatedUserDetails() {
 
         const userAttributes = await fetchUserAttributes();
         console.log("User Attributes:", userAttributes);*/
-    } catch (err) {
-        console.log(err);
+    } catch (error) {
+        console.error("Error getting authenticated user details:", error);
     }
 }
 
@@ -70,7 +70,7 @@ async function handleUpdateUserAttribute(attributeKey, value) {
                 break;
         }
     } catch (error) {
-        console.log("Error updating user attribute:", error);
+        console.error("Error updating user attribute:", error);
     }
 }
 
@@ -79,7 +79,7 @@ async function handleConfirmUserAttribute(userAttributeKey, confirmationCode) {
         await confirmUserAttribute({userAttributeKey, confirmationCode});
         console.log("User attribute confirmation successful.");
     } catch (error) {
-        console.log("Error confirming user attribute:", error);
+        console.error("Error confirming user attribute:", error);
     }
 }
 

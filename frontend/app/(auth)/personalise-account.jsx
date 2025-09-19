@@ -40,7 +40,7 @@ const PersonaliseAccount = () => {
       setProfilePicture(uri);
       setPictureChanged(true);
     } catch (error) {
-      console.log(error.message);
+      console.error("Error getting photo choice:", error);
     }
   }
 
@@ -71,7 +71,7 @@ const PersonaliseAccount = () => {
         setProfilePicture(profilePhotoUri || null);
         
     } catch (error) {
-        console.log("Error loading personal details: ", error);
+        console.error("Error loading personal details: ", error);
         setMessage("Error loading personal details");
     }
     setLoading(false);
@@ -106,7 +106,7 @@ const PersonaliseAccount = () => {
                   return { needsConfirmation: false };
           }
       } catch (error) {
-          console.log("Error updating user attribute:", error);
+          console.error("Error updating user attribute:", error);
           const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
           setMessage(`Error updating ${fieldName}: ${error.message}`);
           return { needsConfirmation: false, error: true };
@@ -145,7 +145,7 @@ const PersonaliseAccount = () => {
       setWorkspaceModal(true);
 
     } catch (error) {
-      console.log("Error updating Cognito attributes:", error);
+      console.error("Error updating Cognito attributes:", error);
     }
   }
 

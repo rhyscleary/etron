@@ -56,7 +56,7 @@ export default function AuthLayout() {
                     const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
                     await saveRole(userRole);
                 } catch (error) {
-                    console.log("Error saving user's role details into local storage:", error);
+                    console.error("Error saving user's role details into local storage:", error);
                 }      
 
                 return true;
@@ -83,10 +83,10 @@ export default function AuthLayout() {
                 const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
                 await saveUserInfo(userInfo);  // Saves into local storage
             } catch (error) {
-                console.log("Error saving user info into storage:", error);
+                console.error("Error saving user info into storage:", error);
             }
 
-            // if the name attributes don't exist return false
+            // if the name attributes don't exist, return false
             if (!hasGivenName || !hasFamilyName) {
                 return false;
             }

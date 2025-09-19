@@ -81,7 +81,7 @@ const PersonalDetails = () => {
             });
             
         } catch (error) {
-            console.log("Error loading personal details: ", error);
+            console.error("Error loading personal details: ", error);
             setMessage("Error loading personal details");
         }
         setLoading(false);
@@ -94,7 +94,7 @@ const PersonalDetails = () => {
             setProfilePhotoUri(newUri);
             setPhotoChanged(true);
         } catch (error) {
-            console.log("Error uploading photo s3:", error.message);
+            console.error("Error uploading photo s3:", error.message);
         }
     }
 
@@ -122,7 +122,7 @@ const PersonalDetails = () => {
             setNeedsPhoneConfirmation(false);
             setConfirmationCode("");
         } catch (error) {
-            console.log("Error confirming user attribute:", error);
+            console.error("Error confirming user attribute:", error);
             setMessage(`Error confirming phone number: ${error.message}`);
         }
     }*/
@@ -198,7 +198,7 @@ const PersonalDetails = () => {
             setPhotoChanged(false);
             setMessage("Personal details updated successfully");
         } catch (error) {
-            console.log("Error updating personal details: ", error);
+            console.error("Error updating personal details: ", error);
             setMessage(`Error updating personal details: ${error.message}`);
         }
 

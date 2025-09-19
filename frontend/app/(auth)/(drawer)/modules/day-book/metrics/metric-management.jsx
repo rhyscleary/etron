@@ -34,7 +34,7 @@ const MetricManagement = () => {
                 );
                 setMetrics(metricData);
             } catch (error) {
-                console.log("Error getting workspace metrics:", error);
+                console.error("Error getting workspace metrics:", error);
             } finally {
                 setLoadingMetrics(false);
             }

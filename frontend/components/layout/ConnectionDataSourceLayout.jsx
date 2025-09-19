@@ -92,7 +92,7 @@ const ConnectionDataSourceLayout = ({
         const user = await getCurrentUser();
         setConnectionInfo(user);
       } catch (error) {
-        console.log("No authenticated user:", error);
+        console.error("No authenticated user:", error);
         setConnectionInfo(null);
       } finally {
         setAuthChecked(true);
