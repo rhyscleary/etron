@@ -96,16 +96,15 @@ async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
 async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
     await validateWorkspaceId(workspaceId);
     
-    const userRole = await workspaceUsersRepository.getUserByUserId(authUserId);
+    const user = await workspaceUsersRepository.getUserByUserId(authUserId);
 
-    const role = await workspaceRepo.getRoleById(workspaceId, userRole.roleId);
+    const role = await workspaceRepo.getRoleById(workspaceId, user.roleId);
 
     if (!role) {
-        return null;
+        throw new Error("Role not found:", user.roleId);
     }
 
-    // merge the roles permissions and return it
-    return mergePermissions(role);
+    return role;
 }
 
 async function getRolesInWorkspace(authUserId, workspaceId) {
