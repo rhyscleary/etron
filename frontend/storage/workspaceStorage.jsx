@@ -19,7 +19,7 @@ export async function getWorkspaceInfo() {
         const value = await AsyncStorage.getItem(workspaceKey);
         return value != null ? JSON.parse(value) : null;
     } catch (error) {
-        console.log("Error occured retrieving workspace information: ", error);
+        console.log("Error retrieving workspace information: ", error);
         return null;
     }
 }
@@ -28,7 +28,7 @@ export async function removeWorkspaceInfo() {
     try {
         await AsyncStorage.removeItem(workspaceKey);
     } catch (error) {
-        console.log("Error occured removing workspace information: ", error);
+        console.log("Error removing workspace information: ", error);
     }
 }
 

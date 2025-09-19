@@ -22,7 +22,7 @@ async function request(method, path, body = {}, params = {}) {
         params
     }
 
-    if (['post', 'put'].includes(method)) {
+    if (['post', 'put', 'patch'].includes(method)) {
         requestConfig.data = body;
     }
     
@@ -47,6 +47,10 @@ export async function apiGet(path, params = {}) {
 
 export async function apiPut(path, body = {}) {
     return request('put', path, body, {});
+}
+
+export async function apiPatch(path, body = {}) {
+    return request('patch', path, body, {});
 }
 
 export async function apiDelete(path, params = {}) {

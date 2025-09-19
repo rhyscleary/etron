@@ -83,8 +83,8 @@ async function getInvitesByWorkspaceId(workspaceId) {
     return result.Items;
 }
 
-// get invites by workspaceId and email
-async function getInvitesByWorkspaceIdAndEmail(workspaceId, email) {
+// get invite by workspaceId and email
+async function getInviteByWorkspaceIdAndEmail(workspaceId, email) {
     const result = await dynamoDB.send(
         new QueryCommand({
             TableName: tableName,
@@ -97,7 +97,7 @@ async function getInvitesByWorkspaceIdAndEmail(workspaceId, email) {
         })
     );
     
-    return result.Items;
+    return result.Items[0];
 }
 
 
@@ -107,5 +107,5 @@ module.exports = {
     getInviteById,
     getInvitesByEmail,
     getInvitesByWorkspaceId,
-    getInvitesByWorkspaceIdAndEmail
+    getInviteByWorkspaceIdAndEmail
 }

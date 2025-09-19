@@ -6,7 +6,7 @@ import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
 import { Text, TextInput, Checkbox, Button, Portal, Dialog } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
-import { apiGet, apiPut, apiDelete } from "../../../../../utils/api/apiClient";
+import { apiGet, apiPut, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -68,7 +68,7 @@ const EditRole = () => {
         permissions: permissions.filter((p) => p.enabled).map((p) => p.key),
       };
 
-      await apiPut(endpoints.workspace.roles.update(workspaceId, roleId), data);
+      await apiPatch(endpoints.workspace.roles.update(workspaceId, roleId), data);
       router.navigate("/collaboration/roles");
     } catch (error) {
       console.error("Failed to update role:", error);

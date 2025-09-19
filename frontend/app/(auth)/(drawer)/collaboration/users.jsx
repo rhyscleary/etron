@@ -121,7 +121,7 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => router.navigate(`/collaboration/edit-user/${item.userId || item.id}`)}
+                        onPress={() => router.navigate(`/collaboration/view-user/${item.userId || item.id}`)}
                     >
                         <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>

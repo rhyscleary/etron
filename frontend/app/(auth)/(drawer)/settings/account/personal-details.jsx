@@ -11,7 +11,6 @@ import { Pressable, View, Button, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { Image } from 'expo-image';
-import { uploadData, getUrl } from 'aws-amplify/storage';
 import { Buffer } from 'buffer';
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { apiPost, apiPut} from "../../../../../utils/api/apiClient";
@@ -61,7 +60,7 @@ const PersonalDetails = () => {
             setProfilePhotoUri(newUri);
             setPhotoChanged(true);
         } catch (error) {
-            console.log(error.message);
+            console.log("Error uploading photo s3:", error.message);
         }
     }
 
@@ -75,7 +74,7 @@ const PersonalDetails = () => {
         loadProfileData();
     }, []);
 
-     async function loadProfileData() {
+    async function loadProfileData() {
         setLoading(true);
         try {
             const userAttributes = await fetchUserAttributes();
@@ -92,7 +91,7 @@ const PersonalDetails = () => {
             const profilePhotoUri = await loadProfilePhoto();
             setProfilePhotoUri(profilePhotoUri || null);
 
-            // set original values 
+            // set original values
             setOriginalData({
                 firstName: userAttributes.given_name || "",
                 lastName: userAttributes.family_name || "",
@@ -107,7 +106,7 @@ const PersonalDetails = () => {
         setLoading(false);
     }
 
-    useEffect(() => {
+    useEffect(() => {  // Whenever user edits any data, check to see if it's different to the original and flag that a change exists
         const changed =
             firstName.trim() !== originalData.firstName ||
             lastName.trim() !== originalData.lastName ||
@@ -131,6 +130,8 @@ const PersonalDetails = () => {
     }*/
 
     async function handleUpdate() {
+        console.log("handle update pressed");
+        // Reset for beginning the update
         setMessage("");
         setUpdating(true);
         
@@ -158,7 +159,6 @@ const PersonalDetails = () => {
             }
 
             if (phoneNumber.trim() !== originalData.phoneNumber) {
-                // adds country code for australia (do we need to handle other countries?)
                 const formattedPhone = phoneNumber.startsWith('+61') ? phoneNumber : `+61${phoneNumber}`;
                 updateData.phone_number = formattedPhone.trim();
             }
@@ -173,7 +173,7 @@ const PersonalDetails = () => {
                 }
             }
 
-            // if there are no changed fields don't send anything
+            // If there are no changed fields, don't send anything
             if (Object.keys(updateData).length === 0) {
                 setMessage("There are no changed fields to update");
                 setUpdating(false);
@@ -187,8 +187,6 @@ const PersonalDetails = () => {
                 endpoints.user.core.updateUser(userId, workspaceId),
                 updateData
             );
-
-            console.log(result);
 
             setOriginalData({
                 firstName,
@@ -321,7 +319,7 @@ const PersonalDetails = () => {
 
                     <View style={commonStyles.inlineButtonContainer}>
                         <BasicButton 
-                            label={updating ? "Updating..." : "Update"} 
+                            label={updating ? "Updating..." : "Updadsdste"} 
                             onPress={handleUpdate}
                             disabled={updating}
                         />

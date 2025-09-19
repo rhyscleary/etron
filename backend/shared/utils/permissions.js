@@ -59,7 +59,7 @@ async function getDefaultPermissions() {
 }
 
 // check if the user has permissions
-async function hasAuthority(userId, workspaceId, permissionKey) {
+async function hasPermission(userId, workspaceId, permissionKey) {
     if (!userId || typeof userId !== "string") {
         throw new Error("Invalid or missing userId");
     }
@@ -78,16 +78,13 @@ async function hasAuthority(userId, workspaceId, permissionKey) {
         }
     }
 
-    // check default permissions in s3
-    const defaultPermissions = await getDefaultPermissions();
-    const permission = defaultPermissions.find(perm => perm.key === permissionKey);
-
-    return permission?.enabled;
+    // user does not have permission
+    return false;
 }
 
 module.exports = {
     isManager,
     isOwner,
-    hasAuthority,
+    hasPermission,
     getDefaultPermissions
 };

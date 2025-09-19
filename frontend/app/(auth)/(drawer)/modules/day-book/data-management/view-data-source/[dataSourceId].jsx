@@ -7,7 +7,6 @@ import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import { ActivityIndicator, Text } from "react-native-paper";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
-import { downloadData, uploadData, list } from "aws-amplify/storage";
 import * as DocumentPicker from 'expo-document-picker'
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../../utils/api/endpoints";

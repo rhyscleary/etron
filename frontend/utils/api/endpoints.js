@@ -13,7 +13,7 @@ const endpoints = {
             update: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getWorkspace: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getByUserId: (userId) => `${WORKSPACE_BASE_URL}/users/${userId}`,
-            transfer: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/transfer/${userId}`,
+            transfer: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/transfer`,
             delete: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getDefaultPermissions: `${WORKSPACE_BASE_URL}/permissions` 
         },
@@ -31,11 +31,12 @@ const endpoints = {
             update: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
             delete: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
             getRole: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
+            getRoleOfUser: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roleOfUser`,
             getRoles: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles`,
         },
 
         users: {
-            add: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/invites/${inviteId}`,
+            add: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users`,
             update: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             remove: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             getUser: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
@@ -82,6 +83,7 @@ const endpoints = {
                 testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
                 remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
                 viewData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
+                viewDataForMetric: (dataSourceId, metricId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
                 getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`
             },
 
@@ -109,9 +111,10 @@ const endpoints = {
                     deleteTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
                 },
                 exports: { 
-                    addExport: ``,
-                    getExport: ``,
-                    getExports: ``,
+                    addExport: `${REPORTS_BASE_URL}/exports`,
+                    getExport: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}`,
+                    getExports: `${REPORTS_BASE_URL}/exports`,
+                    getExportDownloadUrl: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}/download`,
                 }
             },
         }
