@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Matthew Page
 
 import { useRouter } from "expo-router";
 import { Appbar, useTheme, Searchbar } from "react-native-paper";
@@ -19,7 +19,9 @@ const Header = ({
     showEdit,
     showCheck,
     showPlus,
+    showEllipsis,
     onRightIconPress,
+    onEllipsisPress,
     customBackAction,
     onBackPress
 }) => {
@@ -44,7 +46,9 @@ const Header = ({
             }
             
             <Appbar.Content title={title} />
-
+            {showEllipsis && (
+                <Appbar.Action icon="dots-vertical" onPress={onEllipsisPress} />
+            )}
             {
                 showPlus ? (
                     <Appbar.Action icon="plus" onPress={onRightIconPress} />
