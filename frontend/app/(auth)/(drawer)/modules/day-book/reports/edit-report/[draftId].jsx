@@ -11,7 +11,7 @@ import { Portal, Dialog, Button } from "react-native-paper";
 import { useLocalSearchParams } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
-import { apiPut, apiGet, apiPatch } from "../../../../../../../utils/api/apiClient";
+import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
 
 const EditReport = () => {
@@ -21,6 +21,7 @@ const EditReport = () => {
   const [fileName, setFileName] = useState("Report");
   const [reportId, setReportId] = useState(null);
   const [workspaceId, setWorkspaceId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
   const webViewRef = useRef(null);
 
   useEffect(() => {
@@ -41,13 +42,10 @@ const EditReport = () => {
       if (!draftId || !workspaceId) return;
       
       try {
-        console.log("Fetching draft metadata for:", draftId, "workspaceId:", workspaceId);
-
         const response = await apiGet(
           endpoints.modules.day_book.reports.drafts.getDraft(draftId), 
           { workspaceId }
         );
-        console.log("Draft metadata response:", response);
 
         if (!response) return;
 
@@ -55,20 +53,9 @@ const EditReport = () => {
         setFileName(response.name || "Report");
 
         if (response.fileUrl) {
-          console.log("Fetching HTML file from fileUrl:", response.fileUrl);
           const fileResponse = await fetch(response.fileUrl);
           const fileText = await fileResponse.text();
-          console.log("Fetched HTML content length:", fileText.length);
-
           setEditorContent(fileText);
-
-          // Inject into Pell editor
-          webViewRef.current?.injectJavaScript(`
-            document.querySelector(".pell-content").innerHTML = ${JSON.stringify(fileText)};
-            true;
-          `);
-        } else {
-          console.warn("No fileUrl found in draft data");
         }
       } catch (err) {
         console.error("Failed to fetch draft:", err);
@@ -78,6 +65,7 @@ const EditReport = () => {
     fetchDraft();
   }, [draftId, workspaceId]);
 
+  // Edit mode
   const pellHtml = `
     <!DOCTYPE html>
     <html>
@@ -102,7 +90,24 @@ const EditReport = () => {
             defaultParagraphSeparator: 'p',
             styleWithCSS: true
           });
+          document.querySelector(".pell-content").innerHTML = ${JSON.stringify(editorContent)};
         </script>
+      </body>
+    </html>
+  `;
+
+  // Read only mode
+  const readOnlyHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { font-family:sans-serif; padding:12px; }
+        </style>
+      </head>
+      <body>
+        ${editorContent || "<p><i>No content</i></p>"}
       </body>
     </html>
   `;
@@ -139,11 +144,9 @@ const EditReport = () => {
     exportAsPDF(fileName.trim() || "Report");
   };
 
-  // Save report draft
   const handleSaveReport = async () => {
     if (!workspaceId || !draftId) {
       Alert.alert("Error", "Missing workspace or draft ID.");
-      console.log("Workspace Id or draftId missing", workspaceId, draftId)
       return;
     }
 
@@ -154,13 +157,21 @@ const EditReport = () => {
       editorContent
     });
 
-    if (success) Alert.alert("Success", "Report updated successfully");
-
+    if (success) {
+      Alert.alert("Success", "Report updated successfully");
+      setIsEditing(false); // exits edit mode after saving
+    }
   };
 
   return (
     <View style={commonStyles.screen}>
-      <Header title={reportId ? "Edit Report" : "New Report"} showBack showCheck onRightIconPress={handleSaveReport} />
+      <Header 
+        title={reportId ? "Edit Report" : "New Report"} 
+        showBack 
+        showCheck={isEditing} 
+        showEllipsis 
+        onRightIconPress={isEditing ? handleSaveReport : undefined} 
+      />
 
       {/* Buttons row */}
       <View style={styles.buttonRow}>
@@ -168,20 +179,27 @@ const EditReport = () => {
           <Text style={styles.exportButtonText}>Export PDF</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
-          <Text style={styles.saveButtonText}>{reportId ? "Update" : "Save"} Report</Text>
-        </TouchableOpacity>
+        {!isEditing && (
+          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
+            <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+        )}
+
+        {isEditing && (
+          <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
+            <Text style={styles.saveButtonText}>{reportId ? "Update" : "Save"} Report</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* Pell / Rich Text editor */}
       <WebView
         ref={webViewRef}
         originWhitelist={['*']}
-        source={{ html: pellHtml }}
+        source={{ html: isEditing ? pellHtml : readOnlyHtml }}
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
-        onMessage={(event) => setEditorContent(event.nativeEvent.data)}
+        onMessage={(event) => isEditing && setEditorContent(event.nativeEvent.data)}
       />
 
       {/* Export dialog */}
@@ -217,6 +235,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   exportButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
+  editButton: {
+    backgroundColor: "#FF9500",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+  },
+  editButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
   saveButton: {
     backgroundColor: "#34C759",
     paddingVertical: 10,
