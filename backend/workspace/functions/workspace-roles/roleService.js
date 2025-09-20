@@ -15,9 +15,21 @@ async function createRoleInWorkspace(authUserId, workspaceId, payload) {
         throw new Error("Please specify a name");
     }
 
-    if (!permissions) {
-        // get the default permissions
-        
+    let rolePermissions = permissions;
+
+    if (!rolePermissions) {
+        // get the default permissions. Permissions with defaultStatus: true
+        rolePermissions = await getDefaultPermissions();
+    }
+
+    if (!Array.isArray(rolePermissions)) {
+        throw new Error("Permissions must be an array of strings");
+    }
+
+    for (const perm of rolePermissions) {
+        if (typeof perm !== "string") {
+            throw new Error("Each permission must be a string key");
+        }
     }
 
     const roleId = uuidv4();
@@ -28,7 +40,7 @@ async function createRoleInWorkspace(authUserId, workspaceId, payload) {
         workspaceId: workspaceId,
         roleId: roleId,
         name: name,
-        permissions: permissions,
+        permissions: rolePermissions,
         createdAt: date,
         updatedAt: date
     };
@@ -47,37 +59,14 @@ async function deleteRoleInWorkspace(authUserId, workspaceId, roleId) {
         throw new Error("Role not found:", roleId);
     }
 
-    // get the owner role id
-    const ownerRoleId = await workspaceRepo.getOwnerRoleId(workspaceId);
-
-    if (role.roleId === ownerRoleId) {
-        throw new Error("You cannot delete this role");
+    // prevent deleting the Owner role
+    if (role.owner) {
+        throw new Error("You cannot delete the Owner role");
     }
 
     await workspaceRepo.removeRole(workspaceId, roleId);
 
     return {message: "Role successfully deleted"};
-}
-
-// combine perms between the roles and the default
-async function mergePermissions(role) {
-    // get default perms and combine them with the role perms
-    const defaultPerms = await getDefaultPermissions();
-
-    if (role.permissions.length === 0) {
-        role.permissions = defaultPerms;
-        return role;
-    }
-    const rolePermissions = role.permissions;
-
-    const mergedPerms = defaultPerms.map((permission) => ({
-        ...permission,
-        enabled: rolePermissions.includes(permission.key)
-    }));
-
-    role.permissions = mergedPerms;
-
-    return role;
 }
 
 async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
@@ -89,8 +78,7 @@ async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
         throw new Error("Role not found:", roleId);
     }
 
-    // merge the roles permissions and return it
-    return mergePermissions(role);
+    return role;
 }
 
 async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
@@ -110,15 +98,7 @@ async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
 async function getRolesInWorkspace(authUserId, workspaceId) {
     await validateWorkspaceId(workspaceId);
 
-    const roles = await workspaceRepo.getRolesByWorkspaceId(workspaceId);
-
-    // merge each roles permissions
-    const mergedRoles = await Promise.all(
-        roles.map((role) => mergePermissions(role))
-    );
-
-    // return the merged roles
-    return mergedRoles;
+    return await workspaceRepo.getRolesByWorkspaceId(workspaceId);
 }
 
 async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
@@ -128,6 +108,24 @@ async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
 
     if (!role) {
         throw new Error("Role not found:", roleId);
+    }
+
+    const { name, permissions } = payload;
+
+    if (name && typeof name !== "string") {
+        throw new Error("'name' must be a string");
+    }
+
+    if (permissions) {
+        if (!Array.isArray(permissions)) {
+            throw new Error("Permissions must be an array of strings");
+        }
+
+        for (const perm of permissions) {
+            if (typeof perm !== "string") {
+                throw new Error("Each permission must be a string key");
+            }
+        }
     }
 
     return workspaceRepo.updateRole(workspaceId, roleId, payload);

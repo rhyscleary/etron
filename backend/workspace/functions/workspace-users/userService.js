@@ -75,11 +75,8 @@ async function updateUserInWorkspace(authUserId, workspaceId, userId, payload) {
         throw new Error("Role not found:", roleId);
     }
 
-    // check that the roleId isn't the owner
-    // fetch the owner role id
-    const ownerRoleId = await workspaceRepo.getOwnerRoleId(workspaceId);
-
-    if (ownerRoleId === roleId) {
+    // prevent assigning the Owner role to another user
+    if (role.owner) {
         throw new Error("A workspace is limited to one owner");
     }
 
