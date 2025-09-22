@@ -39,7 +39,7 @@ const UpdatePassword = () => {
             });
             return { success: true };
         } catch (error) {
-            console.log("Error updating password:", error);
+            console.error("Error updating password:", error);
             
             // handle the error based on its type
             let errorMessage = "There was an error updating your password";
@@ -109,7 +109,7 @@ const UpdatePassword = () => {
                 setErrorDetails(result.error);
             }
         } catch (error) {
-            console.log("Error updating password: ", error);
+            console.error("Error updating password: ", error);
             setPasswordError(true);
             setErrorDetails("An unexpected error occurred");
         }

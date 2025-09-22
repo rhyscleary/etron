@@ -153,12 +153,12 @@ function LoginSignup() {
                             router.replace("(auth)/profile");
 
                         } catch (error) {
-                            console.log('No authenticated user found after social sign-in');
+                            console.error('No authenticated user found after social sign-in');
                             setMessage("Social sign-in was cancelled or failed");
                         }
                     }, 1000);
                 } catch (error) {
-                    console.log('Error handling social sign-in callback:', error);
+                    console.error('Error handling social sign-in callback:', error);
                     setMessage("Error completing social sign-in");
                     await signOut();
                 }
@@ -173,7 +173,7 @@ function LoginSignup() {
                     setMessage("Signed out successfully!");
 
                 } catch (error) {
-                    console.log('Error handling social sign-out:', error);
+                    console.error('Error handling social sign-out:', error);
                     setMessage("Social sign-out was cancelled or failed");
                 }
             }
@@ -221,8 +221,8 @@ function LoginSignup() {
                     console.log("User is already signed in. Signing out before continuing..");
                     await signOut();
                 }
-            } catch {
-                console.log("Unable to retrieve signed in user");
+            } catch (error) {
+                console.error("Error retrieving signed in user:", error);
             }
 
             const { isSignedIn, nextStep } = await signIn({ username: email, password });
@@ -315,7 +315,7 @@ function LoginSignup() {
             setMessage("Sign up successful! Check your email to confirm.");
             setShowVerificationModal(true);
         } catch (error) {
-            console.log('Error signing up:', error);
+            console.error('Error signing up:', error);
             setMessage(`Error: ${error.message}`);
         }
     };
@@ -337,7 +337,7 @@ function LoginSignup() {
             //await signInWithRedirect({ provider: 'Google' });
             
         } catch (error) {
-            console.log('Error with Google sign-in:', error);
+            console.error('Error with Google sign-in:', error);
             setMessage(`Google sign-in error: ${error.message}`);
             setSocialLoading({ ...socialLoading, google: false });
         }
@@ -358,7 +358,7 @@ function LoginSignup() {
             });
             
         } catch (error) {
-            console.log('Error with Microsoft sign-in:', error);
+            console.error('Error with Microsoft sign-in:', error);
             setMessage(`Microsoft sign-in error: ${error.message}`);
             setSocialLoading({ ...socialLoading, microsoft: false });
         }
@@ -398,7 +398,7 @@ function LoginSignup() {
             }
 
         } catch (error) {
-            console.log(`Error with ${provider} sign-in:`, error);
+            console.error(`Error with ${provider} sign-in:`, error);
             setMessage(`${provider} sign-in error: ${error.message}`);
         }
     };
@@ -414,7 +414,7 @@ function LoginSignup() {
             await signIn({ username: email, password });
             router.navigate("(auth)/personalise-account"); // navigate to personalise account after sign up
         } catch (error) {
-            console.log('Error confirming code:', error);
+            console.error('Error confirming code:', error);
             setMessage(`Error: ${error.message}`);
             setVerificationError(error.message);
         }

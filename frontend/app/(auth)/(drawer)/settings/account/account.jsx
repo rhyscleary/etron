@@ -38,7 +38,7 @@ const Account = () => {
                 const { username, userId, signInDetails } = await getCurrentUser();
                 setEmail(signInDetails.loginId);
             } catch (error) {
-                console.log("Error loading email: ", error);
+                console.error("Error loading email: ", error);
                 setEmail("Error accessing email.");
             }
             setLoading(false);
@@ -71,7 +71,7 @@ const Account = () => {
             router.dismissAll();
             router.replace("/landing");
         } catch (error) {
-            console.log("Error deleting account: ", error);
+            console.error("Error deleting account: ", error);
         }
     }
 
