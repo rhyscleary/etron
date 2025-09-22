@@ -1,8 +1,8 @@
 // Author(s): Matthew Page
 
 import React, { useEffect, useState } from "react";
-import { View, FlatList, Pressable, StyleSheet } from "react-native";
-import { Text } from "react-native-paper";
+import { View, FlatList, Pressable, StyleSheet, TouchableOpacity } from "react-native";
+import { Card, Text, useTheme } from "react-native-paper";
 import { router } from "expo-router";
 
 import Header from "../../../../components/layout/Header";
@@ -10,8 +10,10 @@ import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import listCard from "../../../../components/cards/ListCard";
 
 const Invites = () => {
+  const theme = useTheme();
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
   const [workspaceId, setWorkspaceId] = useState(null);
@@ -43,11 +45,20 @@ const Invites = () => {
       onPress={() => router.navigate(`/collaboration/edit-invite/${item.inviteId}`)} // ✅ Fixed route
       style={styles.inviteBox}
     >
-      <Text>Email: {item.email}</Text>
-      <Text>Type: {item.type}</Text>
-      <Text>Status: {item.status}</Text>
+      <Text>{item.email}</Text>
+      <Text>{item.roleId}</Text>
+      <Text>Expiry Date: {item.expireAt}</Text>
     </Pressable>
   );
+
+/*
+  <TouchableOpacity
+            key = {item.inviteId}
+            onPress={() => {router.navigate(`/collaboration/edit-invite/${item.inviteId}`)}}
+          >
+            
+          </TouchableOpacity>
+          */
 
   return (
     <View style={commonStyles.screen}>
@@ -56,6 +67,11 @@ const Invites = () => {
         showBack
         showPlus
         onRightIconPress={() => router.navigate("/collaboration/invite-user")}
+      />
+
+      <listCard
+        leftIcon="email"
+        title="rhysjcleary@gmail.com"
       />
 
       {loading ? (
