@@ -2,9 +2,9 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
+const appConfigRepo = require("@etron/shared/repositories/appConfigBucketRepository");
 const { getUserById, updateUser } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
-const { getDefaultPermissions } = require("@etron/shared/utils/permissions");
 
 async function createWorkspace(authUserId, data) {
     if (!data.name) {
@@ -50,29 +50,22 @@ async function createWorkspace(authUserId, data) {
 
     // search modules and add defaults to workspace
 
+    // add dashboard board to the workspace
+
     // add owner and manager roles with permissions to workspace
     const ownerRoleId = uuidv4();
     const managerRoleId = uuidv4();
     const employeeRoleId = uuidv4();
 
-
-    const defaultPerms = await getDefaultPermissions();
-    console.log(defaultPerms);
-
-    const ownerPerms = defaultPerms.map(perm => perm.key);
-
-    const excludedPerms = ["transfer_ownership", "delete_workspace"];
-
-    const managerPerms = defaultPerms.map(perm => perm.key).filter(key => !excludedPerms.includes(key));
-
-    const employeePerms = defaultPerms.map(perm => perm.key).filter(key => !excludedPerms.includes(key));
+    const starterRolePerms = await appConfigRepo.getStarterPermissions();
 
     // create role items
     const ownerRoleItem = {
         workspaceId: workspaceId,
         roleId: ownerRoleId,
         name: "Owner",
-        permissions: ownerPerms,
+        owner: true,
+        permissions: [],
         createdAt: date,
         updatedAt: date
     };
@@ -81,7 +74,7 @@ async function createWorkspace(authUserId, data) {
         workspaceId: workspaceId,
         roleId: managerRoleId,
         name: "Manager",
-        permissions: managerPerms,
+        permissions: starterRolePerms.manager,
         createdAt: date,
         updatedAt: date
     };
@@ -90,7 +83,7 @@ async function createWorkspace(authUserId, data) {
         workspaceId,
         roleId: employeeRoleId,
         name: "Employee",
-        permissions: employeePerms,
+        permissions: starterRolePerms.employee,
         createdAt: date,
         updatedAt: date
     }
@@ -274,10 +267,10 @@ async function transferWorkspaceOwnership(authUserId, workspaceId, payload) {
     return updatedUser;
 }
 
-async function getDefaultWorkspacePermissions() {
-    return getDefaultPermissions();
+// returns the app permissions
+async function getWorkspacePermissions() {
+    return appConfigRepo.getAppPermissions();
 }
-
 
 module.exports = {
     createWorkspace,
@@ -286,5 +279,5 @@ module.exports = {
     getWorkspaceByWorkspaceId,
     getWorkspaceByUserId,
     transferWorkspaceOwnership,
-    getDefaultWorkspacePermissions
+    getWorkspacePermissions
 };
