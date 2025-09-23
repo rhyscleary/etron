@@ -24,9 +24,8 @@ const Profile = () => {
     
     return (
         <View style={commonStyles.screen}>
-            <Header title="Dashboard" showMenu />
-
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
+            <Header title="Dashboard" showMenu />            
+            <ScrollView style={{backgroundColor: "#FF0000"}} contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {settingOptionButtons.map((item) => (
                         <DescriptiveButton 

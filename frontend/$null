@@ -1,0 +1,13 @@
+npm verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+npm info using npm@10.8.2
+npm info using node@v20.19.5
+npm verbose title npm pkg delete overrides
+npm verbose argv "pkg" "delete" "overrides"
+npm verbose logfile logs-max:10 dir:C:\Users\katea\AppData\Local\npm-cache\_logs\2025-09-22T11_06_20_541Z-
+npm verbose logfile C:\Users\katea\AppData\Local\npm-cache\_logs\2025-09-22T11_06_20_541Z-debug-0.log
+npm verbose cwd C:\Users\katea\Desktop\CSIT321 - Project\etron\frontend
+npm verbose os Windows_NT 10.0.26100
+npm verbose node v20.19.5
+npm verbose npm  v10.8.2
+npm verbose exit 0
+npm info ok
