@@ -10,10 +10,9 @@ import { apiGet } from '../../utils/api/apiClient';
 import endpoints from '../../utils/api/endpoints';
 
 export default function AuthLayout() {
-
     const { authStatus } = useAuthenticator();
     const { verifyingPassword } = useVerification();// temp until backend
-   // const [checked, setChecked] = useState(false);
+    // const [checked, setChecked] = useState(false);
 
     const setHasWorkspaceAttribute = async (value) => {
         try {
@@ -34,7 +33,7 @@ export default function AuthLayout() {
 
             hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
 
-            // if the attribute doesn't exist set it to false
+            // if the attribute doesn't exist, set it to false
             if (hasWorkspaceAttribute == null) {
                 await setHasWorkspaceAttribute(false);
                 const refreshed = await fetchUserAttributes();
