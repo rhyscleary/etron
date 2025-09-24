@@ -1,13 +1,12 @@
 // Author(s): Rhys Cleary
 
-import { Slot, Stack } from 'expo-router';
+import { Slot } from 'expo-router';
 import { PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { themes } from '../assets/styles/themes/themes';
 import SafeView from '../components/layout/SafeView';
 import { Authenticator } from '@aws-amplify/ui-react-native';
 import { VerificationProvider } from '../components/layout/VerificationContext'; // temp until backend
-import { Amplify } from 'aws-amplify';
 
 import * as Linking from 'expo-linking';
 
