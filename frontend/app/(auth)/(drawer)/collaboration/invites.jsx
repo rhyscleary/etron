@@ -10,7 +10,6 @@ import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
-import listCard from "../../../../components/cards/ListCard";
 
 const Invites = () => {
   const theme = useTheme();
@@ -67,11 +66,6 @@ const Invites = () => {
         showBack
         showPlus
         onRightIconPress={() => router.navigate("/collaboration/invite-user")}
-      />
-
-      <listCard
-        leftIcon="email"
-        title="rhysjcleary@gmail.com"
       />
 
       {loading ? (
