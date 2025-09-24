@@ -1,4 +1,6 @@
-import { Platform, View, StyleSheet, KeyboardAvoidingView, ScrollView } from "react-native";
+// Author(s): Noah Bradley
+
+import { View, StyleSheet, KeyboardAvoidingView, ScrollView, Keyboard } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,19 +9,10 @@ export default function ResponsiveScreen({
     scroll = true,  // Set if page is meant to be scrolled
     padded = true,
     center = true,
+    header,
     footer
 }) {
-    const content = (
-        <View
-            style = {[
-                styles.content,
-                padded && styles.padded,
-                center && styles.centerGrow,
-            ]}
-        >
-            {children}
-        </View>
-    )
+    const contentStyles = [styles.content, padded && styles.padded, center && styles.centerGrow]
 
     const Body = scroll ? (
         <KeyboardAwareScrollView
@@ -30,22 +23,38 @@ export default function ResponsiveScreen({
             showsVerticalScrollIndicator={false}
             enableAutomaticScroll
         >
-            {content}
+            <View style={contentStyles}>
+                {children}
+            </View>
         </KeyboardAwareScrollView>
     ) : (
-        content
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior="padding"
+        >
+            <View style={contentStyles}>
+                {children}
+            </View>
+        </KeyboardAvoidingView>
     )
 
     return (
-        <SafeAreaView style={styles.safe} edges={["top", "right", "left"]}>
-            {Body}
-            {footer ?
+        <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+            {header ? (
+                <View style={styles.header}>
+                    {header}
+                </View>
+            ) : null }
+
+            <View style={styles.body}>
+                {Body}
+            </View>
+
+            {footer ? (
                 <View style={styles.footer}>
                     {footer}
                 </View>
-            :
-                null
-            }
+            ) :  null }
         </SafeAreaView>
     );
 }
@@ -56,5 +65,7 @@ const styles = StyleSheet.create({
     scrollContent: { flexGrow: 1 },
     content: {flexGrow: 1, width: "100%" },
     centerGrow: {justifyContent: "center" },
+    header: { width: "100%" },
+    body: { flex: 1 },
     footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8 },
 });

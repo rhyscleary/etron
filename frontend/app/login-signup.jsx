@@ -422,7 +422,7 @@ function LoginSignup() {
     };
 
     return (
-        <ResponsiveScreen scroll padded center >
+        <ResponsiveScreen scroll padded center showScrollHint={true}>
             <Text style={{ fontSize: 40, textAlign: 'center' }}>
                 {isSignUpBool ? 'Welcome' : 'Welcome Back'}
             </Text>
