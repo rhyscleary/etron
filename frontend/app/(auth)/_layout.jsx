@@ -8,6 +8,7 @@ import { saveUserInfo } from '../../storage/userStorage';
 import { saveRole, getRole, getPermissions } from '../../storage/permissionsStorage';
 import { apiGet } from '../../utils/api/apiClient';
 import endpoints from '../../utils/api/endpoints';
+import { unloadProfilePhoto } from '../../utils/profilePhoto';
 
 export default function AuthLayout() {
     const { authStatus } = useAuthenticator();
@@ -98,15 +99,9 @@ export default function AuthLayout() {
             const hasGivenName = userAttributes["given_name"];
             const hasFamilyName = userAttributes["family_name"];
 
-            // Save user's info into local storage
-            const workspaceId = await getWorkspaceId();
-            if (workspaceId) {   
-                try {
-                    const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
-                    await saveUserInfo(userInfo);  // Saves into local storage
-                } catch (error) {
-                    console.error("Error saving user info into storage:", error);
-                }
+            // if the name attributes don't exist, return false
+            if (!hasGivenName || !hasFamilyName) {
+                return false;
             }
 
             // validate and return given and family name status
@@ -119,7 +114,13 @@ export default function AuthLayout() {
     }
 
     const saveUserInfoIntoStorage = async() => {
-        
+        const workspaceId = await getWorkspaceId();
+        try {
+            const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
+            await saveUserInfo(userInfo);  // Saves into local storage
+        } catch (error) {
+            console.error("Error saving user info into storage:", error);
+        }
     }
 
     useEffect(() => {
@@ -132,15 +133,15 @@ export default function AuthLayout() {
                 const workspaceExists = await checkWorkspaceExists().catch(() => false);
                 const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
 
-                saveUserInfoIntoStorage();
-
                 if (!workspaceExists && !personalDetailsExists) {
+                    await unloadProfilePhoto();
                     console.log("User authenticated but no workspace or personal details found. Redirecting..");
                     router.replace("/(auth)/personalise-account");
                 } else if (!workspaceExists) {
                     console.log("User authenticated but no workspace found. Redirecting..");
                     router.replace("/(auth)/workspace-choice");
                 } else {
+                    saveUserInfoIntoStorage();
                     console.log("Showing authenticated profile page.");
                     router.replace("/(auth)/profile")
                 }

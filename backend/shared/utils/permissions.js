@@ -93,6 +93,10 @@ async function hasPermission(userId, workspaceId, permissionKey) {
     if (user?.roleId) {
         const role = workspaceRepo.getRoleById(workspaceId, user.roleId);
 
+        console.log(role);
+
+        if (role?.owner) return true  //owner always has permission to do things? TODO: change this for any exceptions like personal account details
+
         if (role?.owner || role?.permissions?.includes(permissionKey)) {
             return true;
         }

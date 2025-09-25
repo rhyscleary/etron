@@ -2,7 +2,7 @@
 
 const metricRepo = require("@etron/day-book-shared/repositories/metricRepository");
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const { isOwner, isManager, hasPermission } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
 async function createMetricInWorkspace(authUserId, workspaceId, payload) {

@@ -1,6 +1,6 @@
 // Author(s): Noah Bradley
 
-import { View, StyleSheet, KeyboardAvoidingView, ScrollView, Keyboard } from "react-native";
+import { Platform, View, StyleSheet, KeyboardAvoidingView, ScrollView, Keyboard } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -22,6 +22,7 @@ export default function ResponsiveScreen({
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             enableAutomaticScroll
+            extraHeight={Platform.OS === "android" ? 80 : 0}
         >
             <View style={contentStyles}>
                 {children}
