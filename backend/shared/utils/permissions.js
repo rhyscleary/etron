@@ -93,7 +93,7 @@ async function hasPermission(userId, workspaceId, permissionKey) {
     if (user?.roleId) {
         const role = workspaceRepo.getRoleById(workspaceId, user.roleId);
 
-        if (role?.permissions?.includes(permissionKey)) {
+        if (role?.owner || role?.permissions?.includes(permissionKey)) {
             return true;
         }
     }
