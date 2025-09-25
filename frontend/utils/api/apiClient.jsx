@@ -12,8 +12,8 @@ async function getHeaders() {
     };
 }
 
-async function request(method, path, body = {}, params = {}) {
-    const headers = await getHeaders();
+async function request(method, path, body = {}, params = {}, extraHeaders = {}) {
+    const headers = { ...(await getHeaders()), ...extraHeaders };
 
     const requestConfig = {
         method,
@@ -45,8 +45,8 @@ export async function apiGet(path, params = {}) {
     return request('get', path, {}, params);
 }
 
-export async function apiPut(path, body = {}) {
-    return request('put', path, body, {});
+export async function apiPut(path, body = {}, extraHeaders = {}) {
+    return request('put', path, body, {}, extraHeaders);
 }
 
 export async function apiPatch(path, body = {}) {
