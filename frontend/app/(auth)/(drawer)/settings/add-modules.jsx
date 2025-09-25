@@ -77,7 +77,7 @@ const AddModules = () => {
             <Header title="Add Modules" showBack />
             
             {/*Search bar here*/}
-
+            
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>

@@ -2,6 +2,7 @@
 
 import { Platform, View, StyleSheet, KeyboardAvoidingView, ScrollView, Keyboard } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import { useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ResponsiveScreen({
@@ -13,6 +14,7 @@ export default function ResponsiveScreen({
     footer
 }) {
     const contentStyles = [styles.content, padded && styles.padded, center && styles.centerGrow]
+    const theme = useTheme();
 
     const Body = scroll ? (
         <KeyboardAwareScrollView
@@ -40,7 +42,7 @@ export default function ResponsiveScreen({
     )
 
     return (
-        <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+        <SafeAreaView style={[styles.safe]} edges={["top", "left", "right"]}>
             {header ? (
                 <View style={styles.header}>
                     {header}
