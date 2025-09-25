@@ -398,6 +398,7 @@ class DataSourceService {
       };
 
       // Normalize adapter type to API contract (e.g., 'custom-api' -> 'api')
+      // TODO: fix this, so it is just api
       const normalizeType = (t) => {
         if (!t) return t;
         const map = { 'custom-api': 'api', 'csv-file': 'csv' };
@@ -876,6 +877,46 @@ class DataSourceService {
 
   async syncDataSource(sourceId, options = {}) {
     return this.fetchDataFromSource(sourceId, options);
+  }
+
+  // New: fetch view data from backend endpoint
+  async viewData(sourceId, params = {}) {
+    const startedAt = Date.now();
+    try {
+      const workspaceId = await getSavedWorkspaceId();
+      if (!workspaceId) throw new Error('No workspace selected');
+      const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.viewData, sourceId);
+      const query = { workspaceId, ...(params || {}) };
+      console.log('[DataSourceService] viewData GET', { endpointUrl, sourceId, params: query });
+      const response = await this.apiClient.get(endpointUrl, { params: query });
+      const raw = response?.data;
+      // Normalize data array/object shapes from backend
+      const pickArray = (obj) => {
+        if (Array.isArray(obj)) return obj;
+        if (!obj || typeof obj !== 'object') return null;
+        const direct = obj.data || obj.items || obj.results || obj.records || obj.rows || obj.value;
+        if (Array.isArray(direct)) return direct;
+        const underData = obj.data && typeof obj.data === 'object' ? (obj.data.items || obj.data.results || obj.data.records || obj.data.rows || obj.data.value) : null;
+        if (Array.isArray(underData)) return underData;
+        // If object single row, return as array
+        return obj && typeof obj === 'object' ? [obj] : null;
+      };
+      const data = pickArray(raw) || [];
+      const headers = (() => {
+        if (Array.isArray(data) && data.length > 0) {
+          const first = data.find((r) => r && typeof r === 'object' && !Array.isArray(r));
+          if (first && typeof first === 'object') return Object.keys(first);
+        }
+        return ['value'];
+      })();
+      console.log('[DataSourceService] viewData success', { status: response?.status, rows: data.length, cols: headers.length, durationMs: Date.now() - startedAt });
+      return { data, headers };
+    } catch (error) {
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to load view data';
+      console.error('[DataSourceService] viewData failed', { sourceId, status, msg, durationMs: Date.now() - startedAt });
+      throw new Error(msg);
+    }
   }
 
 
