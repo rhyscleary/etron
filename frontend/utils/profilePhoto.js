@@ -30,6 +30,14 @@ export async function loadProfilePhoto() {
     }
 }
 
+export async function unloadProfilePhoto() {
+    try {
+        await AsyncStorage.removeItem(profilePhotoUriKey);
+    } catch (error) {
+        console.error("Error removing profile photo URL:", error);
+    }
+}
+
 export async function getPhotoFromDevice() {
     // Get photo library access permission
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
