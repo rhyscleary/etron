@@ -125,7 +125,6 @@ export default function AuthLayout() {
     }
 
     useEffect(() => {
-        //if (checked) return;
 
         const loadLayout = async () => {
             console.log("(AuthLayout) Auth status:", authStatus);
@@ -158,16 +157,10 @@ export default function AuthLayout() {
                     console.log("Paused redirect due to verifying password.");
                 }
             }
-
-            //setChecked(true);
         }
         loadLayout();
 
      }, [authStatus, verifyingPassword]); // temp until backend
-
-     /*if (!checked) {
-        return <ActivityIndicator size="large" />
-     }*/
 
     return (         
         <>
