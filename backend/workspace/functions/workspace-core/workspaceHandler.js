@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { getWorkspaceByUserId, transferWorkspaceOwnership, getDefaultWorkspacePermissions, createWorkspace, updateWorkspace, getWorkspaceByWorkspaceId, deleteWorkspace } = require("./workspaceService");
+const { getWorkspaceByUserId, transferWorkspaceOwnership, createWorkspace, updateWorkspace, getWorkspaceByWorkspaceId, deleteWorkspace, getWorkspacePermissions } = require("./workspaceService");
 
 
 exports.handler = async (event) => {
@@ -78,7 +78,7 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                body = await transferWorkspaceOwnership(authUserId, workspaceId, requestJSON);
+                body = await transferWorkspaceOwnership(authUserId, pathParams.workspaceId, requestJSON);
                 break;
             }
 
@@ -98,7 +98,7 @@ exports.handler = async (event) => {
 
             // GET DEFAULT WORKSPACE PERMISSIONS
             case "GET /workspace/permissions": {
-                body = await getDefaultWorkspacePermissions();
+                body = await getWorkspacePermissions();
                 break;
             }
   

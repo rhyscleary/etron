@@ -81,7 +81,7 @@ const LocalCSV = () => {
             );
             return result;
         } catch (error) {
-            console.log("Error posting via endpoint:", error);
+            console.error("Error posting via endpoint:", error);
             return null;
         }
     }

@@ -33,7 +33,7 @@ const Roles = () => {
                     setLoading(false);
                 }
             } catch (error) {
-                console.log("Error fetching roles:", error);
+                console.error("Error fetching roles:", error);
             }
         };
 

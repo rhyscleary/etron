@@ -9,7 +9,7 @@ export async function saveUserInfo(user) {
         const userInfo = JSON.stringify(user);
         await AsyncStorage.setItem(userKey, userInfo);
     } catch (error) {
-        console.log("Error saving user info: ", error);
+        console.error("Error saving user info: ", error);
     }
 }
 
@@ -18,7 +18,7 @@ export async function getUserInfo() {
         const value = await AsyncStorage.getItem(userKey);
         return value != null ? JSON.parse(value) : null;
     } catch (error) {
-        console.log("Error retrieving user info: ", error);
+        console.error("Error retrieving user info: ", error);
         return null;
     }
 }

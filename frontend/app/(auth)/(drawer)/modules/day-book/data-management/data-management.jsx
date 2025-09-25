@@ -44,7 +44,7 @@ const DataManagement = () => {
 					id: dataSource.dataSourceId
 				})));
 			} catch (error) {
-				console.log("error getting data sources from api:", error);
+				console.error("Error getting data sources from api:", error);
 			}
 			setLoadingDataSourcePaths(false);
 		}

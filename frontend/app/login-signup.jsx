@@ -11,6 +11,7 @@ import GoogleButton from '../components/common/buttons/GoogleButton';
 import MicrosoftButton from '../components/common/buttons/MicrosoftButton';
 import Divider from "../components/layout/Divider";
 import { commonStyles } from "../assets/styles/stylesheets/common";
+import ResponsiveScreen from "../components/layout/ResponsiveScreen";
 
 import { 
     signIn, 
@@ -153,12 +154,12 @@ function LoginSignup() {
                             router.replace("(auth)/profile");
 
                         } catch (error) {
-                            console.log('No authenticated user found after social sign-in');
+                            console.error('No authenticated user found after social sign-in');
                             setMessage("Social sign-in was cancelled or failed");
                         }
                     }, 1000);
                 } catch (error) {
-                    console.log('Error handling social sign-in callback:', error);
+                    console.error('Error handling social sign-in callback:', error);
                     setMessage("Error completing social sign-in");
                     await signOut();
                 }
@@ -173,7 +174,7 @@ function LoginSignup() {
                     setMessage("Signed out successfully!");
 
                 } catch (error) {
-                    console.log('Error handling social sign-out:', error);
+                    console.error('Error handling social sign-out:', error);
                     setMessage("Social sign-out was cancelled or failed");
                 }
             }
@@ -216,13 +217,13 @@ function LoginSignup() {
         try {
 
             try {
-                const currentUser = await getCurrentUser();
+                const currentUser = await safeGetCurrentUser();
                 if (currentUser) {
                     console.log("User is already signed in. Signing out before continuing..");
                     await signOut();
                 }
-            } catch {
-                console.log("Unable to retrieve signed in user");
+            } catch (error) {
+                console.error("Error retrieving signed in user:", error);
             }
 
             const { isSignedIn, nextStep } = await signIn({ username: email, password });
@@ -315,8 +316,12 @@ function LoginSignup() {
             setMessage("Sign up successful! Check your email to confirm.");
             setShowVerificationModal(true);
         } catch (error) {
-            console.log('Error signing up:', error);
-            setMessage(`Error: ${error.message}`);
+            if (error.toString().split(":")[0] == "UsernameExistsException") {
+                setMessage("An account with that email already exists. Try signing in instead.");
+            } else {
+                console.error('Error signing up:', error);
+                setMessage(`Error: ${error.message}`);
+            }
         }
     };
 
@@ -337,7 +342,7 @@ function LoginSignup() {
             //await signInWithRedirect({ provider: 'Google' });
             
         } catch (error) {
-            console.log('Error with Google sign-in:', error);
+            console.error('Error with Google sign-in:', error);
             setMessage(`Google sign-in error: ${error.message}`);
             setSocialLoading({ ...socialLoading, google: false });
         }
@@ -358,7 +363,7 @@ function LoginSignup() {
             });
             
         } catch (error) {
-            console.log('Error with Microsoft sign-in:', error);
+            console.error('Error with Microsoft sign-in:', error);
             setMessage(`Microsoft sign-in error: ${error.message}`);
             setSocialLoading({ ...socialLoading, microsoft: false });
         }
@@ -398,7 +403,7 @@ function LoginSignup() {
             }
 
         } catch (error) {
-            console.log(`Error with ${provider} sign-in:`, error);
+            console.error(`Error with ${provider} sign-in:`, error);
             setMessage(`${provider} sign-in error: ${error.message}`);
         }
     };
@@ -408,134 +413,140 @@ function LoginSignup() {
         try {
             await confirmSignUp({ username: email, confirmationCode: verificationCode });
             setShowVerificationModal(false);
-            console.log("Confirmation successful! Please personalize your account.");
 
             // sign in the user
             await signIn({ username: email, password });
             router.navigate("(auth)/personalise-account"); // navigate to personalise account after sign up
         } catch (error) {
-            console.log('Error confirming code:', error);
+            console.error('Error confirming code:', error);
             setMessage(`Error: ${error.message}`);
             setVerificationError(error.message);
         }
     };
 
-    return (
-        <View style={commonStyles.screen}>
-            <View style={{ padding: 20, gap: 30, flex: 1, justifyContent: 'center' }}>
-                <Text style={{ fontSize: 40, textAlign: 'center' }}>
-                    {isSignUpBool ? 'Welcome' : 'Welcome Back'}
-                </Text>
+    const safeGetCurrentUser = async () => {
+        try {
+            return await getCurrentUser();
+        } catch (error) {
+            if (error.name === "UserUnAuthenticatedException") {
+                return null;
+            }
+            throw error;
+        }
+    }
 
-                <View style={{ gap: 30 }}>
+    return (
+        <ResponsiveScreen scroll padded center>
+            <Text style={{ fontSize: 40, textAlign: 'center' }}>
+                {isSignUpBool ? 'Welcome' : 'Welcome Back'}
+            </Text>
+
+            <View style={{ gap: 30 }}>
+                <TextField
+                    label="Email"
+                    placeholder="Email"
+                    value={email}
+                    onChangeText={setEmail}
+                />
+
+                <View>
                     <TextField
-                        label="Email"
-                        placeholder="Email"
-                        value={email}
-                        onChangeText={setEmail}
+                        label="Password"
+                        placeholder="Password"
+                        value={password}
+                        secureTextEntry
+                        onChangeText={setPassword}
                     />
 
-                    <View>
-                        <TextField
-                            label="Password"
-                            placeholder="Password"
-                            value={password}
-                            secureTextEntry
-                            onChangeText={setPassword}
-                        />
-
-                        {!isSignUpBool && (
-                            <View style={{ marginTop: 10 }}>
-                                <Link href="/reset-password">
-                                    <Text style={{
-                                        textDecorationLine: 'underline'
-                                    }}>
-                                        Forgot Your Password?
-                                    </Text>
-                                </Link>
-                            </View>
-                        )}
-                    </View>
-
-                    {isSignUpBool && (
-                        <TextField
-                            label="Confirm Password"
-                            placeholder="Confirm Password"
-                            value={confirmPassword}
-                            secureTextEntry
-                            onChangeText={setConfirmPassword}
-                        />
+                    {!isSignUpBool && (
+                        <View style={{ marginTop: 10 }}>
+                            <Link href="/reset-password">
+                                <Text style={{
+                                    textDecorationLine: 'underline'
+                                }}>
+                                    Forgot Your Password?
+                                </Text>
+                            </Link>
+                        </View>
                     )}
                 </View>
 
-                <View style={{ alignItems: 'flex-end' }}>
-                    <BasicButton
-                        label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
-                        onPress={isSignUpBool ? handleSignUp : handleSignIn}
-                        disabled={(isLinking && !signedOutForLinking) || loading}
+                {isSignUpBool && (
+                    <TextField
+                        label="Confirm Password"
+                        placeholder="Confirm Password"
+                        value={confirmPassword}
+                        secureTextEntry
+                        onChangeText={setConfirmPassword}
                     />
-                </View>
-
-                <Text style={{ fontSize: 20, textAlign: 'center' }}>
-                    OR
-                </Text>
-
-                <View style={{ gap: 20, marginTop: -10 }}>
-                    <GoogleButton
-                        imageSource={require('../assets/images/Google.jpg')}
-                        label={socialLoading.google ? "Connecting to Google..." : "Continue with Google"}
-                        onPress={handleGoogleSignIn}
-                        disabled={(isLinking && !signedOutForLinking) || socialLoading.google || socialLoading.microsoft}
-                    />
-
-                    <MicrosoftButton
-                        imageSource={require('../assets/images/Microsoft.png')}
-                        label={socialLoading.microsoft ? "Connecting to Microsoft..." : "Continue with Microsoft"}
-                        onPress={handleMicrosoftSignIn}
-                        disabled={(isLinking && !signedOutForLinking) || socialLoading.google || socialLoading.microsoft}
-                    />
-                </View>
-
-                <Divider />
-
-                <BasicButton
-                    label={isSignUpBool ? 'Already have an account? Log In'
-                        : "Don't have an account? Sign Up"}
-                    onPress={() => {
-                        router.replace({
-                            pathname: '/login-signup',
-                            params: { isSignUp: (!isSignUpBool).toString() },
-                        });
-                        setConfirmPassword('');
-                    }}
-                    fullWidth
-                    altBackground='true'
-                    altText='true'
-                />
-
-                {message && (
-                    <Text style={{ 
-                        marginTop: 30, 
-                        color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                        textAlign: 'center'
-                    }}>
-                        {message}
-                    </Text>
                 )}
-
-                <VerificationDialog
-                    visible={showVerificationModal}
-                    code={verificationCode}
-                    setCode={setVerificationCode}
-                    onConfirm={handleConfirmCode}
-                    onResend={handleResend}
-                    resendCooldown={resendCooldown}
-                    onLater={() => setShowVerificationModal(false)}
-                    error={verificationError}
-                />
-                
             </View>
-        </View>
+
+            <View style={{alignItems: 'flex-end' }}>
+                <BasicButton
+                    label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
+                    onPress={isSignUpBool ? handleSignUp : handleSignIn}
+                    disabled={(isLinking && !signedOutForLinking) || loading}
+                />
+            </View>
+
+            {message && (
+                <Text style={{
+                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
+                    textAlign: 'center'
+                }}>
+                    {message}
+                </Text>
+            )}
+
+            <Text style={{ fontSize: 20, textAlign: 'center' }}>
+                OR
+            </Text>
+
+            <View style={{ gap: 20, marginTop: -10 }}>
+                <GoogleButton
+                    imageSource={require('../assets/images/Google.jpg')}
+                    label={socialLoading.google ? "Connecting to Google..." : "Continue with Google"}
+                    onPress={handleGoogleSignIn}
+                    disabled={(isLinking && !signedOutForLinking) || socialLoading.google || socialLoading.microsoft}
+                />
+
+                <MicrosoftButton
+                    imageSource={require('../assets/images/Microsoft.png')}
+                    label={socialLoading.microsoft ? "Connecting to Microsoft..." : "Continue with Microsoft"}
+                    onPress={handleMicrosoftSignIn}
+                    disabled={(isLinking && !signedOutForLinking) || socialLoading.google || socialLoading.microsoft}
+                />
+            </View>
+
+            <Divider />
+
+            <BasicButton
+                label={isSignUpBool ? 'Already have an account? Log In'
+                    : "Don't have an account? Sign Up"}
+                onPress={() => {
+                    router.replace({
+                        pathname: '/login-signup',
+                        params: { isSignUp: (!isSignUpBool).toString() },
+                    });
+                    setConfirmPassword('');
+                }}
+                fullWidth
+                altBackground='true'
+                altText='true'
+            />
+
+            <VerificationDialog
+                visible={showVerificationModal}
+                code={verificationCode}
+                setCode={setVerificationCode}
+                onConfirm={handleConfirmCode}
+                onResend={handleResend}
+                resendCooldown={resendCooldown}
+                onLater={() => setShowVerificationModal(false)}
+                error={verificationError}
+            />
+        </ResponsiveScreen>
     );
 }
 

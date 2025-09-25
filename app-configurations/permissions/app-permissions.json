@@ -1,0 +1,124 @@
+{
+  "app": {
+    "label": "Application Core",
+    "description": "Core app permissions (workspace-wide, collaboration, billing, etc.)",
+    "categories": {
+      "workspace": {
+        "label": "Workspace",
+        "permissions": [
+          {
+            "key": "app.workspace.create_workspace",
+            "label": "Create Workspace",
+            "description": "Allows creating a new workspace",
+            "defaultStatus": true
+          },
+          {
+            "key": "app.workspace.delete_workspace",
+            "label": "Delete Workspace",
+            "description": "Allows deleting a workspace",
+            "defaultStatus": false
+          }
+        ]
+      },
+      "billing": {
+        "label": "Billing",
+        "permissions": [
+          {
+            "key": "app.billing.view_billing",
+            "label": "View Billing",
+            "description": "Allows viewing billing info",
+            "defaultStatus": true
+          },
+          {
+            "key": "app.billing.manage_billing",
+            "label": "Manage Billing",
+            "description": "Allows updating billing info",
+            "defaultStatus": false
+          }
+        ]
+      },
+      "collaboration": {
+        "label": "Collaboration",
+        "permissions": [
+          {
+            "key": "app.collaboration.view_users",
+            "label": "View Users",
+            "description": "Allows viewing workspace users",
+            "defaultStatus": true
+          },
+          {
+            "key": "app.collaboration.invite_users",
+            "label": "Invite Users",
+            "description": "Allows inviting new users",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.collaboration.send_messages",
+            "label": "Send Messages",
+            "description": "Allows sending messages in chat",
+            "defaultStatus": true
+          }
+        ]
+      }
+    }
+  },
+  "modules": {
+    "daybook": {
+      "label": "DayBook",
+      "description": "DayBook module with its own categories",
+      "categories": {
+        "profiles": {
+          "label": "Profiles",
+          "permissions": [
+            {
+              "key": "modules.daybook.profiles.create_profile",
+              "label": "Create Profiles",
+              "description": "Allows creating new profiles",
+              "defaultStatus": false
+            },
+            {
+              "key": "modules.daybook.profiles.edit_profile",
+              "label": "Edit Profiles",
+              "description": "Allows editing existing profiles",
+              "defaultStatus": false
+            }
+          ]
+        },
+        "entries": {
+          "label": "Entries",
+          "permissions": [
+            {
+              "key": "modules.daybook.entries.view_entries",
+              "label": "View Entries",
+              "description": "Allows viewing DayBook entries",
+              "defaultStatus": true
+            },
+            {
+              "key": "modules.daybook.entries.create_entries",
+              "label": "Create Entries",
+              "description": "Allows creating new DayBook entries",
+              "defaultStatus": true
+            }
+          ]
+        },
+        "reports": {
+          "label": "Reports",
+          "permissions": [
+            {
+              "key": "modules.daybook.reports.view_reports",
+              "label": "View Reports",
+              "description": "Allows viewing DayBook reports",
+              "defaultStatus": true
+            },
+            {
+              "key": "modules.daybook.reports.export_reports",
+              "label": "Export Reports",
+              "description": "Allows exporting DayBook reports",
+              "defaultStatus": false
+            }
+          ]
+        }
+      }
+    }
+  }
+}
