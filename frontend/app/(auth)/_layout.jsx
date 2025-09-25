@@ -55,7 +55,14 @@ export default function AuthLayout() {
                     endpoints.workspace.core.getByUserId(userId)
                 );
             } catch (error) {
-                console.error("Error fetching workspace:", error);
+                if (error.message.includes("Workspace not found")) {
+                    console.log("No workspace yet, resetting attribute.");
+                    await removeWorkspaceInfo();
+                    await setHasWorkspaceAttribute(false);
+                    return false;
+                }                
+                console.error("Unexpected error fetching workspace:", error);
+                return false;
             }
             
             if (workspace?.workspaceId) {

@@ -8,14 +8,6 @@ import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import ResponsiveScreen from '../components/layout/ResponsiveScreen';
 
-/*
-UNSURE WHAT TO DO WITH THIS AT THIS MOMENT
-
-import { Linking } from 'react-native';
-
-import { signIn, signUp, signInWithRedirect } from 'aws-amplify/auth';
-*/
-
 const Landing = () => {
 	const theme = useTheme();
 
@@ -27,19 +19,22 @@ const Landing = () => {
 		>	
 			<ResponsiveScreen>
 				<Image style={{ width:"100%", height:200, resizeMode: 'contain' }}
+					source={require('../assets/images/Logo.png')}>
+				</Image>
+				<Image style={{ width:"100%", height:200, resizeMode: 'contain' }}
 					source={require('../assets/images/LandingTextForeground.png')}>
 				</Image>
-				<View style={{ padding: 20, gap: 30 }}>
+				<View style={{ padding: 20, gap: 40 }}>
 					<BasicButton
 						label='Login'
 						onPress={() => router.navigate('/login-signup?isSignUp=false')}
+						fullWidth
 					/>
-					<View style={{ alignItems: 'flex-end' }}>
-						<BasicButton
-								label='Sign Up'
-								onPress={() => router.navigate('/login-signup?isSignUp=true')}
-						/>
-					</View>
+					<BasicButton
+						label='Sign Up'
+						onPress={() => router.navigate('/login-signup?isSignUp=true')}
+						fullWidth
+					/>
 				</View>
 			</ResponsiveScreen>
 		</ImageBackground>
