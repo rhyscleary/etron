@@ -3,12 +3,16 @@
         "key": "day_book",
         "name": "Day Book",
         "description": "Connect to data sources and track real-time metrics",
-        "default": true
+        "starterModule": true,
+        "cardColor": "",
+        "fontColor": ""
     },
     {
         "key": "leave",
         "name": "Leave",
         "description": "Request leave",
-        "default": false
+        "starterModule": false,
+        "cardColor": "",
+        "fontColor": ""
     }
 ]

@@ -2,7 +2,7 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const {v4 : uuidv4} = require('uuid');
-const { getAppModules } = require("@etron/shared/repositories/s3BucketRepository");
+const { getAppModules } = require("@etron/shared/repositories/appConfigBucketRepository");
 
 async function installModule(authUserId, workspaceId, moduleKey) {
 
@@ -26,11 +26,12 @@ async function installModule(authUserId, workspaceId, moduleKey) {
 
     // create a new module item
     const moduleItem = {
-        workspaceId: workspaceId,
-        moduleId: moduleId,
+        workspaceId,
+        moduleId,
         moduleKey: selectedModule.key,
         name: selectedModule.name,
         description: selectedModule.description,
+        enabled: true,
         installedAt: date,
         updatedAt: date
     };

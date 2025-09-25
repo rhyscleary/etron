@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { GetObjectCommand, PutObjectCommand, NoSuchKey, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
+const { GetObjectCommand, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
 const s3Client = new S3Client({});
 
 const bucketName = process.env.PERMISSIONS_BUCKET;
@@ -60,7 +60,31 @@ async function getStarterPermissions() {
     }
 }
 
+// get modules from s3
+async function getAppModules() {
+    const key = "modules/modules.json"
+    try {
+        const response = await s3Client.send(
+            new GetObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+            }),
+        );
+
+        const jsonString = await response.Body.transformToString();
+        const parsed = JSON.parse(jsonString);
+
+        return parsed;
+    } catch (error) {
+        if (error.name === "NoSuchKey") {
+            return null;
+        }
+        handleS3Error(error, `Error retrieving object ${key} from ${bucketName}`);
+    }
+}
+
 module.exports = {
     getAppPermissions,
-    getStarterPermissions
+    getStarterPermissions,
+    getAppModules
 };
