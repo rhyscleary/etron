@@ -217,7 +217,7 @@ function LoginSignup() {
         try {
 
             try {
-                const currentUser = await getCurrentUser();
+                const currentUser = await safeGetCurrentUser();
                 if (currentUser) {
                     console.log("User is already signed in. Signing out before continuing..");
                     await signOut();
@@ -420,6 +420,17 @@ function LoginSignup() {
             setVerificationError(error.message);
         }
     };
+
+    const safeGetCurrentUser = async () => {
+        try {
+            return await getCurrentUser();
+        } catch (error) {
+            if (error.name === "UserUnAuthenticatedException") {
+                return null;
+            }
+            throw error;
+        }
+    }
 
     return (
         <ResponsiveScreen scroll padded center showScrollHint={true}>

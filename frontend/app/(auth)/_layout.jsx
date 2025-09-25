@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { fetchUserAttributes, signOut, updateUserAttributes } from 'aws-amplify/auth';
 import { useVerification } from '../../components/layout/VerificationContext'; // temp until backend
-import { getWorkspaceId } from '../../storage/workspaceStorage';
+import { getWorkspaceId, removeWorkspaceInfo } from '../../storage/workspaceStorage';
 import { saveUserInfo } from '../../storage/userStorage';
 import { saveRole, getRole, getPermissions } from '../../storage/permissionsStorage';
 import { apiGet } from '../../utils/api/apiClient';
@@ -46,13 +46,31 @@ export default function AuthLayout() {
         }
 
         if (hasWorkspaceAttribute === "true") {
-            const workspaceId = await getWorkspaceId();
-            if (workspaceId) {
-                console.log("WorkspaceId received from local storage:", workspaceId);
+            const userAttributes = await fetchUserAttributes();
+            const userId = userAttributes.sub;
+
+            let workspace;
+            try {
+                workspace = await apiGet(
+                    endpoints.workspace.core.getByUserId(userId)
+                );
+            } catch (error) {
+                if (error.message.includes("Workspace not found")) {
+                    console.log("No workspace yet, resetting attribute.");
+                    await removeWorkspaceInfo();
+                    await setHasWorkspaceAttribute(false);
+                    return false;
+                }                
+                console.error("Unexpected error fetching workspace:", error);
+                return false;
+            }
+            
+            if (workspace?.workspaceId) {
+                console.log("WorkspaceId received from server:", workspace.workspaceId);
 
                 // Save user's role details
                 try {
-                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
+                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspace.workspaceId));
                     await saveRole(userRole);
                 } catch (error) {
                     console.error("Error saving user's role details into local storage:", error);
@@ -61,9 +79,13 @@ export default function AuthLayout() {
                 return true;
             }
 
-            // if user attribute has_workspace === true but not in local storage force sign out
-            console.log("WorkspaceId cannot be fetched from local storage");
-            await signOut();
+            // if user attribute has_workspace === true but not in DynamoDB force sign out
+            console.log("Workspace not found, clearing user attribute and local storage");
+            // remove it from local storage
+            await removeWorkspaceInfo();
+            // set attribute to false
+            await setHasWorkspaceAttribute(false);
+            return false;
         }
 
         return false;
@@ -78,19 +100,18 @@ export default function AuthLayout() {
 
             // Save user's info into local storage
             const workspaceId = await getWorkspaceId();
-            try {
-                const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
-                await saveUserInfo(userInfo);  // Saves into local storage
-            } catch (error) {
-                console.error("Error saving user info into storage:", error);
+            if (workspaceId) {   
+                try {
+                    const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
+                    await saveUserInfo(userInfo);  // Saves into local storage
+                } catch (error) {
+                    console.error("Error saving user info into storage:", error);
+                }
             }
 
-            // if the name attributes don't exist, return false
-            if (!hasGivenName || !hasFamilyName) {
-                return false;
-            }
-    
-            return true;
+            // validate and return given and family name status
+            return !!(hasGivenName && hasFamilyName);
+
         } catch (error) {
             console.error("Error fetching user attributes:", error);
             return false;
