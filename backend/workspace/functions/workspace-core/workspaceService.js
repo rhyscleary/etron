@@ -255,16 +255,19 @@ async function transferWorkspaceOwnership(authUserId, workspaceId, payload) {
     };
 
     // update the user to owner
-    await workspaceUsersRepo.updateUser(workspaceId, userId, targetUserItem);
+    const newOwner = await workspaceUsersRepo.updateUser(workspaceId, receipientUserId, targetUserItem);
 
     // remove ownership from the current user and make them manager
     const updatedUserItem = {
-        role: newRole.roleId
+        roleId: newRole.roleId
     }
 
-    const updatedUser = workspaceUsersRepo.updateUser(workspaceId, userId, updatedUserItem);
+    const updatedUser = await workspaceUsersRepo.updateUser(workspaceId, authUserId, updatedUserItem);
 
-    return updatedUser;
+    return {
+        newOwner,
+        oldOwner: updatedUser
+    }
 }
 
 // returns the app permissions

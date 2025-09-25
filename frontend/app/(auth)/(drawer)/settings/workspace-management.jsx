@@ -31,7 +31,9 @@ const WorkspaceManagement = () => {
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState(false);
     const [selectedUser, setSelectedUser] = useState("");
+    const [selectedRole, setSelectedRole] = useState("");
     const [users, setUsers] = useState([]);
+    const [roles, setRoles] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
     const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
 
@@ -47,6 +49,7 @@ const WorkspaceManagement = () => {
         async function fetchData() {
             const workspaceId = await getWorkspaceId();
             setWorkspaceId(workspaceId);
+            console.log("WorkspaceId:", workspaceId);
 
             try {
                 const currentUser = await getCurrentUser();
@@ -63,6 +66,20 @@ const WorkspaceManagement = () => {
 
             } catch (error) {
                 console.error("Error loading users:", error);
+            }
+
+            // fetch workspace roles
+            try {
+                const roles = await apiGet(
+                    endpoints.workspace.roles.getRoles(workspaceId)
+                );
+
+                // filter out the owner role
+                const filteredList = roles.filter(role => !role.owner);
+
+                setRoles(filteredList);
+            } catch (error) {
+                console.error("Error fetching roles:", error);
             }
         }
         fetchData();
@@ -124,9 +141,16 @@ const WorkspaceManagement = () => {
             try {
                 // transfer ownership
                 console.log(selectedUser);
+                console.log(selectedRole);
 
-                const result = apiPut(
-                    endpoints.workspace.core.transfer(workspaceId, selectedUser)
+                const transferPayload = {
+                    receipientUserId: selectedUser,
+                    newRoleId: selectedRole
+                };
+
+                const result = await apiPut(
+                    endpoints.workspace.core.transfer(workspaceId),
+                    transferPayload
                 );
 
                 console.log("Ownership transferred:", result);
@@ -227,6 +251,16 @@ const WorkspaceManagement = () => {
                     }))}
                     showRouterButton={false}
                     onSelect={(userId) => setSelectedUser(userId)}
+                />
+
+                <DropDown 
+                    title="Select Your New Role"
+                    items={roles.map(role => ({
+                        label: `${role.name}`,
+                        value: role.roleId
+                    }))}
+                    showRouterButton={false}
+                    onSelect={(roleId) => setSelectedRole(roleId)}
                 />
             </BasicDialog>
         </View>

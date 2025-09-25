@@ -78,7 +78,7 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                body = await transferWorkspaceOwnership(authUserId, workspaceId, requestJSON);
+                body = await transferWorkspaceOwnership(authUserId, pathParams.workspaceId, requestJSON);
                 break;
             }
 
