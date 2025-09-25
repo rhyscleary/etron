@@ -115,6 +115,7 @@ export default function AuthLayout() {
 
     const saveUserInfoIntoStorage = async() => {
         const workspaceId = await getWorkspaceId();
+        const userAttributes = await fetchUserAttributes();
         try {
             const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
             await saveUserInfo(userInfo);  // Saves into local storage
