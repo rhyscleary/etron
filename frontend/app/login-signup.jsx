@@ -316,8 +316,12 @@ function LoginSignup() {
             setMessage("Sign up successful! Check your email to confirm.");
             setShowVerificationModal(true);
         } catch (error) {
-            console.error('Error signing up:', error);
-            setMessage(`Error: ${error.message}`);
+            if (error.toString().split(":")[0] == "UsernameExistsException") {
+                setMessage("An account with that email already exists. Try signing in instead.");
+            } else {
+                console.error('Error signing up:', error);
+                setMessage(`Error: ${error.message}`);
+            }
         }
     };
 
@@ -409,7 +413,6 @@ function LoginSignup() {
         try {
             await confirmSignUp({ username: email, confirmationCode: verificationCode });
             setShowVerificationModal(false);
-            console.log("Confirmation successful! Please personalize your account.");
 
             // sign in the user
             await signIn({ username: email, password });
@@ -422,7 +425,7 @@ function LoginSignup() {
     };
 
     return (
-        <ResponsiveScreen scroll padded center showScrollHint={true}>
+        <ResponsiveScreen scroll padded center>
             <Text style={{ fontSize: 40, textAlign: 'center' }}>
                 {isSignUpBool ? 'Welcome' : 'Welcome Back'}
             </Text>
@@ -468,13 +471,22 @@ function LoginSignup() {
                 )}
             </View>
 
-            <View style={{ alignItems: 'flex-end' }}>
+            <View style={{alignItems: 'flex-end' }}>
                 <BasicButton
                     label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
                     onPress={isSignUpBool ? handleSignUp : handleSignIn}
                     disabled={(isLinking && !signedOutForLinking) || loading}
                 />
             </View>
+
+            {message && (
+                <Text style={{
+                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
+                    textAlign: 'center'
+                }}>
+                    {message}
+                </Text>
+            )}
 
             <Text style={{ fontSize: 20, textAlign: 'center' }}>
                 OR
@@ -512,16 +524,6 @@ function LoginSignup() {
                 altBackground='true'
                 altText='true'
             />
-
-            {message && (
-                <Text style={{ 
-                    marginTop: 30, 
-                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                    textAlign: 'center'
-                }}>
-                    {message}
-                </Text>
-            )}
 
             <VerificationDialog
                 visible={showVerificationModal}

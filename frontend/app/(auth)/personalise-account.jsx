@@ -192,7 +192,7 @@ const PersonaliseAccount = () => {
               onPress={handleChoosePhoto}
             />
             {profilePicture && (
-              <Button title="Remove Photo" onPress={handleRemovePhoto} />
+              <BasicButton label="Remove Photo" onPress={handleRemovePhoto} />
             )}
           </View>
 
