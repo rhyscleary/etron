@@ -269,7 +269,73 @@ async function getTemplatesByWorkspaceId(workspaceId) {
 
     return (result.Items || []).map(({sk, ...rest}) => ({
         ...rest,
-        draftId: sk.replace("template#", "")
+        templateId: sk.replace("template#", "")
+    }));
+}
+
+// EXPORTS
+
+// add export
+async function addExport(exportItem) {
+    const {exportId, ...rest} = exportItem;
+    const updatedExportItem = {
+        ...rest,
+        sk: `export#${exportId}`
+    }
+
+    // send request to datastore
+    await dynamoDB.send(
+        new PutCommand( {
+            TableName: tableName,
+            Item: updatedExportItem
+        })
+    );
+}
+
+// get export in workspace
+async function getExportById(workspaceId, exportId) {
+    const sk = `export#${exportId}`;
+    
+    const result = await dynamoDB.send(
+        new GetCommand({
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                sk: sk
+            }
+        })
+    );
+
+    const item = result.Item;
+
+    if (!item) {
+        return null;
+    }
+
+    const { sk: skValue, ...rest } = item;
+    
+    return {
+        ...rest,
+        exportId: skValue.replace("export#", "")
+    };
+}
+
+// get all exports in a workspace
+async function getExportsByWorkspaceId(workspaceId) {
+    const result = await dynamoDB.send(
+            new QueryCommand({
+                TableName: tableName,
+                KeyConditionExpression: "workspaceId = :workspaceId AND begins_with(sk, :prefix)",
+                ExpressionAttributeValues: {
+                    ":workspaceId": workspaceId,
+                    ":prefix": "export#"
+                }
+            })
+        );
+
+    return (result.Items || []).map(({sk, ...rest}) => ({
+        ...rest,
+        exportId: sk.replace("export#", "")
     }));
 }
 
@@ -283,5 +349,8 @@ module.exports = {
     deleteTemplate,
     updateTemplate,
     getTemplateById,
-    getTemplatesByWorkspaceId
+    getTemplatesByWorkspaceId,
+    addExport,
+    getExportById,
+    getExportsByWorkspaceId
 }

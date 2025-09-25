@@ -12,7 +12,7 @@ import { commonStyles } from '../../assets/styles/stylesheets/common';
 import StackLayout from '../../components/layout/StackLayout';
 import { Auth } from 'aws-amplify';
 import AvatarButton from '../../components/common/buttons/AvatarButton';
-import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhotoFromDevice, uploadProfilePhotoToS3 } from '../../utils/profilePhoto';
+import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, getPhotoFromDevice, saveProfilePhoto } from '../../utils/profilePhoto';
 import { fetchUserAttributes, getCurrentUser, updateUserAttribute, updateUserAttributes } from 'aws-amplify/auth';
 import DecisionDialog from '../../components/overlays/DecisionDialog';
 
@@ -36,11 +36,11 @@ const PersonaliseAccount = () => {
 
   async function handleChoosePhoto() {
     try {
-      const uri = await uploadProfilePhotoFromDevice();
+      const uri = await getPhotoFromDevice();
       setProfilePicture(uri);
       setPictureChanged(true);
     } catch (error) {
-      console.log(error.message);
+      console.error("Error getting photo choice:", error);
     }
   }
 
@@ -71,7 +71,7 @@ const PersonaliseAccount = () => {
         setProfilePicture(profilePhotoUri || null);
         
     } catch (error) {
-        console.log("Error loading personal details: ", error);
+        console.error("Error loading personal details: ", error);
         setMessage("Error loading personal details");
     }
     setLoading(false);
@@ -106,7 +106,7 @@ const PersonaliseAccount = () => {
                   return { needsConfirmation: false };
           }
       } catch (error) {
-          console.log("Error updating user attribute:", error);
+          console.error("Error updating user attribute:", error);
           const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
           setMessage(`Error updating ${fieldName}: ${error.message}`);
           return { needsConfirmation: false, error: true };
@@ -132,7 +132,7 @@ const PersonaliseAccount = () => {
 
       if (pictureChanged) {
         if (profilePicture) {
-          const s3Url = await uploadProfilePhotoToS3(profilePicture);
+          const s3Url = await saveProfilePhoto(profilePicture);
           if (s3Url) {
             await handleUpdateUserAttribute('picture', s3Url);
           }
@@ -145,7 +145,7 @@ const PersonaliseAccount = () => {
       setWorkspaceModal(true);
 
     } catch (error) {
-      console.log("Error updating Cognito attributes:", error);
+      console.error("Error updating Cognito attributes:", error);
     }
   }
 

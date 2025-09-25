@@ -96,6 +96,16 @@ async function getMetricById(workspaceId, metricId) {
     return result.Item;
 }
 
+// get the variables of a metric
+async function getMetricVariableNames(workspaceId, metricId) {
+    const result = await getMetricById(workspaceId, metricId);
+    const variables = [
+        ...result.config.dependentVariables,
+        result.config.independentVariable
+    ];
+    return variables;
+}
+
 // get metrics by workspaceId
 async function getMetricsByWorkspaceId(workspaceId) {
     const result = await dynamoDB.send(
@@ -116,5 +126,6 @@ module.exports = {
     updateMetric,
     removeMetric,
     getMetricById,
+    getMetricVariableNames,
     getMetricsByWorkspaceId
 }

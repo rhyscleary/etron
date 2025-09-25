@@ -1,8 +1,7 @@
-import { Pressable, View, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
 import Header from "../../../components/layout/Header";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
-import { Link, router } from "expo-router";
-import { Text } from "react-native-paper";
+import { router } from "expo-router";
 import StackLayout from "../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 
@@ -25,9 +24,8 @@ const Profile = () => {
     
     return (
         <View style={commonStyles.screen}>
-            <Header title="Dashboard" showMenu />
-
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
+            <Header title="Dashboard" showMenu />            
+            <ScrollView style={{backgroundColor: "#FF0000"}} contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {settingOptionButtons.map((item) => (
                         <DescriptiveButton 

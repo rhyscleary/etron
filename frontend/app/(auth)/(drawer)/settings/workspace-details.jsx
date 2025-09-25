@@ -8,7 +8,7 @@ import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import StackLayout from "../../../../components/layout/StackLayout";
 import { Text, useTheme } from "react-native-paper";
-import { apiGet, apiPut } from "../../../../utils/api/apiClient";
+import { apiGet, apiPatch, apiPut } from "../../../../utils/api/apiClient";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
 import TextField from "../../../../components/common/input/TextField";
 import { getWorkspaceId, getWorkspaceInfo, saveWorkspaceInfo } from "../../../../storage/workspaceStorage";
@@ -53,7 +53,7 @@ const WorkspaceDetails = () => {
                     });
                 }
             } catch (error) {
-                console.log("Error loading workspace details: ", error);
+                console.error("Error loading workspace details: ", error);
             }
             setLoading(false);
         }
@@ -99,7 +99,7 @@ const WorkspaceDetails = () => {
             // get workspace id from local storage
             const workspaceId = await getWorkspaceId();
 
-            const result = await apiPut(
+            const result = await apiPatch(
                 endpoints.workspace.core.update(workspaceId),
                 updateData
             );
@@ -114,7 +114,7 @@ const WorkspaceDetails = () => {
 
         } catch (error) {
             setUpdating(false);
-            console.log("Error updating workspace details: ", error);
+            console.error("Error updating workspace details: ", error);
         }
 
         setUpdating(false);

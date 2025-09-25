@@ -9,23 +9,12 @@ import { useAuthenticator } from '@aws-amplify/ui-react-native';
 
 // TOOD: make sure all app-wide initialisations are in here
 
-//import awsmobile from '../src/aws-exports';
 import amplifyOutputs from '../amplify_outputs.json'
-/*Amplify.configure({
-    ...awsmobile,
-    oauth: {
-        domain: 'etrontest.auth.ap-southeast-2.amazoncognito.com',
-        scope: ['email', 'openid', 'profile'],
-        redirectSignIn: 'myapp://auth/',
-        redirectSignOut: 'myapp://signout/',
-        responseType: 'code'
-});*/
 Amplify.configure(amplifyOutputs);
-console.log('Amplify configured with:', Amplify.getConfig());
+//console.log('Amplify configured with:', Amplify.getConfig());
 
 
 function App() {
-
     const { authStatus } = useAuthenticator();
     const [target, setTarget] = useState(null);
 
@@ -49,8 +38,6 @@ function App() {
     }
 
     return <ActivityIndicator size="large" color="#0000ff" />;
-
 }
 
-//export default withAuthenticator(App);
 export default App;

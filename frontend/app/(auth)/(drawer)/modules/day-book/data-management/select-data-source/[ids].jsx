@@ -93,34 +93,14 @@ const SelectDataSource = () => {
     setPreviewLoading(true);
     setPreviewData(null);
     try {
-      console.log('[SelectDataSource] Testing connection for preview', { id: existingSource.id, type: existingSource.type });
-      const testRes = await dataSourceService.testConnection(
-        existingSource.type,
-        existingSource.config,
-        existingSource.name
-      );
-      const tr = testRes?.testResult;
-      // Normalize server test result into preview shape { headers: string[], data: any[] }
-      const pickCandidate = (obj) => {
-        if (!obj || typeof obj !== 'object') return obj;
-        return obj.sampleData ?? obj.data ?? obj.items ?? obj.results ?? obj.records ?? obj.rows ?? obj.value ?? obj;
-      };
-      let candidate = pickCandidate(tr);
-      let data = [];
-      if (Array.isArray(candidate)) data = candidate;
-      else if (candidate && typeof candidate === 'object') data = [candidate];
-      else if (tr && typeof tr === 'object') {
-        // Try second-level pick if the first attempt was primitive
-        const second = pickCandidate(Object.values(tr).find((v) => Array.isArray(v) || (v && typeof v === 'object')));
-        if (Array.isArray(second)) data = second;
-        else if (second && typeof second === 'object') data = [second];
-      }
-      const headers = data.length > 0 ? Object.keys(data[0]) : [];
-      const preview = { data, headers };
-      console.log('[SelectDataSource] Preview (from testConnection):', { rows: data.length, cols: headers.length });
-      setPreviewData(preview);
+      console.log('[SelectDataSource] Loading preview via viewData endpoint', { id: existingSource.id, type: existingSource.type });
+      const res = await dataSourceService.viewData(existingSource.id);
+      const data = Array.isArray(res?.data) ? res.data : [];
+      const headers = Array.isArray(res?.headers) ? res.headers : (data.length ? Object.keys(data[0]) : []);
+      setPreviewData({ data, headers });
+      console.log('[SelectDataSource] Preview (from viewData):', { rows: data.length, cols: headers.length });
     } catch (err) {
-      console.error('[SelectDataSource] Preview via testConnection failed:', err?.message || err);
+      console.error('[SelectDataSource] Preview via viewData failed:', err?.message || err);
       setPreviewData({ error: err?.message || String(err) });
     } finally {
       setPreviewLoading(false);

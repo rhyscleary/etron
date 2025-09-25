@@ -181,7 +181,9 @@ export const buildFtpConnectionData = (formData) => ({
   username: formData.username?.trim(),
   password: formData.password?.trim(),
   keyFile: formData.keyFile?.trim(),
-  directory: formData.directory?.trim() || '/'
+  // Keep legacy 'directory' for UI, but include 'filePath' as required by backend
+  directory: formData.directory?.trim() || '/',
+  filePath: (formData.filePath || formData.directory)?.trim() || '/'
 });
 
 export const buildMySqlConnectionData = (formData) => ({

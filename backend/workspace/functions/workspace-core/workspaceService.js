@@ -2,9 +2,9 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
+const appConfigRepo = require("@etron/shared/repositories/appConfigBucketRepository");
 const { getUserById, updateUser } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
-const { isOwner, isManager, getDefaultPermissions } = require("@etron/shared/utils/permissions");
 
 async function createWorkspace(authUserId, data) {
     if (!data.name) {
@@ -50,38 +50,47 @@ async function createWorkspace(authUserId, data) {
 
     // search modules and add defaults to workspace
 
+    // add dashboard board to the workspace
+
     // add owner and manager roles with permissions to workspace
     const ownerRoleId = uuidv4();
     const managerRoleId = uuidv4();
-    const defaultPerms = await getDefaultPermissions();
-    console.log(defaultPerms);
+    const employeeRoleId = uuidv4();
 
-    const ownerPerms = defaultPerms.map(perm => perm.key);
+    const starterRolePerms = await appConfigRepo.getStarterPermissions();
 
-    const excludedPerms = ["transfer_ownership", "delete_workspace"];
-
-    const managerPerms = defaultPerms.map(perm => perm.key).filter(key => !excludedPerms.includes(key));
-
+    // create role items
     const ownerRoleItem = {
         workspaceId: workspaceId,
         roleId: ownerRoleId,
         name: "Owner",
-        permissions: ownerPerms,
+        owner: true,
+        permissions: [],
         createdAt: date,
         updatedAt: date
     };
 
-    /*const managerRoleItem = {
+    const managerRoleItem = {
         workspaceId: workspaceId,
         roleId: managerRoleId,
         name: "Manager",
-        permissions: managerPerms,
+        permissions: starterRolePerms.manager,
         createdAt: date,
         updatedAt: date
-    };*/
+    };
+
+    const employeeRoleItem = {
+        workspaceId,
+        roleId: employeeRoleId,
+        name: "Employee",
+        permissions: starterRolePerms.employee,
+        createdAt: date,
+        updatedAt: date
+    }
 
     await workspaceRepo.addRole(ownerRoleItem);
-    //await workspaceRepo.addRole(managerRoleItem);
+    await workspaceRepo.addRole(managerRoleItem);
+    await workspaceRepo.addRole(employeeRoleItem);
 
     // add user as an owner of the workspace. Get cognito user by sub
     const userProfile = await getUserById(authUserId);
@@ -93,7 +102,6 @@ async function createWorkspace(authUserId, data) {
         email: userProfile.email,
         given_name: userProfile.given_name,
         family_name: userProfile.family_name,
-        type: "owner",
         roleId: ownerRoleId,
         joinedAt: date,
         updatedAt: date
@@ -112,26 +120,23 @@ async function createWorkspace(authUserId, data) {
     };
 }
 
-async function updateWorkspace(authUserId, workspaceId, data) { 
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
+async function updateWorkspace(authUserId, workspaceId, payload) {
+    
+    const { name, location, description } = payload;
 
     // validate data
     // if a name is specified check if it's valid
-    if (data.name != null && typeof data.name !== "string") {
+    if (name != null && typeof name !== "string") {
         throw new Error("Workspace description must be a 'string'");
     }
 
     // if a location is specified check if it's valid
-    if (data.location != null && typeof data.location !== "string") {
+    if (location != null && typeof location !== "string") {
         throw new Error("Workspace location must be a 'string'");
     }
 
     // if a description is specified check if it's valid
-    if (data.description != null && typeof data.description !== "string") {
+    if (description != null && typeof description !== "string") {
         throw new Error("Workspace description must be a 'string'");
     }
 
@@ -141,15 +146,10 @@ async function updateWorkspace(authUserId, workspaceId, data) {
         throw new Error("Workspace not found");
     }
 
-    return workspaceRepo.updateWorkspace(workspaceId, data);
+    return workspaceRepo.updateWorkspace(workspaceId, payload);
 }
 
 async function deleteWorkspace(authUserId, workspaceId) {
-    /*const isAuthorised = await isOwner(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }*/
 
     const workspace = await workspaceRepo.getWorkspaceById(workspaceId);
 
@@ -196,12 +196,12 @@ async function getWorkspaceByUserId(userId) {
     // get user data
     const user = await workspaceUsersRepo.getUserByUserId(userId);
 
-    if (!user?.[0]) {
+    if (!user) {
         throw new Error("No user found");
     }
 
     // get workspace data  
-    const workspace = await workspaceRepo.getWorkspaceById(user[0].workspaceId);
+    const workspace = await workspaceRepo.getWorkspaceById(user.workspaceId);
 
     if (!workspace) {
         throw new Error("Workspace not found");
@@ -218,26 +218,40 @@ async function getWorkspaceByUserId(userId) {
     }
 }
 
-async function transferWorkspaceOwnership(authUserId, workspaceId, userId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId);
+async function transferWorkspaceOwnership(authUserId, workspaceId, payload) {
 
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
+    const { receipientUserId, newRoleId } = payload;
+
+    if (!receipientUserId) {
+        throw new Error("Please specify the receipient UserId")
+    }
+
+    if (!newRoleId) {
+        throw new Error("Please specify the new roleId")
     }
 
     // check if the owner is trying to perform this action on themselves
-    if (authUserId === userId) {
+    if (authUserId === receipientUserId) {
         throw new Error("You cannot perform this action on yourself");
     }
 
     // check if the user exists in the workspace
-    if (! await workspaceUsersRepo.getUser(workspaceId, userId)) {
+    if (! await workspaceUsersRepo.getUser(workspaceId, receipientUserId)) {
         throw new Error("The user you are transferring ownership to does not exist");
     }
 
+    // fetch the new role
+    const newRole = await workspaceRepo.getRoleById(workspaceId, newRoleId);
+
+    if (!newRole) {
+        throw new Error(`Invalid roleId: ${newRoleId}`);
+    }
+
+    // fetch the owner role
+    const ownerRoleId = await workspaceRepo.getOwnerRoleId(workspaceId);
+
     const targetUserItem = {
-        type: "owner",
-        role: "Owner"
+        roleId: ownerRoleId
     };
 
     // update the user to owner
@@ -245,8 +259,7 @@ async function transferWorkspaceOwnership(authUserId, workspaceId, userId) {
 
     // remove ownership from the current user and make them manager
     const updatedUserItem = {
-        type: "manager",
-        role: "Manager"
+        role: newRole.roleId
     }
 
     const updatedUser = workspaceUsersRepo.updateUser(workspaceId, userId, updatedUserItem);
@@ -254,10 +267,10 @@ async function transferWorkspaceOwnership(authUserId, workspaceId, userId) {
     return updatedUser;
 }
 
-async function getDefaultWorkspacePermissions() {
-    return getDefaultPermissions();
+// returns the app permissions
+async function getWorkspacePermissions() {
+    return appConfigRepo.getAppPermissions();
 }
-
 
 module.exports = {
     createWorkspace,
@@ -266,5 +279,5 @@ module.exports = {
     getWorkspaceByWorkspaceId,
     getWorkspaceByUserId,
     transferWorkspaceOwnership,
-    getDefaultWorkspacePermissions
+    getWorkspacePermissions
 };

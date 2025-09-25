@@ -401,7 +401,7 @@ class DataSourceService {
       // TODO: fix this, so it is just api
       const normalizeType = (t) => {
         if (!t) return t;
-        const map = { 'custom-api': 'api', 'csv-file': 'csv' };
+        const map = { 'custom-api': 'api', 'csv-file': 'csv', 'custom-ftp': 'ftp' };
         return map[t] || t;
       };
 
@@ -431,8 +431,8 @@ class DataSourceService {
           return String(t);
         })();
 
-        // MySQL: include hostname and database fields; keep password in secrets only
-        if ((srcType || '').toLowerCase() === 'mysql' || clone.host || clone.hostname || clone.database || clone.databaseName) {
+  // MySQL: include hostname and database fields; keep password in secrets only
+  if ((srcType || '').toLowerCase() === 'mysql') {
           const hostname = clone.hostname || clone.host || clone.server;
           const port = clone.port != null ? String(clone.port) : '3306';
           const username = clone.username;
@@ -445,6 +445,23 @@ class DataSourceService {
           if (pw != null) secrets.password = String(pw);
 
           const configOut = sanitize({ hostname, port, username, database, databaseName: database });
+          return { configOut, secrets };
+        }
+
+        // FTP: include hostname, port, filePath in config; secrets include username/password (+ optional keyFile)
+        if ((srcType || '').toLowerCase() === 'ftp') {
+          const hostname = clone.hostname || clone.host;
+          const port = clone.port != null ? String(clone.port) : '21';
+          const filePath = clone.filePath || clone.directory || '/';
+          const configOut = sanitize({ hostname, port, filePath });
+
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          const pw = clone.secrets?.password ?? clone.password;
+          const keyFile = clone.secrets?.keyFile ?? clone.keyFile;
+          if (user != null) secrets.username = String(user);
+          if (pw != null) secrets.password = String(pw);
+          if (keyFile != null) secrets.keyFile = String(keyFile);
           return { configOut, secrets };
         }
 
@@ -509,7 +526,7 @@ class DataSourceService {
   if (!workspaceId) throw new Error('No workspace selected');
   // include workspaceId in body as fallback
   payload.workspaceId = workspaceId;
-  console.log('[DataSourceService] createDataSource POST', { endpointUrl, workspaceId, payloadSummary: { name: payload.name, sourceType: payload.sourceType, hasSecrets: !!payload.secrets, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database } });
+  console.log('[DataSourceService] createDataSource POST', { endpointUrl, workspaceId, payloadSummary: { name: payload.name, sourceType: payload.sourceType, hasSecrets: !!payload.secrets, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database, filePath: payload.config?.filePath } });
   try {
     const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
         // Normalize response in case server returns raw object vs { data }
@@ -631,10 +648,10 @@ class DataSourceService {
       };
       const normalizeType = (t) => {
         if (!t) return t;
-        const map = { 'custom-api': 'api', 'csv-file': 'csv' };
+        const map = { 'custom-api': 'api', 'csv-file': 'csv', 'custom-ftp': 'ftp' };
         return map[t] || t;
       };
-      const buildConfigAndSecrets = (cfg, srcType) => {
+  const buildConfigAndSecrets = (cfg, srcType) => {
         const clone = cfg ? { ...cfg } : {};
         const parseMaybeJSON = (val) => {
           if (val == null) return val;
@@ -653,8 +670,8 @@ class DataSourceService {
           if (lc === 'jwt' || lc === 'jwt bearer' || lc === 'jwt-bearer') return 'bearer';
           return String(t);
         })();
-        // MySQL specific mapping first
-        if ((srcType || '').toLowerCase() === 'mysql' || clone.host || clone.hostname || clone.database || clone.databaseName) {
+  // MySQL specific mapping first
+  if ((srcType || '').toLowerCase() === 'mysql') {
           const hostname = clone.hostname || clone.host || clone.server;
           const port = clone.port != null ? String(clone.port) : '3306';
           const username = clone.username;
@@ -665,6 +682,22 @@ class DataSourceService {
           const pw = clone.password ?? clone.secrets?.password;
           if (pw != null) secrets.password = String(pw);
           const configOut = { hostname, port, username, database, databaseName: database };
+          return { configOut, secrets };
+        }
+
+        // FTP mapping
+        if ((srcType || '').toLowerCase() === 'ftp') {
+          const hostname = clone.hostname || clone.host;
+          const port = clone.port != null ? String(clone.port) : '21';
+          const filePath = clone.filePath || clone.directory || '/';
+          const configOut = { hostname, port, filePath };
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          const pw = clone.secrets?.password ?? clone.password;
+          const keyFile = clone.secrets?.keyFile ?? clone.keyFile;
+          if (user != null) secrets.username = String(user);
+          if (pw != null) secrets.password = String(pw);
+          if (keyFile != null) secrets.keyFile = String(keyFile);
           return { configOut, secrets };
         }
         const endpoint = clone.endpoint ?? clone.url ?? '';
@@ -717,7 +750,7 @@ class DataSourceService {
       if (!workspaceId) throw new Error('No workspace selected');
       const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.testConnection);
       console.log(payload);
-  console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.sourceType, hasConfig: !!payload.config, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database } });
+  console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.sourceType, hasConfig: !!payload.config, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database, filePath: payload.config?.filePath } });
       const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
       const testResult = response?.data ?? response;
       console.log('[DataSourceService] testConnection success', { status: response?.status });

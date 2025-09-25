@@ -2,6 +2,7 @@
 const workspaceUsersRepo = require("../repositories/workspaceUsersRepository");
 const workspaceRepo = require("../repositories/workspaceRepository");
 const { GetObjectCommand, NoSuchKey, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
+const { getAppPermissions } = require("../repositories/appConfigBucketRepository");
 const s3Client = new S3Client({});
 
 async function isManager(userId, workspaceId) {
@@ -32,34 +33,53 @@ async function isOwner(userId, workspaceId) {
     return user?.type === "owner";
 }
 
-// get permissions from s3
+// get the default permissions. Permissions with defaultStatus: true
 async function getDefaultPermissions() {
-    const bucketName = process.env.PERMISSIONS_BUCKET;
-    const key = "default-permissions.json";
-    try {
-        const response = await s3Client.send(
-            new GetObjectCommand({
-                Bucket: bucketName,
-                Key: key,
-            }),
-        );
+    const config = await getAppPermissions();
 
-        const jsonString = await response.Body.transformToString();
-        const parsed = JSON.parse(jsonString);
+    if (!config) {
+        return [];
+    }
 
-        return parsed.permissions || [];
-    } catch (error) {
-        if (error instanceof S3ServiceException) {
-            console.error(`Error from S3 while fetching the permissions from ${bucketName}`);
-            throw new Error(`Error from S3 while fetching the permissions from ${bucketName}`);
-        } else {
-            throw error;
+    const result = [];
+
+    // get keys from the categories
+    function getKeysFromCategories(categories, prefix) {
+        if (!categories) return;
+
+        for (const [categoryName, category] of Object.entries(categories)) {
+            if (category.permissions) {
+                for (const perm of category.permissions) {
+                    if (perm.defaultStatus) {
+                        result.push(`${prefix}.${perm.key}`);
+                    }
+                }
+            }
+
+            // recursive if nested category
+            if (category.categories) {
+                getKeysFromCategories(category.categories, `${prefix}.${categoryName}`);
+            }
         }
     }
+
+    // get app permission keys
+    if (config.app?.categories) {
+        getKeysFromCategories(config.app.categories, "app");
+    }
+
+    // handle the modules
+    if (config.modules) {
+        for (const [moduleName, module] of Object.entries(config.modules)) {
+            getKeysFromCategories(module.categories, `modules.${moduleName}`);
+        }
+    }
+
+    return result;
 }
 
 // check if the user has permissions
-async function hasAuthority(userId, workspaceId, permissionKey) {
+async function hasPermission(userId, workspaceId, permissionKey) {
     if (!userId || typeof userId !== "string") {
         throw new Error("Invalid or missing userId");
     }
@@ -78,16 +98,13 @@ async function hasAuthority(userId, workspaceId, permissionKey) {
         }
     }
 
-    // check default permissions in s3
-    const defaultPermissions = await getDefaultPermissions();
-    const permission = defaultPermissions.find(perm => perm.key === permissionKey);
-
-    return permission?.enabled;
+    // user does not have permission
+    return false;
 }
 
 module.exports = {
     isManager,
     isOwner,
-    hasAuthority,
-    getDefaultPermissions
+    getDefaultPermissions,
+    hasPermission
 };

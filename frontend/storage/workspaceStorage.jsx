@@ -86,7 +86,7 @@ export async function saveWorkspaceInfo(workspace) {
                     console.log('[workspaceStorage] saveWorkspaceInfo (legacy)', { hasWorkspace: !!workspace, workspaceId: extractWorkspaceId(normalized) });
                 }
     } catch (error) {
-        console.log("Error saving workspace information: ", error);
+        console.error("Error saving workspace information: ", error);
     }
 }
 
@@ -133,7 +133,7 @@ export async function getWorkspaceInfo() {
                 console.log('[workspaceStorage] getWorkspaceInfo (legacy)', { exists: !!parsed, workspaceId: id });
                 return parsed;
     } catch (error) {
-        console.log("Error occured retrieving workspace information: ", error);
+        console.error("Error retrieving workspace information: ", error);
         return null;
     }
 }
@@ -151,7 +151,7 @@ export async function removeWorkspaceInfo() {
                     console.log('[workspaceStorage] removeWorkspaceInfo (legacy)');
                 }
     } catch (error) {
-        console.log("Error occured removing workspace information: ", error);
+        console.error("Error removing workspace information: ", error);
     }
 }
 

@@ -28,7 +28,7 @@ const Users = () => {
             const result = await apiGet(endpoints.workspace.users.getUsers(id));
             setUsers(result);
         } catch (error) {
-            console.log("Failed to fetch users:", error);
+            console.error("Failed to fetch users:", error);
         } finally {
             setLoading(false);
         }
@@ -121,7 +121,7 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => router.navigate(`/collaboration/edit-user/${item.userId || item.id}`)}
+                        onPress={() => router.navigate(`/collaboration/view-user/${item.userId || item.id}`)}
                     >
                         <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>

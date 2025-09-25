@@ -44,6 +44,7 @@ const UpdateDataSourceScreen = () => {
     return () => { mounted = false; };
   }, [sourceId, getDataSource]);
 
+  // TODO: fix this, so it is just api - less confusion
   const isApiType = useMemo(() => (source?.type === 'custom-api' || source?.type === 'api'), [source]);
 
   const createdLabel = useMemo(() => {

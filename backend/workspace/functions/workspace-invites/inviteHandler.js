@@ -9,6 +9,7 @@ exports.handler = async (event) => {
     try {
         const requestJSON = event.body ? JSON.parse(event.body) : {};
         const pathParams = event.pathParameters || {};
+        const queryParams = event.queryStringParameters || {};
         const authUserId = event.requestContext.authorizer.claims.sub;
 
         if (!authUserId) {
@@ -33,17 +34,15 @@ exports.handler = async (event) => {
                 break;
             }
 
-            // CANCEL ALL WORKSPACE INVITES FOR A USER
-            case "DELETE /workspace/invites/{email}": {
-                if (!pathParams.email) {
-                    throw new Error("Missing required path parameters");
-                }
+            // CANCEL ALL WORKSPACE INVITES FOR A USER VIA EMAIL
+            case "DELETE /workspace/invites": {
+                const email = queryParams.email;
 
-                if (typeof pathParams.email !== "string") {
-                    throw new Error("email must be a valid 'string'");
-                }
+                if (!email || typeof email !== "string") {
+                    throw new Error("Missing required query parameter email");
+                }                
 
-                body = await cancelUsersInvites(pathParams.email);
+                body = await cancelUsersInvites(email);
                 break;
             }
 

@@ -22,7 +22,6 @@ import { useApp } from "../../../../../../contexts/AppContext";
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
 
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
-import { list } from "aws-amplify/storage";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet } from "../../../../../../utils/api/apiClient";
 

@@ -1,19 +1,38 @@
 // Author(s): Matthew Parkinson, Holly Wyatt, Rhys Cleary
 
-import { Redirect, useRouter, router, Link, useLocalSearchParams } from "expo-router";
-import { PaperProvider, Text } from 'react-native-paper';
-import React, { useEffect, useState } from "react";
-import { TextInput, View, Modal, Linking } from 'react-native';
+import { useRouter, Link, useLocalSearchParams } from "expo-router";
+import { Text } from 'react-native-paper';
+import { useEffect, useState } from "react";
+import { View, Linking, Modal, TextInput } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import GoogleButton from '../components/common/buttons/GoogleButton';
 import MicrosoftButton from '../components/common/buttons/MicrosoftButton';
 import Divider from "../components/layout/Divider";
-import Header from "../components/layout/Header";
 import { commonStyles } from "../assets/styles/stylesheets/common";
+import ResponsiveScreen from "../components/layout/ResponsiveScreen";
 import accountService from '../services/AccountService';
+import { Amplify } from 'aws-amplify';
 import { useApp } from "../contexts/AppContext";
+import { 
+    signIn, 
+    signUp, 
+    confirmSignUp, 
+    signInWithRedirect, 
+    getCurrentUser, 
+    signOut,
+    updateUserAttributes,
+    fetchUserAttributes,
+    resendSignUpCode
+} from 'aws-amplify/auth';
+
+import { apiGet } from "../utils/api/apiClient";
+import endpoints from "../utils/api/endpoints";
+import { saveWorkspaceInfo } from "../storage/workspaceStorage";
+import VerificationDialog from "../components/overlays/VerificationDialog";
+
+//Amplify.configure(awsmobile);
 
 function LoginSignup() {
     const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
@@ -126,7 +145,12 @@ function LoginSignup() {
         
         if (result.success) {
             setShowVerificationModal(true);
-        }
+        } 
+        // TODO: fix merge file mismatch (login-signup, datamanagement, ... red page ?):
+        /*catch (error) {
+            console.error('Error signing up:', error);
+            setMessage(`Error: ${error.message}`);
+        }*/
     };
 
     const handleGoogleSignIn = async () => {
@@ -237,18 +261,18 @@ function LoginSignup() {
                             disabled={!signedOutForLinking && isLinking}
                         />
 
-                        {!isSignUpBool && (
-                            <View style={{ marginTop: 10 }}>
-                                <Link href="/reset-password">
-                                    <Text style={{
-                                        textDecorationLine: 'underline'
-                                    }}>
-                                        Forgot Your Password?
-                                    </Text>
-                                </Link>
-                            </View>
-                        )}
-                    </View>
+                    {!isSignUpBool && (
+                        <View style={{ marginTop: 10 }}>
+                            <Link href="/reset-password">
+                                <Text style={{
+                                    textDecorationLine: 'underline'
+                                }}>
+                                    Forgot Your Password?
+                                </Text>
+                            </Link>
+                        </View>
+                    )}
+                </View>
 
                     {isSignUpBool && (
                         <TextField
@@ -270,9 +294,9 @@ function LoginSignup() {
                     />
                 </View>
 
-                <Text style={{ fontSize: 20, textAlign: 'center' }}>
-                    OR
-                </Text>
+            <Text style={{ fontSize: 20, textAlign: 'center' }}>
+                OR
+            </Text>
 
                 <View style={{ gap: 20, marginTop: -10 }}>
                     <GoogleButton
@@ -292,7 +316,7 @@ function LoginSignup() {
                     />
                 </View>
 
-                <Divider />
+            <Divider />
 
                 <BasicButton
                     label={isSignUpBool ? 'Already have an account? Log In'
@@ -304,15 +328,15 @@ function LoginSignup() {
                     disabled={!signedOutForLinking && isLinking}
                 />
 
-                {message && (
-                    <Text style={{ 
-                        marginTop: 30, 
-                        color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                        textAlign: 'center'
-                    }}>
-                        {message}
-                    </Text>
-                )}
+            {message && (
+                <Text style={{ 
+                    marginTop: 30, 
+                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
+                    textAlign: 'center'
+                }}>
+                    {message}
+                </Text>
+            )}
 
                 <Modal
                     visible={showVerificationModal}

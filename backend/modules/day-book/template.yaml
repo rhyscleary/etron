@@ -47,6 +47,8 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: DataSources
         - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
             TableName: Workspaces
         - DynamoDBCrudPolicy:
             TableName: WorkspaceUsers
@@ -150,6 +152,13 @@ Resources:
             Method: get
             RestApiId: !Ref eTRONApi
 
+        ViewDataForMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/view-data-for-metric/{metricId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
         RemoveDataSource:
           Type: Api 
           Properties:
@@ -173,6 +182,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Metrics
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
         - DynamoDBCrudPolicy:
             TableName: Workspaces
         - DynamoDBCrudPolicy:
@@ -374,6 +385,67 @@ Resources:
             Method: delete
             RestApiId: !Ref eTRONApi
 
+  ReportExportsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./reports/functions/reports-exports
+      Handler: exportHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        AddExport:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        GetExport:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports/{exportId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetExports:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetExportDownloadUrl:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports/{exportId}/download
+            Method: get
+            RestApiId: !Ref eTRONApi
 
   DataSourcePollFunction:
     Type: AWS::Serverless::Function

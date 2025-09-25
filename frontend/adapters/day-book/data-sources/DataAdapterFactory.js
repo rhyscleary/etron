@@ -69,6 +69,7 @@ import { createCustomApiAdapter } from "./apiAdapter";
 import { createCustomFtpAdapter } from "./ftpAdapter";
 import { createMySqlAdapter } from "./mySqlAdapter";
 
+// TODO: figure out whats going on with this
 const adapterMap = {
   "google-sheets": createGoogleSheetsAdapter,
   "microsoft-excel": createExcelAdapter,
@@ -93,6 +94,7 @@ export function getSupportedTypes() {
   return Object.keys(adapterMap);
 }
 
+// TODO: fix categories
 const typeToCategory = {
   // Spreadsheets / cloud storage
   "google-sheets": "cloud-storage",

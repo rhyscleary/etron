@@ -96,7 +96,7 @@ const WorkspaceManagement = () => {
                 await signOut();
 
             } catch (error) {
-                console.log("Error deleting workspace: ", error);
+                console.error("Error deleting workspace: ", error);
             }
         }
 
@@ -132,7 +132,7 @@ const WorkspaceManagement = () => {
                 console.log("Ownership transferred:", result);
                 setTransferDialogVisible(false);
             } catch (error) {
-                console.log("Error transfering ownership: ", error);
+                console.error("Error transfering ownership: ", error);
             }
         }
         
