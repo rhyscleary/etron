@@ -35,6 +35,7 @@ const CreateMetric = () => {
                     endpoints.modules.day_book.data_sources.getDataSources,
                     { workspaceId }
                 )
+                console.log(dataSourcesFromApi);
                 setDataSourceMappings(dataSourcesFromApi.map(
                     dataSource => ({
                         id: dataSource.dataSourceId,
