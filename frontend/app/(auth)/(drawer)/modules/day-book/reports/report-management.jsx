@@ -15,6 +15,7 @@ import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import { createNewReport } from "../../../../../../utils/reportUploader";
+import { useTheme } from "react-native-paper";
 
 
 
@@ -24,6 +25,8 @@ const ReportManagement = () => {
     const [nameDialogVisible, setNameDialogVisible] = useState(false);
     const [reportName, setReportName] = useState("");
     const [workspaceId, setWorkspaceId] = useState(null);
+    const theme = useTheme();
+
 
     useEffect(() => {
     const fetchWorkspace = async () => {
@@ -85,7 +88,7 @@ const handleReportCreation = async () => {
                 onPress={() => router.navigate("/profile")}
             />
 
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
+            <ScrollView style={{backgroundColor: theme.colors.background}} contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {settingOptionButtons.map((item) => (
                         <DescriptiveButton

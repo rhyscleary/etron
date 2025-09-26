@@ -13,6 +13,7 @@ import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
+import { useTheme } from "react-native-paper";
 
 const EditReport = () => {
   const { draftId } = useLocalSearchParams();
@@ -25,6 +26,7 @@ const EditReport = () => {
 
   const webViewRef = useRef(null);
   const initSentRef = useRef(false);
+  const theme = useTheme();
 
   useEffect(() => {
     const fetchWorkspaceId = async () => {
@@ -243,7 +245,7 @@ const EditReport = () => {
   };
 
   return (
-    <View style={commonStyles.screen}>
+  <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
       <Header
         title={reportId ? "Edit Report" : "New Report"}
         showBack={!isEditing}

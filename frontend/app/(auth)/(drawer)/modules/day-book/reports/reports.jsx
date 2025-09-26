@@ -9,11 +9,13 @@ import { useEffect, useState, useCallback } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
+import { useTheme } from "react-native-paper";
 
 const Reports = () => {
   const [workspaceId, setWorkspaceId] = useState(null);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const theme = useTheme();
 
   // Fetch workspace ID
   useEffect(() => {
@@ -69,7 +71,7 @@ const Reports = () => {
   };
 
   return (
-    <View style={commonStyles.screen}>
+  <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
       <Header title="Reports" showBack />
 
       {/* Temporary test button */}
