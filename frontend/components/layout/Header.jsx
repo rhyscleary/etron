@@ -18,9 +18,11 @@ const Header = ({
     showMenu,
     showEdit,
     showCheck,
+    showCheckLeft,
     showPlus,
     showEllipsis,
     onRightIconPress,
+    onLeftIconPress,
     onEllipsisPress,
     customBackAction,
     onBackPress

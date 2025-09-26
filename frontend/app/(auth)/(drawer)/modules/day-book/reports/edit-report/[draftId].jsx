@@ -24,7 +24,6 @@ const EditReport = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   const webViewRef = useRef(null);
-  // track whether we've sent initial content to the webview to avoid repeated sends
   const initSentRef = useRef(false);
 
   useEffect(() => {
@@ -39,7 +38,6 @@ const EditReport = () => {
     fetchWorkspaceId();
   }, []);
 
-  // If draftId is not "new", fetch existing draft metadata and file
   useEffect(() => {
     const fetchDraft = async () => {
       if (!draftId || !workspaceId) return;
@@ -68,20 +66,6 @@ const EditReport = () => {
     fetchDraft();
   }, [draftId, workspaceId]);
 
-  /*
-    Important note about the editor and the typing bug:
-    - Previously we injected `editorContent` into the editor HTML string directly.
-    - That caused the WebView's source to change on every keystroke (because state updated),
-      which reinitialized Pell and kicked focus out of the editor.
-    - Fix: keep the Pell HTML static (don't embed editorContent into the source).
-      Send the current HTML into the WebView via postMessage only once when entering edit mode
-      (or when the webview finishes loading). The webview receives the message and sets the editor content.
-    - While editing the editor will post messages to React Native on every change; we update editorContent
-      in state, but since we are not re-rendering the WebView source with that value, Pell stays mounted
-      and focus is preserved while typing.
-  */
-
-  // Edit mode HTML: static template (no editorContent embedded)
   const pellHtml = useMemo(() => {
     return `
     <!DOCTYPE html>
@@ -102,15 +86,12 @@ const EditReport = () => {
         <script src="https://unpkg.com/pell"></script>
         <script>
           (function () {
-            // initialize Pell editor once
             const editor = window.pell.init({
               element: document.getElementById('editor'),
               onChange: html => {
-                // send html back to React Native
                 try {
                   window.ReactNativeWebView.postMessage(html);
                 } catch (e) {
-                  // fallback for older RN WebView bridges
                   window.postMessage(JSON.stringify({ type: 'edit', html }), '*');
                 }
               },
@@ -118,10 +99,8 @@ const EditReport = () => {
               styleWithCSS: true
             });
 
-            // function to set content (used when React Native sends initial HTML)
             function setContent(html) {
               editor.content.innerHTML = html || '';
-              // move caret to end (so user can continue typing)
               try {
                 const range = document.createRange();
                 range.selectNodeContents(editor.content);
@@ -129,28 +108,20 @@ const EditReport = () => {
                 const sel = window.getSelection();
                 sel.removeAllRanges();
                 sel.addRange(range);
-              } catch (err) {
-                // ignore if selection APIs aren't available
-              }
+              } catch (err) {}
             }
 
-            // receive messages from React Native
             function receiveMessage(event) {
               let data = event && event.data;
               try {
                 if (typeof data === 'string') {
-                  // some bridges send raw stringified JSON
                   data = JSON.parse(data);
                 }
-              } catch (e) {
-                // if parsing fails, treat data as plain string content
-              }
-
+              } catch (e) {}
               if (!data) return;
 
               if (data.type === 'init' || data.type === 'load') {
                 setContent(data.html || data.content || '');
-                // notify RN we've loaded the content
                 try {
                   window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'loaded' }));
                 } catch (e) {
@@ -159,20 +130,16 @@ const EditReport = () => {
               }
             }
 
-            // multiple event listeners for compatibility
             document.addEventListener('message', receiveMessage, false);
             window.addEventListener('message', receiveMessage, false);
-
-            // expose setContent for debugging if needed
             window.__setEditorContent = setContent;
           })();
         </script>
       </body>
     </html>
     `;
-  }, []); // static, do not rebuild on editorContent changes
+  }, []);
 
-  // Read only HTML (we do embed editorContent here because read-only mode does not reinitialize Pell)
   const readOnlyHtml = useMemo(() => {
     return `
     <!DOCTYPE html>
@@ -190,14 +157,12 @@ const EditReport = () => {
     `;
   }, [editorContent]);
 
-  // Helper to send the current HTML into the WebView editor only when needed
   const sendInitToWebView = (html) => {
     if (!webViewRef.current) return;
     try {
       webViewRef.current.postMessage(JSON.stringify({ type: 'init', html: html || '' }));
       initSentRef.current = true;
     } catch (err) {
-      // sometimes postMessage may throw if the webview isn't ready; try again shortly
       setTimeout(() => {
         try {
           webViewRef.current?.postMessage(JSON.stringify({ type: 'init', html: html || '' }));
@@ -209,22 +174,16 @@ const EditReport = () => {
     }
   };
 
-  // When we enter edit mode, send the latest editorContent into the webview
   useEffect(() => {
     if (!isEditing) {
-      // reset initSentRef so next time we enter edit mode it will send again
       initSentRef.current = false;
       return;
     }
-
-    // If already sent for this content, skip; otherwise send.
     if (!initSentRef.current) {
-      // give the webview a moment to mount
       setTimeout(() => sendInitToWebView(editorContent), 120);
     }
   }, [isEditing, editorContent]);
 
-  // onLoadEnd handler to ensure the webview gets the initial content when it finishes loading
   const handleWebViewLoadEnd = () => {
     if (isEditing && !initSentRef.current) {
       sendInitToWebView(editorContent);
@@ -278,8 +237,7 @@ const EditReport = () => {
 
     if (success) {
       Alert.alert("Success", "Report updated successfully");
-      setIsEditing(false); // exits edit mode after saving
-      // reset initSentRef so next time entering edit mode we will re-send content
+      setIsEditing(false);
       initSentRef.current = false;
     }
   };
@@ -288,9 +246,9 @@ const EditReport = () => {
     <View style={commonStyles.screen}>
       <Header
         title={reportId ? "Edit Report" : "New Report"}
-        showBack
+        showBack={!isEditing}
         showCheck={isEditing}
-        showEllipsis
+        showEllipsis={!isEditing}   // hide ellipsis when editing
         onRightIconPress={isEditing ? handleSaveReport : undefined}
       />
 
@@ -305,16 +263,9 @@ const EditReport = () => {
             <Text style={styles.editButtonText}>Edit</Text>
           </TouchableOpacity>
         )}
-
-        {isEditing && (
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
-            <Text style={styles.saveButtonText}>{reportId ? "Update" : "Save"} Report</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <WebView
-        // key toggles so WebView reloads when switching modes (ensures correct HTML template)
         key={isEditing ? "editor" : "viewer"}
         ref={webViewRef}
         originWhitelist={['*']}
@@ -323,21 +274,15 @@ const EditReport = () => {
         javaScriptEnabled
         domStorageEnabled
         onMessage={(event) => {
-          // Pell sends plain HTML string on change. Only update state (do NOT re-inject into WebView).
           if (!isEditing) return;
           try {
-            // If message is JSON (e.g. our 'loaded' message), handle accordingly
             const data = event.nativeEvent.data;
-            // detect our loaded message optionally
             try {
               const maybeJson = JSON.parse(data);
               if (maybeJson && maybeJson.type === 'loaded') {
-                // ignore or use as a hook if needed
                 return;
               }
-            } catch (e) {
-              // not JSON - that's likely the HTML content
-            }
+            } catch (e) {}
             setEditorContent(event.nativeEvent.data);
           } catch (err) {
             console.warn("Failed to process onMessage from WebView:", err);
@@ -386,13 +331,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   editButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
-  saveButton: {
-    backgroundColor: "#34C759",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-  },
-  saveButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
   webview: { flex: 1 },
   input: {
     borderWidth: 1, borderColor: "#ccc", padding: 8, marginTop: 10, borderRadius: 5,
