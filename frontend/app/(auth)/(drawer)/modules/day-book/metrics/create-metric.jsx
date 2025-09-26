@@ -169,6 +169,7 @@ const CreateMetric = () => {
 
         let workspaceId = await getWorkspaceId();
         let metricDetails = {
+            workspaceId,
             name: metricName,
             dataSourceId: dataSourceId,
             config: {
@@ -182,8 +183,7 @@ const CreateMetric = () => {
         }
         let result = await apiPost(
             endpoints.modules.day_book.metrics.add,
-            metricDetails,
-            { workspaceId }
+            metricDetails
         );
         console.log("Uploaded metric details via API result:", result);
     }

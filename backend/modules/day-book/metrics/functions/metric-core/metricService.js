@@ -2,10 +2,14 @@
 
 const metricRepo = require("@etron/day-book-shared/repositories/metricRepository");
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
+const { getUploadUrl, getDownloadUrl } = require("@etron/metrics-shared/repositories/metricsBucketRepository");
 const { isOwner, isManager, hasPermission } = require("@etron/shared/utils/permissions");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
 
-async function createMetricInWorkspace(authUserId, workspaceId, payload) {
+async function createMetricInWorkspace(authUserId, payload) {
+    const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
 
     const { name, dataSourceId, config } = payload;
 
@@ -24,15 +28,28 @@ async function createMetricInWorkspace(authUserId, workspaceId, payload) {
         updatedAt: date
     };
 
+    const thumbnailKey = `workspaces/${workspaceId}/day-book/metrics/${metricId}/thumbnail.jpeg`;
+
+    metricItem.thumbnailKey = thumbnailKey;
+
+    const thumbnailUrl = await getUploadUrl(thumbnailKey, {
+        ContentType: "image/jpeg"
+    });
+
     await metricRepo.addMetric(metricItem);
 
     // add metricId to the associated data source
     await dataSourceRepo.addMetricToDataSource(workspaceId, dataSourceId, metricId);
 
-    return metricItem;
+    return {
+        ...metricItem,
+        thumbnailUrl
+    };
 }
 
-async function updateMetricInWorkspace(authUserId, workspaceId, metricId, payload) {
+async function updateMetricInWorkspace(authUserId, metricId, payload) {
+    const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
 
     const metric = await metricRepo.getMetricById(workspaceId, metricId);
 
@@ -49,10 +66,23 @@ async function updateMetricInWorkspace(authUserId, workspaceId, metricId, payloa
         config: config
     };
 
-    return metricRepo.updateMetric(workspaceId, metricId, metricItem);
+    const thumbnailUploadUrl = await getUploadUrl(metric.thumbnailKey, {
+        ContentType: "image/jpeg"
+    });
+
+    const updatedMetric = metricRepo.updateMetric(workspaceId, metricId, metricItem);
+
+    const thumbnailUrl = await getDownloadUrl(metric.thumbnailKey);
+
+    return {
+        ...updatedMetric,
+        thumbnailUrl,
+        thumbnailUploadUrl
+    }
 }
 
 async function getMetricInWorkspace(authUserId, workspaceId, metricId) {
+    await validateWorkspaceId(workspaceId);
 
     const metric = await metricRepo.getMetricById(workspaceId, metricId);
 
@@ -64,12 +94,14 @@ async function getMetricInWorkspace(authUserId, workspaceId, metricId) {
 }
 
 async function getMetricsInWorkspace(authUserId, workspaceId) {
+    await validateWorkspaceId(workspaceId);
 
     // get metrics by workspace id
     return metricRepo.getMetricsByWorkspaceId(workspaceId);
 }
 
 async function deleteMetricInWorkspace(authUserId, workspaceId, metricId) {
+    await validateWorkspaceId(workspaceId);
 
     // get metric
     const metric = await metricRepo.getMetricById(workspaceId, metricId);
