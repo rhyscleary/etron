@@ -17,6 +17,7 @@ import endpoints from '../../../../../../utils/api/endpoints';
 import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
 
 import ColorPicker from 'react-native-wheel-color-picker';
+import ResponsiveScreen from '../../../../../../components/layout/ResponsiveScreen';
 
 
 const CreateMetric = () => {
@@ -470,8 +471,12 @@ const CreateMetric = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Header title="New Metric" showBack customBackAction={handleBack}/>
+		<ResponsiveScreen
+			header={<Header title="New Metric" showBack customBackAction={handleBack} />}
+			center={false}
+			padded
+            scroll={true}
+		>
 
             <View style={styles.content}>
                 {renderFormStep()}
@@ -484,7 +489,7 @@ const CreateMetric = () => {
                     />
                 </View>
             </View>    
-        </View>
+        </ResponsiveScreen>
     )
 }
 
