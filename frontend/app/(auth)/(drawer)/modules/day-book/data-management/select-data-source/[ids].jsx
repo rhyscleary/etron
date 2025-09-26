@@ -90,11 +90,17 @@ const SelectDataSource = () => {
 
   const handleViewData = async () => {
     if (!existingSource) return;
+    const effectiveId = existingSource?.id || existingSource?.dataSourceId || existingSource?._id;
+    if (!effectiveId) {
+      console.error('[SelectDataSource] No valid id found on existingSource');
+      setPreviewData({ error: 'Missing data source id' });
+      return;
+    }
     setPreviewLoading(true);
     setPreviewData(null);
     try {
-      console.log('[SelectDataSource] Loading preview via viewData endpoint', { id: existingSource.id, type: existingSource.type });
-      const res = await dataSourceService.viewData(existingSource.id);
+      console.log('[SelectDataSource] Loading preview via viewData endpoint', { id: effectiveId, type: existingSource.type });
+      const res = await dataSourceService.viewData(effectiveId);
       const data = Array.isArray(res?.data) ? res.data : [];
       const headers = Array.isArray(res?.headers) ? res.headers : (data.length ? Object.keys(data[0]) : []);
       setPreviewData({ data, headers });

@@ -236,7 +236,11 @@ class DataSourceService {
       if (!entity || typeof entity !== 'object') {
         console.warn('[DataSourceService] getDataSource unexpected payload shape', { hasRaw: !!raw });
       }
-      return entity;
+         // Normalize to ensure consumers can reliably read `id` and `type`
+         const normalized = { ...entity };
+         if (!normalized.id) normalized.id = normalized.dataSourceId || normalized._id || sourceId;
+         if (!normalized.type) normalized.type = normalized.sourceType || normalized.type;
+         return normalized;
     } catch (error) {
       throw new Error("Unable to load data source");
     }
@@ -916,6 +920,10 @@ class DataSourceService {
   async viewData(sourceId, params = {}) {
     const startedAt = Date.now();
     try {
+      console.log("!!!!!!LOGGING SOURCEID: ", sourceId);
+        if (!sourceId) {
+          throw new Error('Missing sourceId for viewData request');
+        }
       const workspaceId = await getSavedWorkspaceId();
       if (!workspaceId) throw new Error('No workspace selected');
       const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.viewData, sourceId);
