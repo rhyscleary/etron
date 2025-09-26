@@ -28,7 +28,7 @@ const Users = () => {
             const result = await apiGet(endpoints.workspace.users.getUsers(id));
             setUsers(result);
         } catch (error) {
-            console.log("Failed to fetch users:", error);
+            console.error("Failed to fetch users:", error);
         } finally {
             setLoading(false);
         }

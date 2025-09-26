@@ -12,10 +12,10 @@ import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import TextField from "../../../../../components/common/input/TextField";
 import BasicButton from "../../../../../components/common/buttons/BasicButton";
-import { uploadProfilePhotoFromDevice } from "../../../../../utils/profilePhoto";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { updateUserAttribute } from "aws-amplify/auth";
 import { getUserType } from "../../../../../storage/userStorage";
+import { saveProfilePhoto } from "../../../../../utils/profilePhoto";
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -39,15 +39,11 @@ const EditUser = () => {
 	useEffect(() => {
 		const initialise = async () => {
 			const userType = await getUserType();
-			console.log("userType:", userType);
 			const workspaceIdTemp = await getWorkspaceId();
 			setWorkspaceId(workspaceIdTemp);
 
 			try {
-				console.log("workspaceId:", workspaceIdTemp);
-				console.log("userId:", userId);
 				const user = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
-				console.log("user:", user);
 				setUserType(user.type || "employee");
 				setFirstName(user.given_name);
 				setLastName(user.family_name);
@@ -58,9 +54,7 @@ const EditUser = () => {
 			}
 			
 			try {
-				console.log("workspaceId:", workspaceIdTemp);
 				const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
-				console.log("fetchedRoles:", fetchedRoles);
 				setRoles(fetchedRoles || []);
 			} catch (error) {
 				console.error("Error fetching roles:", error);
@@ -96,7 +90,7 @@ const EditUser = () => {
 					return { needsConfirmation: false };
 			}
 		} catch (error) {
-			console.log("Error updating user attribute:", error);
+			console.error("Error updating user attribute:", error);
 			const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
 			setMessage(`Error updating ${fieldName}: ${error.message}`);
 			return { needsConfirmation: false, error: true };
@@ -114,14 +108,14 @@ const EditUser = () => {
 			};
 
 			if (!profilePicture) {
-				const removed = await uploadProfilePhotoToS3();
+				const removed = await saveProfilePhoto();
 				if (removed) {
 					await handleUpdateUserAttribute('picture', "");
 				}
 			}
 
 		} catch (error) {
-			console.log("Error updating Cognito attributes:", error);
+			console.error("Error updating Cognito attributes:", error);
 		}
 	}	
 
@@ -148,7 +142,7 @@ const EditUser = () => {
 			console.log("User updated:", result);
 			router.back();
 		} catch (error) {
-			console.log("Update error:", error);
+			console.error("Update error:", error);
 		}
 	};
 

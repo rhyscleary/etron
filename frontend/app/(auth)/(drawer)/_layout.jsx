@@ -1,4 +1,4 @@
-/*import React from "react";
+import React from "react";
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { Slot } from "expo-router";
 import { Divider, Text, useTheme } from "react-native-paper";
@@ -38,10 +38,8 @@ export default function DrawerLayout() {
                 }
             }}
         >
-        
 
             <Drawer.Screen name="profile" />
-
 
             <Drawer.Screen 
                 name="collaboration/collaboration"
@@ -65,11 +63,8 @@ export default function DrawerLayout() {
                     drawerLabel: "Settings",
 
                 }} 
-            />    
-
+            />
 
         </Drawer>
-        
-        
     );
-}*/
+}

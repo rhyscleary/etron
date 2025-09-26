@@ -2,7 +2,7 @@
 
 import { Dialog, Portal, Text, useTheme } from "react-native-paper";
 import BasicButton from "../common/buttons/BasicButton";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View, Button } from "react-native";
 import TextField from "../common/input/TextField";
 
 
@@ -48,14 +48,16 @@ const VerificationDialog = ({
                 </Dialog.Content>
 
                 <Dialog.Actions style={styles.actions}>
-                    <BasicButton 
-                        label="Do this later" 
-                        onPress={onLater}
-                    />
-                    <BasicButton 
-                        label="Confirm" 
-                        onPress={onConfirm}
-                    />
+                    <View style={{gap: 10, flexDirection: "row", justifyContent: "space-between"}}>
+                        <BasicButton 
+                            label="Do this later" 
+                            onPress={onLater}
+                        />
+                        <BasicButton 
+                            label="Confirm" 
+                            onPress={onConfirm}
+                        />
+                    </View>
                 </Dialog.Actions>
 
                 <View style={styles.resendContainer}>
@@ -71,11 +73,13 @@ const VerificationDialog = ({
                         >
                             {resendCooldown > 0
                                 ? `Resend code in ${resendCooldown}s`
-                                : "Resend code"
+                                : <BasicButton label="Resend code"/>
                             }
                         </Text>
+                        
                     </TouchableOpacity>
                 </View>
+                
                 
             </Dialog>
         </Portal>

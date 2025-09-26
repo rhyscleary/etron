@@ -2,7 +2,7 @@
 
 const metricRepo = require("@etron/day-book-shared/repositories/metricRepository");
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const { isOwner, isManager, hasPermission } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
 
 async function createMetricInWorkspace(authUserId, workspaceId, payload) {
@@ -33,11 +33,6 @@ async function createMetricInWorkspace(authUserId, workspaceId, payload) {
 }
 
 async function updateMetricInWorkspace(authUserId, workspaceId, metricId, payload) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const metric = await metricRepo.getMetricById(workspaceId, metricId);
 
@@ -58,11 +53,6 @@ async function updateMetricInWorkspace(authUserId, workspaceId, metricId, payloa
 }
 
 async function getMetricInWorkspace(authUserId, workspaceId, metricId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     const metric = await metricRepo.getMetricById(workspaceId, metricId);
 
@@ -74,11 +64,6 @@ async function getMetricInWorkspace(authUserId, workspaceId, metricId) {
 }
 
 async function getMetricsInWorkspace(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     // get metrics by workspace id
     return metricRepo.getMetricsByWorkspaceId(workspaceId);

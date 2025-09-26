@@ -137,7 +137,7 @@ export const generateApiNameFromUrl = (formData) => {
     const name = urlObj.hostname.replace('www.', '').replace(/\./g, ' ');
     return name.charAt(0).toUpperCase() + name.slice(1) + ' API';
   } catch (error) {
-    console.log("Invalid url, cannot generate name: ", error);
+    console.error("Invalid url, cannot generate name:", error);
     return "";
   }
 };
