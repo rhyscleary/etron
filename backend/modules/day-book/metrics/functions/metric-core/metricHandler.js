@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { createMetricInWorkspace, updateMetricInWorkspace, getMetricInWorkspace, getMetricsInWorkspace, deleteMetricInWorkspace } = require("../services/metricService");
+const { createMetricInWorkspace, updateMetricInWorkspace, getMetricInWorkspace, getMetricsInWorkspace, deleteMetricInWorkspace } = require("./metricService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -16,23 +16,25 @@ exports.handler = async (event) => {
             throw new Error("User not authenticated");
         }
 
-        const workspaceId = queryParams.workspaceId;
-
-        if (!workspaceId || typeof workspaceId !== "string") {
-            throw new Error("Missing required query parameters");
-        }
-
         const routeKey = `${event.httpMethod} ${event.resource}`;
+
 
         switch (routeKey) {
             // ADD METRIC
             case "POST /day-book/metrics": {
-                body = await createMetricInWorkspace(authUserId, workspaceId, requestJSON);
+                if (!requestJSON.workspaceId) {
+                    throw new Error("Please specify a workspaceId");
+                }
+                body = await createMetricInWorkspace(authUserId, requestJSON);
                 break;
             }
 
             // UPDATE METRIC
-            case "PUT /day-book/metrics/{metricId}": {
+            case "PATCH /day-book/metrics/{metricId}": {
+                if (!requestJSON.workspaceId) {
+                    throw new Error("Please specify a workspaceId");
+                }
+
                 if (!pathParams.metricId) {
                     throw new Error("Missing required path parameters");
                 }
@@ -41,18 +43,24 @@ exports.handler = async (event) => {
                     throw new Error("metricId must be a UUID, 'string'");
                 }
 
-                body = await updateMetricInWorkspace(authUserId, workspaceId, pathParams.metricId, requestJSON);
+                body = await updateMetricInWorkspace(authUserId, pathParams.metricId, requestJSON);
                 break;
             }
 
             // GET METRIC
             case "GET /day-book/metrics/{metricId}": {
+                const workspaceId = queryParams.workspaceId;
+
                 if (!pathParams.metricId) {
                     throw new Error("Missing required path parameters");
                 }
 
                 if (typeof pathParams.metricId !== "string") {
                     throw new Error("metricId must be a UUID, 'string'");
+                }
+
+                if (!workspaceId || typeof workspaceId !== "string") {
+                    throw new Error("Missing required query parameters");
                 }
 
                 body = await getMetricInWorkspace(authUserId, workspaceId, pathParams.metricId);
@@ -61,18 +69,30 @@ exports.handler = async (event) => {
 
             // GET ALL METRICS
             case "GET /day-book/metrics": {
+                const workspaceId = queryParams.workspaceId;
+
+                if (!workspaceId || typeof workspaceId !== "string") {
+                    throw new Error("Missing required query parameters");
+                }
+
                 body = await getMetricsInWorkspace(authUserId, workspaceId);
                 break;
             }
 
             // REMOVE METRIC
             case "DELETE /day-book/metrics/{metricId}": {
+                const workspaceId = queryParams.workspaceId;
+
                 if (!pathParams.metricId) {
                     throw new Error("Missing required path parameters");
                 }
 
                 if (typeof pathParams.metricId !== "string") {
                     throw new Error("metricId must be a UUID, 'string'");
+                }
+
+                if (!workspaceId || typeof workspaceId !== "string") {
+                    throw new Error("Missing required query parameters");
                 }
                 
                 body = await deleteMetricInWorkspace(authUserId, workspaceId, pathParams.metricId);

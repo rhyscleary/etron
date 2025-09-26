@@ -14,7 +14,8 @@ TARGET_FOLDERS = [
     "workspace/functions/workspace-roles",
     "workspace/functions/workspace-users",
     "modules/day-book/data-sources",
-    "modules/day-book/metrics",
+    "modules/day-book/metrics/functions/metric-core",
+    "modules/day-book/metrics/functions/metric-updater",
     "modules/day-book/reports/functions/reports-drafts",
     "modules/day-book/reports/functions/reports-exports",
     "modules/day-book/reports/functions/reports-templates",
@@ -27,6 +28,7 @@ SHARED_FOLDERS = [
     "shared",
     "modules/day-book/reports/reports-shared",
     "modules/day-book/data-sources/data-sources-shared",
+    "modules/day-book/metrics/metrics-shared",
     "modules/day-book/day-book-shared"
 ]
 
