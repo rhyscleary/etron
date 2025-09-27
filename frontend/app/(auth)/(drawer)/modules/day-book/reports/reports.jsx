@@ -1,20 +1,26 @@
 // Author(s): Matthew Page
 
-import { View, FlatList, Pressable, Text as RNText, Button } from "react-native";
+import { View, FlatList, Pressable, Text as RNText, Button, StyleSheet } from "react-native";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
-import { Text } from "react-native-paper";
+import { Portal, Dialog, Text } from "react-native-paper";
 import { router } from "expo-router";
 import { useEffect, useState, useCallback } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { useTheme } from "react-native-paper";
+import TextField from "../../../../../../components/common/input/TextField";
+import DecisionDialog from "../../../../../../components/overlays/DecisionDialog";
+import { createNewReport } from "../../../../../../utils/reportUploader";
 
 const Reports = () => {
   const [workspaceId, setWorkspaceId] = useState(null);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dialogVisible, setDialogVisible] = useState(false);
+  const [nameDialogVisible, setNameDialogVisible] = useState(false);
+  const [reportName, setReportName] = useState("");
   const theme = useTheme();
 
   // Fetch workspace ID
@@ -30,6 +36,7 @@ const Reports = () => {
     fetchWorkspaceId();
   }, []);
 
+  // Added fetchReports just like before
   const fetchReports = useCallback(async () => {
     if (!workspaceId) return;
     try {
@@ -45,39 +52,38 @@ const Reports = () => {
     }
   }, [workspaceId]);
 
-  // Run fetch on mount + whenever workspaceId changes
+  // Run fetchReports on mount + whenever workspaceId changes
   useEffect(() => {
     fetchReports();
   }, [fetchReports]);
 
-  // Create test report
-  const createTestReport = async () => {
-    if (!workspaceId) return;
-    try {
-      const newReport = await apiPost(
-        endpoints.modules.day_book.reports.drafts.createDraft,
-        {
-          workspaceId,
-          name: "My Report 122",
-        }
-      );
-      console.log("Created report:", newReport);
+  // Report creation logic (moved from report-management)
+  const handleReportCreation = async () => {
+    if (!reportName.trim()) return;
 
-      // Refreshes list immediately after creation
-      await fetchReports();
-    } catch (error) {
-      console.error("Error creating report:", error);
+    try {
+      const newDraftId = await createNewReport({
+        workspaceId,
+        reportName,
+      });
+
+      if (newDraftId) {
+        setNameDialogVisible(false);
+
+        // Refresh reports list immediately after creation
+        await fetchReports();
+
+        // Navigate straight to edit-report page for the created draft
+        router.push(`/modules/day-book/reports/edit-report/${newDraftId}`);
+      }
+    } catch (err) {
+      console.error("Error creating report:", err);
     }
   };
 
   return (
-  <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
-      <Header title="Reports" showBack />
-
-      {/* Temporary test button */}
-      <View style={{ margin: 12 }}>
-        <Button title="Create Test Report" onPress={createTestReport} />
-      </View>
+    <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
+      <Header title="Reports" showBack showPlus onRightIconPress={() => setDialogVisible(true)} />
 
       <FlatList
         data={reports}
@@ -124,8 +130,56 @@ const Reports = () => {
           )
         }
       />
+
+      {/* New/Existing Choice Dialog */}
+      <DecisionDialog
+        visible={dialogVisible}
+        title="Would you like to use a template?"
+        message="Create a new report or use an existing template."
+        showGoBack={true}
+        leftActionLabel="New"
+        handleLeftAction={() => {
+          setDialogVisible(false);
+          setNameDialogVisible(true);
+        }}
+        rightActionLabel="Existing"
+        handleRightAction={() => {
+          setDialogVisible(false);
+          router.navigate("/modules/day-book/reports/templates");
+        }}
+        handleGoBack={() => {
+          setDialogVisible(false);
+        }}
+      />
+
+      {/* Report Name Dialog */}
+      <Portal>
+        <Dialog visible={nameDialogVisible} onDismiss={() => setNameDialogVisible(false)}>
+          <Dialog.Title>Name Your Report</Dialog.Title>
+          <Dialog.Content>
+            <TextField
+              label="Report Name"
+              value={reportName}
+              onChangeText={setReportName}
+              placeholder="Enter report name"
+            />
+          </Dialog.Content>
+          <Dialog.Actions style={styles.centerActionsRow}>
+            <Button title="Cancel" onPress={() => setNameDialogVisible(false)} />
+            <Button title="Confirm" onPress={handleReportCreation} />
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  centerActionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    marginTop: 10,
+  },
+});
 
 export default Reports;
