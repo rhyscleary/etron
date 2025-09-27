@@ -177,8 +177,8 @@ Resources:
   MetricFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./metrics
-      Handler: handlers/metricHandler.handler
+      CodeUri: ./metrics/functions/metric-core
+      Handler: metricHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Metrics
@@ -221,7 +221,7 @@ Resources:
           Type: Api 
           Properties:
             Path: /day-book/metrics/{metricId}
-            Method: put
+            Method: patch
             RestApiId: !Ref eTRONApi
 
         GetMetricById:

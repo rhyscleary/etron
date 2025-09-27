@@ -42,7 +42,7 @@ export default function ResponsiveScreen({
     )
 
     return (
-        <SafeAreaView style={[styles.safe]} edges={["top", "left", "right"]}>
+        <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
             {header ? (
                 <View style={styles.header}>
                     {header}
@@ -54,7 +54,7 @@ export default function ResponsiveScreen({
             </View>
 
             {footer ? (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
                     {footer}
                 </View>
             ) :  null }
@@ -70,5 +70,5 @@ const styles = StyleSheet.create({
     centerGrow: {justifyContent: "center" },
     header: { width: "100%" },
     body: { flex: 1 },
-    footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8 },
+    footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8},
 });
