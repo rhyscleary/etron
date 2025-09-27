@@ -15,7 +15,7 @@ const TemplateView = () => {
     // Fetch single template
     const fetchTemplate = async () => {
         try {
-            const response = await fetch(endpoints.templates.getTemplate(templateId));
+            const response = await apiGet(endpoints.modules.day_book.reports.templates.getTemplate(templateId));
             if (!response.ok) {
                 throw new Error("Failed to fetch template");
             }

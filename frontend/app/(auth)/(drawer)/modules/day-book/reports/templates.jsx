@@ -93,7 +93,8 @@ const Templates = () => {
     renderItem={({ item }) => (
         <Pressable
         onPress={() =>
-            router.push(`/modules/day-book/reports/templates/${item.templateId}`)
+            router.push(`/modules/day-book/reports/edit-template/${item.templateId}`)
+
         }
         style={{
             borderWidth: 1,
