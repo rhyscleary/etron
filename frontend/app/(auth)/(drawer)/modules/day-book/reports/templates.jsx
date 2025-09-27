@@ -1,14 +1,14 @@
 // Author(s): Matthew Page
 
-import { useEffect, useState } from "react";
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Button, Alert } from "react-native";
+import { useEffect, useState, useCallback } from "react";
+import { View, FlatList, Pressable, Text as RNText, Button, StyleSheet, Alert } from "react-native";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import SearchBar from "../../../../../../components/common/input/SearchBar";
-import endpoints from "../../../../../../utils/api/endpoints";
 import { router } from "expo-router";
-import { useTheme } from "react-native-paper";
+import { useTheme, Text } from "react-native-paper";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
+import endpoints from "../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 
 const Templates = () => {
@@ -30,14 +30,14 @@ const Templates = () => {
     fetchWorkspaceId();
   }, []);
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     if (!workspaceId) return;
 
     setLoading(true);
     try {
       const data = await apiGet(
         endpoints.modules.day_book.reports.templates.getTemplates,
-        { workspaceId } // query params
+        { workspaceId }
       );
       setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
@@ -45,48 +45,37 @@ const Templates = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [workspaceId]);
 
   useEffect(() => {
-    if (workspaceId) {
-      fetchTemplates();
-    }
-  }, [workspaceId]);
+    fetchTemplates();
+  }, [fetchTemplates]);
 
   const handleCreateTestTemplate = async () => {
     if (!workspaceId) return;
 
-    const payload = {
-      workspaceId,
-      name: "Test Template " + Date.now(),
-    };
-
+    const payload = { workspaceId, name: "Test Template " + Date.now() };
     try {
-      await apiPost(
-        endpoints.modules.day_book.reports.templates.createTemplate,
-        payload
-      );
-
+      await apiPost(endpoints.modules.day_book.reports.templates.createTemplate, payload);
       Alert.alert("Success", "Template created successfully!");
-      fetchTemplates(); // refresh list
+      fetchTemplates();
     } catch (error) {
       Alert.alert("Error", "Could not create template.");
     }
   };
 
   const handleSearch = (query) => {
-    // Implement search functionality if needed
+    // optional search implementation
   };
 
   const handleFilterChange = (filter) => {
-    // Implement filter functionality if needed
+    // optional filter implementation
   };
 
   return (
     <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
       <Header title="Templates" showBack />
 
-      {/* Button to create a new template */}
       <View style={{ padding: 16 }}>
         <Button title="Create Test Template" onPress={handleCreateTestTemplate} />
       </View>
@@ -97,27 +86,43 @@ const Templates = () => {
         onFilterChange={handleFilterChange}
       />
 
-      {loading ? (
-        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
-      ) : (
-        <FlatList
-          data={templates}
-          keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={{ padding: 16, borderBottomWidth: 1, borderBottomColor: "#ccc" }}
-              onPress={() => router.push(`/templates/${item.id}`)}
-            >
-              <Text style={{ fontSize: 16, fontWeight: "bold" }}>{item.name}</Text>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            <Text style={{ textAlign: "center", marginTop: 20, color: "#999" }}>
+      <FlatList
+        data={templates}
+        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+        contentContainerStyle={{ paddingVertical: 16 }}
+        renderItem={({ item }) => (
+          <Pressable
+            onPress={() => router.push(`/templates/${item.id}`)}
+            style={{
+              borderWidth: 1,
+              borderColor: "#ccc",
+              borderRadius: 4,
+              padding: 16,
+              marginVertical: 2,
+              marginHorizontal: 12,
+            }}
+          >
+            <Text>{item.name}</Text>
+            <RNText style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+              Created: {item.createdAt ? new Date(item.createdAt).toLocaleString() : "N/A"}
+            </RNText>
+            <RNText style={{ fontSize: 12, color: "#666" }}>
+              Last Edited: {item.lastEdited ? new Date(item.lastEdited).toLocaleString() : "N/A"}
+            </RNText>
+          </Pressable>
+        )}
+        ListEmptyComponent={
+          loading ? (
+            <RNText style={{ textAlign: "center", marginTop: 16, color: "#999" }}>
+              Loading Templates...
+            </RNText>
+          ) : (
+            <RNText style={{ textAlign: "center", marginTop: 16, color: "#999" }}>
               No templates found
-            </Text>
-          }
-        />
-      )}
+            </RNText>
+          )
+        }
+      />
     </View>
   );
 };
