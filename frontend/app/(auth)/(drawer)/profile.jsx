@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import StackLayout from "../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 import { useTheme } from "react-native-paper";
-import BasicBottomSheet from "../../../components/bottom-sheet";
+import CustomBottomSheet from "../../../components/BottomSheet/bottom-sheet";
 
 const Profile = () => {
     const theme = useTheme();
@@ -41,7 +41,7 @@ const Profile = () => {
                 </StackLayout>
             </ScrollView>
             {showSheet && (
-                <BasicBottomSheet
+                <CustomBottomSheet
                     title="Quick actions"
                     headerActionLabel="Close"
                     onHeaderActionPress={() => setShowSheet(false)}
