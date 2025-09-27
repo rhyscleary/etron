@@ -86,43 +86,46 @@ const Templates = () => {
         onFilterChange={handleFilterChange}
       />
 
-      <FlatList
-        data={templates}
-        keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-        contentContainerStyle={{ paddingVertical: 16 }}
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push(`/templates/${item.id}`)}
-            style={{
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 4,
-              padding: 16,
-              marginVertical: 2,
-              marginHorizontal: 12,
-            }}
-          >
-            <Text>{item.name}</Text>
-            <RNText style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
-              Created: {item.createdAt ? new Date(item.createdAt).toLocaleString() : "N/A"}
-            </RNText>
-            <RNText style={{ fontSize: 12, color: "#666" }}>
-              Last Edited: {item.lastEdited ? new Date(item.lastEdited).toLocaleString() : "N/A"}
-            </RNText>
-          </Pressable>
-        )}
-        ListEmptyComponent={
-          loading ? (
-            <RNText style={{ textAlign: "center", marginTop: 16, color: "#999" }}>
-              Loading Templates...
-            </RNText>
-          ) : (
-            <RNText style={{ textAlign: "center", marginTop: 16, color: "#999" }}>
-              No templates found
-            </RNText>
-          )
+    <FlatList
+    data={templates}
+    keyExtractor={(item) => item.templateId?.toString() || Math.random().toString()}
+    contentContainerStyle={{ paddingVertical: 16 }}
+    renderItem={({ item }) => (
+        <Pressable
+        onPress={() =>
+            router.push(`/modules/day-book/reports/templates/${item.templateId}`)
         }
-      />
+        style={{
+            borderWidth: 1,
+            borderColor: "#ccc",
+            borderRadius: 4,
+            padding: 16,
+            marginVertical: 2,
+            marginHorizontal: 12,
+        }}
+        >
+        <Text>{item.name}</Text>
+        <RNText style={{ fontSize: 12, color: "#666", marginTop: 4 }}>
+            Created: {item.createdAt ? new Date(item.createdAt).toLocaleString() : "N/A"}
+        </RNText>
+        <RNText style={{ fontSize: 12, color: "#666" }}>
+            Last Edited: {item.lastEdited ? new Date(item.lastEdited).toLocaleString() : "N/A"}
+        </RNText>
+        </Pressable>
+    )}
+    ListEmptyComponent={
+        loading ? (
+        <RNText style={{ textAlign: "center", marginTop: 16, color: "#999" }}>
+            Loading Templates...
+        </RNText>
+        ) : (
+        <RNText style={{ textAlign: "center", marginTop: 16, color: "#999" }}>
+            No templates found
+        </RNText>
+        )
+    }
+    />
+
     </View>
   );
 };
