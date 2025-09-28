@@ -5,6 +5,14 @@ const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRep
 const appConfigRepo = require("@etron/shared/repositories/appConfigBucketRepository");
 const { getUserById, updateUser } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    UPDATE: "app.workspace.update_workspace",
+    DELETE: "",
+    TRANSFER: ""
+};
 
 async function createWorkspace(authUserId, data) {
     if (!data.name) {
@@ -120,7 +128,12 @@ async function createWorkspace(authUserId, data) {
     };
 }
 
-async function updateWorkspace(authUserId, workspaceId, payload) {
+async function updateWorkspace(authUserId, workspaceId, payload) {;
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.UPDATE);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
     
     const { name, location, description } = payload;
 
@@ -150,6 +163,11 @@ async function updateWorkspace(authUserId, workspaceId, payload) {
 }
 
 async function deleteWorkspace(authUserId, workspaceId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.DELETE);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const workspace = await workspaceRepo.getWorkspaceById(workspaceId);
 
@@ -219,6 +237,11 @@ async function getWorkspaceByUserId(userId) {
 }
 
 async function transferWorkspaceOwnership(authUserId, workspaceId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.TRANSFER);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const { receipientUserId, newRoleId } = payload;
 
