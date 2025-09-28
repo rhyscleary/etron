@@ -42,9 +42,8 @@ const Profile = () => {
             </ScrollView>
             {showSheet && (
                 <CustomBottomSheet
-                    title="Quick actions"
-                    headerActionLabel="Close"
-                    onHeaderActionPress={() => setShowSheet(false)}
+                    title="Quick Actions"
+                    headerActionLabel="Edit"
                     onChange={(index) => {
                         if (index === -1) setShowSheet(false);
                     }}

@@ -5,15 +5,20 @@ import Animated, {
   interpolate,
   Extrapolate,
 } from "react-native-reanimated";
+import { useTheme } from 'react-native-paper';
 
 const Background = ({ style, animatedIndex }) => {
+  const theme = useTheme();
+  // Fallback color in case theme is undefined or missing background
+  const endColor = theme?.colors?.background || '#383838';
+
   const colorAnimatedStyle = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(
       animatedIndex.value,
       [0, 1],
-      ["#a8b5eb", "#000000ff"]
+      ["#4c5063", endColor]
     ),
-  }));
+  }), [endColor]);
   
   const radiusAnimatedStyle = useAnimatedStyle(() => {
     const r = interpolate(animatedIndex.value, [1, 2], [20, 0], Extrapolate.CLAMP);

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
+import { useTheme } from "react-native-paper";
 import Animated, {
   Extrapolate,
   interpolate,
@@ -22,8 +23,16 @@ export const transformOrigin = ({ x, y }, ...transformations) => {
 
 const ANGLE_30 = Math.PI / 6;
 
-const Handle = ({ style, animatedIndex, haptics = true }) => {
+/**
+ * Handle
+ * Supports toggling background between transparent (default) and the theme button background color.
+ * Props:
+ *  - useSolidBackground?: boolean (default false) when true uses theme.colors.buttonBackground
+ *  - style, animatedIndex, haptics: existing props
+ */
+const Handle = ({ style, animatedIndex, haptics = true, useSolidBackground = false }) => {
   const hasFiredRef = useRef(false);
+  const theme = useTheme();
 
   // TODO: test different haptics (light, medium, heavy, rigid, etc.), create haptics utility if being used in app more.
   const fireHaptic = useCallback(() => {
@@ -36,7 +45,14 @@ const Handle = ({ style, animatedIndex, haptics = true }) => {
     interpolate(animatedIndex.value, [0, 1, 2], [-1, 0, 1], Extrapolate.CLAMP)
   );
 
-  const containerStyle = useMemo(() => [styles.header, style], [style]);
+  const containerStyle = useMemo(
+    () => [
+      styles.header,
+      { backgroundColor: useSolidBackground ? (theme?.colors?.buttonBackground || '#444') : 'transparent' },
+      style,
+    ],
+    [style, theme?.colors?.buttonBackground, useSolidBackground]
+  );
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
     const borderTopRadius = interpolate(
@@ -123,8 +139,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#999",
   },
   indicator: {
     position: "absolute",

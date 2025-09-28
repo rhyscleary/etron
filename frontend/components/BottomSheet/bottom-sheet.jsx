@@ -23,9 +23,16 @@ const CustomBottomSheet = ({
   headerComponent,
   headerActionLabel,
   onHeaderActionPress,
+  showClose = true,
+  onClose,
+  headerChildren,
+  // handle appearance
+  handleSolidBackground = false,
   // item interactions
   onItemPress,
   itemTitleExtractor,
+  // empty state
+  emptyComponent,
   ...props
 }) => {
   const theme = useTheme();
@@ -55,10 +62,10 @@ const CustomBottomSheet = ({
     (handleProps) => (
       <Handle
         {...handleProps}
-        style={[{ backgroundColor: theme.colors.buttonBackground }]}
+        useSolidBackground={handleSolidBackground}
       />
     ),
-    [theme.colors.buttonBackground]
+    [theme.colors.buttonBackground, handleSolidBackground]
   );
 
   const renderBackdrop = useCallback(
@@ -87,6 +94,12 @@ const CustomBottomSheet = ({
     []
   );
 
+  const handleClose = useCallback(() => {
+    if (typeof onClose === 'function') return onClose();
+    // default behaviour: close the sheet
+    bottomSheetRef.current?.close?.();
+  }, [onClose]);
+
   return (
       <BottomSheet
         ref={bottomSheetRef}
@@ -95,7 +108,7 @@ const CustomBottomSheet = ({
         snapPoints={effectiveSnapPoints}
         enablePanDownToClose
         enableDynamicSizing
-        bottomInset={insets?.bottom ?? 0}
+        // Removed bottomInset to prevent backdrop from bleeding through bottom gap.
         handleComponent={renderHandle}
         backdropComponent={renderBackdrop}
         footerComponent={renderFooter}
@@ -106,16 +119,21 @@ const CustomBottomSheet = ({
         <Contents
           data={data}
           renderItem={renderItem}
-            keyExtractor={keyExtractor}
-            getItem={getItem}
-            getItemCount={getItemCount}
-            headerComponent={headerComponent}
-            title={title}
-            headerActionLabel={headerActionLabel}
-            onHeaderActionPress={onHeaderActionPress}
-            onItemPress={onItemPress}
-            itemTitleExtractor={itemTitleExtractor}
-            theme={theme}
+          keyExtractor={keyExtractor}
+          getItem={getItem}
+          getItemCount={getItemCount}
+          headerComponent={headerComponent}
+          title={title}
+          headerActionLabel={headerActionLabel}
+          onHeaderActionPress={onHeaderActionPress}
+          showClose={showClose}
+          onClose={handleClose}
+          headerChildren={headerChildren}
+          onItemPress={onItemPress}
+          itemTitleExtractor={itemTitleExtractor}
+          theme={theme}
+          emptyComponent={emptyComponent}
+          extraBottomPadding={(insets?.bottom ?? 0) + 8}
         />
       </BottomSheet>
   );

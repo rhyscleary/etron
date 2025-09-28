@@ -2,6 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme, List, Button } from 'react-native-paper';
 import { BottomSheetVirtualizedList } from '@gorhom/bottom-sheet';
+import SheetHeader from './header';
 
 const Contents = ({
   data,
@@ -13,9 +14,16 @@ const Contents = ({
   title,
   headerActionLabel,
   onHeaderActionPress,
+  // new header customization
+  showClose = true,
+  onClose,
+  headerChildren,
   onItemPress,
   itemTitleExtractor,
   theme,
+  // empty state
+  emptyComponent,
+  extraBottomPadding = 0,
 }) => {
   const effectiveKeyExtractor = useCallback(
     keyExtractor || ((item, index) => (item?.id?.toString?.() ?? String(index))),
@@ -32,24 +40,19 @@ const Contents = ({
 
   const Header = useMemo(() => {
     if (headerComponent) return headerComponent;
-    if (!title && !headerActionLabel) return undefined;
+    if (!title && !headerActionLabel && !showClose && !headerChildren) return undefined;
     return () => (
-      <View style={styles.headerRow}>
-        {title ? (
-          <List.Subheader style={styles.headerTitle}>
-            {typeof title === 'string' ? title : title}
-          </List.Subheader>
-        ) : (
-          <View />
-        )}
-        {headerActionLabel && typeof onHeaderActionPress === 'function' ? (
-          <Button mode="text" compact onPress={onHeaderActionPress}>
-            {headerActionLabel}
-          </Button>
-        ) : null}
-      </View>
+      <SheetHeader
+        title={title}
+        actionLabel={headerActionLabel}
+        onActionPress={onHeaderActionPress}
+        showClose={showClose}
+        onClose={onClose}
+      >
+        {headerChildren}
+      </SheetHeader>
     );
-  }, [headerComponent, title, headerActionLabel, onHeaderActionPress]);
+  }, [headerComponent, title, headerActionLabel, onHeaderActionPress, showClose, onClose, headerChildren]);
 
   const defaultRenderItem = useCallback(
     ({ item, index }) => {
@@ -83,28 +86,24 @@ const Contents = ({
       getItemCount={effectiveGetItemCount}
       getItem={effectiveGetItem}
       ListHeaderComponent={Header}
+      ListEmptyComponent={emptyComponent}
       renderItem={renderItem || defaultRenderItem}
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={styles.contentContainer}
+      contentContainerStyle={[
+        styles.contentContainer,
+        // base + safe-area padding only
+        { paddingBottom: (styles.contentContainer.paddingVertical || 0) + extraBottomPadding },
+      ]}
     />
   );
 };
 
 const styles = StyleSheet.create({
   contentContainer: {
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: 12,
   },
-  headerRow: {
-    paddingHorizontal: 12,
-    paddingBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitle: {
-    paddingHorizontal: 0,
-  },
+  // header styles moved into SheetHeader component
   listCard: {
     borderRadius: 8,
     overflow: 'hidden',
