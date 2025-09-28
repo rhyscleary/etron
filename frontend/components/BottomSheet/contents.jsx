@@ -14,7 +14,7 @@ const Contents = ({
   title,
   headerActionLabel,
   onHeaderActionPress,
-  // new header customization
+  // header customisation
   showClose = true,
   onClose,
   headerChildren,
@@ -24,6 +24,7 @@ const Contents = ({
   // empty state
   emptyComponent,
   extraBottomPadding = 0,
+  closeIcon,
 }) => {
   const effectiveKeyExtractor = useCallback(
     keyExtractor || ((item, index) => (item?.id?.toString?.() ?? String(index))),
@@ -48,11 +49,12 @@ const Contents = ({
         onActionPress={onHeaderActionPress}
         showClose={showClose}
         onClose={onClose}
+        closeIcon={closeIcon}
       >
         {headerChildren}
       </SheetHeader>
     );
-  }, [headerComponent, title, headerActionLabel, onHeaderActionPress, showClose, onClose, headerChildren]);
+  }, [headerComponent, title, headerActionLabel, onHeaderActionPress, showClose, onClose, headerChildren, closeIcon]);
 
   const defaultRenderItem = useCallback(
     ({ item, index }) => {
@@ -91,7 +93,7 @@ const Contents = ({
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[
         styles.contentContainer,
-        // base + safe-area padding only
+        // base + extra bottom padding
         { paddingBottom: (styles.contentContainer.paddingVertical || 0) + extraBottomPadding },
       ]}
     />
@@ -100,10 +102,9 @@ const Contents = ({
 
 const styles = StyleSheet.create({
   contentContainer: {
-    paddingVertical: 10,
+    paddingVertical: 2,
     paddingHorizontal: 12,
   },
-  // header styles moved into SheetHeader component
   listCard: {
     borderRadius: 8,
     overflow: 'hidden',

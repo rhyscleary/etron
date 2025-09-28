@@ -74,6 +74,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tintOverlay: {
-    backgroundColor: "rgba(168,181,235,0.35)", // previous #a8b5eb with alpha
+    backgroundColor: "rgba(168,181,235,0.35)", 
   },
 });

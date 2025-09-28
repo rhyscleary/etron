@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.25,
     shadowRadius: 8.0,
-    elevation: 8,
+    elevation: 2,
   },
   chevronContainer: {
     width: 26,

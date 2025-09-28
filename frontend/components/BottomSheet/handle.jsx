@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useCallback } from "react";
-import { StyleSheet, View } from "react-native";
-import { useTheme } from "react-native-paper";
+import { StyleSheet } from "react-native";
+import { useTheme, IconButton } from "react-native-paper";
 import Animated, {
   Extrapolate,
   interpolate,
@@ -23,14 +23,17 @@ export const transformOrigin = ({ x, y }, ...transformations) => {
 
 const ANGLE_30 = Math.PI / 6;
 
-/**
- * Handle
- * Supports toggling background between transparent (default) and the theme button background color.
- * Props:
- *  - useSolidBackground?: boolean (default false) when true uses theme.colors.buttonBackground
- *  - style, animatedIndex, haptics: existing props
- */
-const Handle = ({ style, animatedIndex, haptics = true, useSolidBackground = false }) => {
+const Handle = ({
+  style,
+  animatedIndex,
+  haptics = true,
+  useSolidBackground = false,
+  variant = 'standard', // 'standard' | 'compact'
+  title,
+  showClose = true,
+  closeIcon = 'close',
+  onClose,
+}) => {
   const hasFiredRef = useRef(false);
   const theme = useTheme();
 
@@ -117,6 +120,34 @@ const Handle = ({ style, animatedIndex, haptics = true, useSolidBackground = fal
     hasFiredRef.current = false;
   };
 
+  const handlePressClose = useCallback(() => {
+    if (typeof onClose === 'function') onClose();
+  }, [onClose]);
+
+  if (variant === 'compact') {
+    return (
+      <Animated.View
+        style={[containerStyle, containerAnimatedStyle, styles.compactContainer]}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
+        {title ? (
+          <Animated.Text style={styles.compactTitle} numberOfLines={1}>{title}</Animated.Text>
+        ) : null}
+        {true ? (
+          <IconButton
+            icon={closeIcon}
+            size={18}
+            onPress={handlePressClose}
+            accessibilityLabel={'Close'}
+            style={styles.compactCloseBtn}
+            rippleColor={theme.colors?.backdrop}
+          />
+        ) : null}
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View
       style={[containerStyle, containerAnimatedStyle]}
@@ -139,6 +170,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
     paddingVertical: 14,
+  },
+  compactContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+  },
+  compactTitle: {
+    flex: 1,
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  compactCloseBtn: {
+    margin: 0,
   },
   indicator: {
     position: "absolute",

@@ -26,6 +26,9 @@ const CustomBottomSheet = ({
   showClose = true,
   onClose,
   headerChildren,
+  // variants
+  variant = 'standard', // 'standard' | 'compact'
+  closeIcon = 'close',
   // handle appearance
   handleSolidBackground = false,
   // item interactions
@@ -58,14 +61,22 @@ const CustomBottomSheet = ({
   }, [onChange]);
 
   // handle component integration
+  const lastIndex = (effectiveSnapPoints?.length || 1) - 1; // used for footer sizing
+
   const renderHandle = useCallback(
     (handleProps) => (
       <Handle
         {...handleProps}
+        variant={variant}
+        title={variant === 'compact' ? title : undefined}
+  showClose={variant === 'compact' ? true : showClose}
+        closeIcon={closeIcon}
+        lastIndex={lastIndex}
+        onClose={handleClose}
         useSolidBackground={handleSolidBackground}
       />
     ),
-    [theme.colors.buttonBackground, handleSolidBackground]
+    [variant, title, showClose, closeIcon, lastIndex, handleClose, handleSolidBackground]
   );
 
   const renderBackdrop = useCallback(
@@ -96,46 +107,53 @@ const CustomBottomSheet = ({
 
   const handleClose = useCallback(() => {
     if (typeof onClose === 'function') return onClose();
-    // default behaviour: close the sheet
+    // default behaviour: close sheet
     bottomSheetRef.current?.close?.();
   }, [onClose]);
 
+  // In compact variant title is rendered in handle
+  const includeHeader = variant === 'standard';
+
+  const headerCloseHandler = useCallback(() => {
+    handleClose();
+  }, [handleClose]);
+
   return (
-      <BottomSheet
-        ref={bottomSheetRef}
-        onChange={handleSheetChanges}
-        index={effectiveInitialIndex}
-        snapPoints={effectiveSnapPoints}
-        enablePanDownToClose
-        enableDynamicSizing
-        // Removed bottomInset to prevent backdrop from bleeding through bottom gap.
-        handleComponent={renderHandle}
-        backdropComponent={renderBackdrop}
-        footerComponent={renderFooter}
-        backgroundComponent={renderBackground}
-        containerStyle={styles.shadows}
-        {...props}
-      >
-        <Contents
-          data={data}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          getItem={getItem}
-          getItemCount={getItemCount}
-          headerComponent={headerComponent}
-          title={title}
-          headerActionLabel={headerActionLabel}
-          onHeaderActionPress={onHeaderActionPress}
-          showClose={showClose}
-          onClose={handleClose}
-          headerChildren={headerChildren}
-          onItemPress={onItemPress}
-          itemTitleExtractor={itemTitleExtractor}
-          theme={theme}
-          emptyComponent={emptyComponent}
-          extraBottomPadding={(insets?.bottom ?? 0) + 8}
-        />
-      </BottomSheet>
+    <BottomSheet
+      ref={bottomSheetRef}
+      onChange={handleSheetChanges}
+      index={effectiveInitialIndex}
+      snapPoints={effectiveSnapPoints}
+      enablePanDownToClose
+      enableDynamicSizing
+      handleComponent={renderHandle}
+      backdropComponent={renderBackdrop}
+      footerComponent={renderFooter}
+      backgroundComponent={renderBackground}
+      containerStyle={styles.shadows}
+      {...props}
+    >
+      <Contents
+        data={data}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        getItem={getItem}
+        getItemCount={getItemCount}
+        headerComponent={includeHeader ? headerComponent : undefined}
+        title={includeHeader ? title : undefined}
+        headerActionLabel={includeHeader ? headerActionLabel : undefined}
+        onHeaderActionPress={includeHeader ? onHeaderActionPress : undefined}
+  showClose={includeHeader ? showClose : false}
+        onClose={headerCloseHandler}
+        headerChildren={includeHeader ? headerChildren : undefined}
+        onItemPress={onItemPress}
+        itemTitleExtractor={itemTitleExtractor}
+        theme={theme}
+        emptyComponent={emptyComponent}
+        extraBottomPadding={(insets?.bottom ?? 0) + 8}
+        closeIcon={includeHeader ? closeIcon : undefined}
+      />
+    </BottomSheet>
   );
 };
 
