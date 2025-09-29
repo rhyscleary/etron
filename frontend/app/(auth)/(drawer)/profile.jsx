@@ -73,6 +73,7 @@ const Profile = () => {
                     title="Quick Actions"
                     closeIcon="close"
                     handleSolidBackground={true}
+
                     onChange={(index) => {
                         if (index === -1) setShowCompactSheet(false);
                     }}

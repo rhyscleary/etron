@@ -138,7 +138,7 @@ const Handle = ({
             style={styles.compactAppbar}
           >
             {title ? (
-              <Appbar.Content title={title} titleStyle={styles.compactTitle} />
+              <Appbar.Content title={title} titleStyle={[styles.compactTitle, { color: theme.colors?.text || theme.colors?.onSurface || '#fff' }]} />
             ) : null}
             {showClose ? (
               <Appbar.Action
@@ -161,8 +161,8 @@ const Handle = ({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <Animated.View style={[leftIndicatorStyle, leftIndicatorAnimatedStyle]} />
-      <Animated.View style={[rightIndicatorStyle, rightIndicatorAnimatedStyle]} />
+      <Animated.View style={[leftIndicatorStyle, leftIndicatorAnimatedStyle, { backgroundColor: theme.colors?.buttonBackground || theme.colors?.outline || '#999' }]} />
+      <Animated.View style={[rightIndicatorStyle, rightIndicatorAnimatedStyle, { backgroundColor: theme.colors?.buttonBackground || theme.colors?.outline || '#999' }]} />
     </Animated.View>
   );
 };
@@ -206,7 +206,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   compactTitle: {
-    color: '#fff',
     fontWeight: '700',
     fontSize: 16,
     lineHeight: 20,
@@ -215,7 +214,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 10,
     height: 4,
-    backgroundColor: "#999",
   },
   leftIndicator: {
     borderTopStartRadius: 2,

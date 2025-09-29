@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { StyleSheet, Pressable } from "react-native";
+import { useTheme } from 'react-native-paper';
 import Animated, {
   Extrapolate,
   interpolate,
@@ -9,6 +10,7 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { BlurView } from "expo-blur";
+import { hexToRgba } from '../../utils/color';
 
 const Backdrop = ({
   animatedIndex,
@@ -18,6 +20,15 @@ const Backdrop = ({
   blockAboveIndex = 0,
   onPress, // optional - can close sheet
 }) => {
+  // TODO: move to utils
+  const theme = useTheme();
+  // prefer theme backdrop color else derive from primary
+  const overlayColor = useMemo(() => {
+    // TODO: input any needed colors
+    // const base = theme?.colors?.backdrop || theme?.colors?.primary || '#000000';
+    const base = theme?.colors?.focusedBackground || theme?.colors?.primary || '#000000';
+    return hexToRgba(base, 0.35);
+  }, [theme]);
   const opacityStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       animatedIndex.value,
@@ -52,7 +63,7 @@ const Backdrop = ({
         tint={blurTint}
         style={StyleSheet.absoluteFill}
       />
-      <Animated.View style={[StyleSheet.absoluteFill, styles.tintOverlay]} />
+      <Animated.View style={[StyleSheet.absoluteFill, styles.tintOverlay, { backgroundColor: overlayColor }]} />
     </Animated.View>
   );
 
@@ -74,6 +85,5 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tintOverlay: {
-    backgroundColor: "rgba(168,181,235,0.35)", 
   },
 });

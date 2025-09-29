@@ -6,6 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Extrapolate, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
+import { useTheme } from 'react-native-paper';
+import { withAlpha } from '../../utils/color';
 
 const AnimatedRectButton = Animated.createAnimatedComponent(RectButton);
 
@@ -17,6 +19,7 @@ const Footer = ({
   placement = 'right',
 }) => {
   const { bottom: bottomSafeArea } = useSafeAreaInsets();
+  const theme = useTheme();
   const { expand, collapse, animatedIndex } = useBottomSheet();
 
   // chevron - two bars rotate between index 0 and index 1 states
@@ -123,9 +126,12 @@ const Footer = ({
         return styles.minimal;
       case 'default':
       default:
-        return styles.default;
+        return [
+          styles.default,
+          { backgroundColor: theme.colors?.primary || '#666' },
+        ];
     }
-  }, [variant]);
+  }, [variant, theme.colors]);
 
   const placementStyle = useMemo(() => {
     switch (placement) {
@@ -148,11 +154,23 @@ const Footer = ({
         {variant === 'translucent' && (
           <>
             <BlurView
-              intensity={50}
+              intensity={40}
               tint={Platform.OS === 'ios' ? 'systemThinMaterialDark' : 'dark'}
               style={[StyleSheet.absoluteFill, styles.translucentBlur]}
             />
-            <View style={styles.translucentOverlay} pointerEvents="none" />
+            <View
+              style={[
+                styles.translucentOverlay,
+                {
+                  backgroundColor: withAlpha(
+                    theme.colors?.surfaceVariant || theme.colors?.surface || '#1c1c1c',
+                    0.18
+                  ),
+                  borderColor: withAlpha(theme.colors?.outlineVariant || '#ffffff', 0.15),
+                },
+              ]}
+              pointerEvents="none"
+            />
           </>
         )}
         <Animated.View
@@ -166,12 +184,14 @@ const Footer = ({
             styles.bar,
             variant === 'minimal' && styles.barMinimal,
             variant === 'minimal' && styles.barMinimalShadow,
+            { backgroundColor: theme.colors?.icon || theme.colors?.onSurface || '#fff' },
             leftBarAnimatedStyle,
           ]} />
           <Animated.View style={[
             styles.bar,
             variant === 'minimal' && styles.barMinimal,
             variant === 'minimal' && styles.barMinimalShadow,
+            { backgroundColor: theme.colors?.icon || theme.colors?.onSurface || '#fff' },
             rightBarAnimatedStyle,
           ]} />
         </Animated.View>
@@ -204,25 +224,23 @@ const styles = StyleSheet.create({
     marginRight: 24,
   },
   default: {
-    backgroundColor: '#80f',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.25,
     shadowRadius: 8.0,
     elevation: 2,
   },
   translucent: {
-    // background handled by BlurView + overlay for better glass effect
+    // background handled by BlurView
   },
   minimal: {
-    // fully transparent, no shadow, smaller touch target for subtle UI
     backgroundColor: 'transparent',
     shadowOpacity: 0,
     elevation: 0,
-    overflow: 'visible', // allow bar shadows to render outside
+    overflow: 'visible',
     opacity: 0.5,
   },
   translucentBlur: {
-    borderRadius: 25, // ensure circular clipping on platforms where parent overflow hidden isn't honored for blur layer
+    borderRadius: 25,
     overflow: 'hidden',
   },
   translucentOverlay: {
@@ -243,20 +261,15 @@ const styles = StyleSheet.create({
     width: 14,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#fff',
   },
-  barMinimal: {
-    backgroundColor: '#fff',
-  },
+  barMinimal: {},
   barMinimalShadow: {
-    // subtle glow/shadow directly on animated bar lines for minimal variant
     shadowColor: '#000',
     shadowOpacity: 0.35,
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
     elevation: 3,
   },
-  // reversed style removed (feature deprecated)
 });
 
 export default Footer;

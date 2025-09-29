@@ -197,14 +197,14 @@ const CustomBottomSheet = ({
       // keyboard interaction
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
-  enablePanDownToClose
-  // dynamic sizing can conflict with explicit snap & keyboard behaviour
-  // enableDynamicSizing
+      enablePanDownToClose
+      // dynamic sizing can conflict with explicit snap & keyboard behaviour
+      // enableDynamicSizing
       handleComponent={renderHandle}
       backdropComponent={renderBackdrop}
       footerComponent={renderFooter}
       backgroundComponent={renderBackground}
-      containerStyle={styles.shadows}
+      containerStyle={[styles.shadows, { shadowColor: theme.colors?.shadow || '#000' }]}
       {...props}
     >
       <Contents
@@ -240,7 +240,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   shadows: {
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
