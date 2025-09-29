@@ -73,7 +73,6 @@ const Profile = () => {
                     title="Quick Actions"
                     closeIcon="close"
                     handleSolidBackground={true}
-                    footerReversed={true}
                     onChange={(index) => {
                         if (index === -1) setShowCompactSheet(false);
                     }}

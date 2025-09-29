@@ -15,7 +15,6 @@ const Footer = ({
   lastIndex = 0,
   variant = 'default',
   placement = 'right',
-  reversed = false, // flips chevron horizontally
 }) => {
   const { bottom: bottomSafeArea } = useSafeAreaInsets();
   const { expand, collapse, animatedIndex } = useBottomSheet();
@@ -35,11 +34,10 @@ const Footer = ({
     return {
       transform: [
         { rotate: `${leftRotate}rad` },
-        // translate direction mirrors when reversed
-        { translateX: reversed ? 5 : -5 },
+        { translateX: -5 },
       ],
     };
-  }, [reversed]);
+  });
 
   const rightBarAnimatedStyle = useAnimatedStyle(() => {
     const rightRotate = interpolate(
@@ -51,10 +49,10 @@ const Footer = ({
     return {
       transform: [
         { rotate: `${rightRotate}rad` },
-        { translateX: reversed ? -5 : 5 },
+        { translateX: 5 },
       ],
     };
-  }, [reversed]);
+  });
   const chevronContainerStyle = useMemo(
     () => [styles.chevronContainer],
     []
@@ -161,7 +159,6 @@ const Footer = ({
           style={[
             chevronContainerStyle,
             chevronShiftAnimatedStyle,
-            reversed && styles.reversed,
           ]}
           pointerEvents="none"
         >
@@ -259,9 +256,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 3,
   },
-  reversed: {
-    transform: [{ scaleX: -1 }],
-  },
+  // reversed style removed (feature deprecated)
 });
 
 export default Footer;

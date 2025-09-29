@@ -41,7 +41,6 @@ const CustomBottomSheet = ({
   searchPlaceholder,
   footerVariant = 'default', // 'default' | 'translucent' | 'minimal' | 'none'
   footerPlacement = 'right', // 'left' | 'center' | 'right'
-  footerReversed = false, 
   ...props
 }) => {
   const theme = useTheme();
@@ -103,10 +102,9 @@ const CustomBottomSheet = ({
         lastIndex={(effectiveSnapPoints?.length || 1) - 1}
         variant={footerVariant}
         placement={footerPlacement}
-        reversed={footerReversed}
       />
     ),
-    [effectiveSnapPoints?.length, footerVariant, footerPlacement, footerReversed]
+    [effectiveSnapPoints?.length, footerVariant, footerPlacement]
   );
 
   const renderBackground = useCallback(
