@@ -14,5 +14,29 @@
         "starterModule": false,
         "cardColor": "",
         "fontColor": ""
+    },
+    {
+        "key": "workspace_chat",
+        "name": "Workspace Chat",
+        "description": "Communicate with your employees wherever they are",
+        "starterModule": false,
+        "cardColor": "",
+        "fontColor": ""
+    },
+    {
+        "key": "document_library",
+        "name": "Document Library",
+        "description": "Manage your works documents in one place",
+        "starterModule": false,
+        "cardColor": "",
+        "fontColor": ""
+    },
+    {
+        "key": "expense_tracker",
+        "name": "Expenses Tracker",
+        "description": "Upload receipts and track your expenses in one place",
+        "starterModule": false,
+        "cardColor": "",
+        "fontColor": ""
     }
 ]

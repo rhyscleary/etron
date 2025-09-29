@@ -9,7 +9,7 @@ const { hasPermission } = require("@etron/shared/utils/permissions");
 
 // Permissions for this service
 const PERMISSIONS = {
-    INVITE_USER: "app.collaboration.update_workspace",
+    INVITE_USER: "app.collaboration.invite_user",
     CANCEL_INVITE: "app.collaboration.cancel_invite",
     VIEW_INVITES: "app.collaboration.view_invites"
 };
@@ -114,6 +114,12 @@ async function cancelUsersInvites(email) {
 }
 
 async function getInvite(workspaceId, inviteId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_INVITES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     return workspaceInvitesRepo.getInviteById(workspaceId, inviteId);

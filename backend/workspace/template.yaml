@@ -4,7 +4,7 @@ Description: >
   eTRON workspace-domain functions template
 
 Parameters:
-  PermissionsBucketName:
+  AppConfigurationBucketName:
     Type: String
     
 Globals:
@@ -15,7 +15,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        PERMISSIONS_BUCKET: !Ref PermissionsBucketName
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
 
 Resources:
 
@@ -310,12 +310,12 @@ Resources:
             RestApiId: !Ref eTRONApi
 
 
-  # Profile Lambda 
-  WorkspaceProfilesFunction:
+  # Board Lambda 
+  WorkspaceBoardsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./functions/workspace-profiles
-      Handler: profileHandler.handler
+      CodeUri: ./functions/workspace-boards
+      Handler: boardHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Workspaces
@@ -339,38 +339,38 @@ Resources:
               - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
-        CreateProfile:
+        CreateBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles
+            Path: /workspace/{workspaceId}/boards
             Method: post
             RestApiId: !Ref eTRONApi
 
-        UpdateProfile:
+        UpdateBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles/{profileId}
-            Method: put
+            Path: /workspace/{workspaceId}/boards/{boardId}
+            Method: patch
             RestApiId: !Ref eTRONApi
 
-        DeleteProfile:
+        DeleteBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles/{profileId}
+            Path: /workspace/{workspaceId}/boards/{boardId}
             Method: delete
             RestApiId: !Ref eTRONApi
 
-        GetProfile:
+        GetBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles/{profileId}
+            Path: /workspace/{workspaceId}/boards/{boardId}
             Method: get
             RestApiId: !Ref eTRONApi
 
-        GetProfiles:
+        GetBoards:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles
+            Path: /workspace/{workspaceId}/boards
             Method: get
             RestApiId: !Ref eTRONApi
 

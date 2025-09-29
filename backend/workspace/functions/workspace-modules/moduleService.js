@@ -45,6 +45,8 @@ async function installModule(authUserId, workspaceId, moduleKey) {
         moduleKey: selectedModule.key,
         name: selectedModule.name,
         description: selectedModule.description,
+        cardColor: selectedModule.cardColor,
+        fontColor: selectedModule.fontColor,
         enabled: true,
         installedAt: date,
         updatedAt: date

@@ -57,6 +57,27 @@ async function createWorkspace(authUserId, data) {
     await workspaceRepo.addWorkspace(workspaceItem);
 
     // search modules and add defaults to workspace
+    const appModules = await appConfigRepo.getAppModules();
+    const starterModules = appModules.filter(module => module.starterModules === true);
+
+    for (const starter of starterModules) {
+        const moduleId = uuidv4();
+
+        const moduleItem = {
+            workspaceId,
+            moduleId,
+            moduleKey: starter.key,
+            name: starter.name,
+            description: starter.description,
+            cardColor: starter.cardColor,
+            fontColor: starter.fontColor,
+            enabled: true,
+            installedAt: date,
+            updatedAt: date
+        };
+
+        await workspaceRepo.addModule(moduleItem);
+    }
 
     // add dashboard board to the workspace
 

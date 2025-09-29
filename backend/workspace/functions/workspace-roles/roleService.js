@@ -5,8 +5,21 @@ const workspaceUsersRepository = require ("@etron/shared/repositories/workspaceU
 const { getDefaultPermissions } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    MANAGE_ROLES: "app.collaboration.manage_roles",
+    VIEW_ROLES: "app.collaboration.view_roles"
+};
 
 async function createRoleInWorkspace(authUserId, workspaceId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const { name, permissions } = payload;
@@ -51,6 +64,12 @@ async function createRoleInWorkspace(authUserId, workspaceId, payload) {
 }
 
 async function deleteRoleInWorkspace(authUserId, workspaceId, roleId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
@@ -70,6 +89,12 @@ async function deleteRoleInWorkspace(authUserId, workspaceId, roleId) {
 }
 
 async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
@@ -96,12 +121,24 @@ async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
 }
 
 async function getRolesInWorkspace(authUserId, workspaceId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     return await workspaceRepo.getRolesByWorkspaceId(workspaceId);
 }
 
 async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
