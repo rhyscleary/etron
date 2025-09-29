@@ -8,15 +8,17 @@ import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
 import { Portal, Dialog, Button } from "react-native-paper";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router"; // ✅ added useRouter
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
+import { uploadTemplate } from "../../../../../../../utils/templateUploader"; 
 import { useTheme } from "react-native-paper";
 
 const EditReport = () => {
   const { draftId } = useLocalSearchParams();
+  const router = useRouter(); // ✅ router instance
   const [editorContent, setEditorContent] = useState("");
   const [dialogVisible, setDialogVisible] = useState(false);
   const [fileName, setFileName] = useState("Report");
@@ -244,13 +246,33 @@ const EditReport = () => {
     }
   };
 
+  const handleSaveAsTemplate = async () => {
+    if (!workspaceId) {
+      Alert.alert("Error", "Missing workspace ID.");
+      return;
+    }
+
+    const success = await uploadTemplate({
+      workspaceId,
+      templateName: fileName,
+      editorContent,
+    });
+
+    if (success) {
+      Alert.alert("Success", "Template saved successfully");
+      setIsEditing(false);
+      initSentRef.current = false;
+      router.push("/modules/day-book/reports/templates"); // ✅ redirect
+    }
+  };
+
   return (
-  <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
+    <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
       <Header
         title={reportId ? "Edit Report" : "New Report"}
         showBack={!isEditing}
         showCheck={isEditing}
-        showEllipsis={!isEditing}   // hide ellipsis when editing
+        showEllipsis={!isEditing}   
         onRightIconPress={isEditing ? handleSaveReport : undefined}
       />
 
@@ -263,6 +285,12 @@ const EditReport = () => {
         {!isEditing && (
           <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
             <Text style={styles.editButtonText}>Edit</Text>
+          </TouchableOpacity>
+        )}
+
+        {isEditing && (
+          <TouchableOpacity style={styles.templateButton} onPress={handleSaveAsTemplate}>
+            <Text style={styles.templateButtonText}>Save as Template</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -331,8 +359,16 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 6,
+    marginRight: 10,
   },
   editButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
+  templateButton: {
+    backgroundColor: "#34C759",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+  },
+  templateButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
   webview: { flex: 1 },
   input: {
     borderWidth: 1, borderColor: "#ccc", padding: 8, marginTop: 10, borderRadius: 5,
