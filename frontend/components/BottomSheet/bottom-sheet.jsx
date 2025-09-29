@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useRef } from 'react';
-import { StyleSheet, View, Dimensions } from 'react-native';
+import React, { useCallback, useMemo, useRef, useEffect, useState } from 'react';
+import { StyleSheet, View, Dimensions, Keyboard, Platform } from 'react-native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,10 +41,13 @@ const CustomBottomSheet = ({
   searchPlaceholder,
   footerVariant = 'default', // 'default' | 'translucent' | 'minimal' | 'none'
   footerPlacement = 'right', // 'left' | 'center' | 'right'
+  autoExpandOnSearchFocus = true,
+  autoExpandOnKeyboardShow = true,
   ...props
 }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const [searchActive, setSearchActive] = useState(false);
   // ref 
   const bottomSheetRef = useRef(null);
   const windowHeight = Dimensions.get('window').height;
@@ -89,10 +92,17 @@ const CustomBottomSheet = ({
       <Backdrop
         animatedIndex={backdropProps.animatedIndex}
         style={backdropProps.style}
-        onPress={() => bottomSheetRef.current?.snapToIndex?.(0)}
+        onPress={() => {
+          if (searchActive) {
+            Keyboard.dismiss();
+            setSearchActive(false);
+          } else {
+            bottomSheetRef.current?.snapToIndex?.(0);
+          }
+        }}
       />
     ),
-    []
+    [searchActive]
   );
 
   const renderFooter = useCallback(
@@ -118,6 +128,59 @@ const CustomBottomSheet = ({
     bottomSheetRef.current?.close?.();
   }, [onClose]);
 
+  // utility to expand to max snap point only if not already there
+  const expandToMax = useCallback(() => {
+    try {
+      const last = (effectiveSnapPoints?.length || 1) - 1;
+      if (last <= 0) return; // nothing to expand
+      bottomSheetRef.current?.expand?.(); // built-in expand tries last index
+      // fallback if expand not available
+      bottomSheetRef.current?.snapToIndex?.(last);
+    } catch (_) {}
+  }, [effectiveSnapPoints]);
+
+  // search bar visible when expanding on focus
+  const handleSearchFocus = useCallback(() => {
+    setSearchActive(true);
+    if (!autoExpandOnSearchFocus) return;
+    // for slower Android devices layout
+    if (Platform.OS === 'android') {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          expandToMax();
+        });
+      });
+    } else {
+      expandToMax();
+    }
+  }, [autoExpandOnSearchFocus, expandToMax]);
+
+  const handleSearchBlur = useCallback(() => {
+    setSearchActive(false);
+  }, []);
+
+  // keyboard show listener
+  useEffect(() => {
+    if (!autoExpandOnKeyboardShow) return;
+    const showEvents = Platform.select({
+      ios: ['keyboardWillShow', 'keyboardDidShow'],
+      default: ['keyboardDidShow']
+    });
+    const subs = showEvents.map(evt => Keyboard.addListener(evt, () => {
+      if (!searchActive) return;
+      if (Platform.OS === 'android') {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            expandToMax();
+          });
+        });
+      } else {
+        expandToMax();
+      }
+    }));
+    return () => subs.forEach(s => s.remove());
+  }, [autoExpandOnKeyboardShow, expandToMax, searchActive]);
+
   // In compact variant title is rendered in handle
   const includeHeader = variant === 'standard';
 
@@ -131,8 +194,12 @@ const CustomBottomSheet = ({
       onChange={handleSheetChanges}
       index={effectiveInitialIndex}
       snapPoints={effectiveSnapPoints}
-      enablePanDownToClose
-      enableDynamicSizing
+      // keyboard interaction
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+  enablePanDownToClose
+  // dynamic sizing can conflict with explicit snap & keyboard behaviour
+  // enableDynamicSizing
       handleComponent={renderHandle}
       backdropComponent={renderBackdrop}
       footerComponent={renderFooter}
@@ -161,6 +228,8 @@ const CustomBottomSheet = ({
         closeIcon={includeHeader ? closeIcon : undefined}
         enableSearch={enableSearch}
         searchPlaceholder={searchPlaceholder}
+        onSearchFocus={handleSearchFocus}
+        onSearchBlur={handleSearchBlur}
       />
     </BottomSheet>
   );

@@ -28,6 +28,8 @@ const Contents = ({
   closeIcon,
   enableSearch = false,
   searchPlaceholder = 'Search',
+  onSearchFocus,
+  onSearchBlur,
 }) => {
   // local search state
   const [query, setQuery] = useState('');
@@ -120,6 +122,8 @@ const Contents = ({
           value={query}
           onChangeText={setQuery}
           placeholder={searchPlaceholder}
+          onFocus={onSearchFocus}
+          onBlur={onSearchBlur}
         />
       )}
       <BottomSheetVirtualizedList

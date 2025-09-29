@@ -2,12 +2,15 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { Searchbar } from 'react-native-paper';
 
-const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search' }) => {
+const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocus, onBlur }) => {
   return (
     <Searchbar
       placeholder={placeholder}
       value={value}
       onChangeText={onChangeText}
+      onFocus={onFocus}
+      onBlur={onBlur}
+      onPressIn={onFocus}
       style={styles.searchbar}
       inputStyle={styles.input}
       autoCorrect={false}
