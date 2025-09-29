@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useCallback } from "react";
 import { StyleSheet } from "react-native";
-import { useTheme, IconButton } from "react-native-paper";
+import { useTheme, Appbar } from "react-native-paper";
 import Animated, {
   Extrapolate,
   interpolate,
@@ -51,10 +51,11 @@ const Handle = ({
   const containerStyle = useMemo(
     () => [
       styles.header,
-      { backgroundColor: useSolidBackground ? (theme?.colors?.buttonBackground || '#444') : 'transparent' },
+      variant === 'standard' ? styles.standardHandle : styles.compactHandleWrapper,
+      { backgroundColor: useSolidBackground || variant === 'standard' ? (theme?.colors?.surface ?? theme?.colors?.background ?? '#444') : 'transparent' },
       style,
     ],
-    [style, theme?.colors?.buttonBackground, useSolidBackground]
+    [style, theme?.colors, useSolidBackground, variant]
   );
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
@@ -127,23 +128,28 @@ const Handle = ({
   if (variant === 'compact') {
     return (
       <Animated.View
-        style={[containerStyle, containerAnimatedStyle, styles.compactContainer]}
+        style={[containerStyle, containerAnimatedStyle]}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {title ? (
-          <Animated.Text style={styles.compactTitle} numberOfLines={1}>{title}</Animated.Text>
-        ) : null}
-        {true ? (
-          <IconButton
-            icon={closeIcon}
-            size={18}
-            onPress={handlePressClose}
-            accessibilityLabel={'Close'}
-            style={styles.compactCloseBtn}
-            rippleColor={theme.colors?.backdrop}
-          />
-        ) : null}
+        <Animated.View style={styles.compactWrapper} pointerEvents="box-none">
+          <Appbar.Header
+            statusBarHeight={0}
+            style={styles.compactAppbar}
+          >
+            {title ? (
+              <Appbar.Content title={title} titleStyle={styles.compactTitle} />
+            ) : null}
+            {showClose ? (
+              <Appbar.Action
+                icon={closeIcon}
+                accessibilityLabel={'Close'}
+                onPress={handlePressClose}
+                rippleColor={theme.colors?.backdrop}
+              />
+            ) : null}
+          </Appbar.Header>
+        </Animated.View>
       </Animated.View>
     );
   }
@@ -169,23 +175,41 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
+  },
+  standardHandle: {
     paddingVertical: 14,
+    width: '100%',
+  },
+  compactHandleWrapper: {
+    paddingTop: 4,
+    width: '100%',
   },
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
     paddingHorizontal: 28,
   },
+  compactAppbar: {
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    elevation: 0,
+    shadowOpacity: 0,
+    width: '100%',
+    height: 44,
+    minHeight: 44,
+  },
+  compactWrapper: {
+    width: '100%',
+    backgroundColor: 'transparent',
+  },
   compactTitle: {
-    flex: 1,
     color: '#fff',
     fontWeight: '700',
     fontSize: 16,
     lineHeight: 20,
-  },
-  compactCloseBtn: {
-    margin: 0,
   },
   indicator: {
     position: "absolute",

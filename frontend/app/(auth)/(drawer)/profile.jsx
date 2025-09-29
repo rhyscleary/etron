@@ -50,6 +50,7 @@ const Profile = () => {
                     onHeaderActionPress={() => {/* placeholder edit action */}}
                     showClose={false}
                     closeIcon="close"
+                    handleSolidBackground={true}
                     onChange={(index) => {
                         if (index === -1) setShowSheet(false);
                     }}
@@ -68,6 +69,7 @@ const Profile = () => {
                     variant="compact"
                     title="Quick Actions"
                     closeIcon="close"
+                    handleSolidBackground={true}
                     onChange={(index) => {
                         if (index === -1) setShowCompactSheet(false);
                     }}

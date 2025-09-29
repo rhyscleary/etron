@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { List, Button, IconButton, useTheme } from 'react-native-paper';
+import { Appbar, Button, useTheme } from 'react-native-paper';
 
 
 const SheetHeader = ({
@@ -21,12 +21,15 @@ const SheetHeader = ({
     if (!title) return null;
     if (typeof title === 'string') {
       return (
-        <List.Subheader style={styles.headerTitle}>
-          {title}
-        </List.Subheader>
+        <Appbar.Content
+          title={title}
+          titleStyle={styles.headerTitle}
+          style={styles.appbarContent}
+        />
       );
     }
-    return title; // assume custom node already styled
+    // custom node
+    return title;
   }, [title]);
 
   const borderStyle = useMemo(() => {
@@ -36,7 +39,11 @@ const SheetHeader = ({
   }, [showDivider, dividerColor, theme.colors]);
 
   return (
-    <View style={[styles.headerRow, borderStyle, style]}>      
+    <Appbar.Header
+      statusBarHeight={0}
+      elevated={false}
+      style={[styles.headerRow, borderStyle, style]}
+    >
       <View style={styles.leftGroup}>
         {renderedTitle}
         {children}
@@ -53,34 +60,28 @@ const SheetHeader = ({
           </Button>
         ) : null}
         {showClose ? (
-          <IconButton
+          <Appbar.Action
             icon={closeIcon}
-            size={18}
-            onPress={onClose}
             accessibilityLabel={'Close'}
-            style={styles.closeBtn}
+            onPress={onClose}
             rippleColor={theme.colors?.backdrop}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           />
         ) : null}
       </View>
-    </View>
+    </Appbar.Header>
   );
 };
 
 const styles = StyleSheet.create({
   headerRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 6,
+    paddingHorizontal: 12,
+    paddingBottom: 4,
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'transparent',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   headerTitle: {
-    paddingHorizontal: 0,
-    paddingRight: 12,
     fontSize: 16,
     lineHeight: 20,
     fontWeight: '900',
@@ -99,9 +100,9 @@ const styles = StyleSheet.create({
     marginRight: 2,
     paddingHorizontal: 4,
   },
-  closeBtn: {
-    margin: 0,
-    alignSelf: 'center',
+  appbarContent: {
+    paddingHorizontal: 0,
+    marginLeft: 0,
   },
   divider: {
     position: 'absolute',
