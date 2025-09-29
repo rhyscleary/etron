@@ -1,14 +1,22 @@
 import React, { useCallback, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform } from 'react-native';
 import { BottomSheetFooter, useBottomSheet } from '@gorhom/bottom-sheet';
 import { RectButton } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { Extrapolate, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { BlurView } from 'expo-blur';
 
 const AnimatedRectButton = Animated.createAnimatedComponent(RectButton);
 
-const Footer = ({ animatedFooterPosition, haptics = true, lastIndex = 0 }) => {
+const Footer = ({
+  animatedFooterPosition,
+  haptics = true,
+  lastIndex = 0,
+  variant = 'default',
+  placement = 'right',
+  reversed = false, // flips chevron horizontally
+}) => {
   const { bottom: bottomSafeArea } = useSafeAreaInsets();
   const { expand, collapse, animatedIndex } = useBottomSheet();
 
@@ -27,10 +35,11 @@ const Footer = ({ animatedFooterPosition, haptics = true, lastIndex = 0 }) => {
     return {
       transform: [
         { rotate: `${leftRotate}rad` },
-        { translateX: -5 },
+        // translate direction mirrors when reversed
+        { translateX: reversed ? 5 : -5 },
       ],
     };
-  });
+  }, [reversed]);
 
   const rightBarAnimatedStyle = useAnimatedStyle(() => {
     const rightRotate = interpolate(
@@ -42,10 +51,10 @@ const Footer = ({ animatedFooterPosition, haptics = true, lastIndex = 0 }) => {
     return {
       transform: [
         { rotate: `${rightRotate}rad` },
-        { translateX: 5 },
+        { translateX: reversed ? -5 : 5 },
       ],
     };
-  });
+  }, [reversed]);
   const chevronContainerStyle = useMemo(
     () => [styles.chevronContainer],
     []
@@ -104,15 +113,70 @@ const Footer = ({ animatedFooterPosition, haptics = true, lastIndex = 0 }) => {
     }
   }, [expand, collapse, animatedIndex, triggerHaptic]);
 
+  if (variant === 'none') {
+    return null;
+  }
+
+  const variantStyle = useMemo(() => {
+    switch (variant) {
+      case 'translucent':
+        return styles.translucent;
+      case 'minimal':
+        return styles.minimal;
+      case 'default':
+      default:
+        return styles.default;
+    }
+  }, [variant]);
+
+  const placementStyle = useMemo(() => {
+    switch (placement) {
+      case 'left':
+        return styles.placeLeft;
+      case 'center':
+        return styles.placeCenter;
+      case 'right':
+      default:
+        return styles.placeRight;
+    }
+  }, [placement]);
+
   return (
     <BottomSheetFooter
       bottomInset={bottomSafeArea}
       animatedFooterPosition={animatedFooterPosition}
     >
-      <AnimatedRectButton style={containerStyle} onPress={handleArrowPress}>
-        <Animated.View style={[chevronContainerStyle, chevronShiftAnimatedStyle]} pointerEvents="none">
-          <Animated.View style={[styles.bar, leftBarAnimatedStyle]} />
-          <Animated.View style={[styles.bar, rightBarAnimatedStyle]} />
+      <AnimatedRectButton style={[containerStyle, placementStyle, variantStyle]} onPress={handleArrowPress}>
+        {variant === 'translucent' && (
+          <>
+            <BlurView
+              intensity={50}
+              tint={Platform.OS === 'ios' ? 'systemThinMaterialDark' : 'dark'}
+              style={[StyleSheet.absoluteFill, styles.translucentBlur]}
+            />
+            <View style={styles.translucentOverlay} pointerEvents="none" />
+          </>
+        )}
+        <Animated.View
+          style={[
+            chevronContainerStyle,
+            chevronShiftAnimatedStyle,
+            reversed && styles.reversed,
+          ]}
+          pointerEvents="none"
+        >
+          <Animated.View style={[
+            styles.bar,
+            variant === 'minimal' && styles.barMinimal,
+            variant === 'minimal' && styles.barMinimalShadow,
+            leftBarAnimatedStyle,
+          ]} />
+          <Animated.View style={[
+            styles.bar,
+            variant === 'minimal' && styles.barMinimal,
+            variant === 'minimal' && styles.barMinimalShadow,
+            rightBarAnimatedStyle,
+          ]} />
         </Animated.View>
       </AnimatedRectButton>
     </BottomSheetFooter>
@@ -121,19 +185,55 @@ const Footer = ({ animatedFooterPosition, haptics = true, lastIndex = 0 }) => {
 
 const styles = StyleSheet.create({
   container: {
-    alignSelf: 'flex-end',
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 24,
-    marginBottom: 12,
+    marginBottom: 0,
     width: 50,
     height: 50,
     borderRadius: 25,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  placeLeft: {
+    alignSelf: 'flex-start',
+    marginLeft: 24,
+  },
+  placeCenter: {
+    alignSelf: 'center',
+  },
+  placeRight: {
+    alignSelf: 'flex-end',
+    marginRight: 24,
+  },
+  default: {
     backgroundColor: '#80f',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.25,
     shadowRadius: 8.0,
     elevation: 2,
+  },
+  translucent: {
+    // background handled by BlurView + overlay for better glass effect
+  },
+  minimal: {
+    // fully transparent, no shadow, smaller touch target for subtle UI
+    backgroundColor: 'transparent',
+    shadowOpacity: 0,
+    elevation: 0,
+    overflow: 'visible', // allow bar shadows to render outside
+    opacity: 0.5,
+  },
+  translucentBlur: {
+    borderRadius: 25, // ensure circular clipping on platforms where parent overflow hidden isn't honored for blur layer
+    overflow: 'hidden',
+  },
+  translucentOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 25,
   },
   chevronContainer: {
     width: 26,
@@ -147,6 +247,20 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 2,
     backgroundColor: '#fff',
+  },
+  barMinimal: {
+    backgroundColor: '#fff',
+  },
+  barMinimalShadow: {
+    // subtle glow/shadow directly on animated bar lines for minimal variant
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
+  },
+  reversed: {
+    transform: [{ scaleX: -1 }],
   },
 });
 

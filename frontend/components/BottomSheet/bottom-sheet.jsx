@@ -39,6 +39,9 @@ const CustomBottomSheet = ({
   // search
   enableSearch = false,
   searchPlaceholder,
+  footerVariant = 'default', // 'default' | 'translucent' | 'minimal' | 'none'
+  footerPlacement = 'right', // 'left' | 'center' | 'right'
+  footerReversed = false, 
   ...props
 }) => {
   const theme = useTheme();
@@ -98,9 +101,12 @@ const CustomBottomSheet = ({
       <Footer
         {...footerProps}
         lastIndex={(effectiveSnapPoints?.length || 1) - 1}
+        variant={footerVariant}
+        placement={footerPlacement}
+        reversed={footerReversed}
       />
     ),
-    [effectiveSnapPoints?.length]
+    [effectiveSnapPoints?.length, footerVariant, footerPlacement, footerReversed]
   );
 
   const renderBackground = useCallback(
@@ -146,7 +152,7 @@ const CustomBottomSheet = ({
         title={includeHeader ? title : undefined}
         headerActionLabel={includeHeader ? headerActionLabel : undefined}
         onHeaderActionPress={includeHeader ? onHeaderActionPress : undefined}
-  showClose={includeHeader ? showClose : false}
+        showClose={includeHeader ? showClose : false}
         onClose={headerCloseHandler}
         headerChildren={includeHeader ? headerChildren : undefined}
         onItemPress={onItemPress}

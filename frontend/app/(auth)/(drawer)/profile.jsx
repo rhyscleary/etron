@@ -52,6 +52,8 @@ const Profile = () => {
                     closeIcon="close"
                     handleSolidBackground={true}
                     enableSearch={true}
+                    footerVariant="minimal"
+                    footerPlacement="right"
                     onChange={(index) => {
                         if (index === -1) setShowSheet(false);
                     }}
@@ -71,6 +73,7 @@ const Profile = () => {
                     title="Quick Actions"
                     closeIcon="close"
                     handleSolidBackground={true}
+                    footerReversed={true}
                     onChange={(index) => {
                         if (index === -1) setShowCompactSheet(false);
                     }}
