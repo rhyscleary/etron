@@ -23,11 +23,11 @@ const Profile = () => {
 
     // Example data for new sheets
     const profileActionItems = useMemo(() => ([
-        { icon: 'account-edit', label: 'Edit Profile', onPress: () => router.navigate('/settings/profile') },
-        { icon: 'image-edit', label: 'Change Photo', onPress: () => {/* placeholder */} },
-        { icon: 'bell-cog', label: 'Notification Settings', onPress: () => router.navigate('/modules/day-book/notifications/notifications') },
-        { icon: 'shield-account', label: 'Security', onPress: () => router.navigate('/settings/security') },
-        { icon: 'logout-variant', label: 'Sign Out', onPress: () => {/* insert sign out flow */} },
+        { icon: 'account-edit', label: 'Account Details', onPress: () => router.navigate('/settings/account/account') },
+        { icon: 'image-edit', label: 'Personal Details', onPress: () => router.navigate('/settings/account/personal-details') },
+        { icon: 'bell-ring', label: 'Notification Settings', onPress: () => router.navigate('/modules/day-book/notifications/notifications') },
+        { icon: 'shield-account', label: 'Password & Security', onPress: () => router.navigate('/settings/account/password-security') },
+        { icon: 'logout-variant', label: 'Sign Out', onPress: () => { /* does nothing */ } },
     ]), [router]);
 
     const quickIconActions = useMemo(() => ([
@@ -46,12 +46,12 @@ const Profile = () => {
         { icon: "account-group", label: "Collaboration", onPress: () => router.navigate("/collaboration/collaboration") },
         { icon: "poll", label: "Testing - Example Graph Display", onPress: () => router.navigate("/graphs") },
         { icon: "file-chart", label: "Reports", onPress:() => router.navigate("/modules/day-book/reports/report-management") },
+        // Testing Bottom Screen
         { icon: "tray-arrow-up", label: "Testing - Example Bottom Sheet", onPress: () => { setShowSheet(true); setShowCompactSheet(false);} }, // standard style
         { icon: "view-compact", label: "Testing - Compact Bottom Sheet", onPress: () => { setShowCompactSheet(true); setShowSheet(false);} }, // compact style
-        // NEW DEMO TRIGGERS
-        { icon: "account-box", label: "Profile Actions Sheet", onPress: () => { setShowProfileActionsSheet(true); } },
-        { icon: "flash", label: "Quick Icon Actions Sheet", onPress: () => { setShowQuickIconSheet(true); } },
-        { icon: "note-plus", label: "Quick Note Sheet (Custom)", onPress: () => { 
+        { icon: "account-box", label: "Testing - Profile Actions Sheet", onPress: () => { setShowProfileActionsSheet(true); } },
+        { icon: "flash", label: "Testing - Quick Icon Actions Sheet", onPress: () => { setShowQuickIconSheet(true); } },
+        { icon: "note-plus", label: "Testing - Quick Note Sheet (Custom)", onPress: () => { 
             // close others to avoid multiple mounted sheets
             setShowSheet(false);
             setShowCompactSheet(false);
@@ -60,7 +60,7 @@ const Profile = () => {
             setShowQuickNoteSheet(true); 
         } },
     ];
-    // custom content for quick note sheet (no list rendering). Demonstrates using the new customContent prop.
+    // custom content for quick note sheet with no list rendering
     const quickNoteContent = (
         <View style={{ flex: 1 }}>
             <TextInput
@@ -88,8 +88,7 @@ const Profile = () => {
                     mode="contained"
                     disabled={!noteTitle.trim() && !noteBody.trim()}
                     onPress={() => {
-                        // placeholder save
-                        // Could integrate with data source / API. For now just close/reset.
+                        // does nothing
                         setShowQuickNoteSheet(false);
                         setNoteTitle('');
                         setNoteBody('');
@@ -121,9 +120,9 @@ const Profile = () => {
 
     const profileHeaderChildren = (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Avatar.Text size={36} label="RC" style={{ marginRight: 12 }} />
+            <Avatar.Text size={36} label="ON" style={{ marginRight: 12 }} />
             <View>
-                <List.Subheader style={{ paddingLeft: 0, paddingRight: 0, paddingTop: 0, paddingBottom: 0 }}>Rhys Cleary</List.Subheader>
+                <List.Subheader style={{ paddingLeft: 0, paddingRight: 0, paddingTop: 0, paddingBottom: 0 }}>Onion</List.Subheader>
             </View>
         </View>
     );
@@ -149,7 +148,7 @@ const Profile = () => {
                     variant="standard"
                     title="Quick Actions"
                     headerActionLabel="Edit"
-                    onHeaderActionPress={() => {/* placeholder edit action */}}
+                    onHeaderActionPress={() => {/* does nothing */}}
                     showClose={false}
                     closeIcon="close"
                     handleSolidBackground={true}
@@ -189,8 +188,7 @@ const Profile = () => {
                     }}
                 />
             )}
-
-            {/* NEW: Profile Actions Sheet (standard variant, custom header children, search + icons) */}
+           
             {showProfileActionsSheet && (
                 <CustomBottomSheet
                     variant="standard"
@@ -207,8 +205,7 @@ const Profile = () => {
                     onClose={() => setShowProfileActionsSheet(false)}
                 />
             )}
-
-            {/* NEW: Quick Icon Actions Sheet (compact variant with icons, minimal footer) */}
+            
             {showQuickIconSheet && (
                 <CustomBottomSheet
                     variant="compact"
@@ -223,14 +220,13 @@ const Profile = () => {
                     onClose={() => setShowQuickIconSheet(false)}
                 />
             )}
-
-            {/* NEW: Quick Note Sheet (custom non-list content) */}
+            
             {showQuickNoteSheet && (
                 <CustomBottomSheet
                     variant="standard"
+                    footerVariant="none"
                     title="Quick Note"
                     showClose
-                    // Provide smaller first snap for form UX
                     snapPoints={[320, 520]}
                     customContent={quickNoteContent}
                     onChange={(index) => { if (index === -1) setShowQuickNoteSheet(false); }}

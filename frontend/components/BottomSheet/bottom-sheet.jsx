@@ -45,7 +45,7 @@ const CustomBottomSheet = ({
   autoExpandOnSearchFocus = true,
   autoExpandOnKeyboardShow = true,
   // custom non-list content
-  customContent, // React node: if provided, bypass list-based <Contents /> entirely
+  customContent,
   ...props
 }) => {
   const theme = useTheme();
@@ -193,6 +193,8 @@ const CustomBottomSheet = ({
 
   const bottomPadding = (insets?.bottom ?? 0) + 8;
 
+  const footerComponentProp = footerVariant === 'none' ? undefined : renderFooter;
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -204,7 +206,7 @@ const CustomBottomSheet = ({
       enablePanDownToClose
       handleComponent={renderHandle}
       backdropComponent={renderBackdrop}
-      footerComponent={renderFooter}
+      footerComponent={footerComponentProp}
       backgroundComponent={renderBackground}
       containerStyle={[styles.shadows, { shadowColor: theme.colors?.shadow || '#000' }]}
       {...props}
