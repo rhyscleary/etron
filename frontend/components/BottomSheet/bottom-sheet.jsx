@@ -36,6 +36,9 @@ const CustomBottomSheet = ({
   itemTitleExtractor,
   // empty state
   emptyComponent,
+  // search
+  enableSearch = false,
+  searchPlaceholder,
   ...props
 }) => {
   const theme = useTheme();
@@ -152,6 +155,8 @@ const CustomBottomSheet = ({
         emptyComponent={emptyComponent}
         extraBottomPadding={(insets?.bottom ?? 0) + 8}
         closeIcon={includeHeader ? closeIcon : undefined}
+        enableSearch={enableSearch}
+        searchPlaceholder={searchPlaceholder}
       />
     </BottomSheet>
   );

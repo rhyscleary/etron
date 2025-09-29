@@ -1,8 +1,9 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme, List, Button } from 'react-native-paper';
 import { BottomSheetVirtualizedList } from '@gorhom/bottom-sheet';
 import SheetHeader from './header';
+import ContentsSearchBar from './contents-search-bar';
 
 const Contents = ({
   data,
@@ -25,7 +26,11 @@ const Contents = ({
   emptyComponent,
   extraBottomPadding = 0,
   closeIcon,
+  enableSearch = false,
+  searchPlaceholder = 'Search',
 }) => {
+  // local search state
+  const [query, setQuery] = useState('');
   const effectiveKeyExtractor = useCallback(
     keyExtractor || ((item, index) => (item?.id?.toString?.() ?? String(index))),
     [keyExtractor]
@@ -39,10 +44,10 @@ const Contents = ({
     [getItem]
   );
 
-  const Header = useMemo(() => {
+  const HeaderElement = useMemo(() => {
     if (headerComponent) return headerComponent;
-    if (!title && !headerActionLabel && !showClose && !headerChildren) return undefined;
-    return () => (
+    if (!title && !headerActionLabel && !showClose && !headerChildren) return null;
+    return (
       <SheetHeader
         title={title}
         actionLabel={headerActionLabel}
@@ -81,26 +86,63 @@ const Contents = ({
     [itemTitleExtractor, onItemPress, theme.colors.buttonBackground]
   );
 
+  // filter logic
+  const filteredData = useMemo(() => {
+    if (!enableSearch) return data;
+    if (!query.trim()) return data;
+    const lowered = query.toLowerCase();
+    const count = effectiveGetItemCount(data);
+    const results = [];
+    for (let i = 0; i < count; i++) {
+      const item = effectiveGetItem(data, i);
+      let titleText;
+      if (itemTitleExtractor) {
+        titleText = itemTitleExtractor(item, i);
+      } else if (typeof item === 'string' || typeof item === 'number') {
+        titleText = String(item);
+      } else if (item?.label) {
+        titleText = item.label;
+      } else {
+        try { titleText = JSON.stringify(item); } catch { titleText = ''; }
+      }
+      if (titleText?.toLowerCase?.().includes(lowered)) {
+        results.push(item);
+      }
+    }
+    return results;
+  }, [enableSearch, query, data, effectiveGetItemCount, effectiveGetItem, itemTitleExtractor]);
+
   return (
-    <BottomSheetVirtualizedList
-      data={data}
-      keyExtractor={effectiveKeyExtractor}
-      getItemCount={effectiveGetItemCount}
-      getItem={effectiveGetItem}
-      ListHeaderComponent={Header}
-      ListEmptyComponent={emptyComponent}
-      renderItem={renderItem || defaultRenderItem}
-      keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[
-        styles.contentContainer,
-        // base + extra bottom padding
-        { paddingBottom: (styles.contentContainer.paddingVertical || 0) + extraBottomPadding },
-      ]}
-    />
+    <View style={styles.wrapper}>
+      {HeaderElement}
+      {enableSearch && (
+        <ContentsSearchBar
+          value={query}
+          onChangeText={setQuery}
+          placeholder={searchPlaceholder}
+        />
+      )}
+      <BottomSheetVirtualizedList
+        data={filteredData}
+        keyExtractor={effectiveKeyExtractor}
+        getItemCount={(arr) => effectiveGetItemCount(arr)}
+        getItem={(arr, index) => effectiveGetItem(arr, index)}
+        ListEmptyComponent={emptyComponent}
+        renderItem={renderItem || defaultRenderItem}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: (styles.contentContainer.paddingVertical || 0) + extraBottomPadding },
+        ]}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+  },
   contentContainer: {
     paddingVertical: 2,
     paddingHorizontal: 12,

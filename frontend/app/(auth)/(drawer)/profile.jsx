@@ -51,6 +51,7 @@ const Profile = () => {
                     showClose={false}
                     closeIcon="close"
                     handleSolidBackground={true}
+                    enableSearch={true}
                     onChange={(index) => {
                         if (index === -1) setShowSheet(false);
                     }}
