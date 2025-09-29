@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useEffect, useState } from 'react';
 import { StyleSheet, View, Dimensions, Keyboard, Platform } from 'react-native';
-import BottomSheet from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Backdrop from './backdrop';
@@ -8,6 +8,7 @@ import Footer from './footer';
 import Background from './background';
 import Handle from './handle';
 import Contents from './contents';
+import SheetHeader from './header';
 
 const CustomBottomSheet = ({
   onChange,
@@ -43,6 +44,8 @@ const CustomBottomSheet = ({
   footerPlacement = 'right', // 'left' | 'center' | 'right'
   autoExpandOnSearchFocus = true,
   autoExpandOnKeyboardShow = true,
+  // custom non-list content
+  customContent, // React node: if provided, bypass list-based <Contents /> entirely
   ...props
 }) => {
   const theme = useTheme();
@@ -188,18 +191,17 @@ const CustomBottomSheet = ({
     handleClose();
   }, [handleClose]);
 
+  const bottomPadding = (insets?.bottom ?? 0) + 8;
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
       onChange={handleSheetChanges}
       index={effectiveInitialIndex}
       snapPoints={effectiveSnapPoints}
-      // keyboard interaction
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       enablePanDownToClose
-      // dynamic sizing can conflict with explicit snap & keyboard behaviour
-      // enableDynamicSizing
       handleComponent={renderHandle}
       backdropComponent={renderBackdrop}
       footerComponent={renderFooter}
@@ -207,30 +209,52 @@ const CustomBottomSheet = ({
       containerStyle={[styles.shadows, { shadowColor: theme.colors?.shadow || '#000' }]}
       {...props}
     >
-      <Contents
-        data={data}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItem={getItem}
-        getItemCount={getItemCount}
-        headerComponent={includeHeader ? headerComponent : undefined}
-        title={includeHeader ? title : undefined}
-        headerActionLabel={includeHeader ? headerActionLabel : undefined}
-        onHeaderActionPress={includeHeader ? onHeaderActionPress : undefined}
-        showClose={includeHeader ? showClose : false}
-        onClose={headerCloseHandler}
-        headerChildren={includeHeader ? headerChildren : undefined}
-        onItemPress={onItemPress}
-        itemTitleExtractor={itemTitleExtractor}
-        theme={theme}
-        emptyComponent={emptyComponent}
-        extraBottomPadding={(insets?.bottom ?? 0) + 8}
-        closeIcon={includeHeader ? closeIcon : undefined}
-        enableSearch={enableSearch}
-        searchPlaceholder={searchPlaceholder}
-        onSearchFocus={handleSearchFocus}
-        onSearchBlur={handleSearchBlur}
-      />
+      {customContent ? (
+        <BottomSheetView style={{ flex: 1, paddingHorizontal: 16, paddingBottom: bottomPadding, paddingTop: includeHeader ? 0 : 12 }}>
+          {includeHeader && (
+            headerComponent ? (
+              headerComponent
+            ) : (
+              <SheetHeader
+                title={title}
+                actionLabel={headerActionLabel}
+                onActionPress={onHeaderActionPress}
+                showClose={showClose}
+                onClose={headerCloseHandler}
+                closeIcon={closeIcon}
+              >
+                {headerChildren}
+              </SheetHeader>
+            )
+          )}
+          {customContent}
+        </BottomSheetView>
+      ) : (
+        <Contents
+          data={data}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItem={getItem}
+          getItemCount={getItemCount}
+          headerComponent={includeHeader ? headerComponent : undefined}
+          title={includeHeader ? title : undefined}
+          headerActionLabel={includeHeader ? headerActionLabel : undefined}
+          onHeaderActionPress={includeHeader ? onHeaderActionPress : undefined}
+          showClose={includeHeader ? showClose : false}
+          onClose={headerCloseHandler}
+          headerChildren={includeHeader ? headerChildren : undefined}
+          onItemPress={onItemPress}
+          itemTitleExtractor={itemTitleExtractor}
+          theme={theme}
+          emptyComponent={emptyComponent}
+          extraBottomPadding={bottomPadding}
+          closeIcon={includeHeader ? closeIcon : undefined}
+          enableSearch={enableSearch}
+          searchPlaceholder={searchPlaceholder}
+          onSearchFocus={handleSearchFocus}
+          onSearchBlur={handleSearchBlur}
+        />
+      )}
     </BottomSheet>
   );
 };
