@@ -69,6 +69,12 @@ async function updateRole(workspaceId, roleId, data) {
         expressionAttributeNames["#permissions"] = "permissions";
     }
 
+    if (data.hasAccess !== undefined) {
+        updateFields.push("#hasAccess = :hasAccess");
+        expressionAttributeValues[":hasAccess"] = data.hasAccess
+        expressionAttributeNames["#hasAccess"] = "hasAccess";
+    }
+
     updateFields.push("#updatedAt = :updatedAt");
     expressionAttributeValues[":updatedAt"] = new Date().toISOString();
     expressionAttributeNames["#updatedAt"] = "updatedAt";

@@ -37,7 +37,7 @@ async function createWorkspace(authUserId, data) {
     const existingWorkspace = await workspaceRepo.getWorkspaceByOwnerId(authUserId);
     if (existingWorkspace && existingWorkspace.length > 0) {
         return {message: "User has already created a workspace"}
-    };
+    }
 
     const workspaceId = uuidv4();
     const date = new Date().toISOString();
@@ -80,6 +80,24 @@ async function createWorkspace(authUserId, data) {
     }
 
     // add dashboard board to the workspace
+    const boardId = uuidv4();
+
+    const boardItem = {
+        workspaceId,
+        boardId,
+        name: "Dashboard",
+        config: {},
+        isDashboard: true,
+        editedBy: [authUserId],
+        createdAt: date,
+        updatedAt: date
+    };
+
+    const thumbnailKey = `workspaces/${workspaceId}/boards/${boardId}/thumbnail.jpeg`;
+
+    boardItem.thumbnailKey = thumbnailKey;
+
+    await workspaceRepo.addBoard(boardItem);
 
     // add owner and manager roles with permissions to workspace
     const ownerRoleId = uuidv4();
@@ -90,20 +108,22 @@ async function createWorkspace(authUserId, data) {
 
     // create role items
     const ownerRoleItem = {
-        workspaceId: workspaceId,
+        workspaceId,
         roleId: ownerRoleId,
         name: "Owner",
         owner: true,
         permissions: [],
+        hasAccess: {boards: [boardId]},
         createdAt: date,
         updatedAt: date
     };
 
     const managerRoleItem = {
-        workspaceId: workspaceId,
+        workspaceId,
         roleId: managerRoleId,
         name: "Manager",
         permissions: starterRolePerms.manager,
+        hasAccess: {boards: [boardId]},
         createdAt: date,
         updatedAt: date
     };
@@ -113,6 +133,7 @@ async function createWorkspace(authUserId, data) {
         roleId: employeeRoleId,
         name: "Employee",
         permissions: starterRolePerms.employee,
+        hasAccess: {boards: [boardId]},
         createdAt: date,
         updatedAt: date
     }

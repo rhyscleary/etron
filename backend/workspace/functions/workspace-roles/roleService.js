@@ -55,7 +55,8 @@ async function createRoleInWorkspace(authUserId, workspaceId, payload) {
         name: name,
         permissions: rolePermissions,
         createdAt: date,
-        updatedAt: date
+        updatedAt: date,
+        hasAccess: {}
     };
 
     await workspaceRepo.addRole(roleItem);
@@ -147,10 +148,15 @@ async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
         throw new Error("Role not found:", roleId);
     }
 
-    const { name, permissions } = payload;
+    const { name, permissions, hasAccess } = payload;
 
-    if (name && typeof name !== "string") {
-        throw new Error("'name' must be a string");
+    const updatedFields = {};
+
+    if (name) {
+        if (typeof name !== "string") {
+            throw new Error("'name' must be a string");
+        }
+        updatedFields.name = name;
     }
 
     if (permissions) {
@@ -163,9 +169,32 @@ async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
                 throw new Error("Each permission must be a string key");
             }
         }
+
+        updatedFields.permissions = permissions;
     }
 
-    return workspaceRepo.updateRole(workspaceId, roleId, payload);
+    if (hasAccess) {
+        if (typeof hasAccess !== "object" || Array.isArray(hasAccess)) {
+            throw new Error("'hasAccess' must be an object");
+        }
+
+        // merge and duplicate
+        const existingAccess = role.hasAccess || {};
+        const mergedAccess = { ...existingAccess };
+
+        for (const [resourceType, ids] of Object.entries(hasAccess)) {
+            if (!Array.isArray(ids)) {
+                throw new Error(`'hasAccess.${resourceType}' must be an array`);
+            }
+
+            const existingIds = Array.isArray(existingAccess[resourceType]) ? existingAccess[resourceType] : [];
+            mergedAccess[resourceType] = Array.from(new Set([...existingIds, ...ids]));
+        }
+
+        updatedFields.hasAccess = mergedAccess;
+    }
+
+    return workspaceRepo.updateRole(workspaceId, roleId, updatedFields);
 }
 
 module.exports = {
