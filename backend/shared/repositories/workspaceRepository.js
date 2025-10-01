@@ -173,16 +173,17 @@ async function getOwnerRoleId(workspaceId) {
 
 // add board to workspace
 async function addBoard(boardItem) {
-    boardItem = (result.Attributes || []).map(({sk, ...rest}) => ({
+    const {boardId, ...rest} = boardItem;
+    const updatedBoardItem = {
         ...rest,
-        sk: boardId.replace(`board#${boardId}`)
-    }));
+        sk: `board#${boardId}`
+    }
 
     // send request to datastore
     await dynamoDB.send(
         new PutCommand( {
             TableName: tableName,
-            Item: boardItem
+            Item: updatedBoardItem
         })
     );
 }

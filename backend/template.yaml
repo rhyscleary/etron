@@ -36,6 +36,7 @@ Resources:
       TemplateURL: ./workspace/template.yaml
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        WorkspaceBucketName: !Ref WorkspaceBucketName
         
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack

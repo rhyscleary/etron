@@ -3,7 +3,7 @@
 const metricRepo = require("@etron/day-book-shared/repositories/metricRepository");
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
 const { getUploadUrl, getDownloadUrl } = require("@etron/metrics-shared/repositories/metricsBucketRepository");
-const { isOwner, isManager, hasPermission } = require("@etron/shared/utils/permissions");
+const { hasPermission } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
 const { hasPermission } = require("@etron/shared/utils/permissions");

@@ -26,7 +26,7 @@ async function createBoardInWorkspace(authUserId, workspaceId, payload) {
         throw new Error("Please specify a name");
     }
 
-    if (!config || !Array.isArray(config)) {
+    if (!config) {
         throw new Error("Please specify the config");
     }
 
@@ -95,7 +95,7 @@ async function getBoardsInWorkspace(authUserId, workspaceId) {
     await validateWorkspaceId(workspaceId);
 
     // get all boards in a workspace
-    const boards = await reportRepo.getBoardsByWorkspaceId(workspaceId);
+    const boards = await workspaceRepo.getBoardsByWorkspaceId(workspaceId);
 
     if (!boards || boards.length === 0) return [];
 

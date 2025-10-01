@@ -236,7 +236,7 @@ const CreateMetric = () => {
                         />
 
                         <Button icon="file" mode="text" onPress={showDataModal}>
-                            Validate Data
+                            View Data
                         </Button>
 
                         <DropDown

@@ -6,6 +6,8 @@ Description: >
 Parameters:
   AppConfigurationBucketName:
     Type: String
+  WorkspaceBucketName:
+    Type: String
     
 Globals:
   Function:
@@ -16,6 +18,7 @@ Globals:
     Environment:
       Variables:
         APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
+        WORKSPACE_BUCKET: !Ref WorkspaceBucketName
 
 Resources:
 
