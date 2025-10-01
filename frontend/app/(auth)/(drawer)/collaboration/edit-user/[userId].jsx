@@ -16,6 +16,7 @@ import AvatarButton from "../../../../../components/common/buttons/AvatarButton"
 import { updateUserAttribute } from "aws-amplify/auth";
 import { getUserType } from "../../../../../storage/userStorage";
 import { saveProfilePhoto } from "../../../../../utils/profilePhoto";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -160,8 +161,12 @@ const EditUser = () => {
 	};
 
 	return (
-		<View style={commonStyles.screen}>
-			<Header title="Edit User" showBack showCheck onRightIconPress={handleUpdate} />
+		<ResponsiveScreen
+			header={<Header title="Edit User" showBack showCheck onRightIconPress={handleUpdate} />}
+			center={false}
+			padded
+            scroll={false}
+		>
 
 			<View style={{ alignItems: "center"}}>
 				<AvatarButton
@@ -267,7 +272,7 @@ const EditUser = () => {
 					</Dialog.Actions>
 				</Dialog>
 			</Portal>
-		</View>
+		</ResponsiveScreen>
 	);
 };
 

@@ -10,6 +10,7 @@ import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const Invites = () => {
   const theme = useTheme();
@@ -50,7 +51,7 @@ const Invites = () => {
     </Pressable>
   );
 
-/*
+  /*
   <TouchableOpacity
             key = {item.inviteId}
             onPress={() => {router.navigate(`/collaboration/edit-invite/${item.inviteId}`)}}
@@ -60,13 +61,19 @@ const Invites = () => {
           */
 
   return (
-    <View style={commonStyles.screen}>
-      <Header
-        title="Invites"
-        showBack
-        showPlus
-        onRightIconPress={() => router.navigate("/collaboration/invite-user")}
-      />
+		<ResponsiveScreen
+			header={
+        <Header
+          title="Invites"
+          showBack
+          showPlus
+          onRightIconPress={() => router.navigate("/collaboration/invite-user")}
+        />      
+      }
+			center={false}
+			padded={false}
+      scroll={true}
+		>
 
       {loading ? (
         <Text style={{ textAlign: "center", marginTop: 20, color: "#999" }}>
@@ -85,7 +92,7 @@ const Invites = () => {
           }
         />
       )}
-    </View>
+    </ResponsiveScreen>
   );
 };
 

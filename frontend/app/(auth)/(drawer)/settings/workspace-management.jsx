@@ -1,4 +1,4 @@
-    // Author(s): Rhys Cleary
+// Author(s): Rhys Cleary
 
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useRouter } from "expo-router";
