@@ -14,10 +14,24 @@ const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { runQuery } = require("@etron/data-sources-shared/utils/athenaService");
 const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    VIEW_DATASOURCES: "modules.daybook.datasources.view_dataSources",
+    MANAGE_DATASOURCES: "modules.daybook.datasources.manage_dataSources",
+    VIEW_DATA: "modules.daybook.datasources.view_data"
+};
 
 async function createRemoteDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const { name, sourceType, method, expiry, config, secrets } = payload;
 
@@ -92,6 +106,12 @@ async function createLocalDataSource(authUserId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
 
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     const { name, sourceType, method, expiry } = payload;
 
     if (!sourceType) {
@@ -149,6 +169,12 @@ async function createLocalDataSource(authUserId, payload) {
 async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
@@ -215,6 +241,12 @@ async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
 async function getLocalDataSourceUploadUrl(authUserId, workspaceId, dataSourceId) {
     await validateWorkspaceId(workspaceId);
 
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
     if (!dataSource) throw new Error("DataSource not found");
@@ -233,6 +265,12 @@ async function getLocalDataSourceUploadUrl(authUserId, workspaceId, dataSourceId
 async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
     await validateWorkspaceId(workspaceId);
 
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
 
     if (!dataSource) {
@@ -250,6 +288,12 @@ async function getDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
 async function getDataSourcesInWorkspace(authUserId, workspaceId) {
     await validateWorkspaceId(workspaceId);
 
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     // get data source details by workspace id
     const dataSources = await dataSourceRepo.getDataSourcesByWorkspaceId(workspaceId);
 
@@ -266,6 +310,12 @@ async function getDataSourcesInWorkspace(authUserId, workspaceId) {
 
 async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId) {
     await validateWorkspaceId(workspaceId);
+    
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     // get data source details
     const dataSource = await dataSourceRepo.getDataSourceById(workspaceId, dataSourceId);
@@ -393,6 +443,12 @@ function sanitiseIdentifier(name) {
 }
 
 async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {  // Grabs the data from a data source
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_DATA);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     // get the schema from the dataSource
     const schema = await getDataSchema(workspaceId, dataSourceId);
     if (!schema || schema.length === 0) throw new Error("Schema not found for this data source");
@@ -424,6 +480,12 @@ async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {  
 }
 
 async function viewDataForMetric(authUserId, workspaceId, dataSourceId, metricId, options = {}) {  // Grabs only the data in the source used by a metric (less data transferred)
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_DATA);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+    
     // get the schema from the dataSource
     const schema = await getDataSchema(workspaceId, dataSourceId);
     if (!schema || schema.length === 0) throw new Error("Schema not found for this data source");

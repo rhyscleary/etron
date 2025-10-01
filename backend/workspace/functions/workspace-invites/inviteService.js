@@ -5,8 +5,22 @@ const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvite
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    INVITE_USER: "app.collaboration.invite_user",
+    CANCEL_INVITE: "app.collaboration.cancel_invite",
+    VIEW_INVITES: "app.collaboration.view_invites"
+};
 
 async function inviteUsertoWorkspace(authUserId, workspaceId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.INVITE_USER);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const { email, roleId } = payload;
@@ -65,6 +79,12 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, payload) {
 }
 
 async function cancelInviteToWorkspace(authUserId, workspaceId, inviteId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.CANCEL_INVITE);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const invite = await workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
@@ -94,12 +114,24 @@ async function cancelUsersInvites(email) {
 }
 
 async function getInvite(workspaceId, inviteId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_INVITES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     return workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
 }
 
 async function getSentInvites(authUserId, workspaceId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_INVITES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     return workspaceInvitesRepo.getInvitesByWorkspaceId(workspaceId);

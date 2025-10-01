@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { createProfileInWorkspace, updateProfileInWorkspace, deleteProfileInWorkspace, getProfileInWorkspace, getProfilesInWorkspace } = require("./profileService");
+const { createBoardInWorkspace, updateBoardInWorkspace, deleteBoardInWorkspace, getBoardInWorkspace, getBoardsInWorkspace } = require("./boardService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -19,8 +19,8 @@ exports.handler = async (event) => {
 
         switch (routeKey) {
         
-            // CREATE PROFILE
-            case "POST /workspace/{workspaceId}/profiles": {
+            // CREATE BOARD
+            case "POST /workspace/{workspaceId}/boards": {
                 if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
@@ -29,13 +29,13 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                body = await createProfileInWorkspace(authUserId, pathParams.workspaceId, requestJSON);
+                body = await createBoardInWorkspace(authUserId, pathParams.workspaceId, requestJSON);
                 break;
             }
 
-            // UPDATE PROFILE
-            case "PUT /workspace/{workspaceId}/profiles/{profileId}": {
-                if (!pathParams.workspaceId || !pathParams.profileId) {
+            // UPDATE BOARD
+            case "PATCH /workspace/{workspaceId}/boards/{boardId}": {
+                if (!pathParams.workspaceId || !pathParams.boardId) {
                     throw new Error("Missing required path parameters");
                 }
 
@@ -43,17 +43,17 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof pathParams.profileId !== "string") {
-                    throw new Error("profileId must be a UUID, 'string'");
+                if (typeof pathParams.boardId !== "string") {
+                    throw new Error("boardId must be a UUID, 'string'");
                 }
 
-                body = await updateProfileInWorkspace(authUserId, pathParams.workspaceId, pathParams.profileId, requestJSON);
+                body = await updateBoardInWorkspace(authUserId, pathParams.workspaceId, pathParams.boardId, requestJSON);
                 break;
             }
 
-            // DELETE PROFILE
-            case "DELETE /workspace/{workspaceId}/profiles/{profileId}": {
-                if (!pathParams.workspaceId || !pathParams.profileId) {
+            // DELETE BOARD
+            case "DELETE /workspace/{workspaceId}/boards/{boardId}": {
+                if (!pathParams.workspaceId || !pathParams.boardId) {
                     throw new Error("Missing required path parameters");
                 }
 
@@ -61,17 +61,17 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof pathParams.profileId !== "string") {
-                    throw new Error("profileId must be a UUID, 'string'");
+                if (typeof pathParams.boardId !== "string") {
+                    throw new Error("boardId must be a UUID, 'string'");
                 }
 
-                body = await deleteProfileInWorkspace(authUserId, pathParams.workspaceId, pathParams.profileId);
+                body = await deleteBoardInWorkspace(authUserId, pathParams.workspaceId, pathParams.boardId);
                 break;
             }
 
-            // GET PROFILE IN WORKSPACE
-            case "GET /workspace/{workspaceId}/profiles/{profileId}": {
-                if (!pathParams.workspaceId || !pathParams.profileId) {
+            // GET BOARD IN WORKSPACE
+            case "GET /workspace/{workspaceId}/boards/{boardId}": {
+                if (!pathParams.workspaceId || !pathParams.boardId) {
                     throw new Error("Missing required path parameters");
                 }
 
@@ -79,16 +79,16 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                if (typeof pathParams.profileId !== "string") {
-                    throw new Error("profileId must be a UUID, 'string'");
+                if (typeof pathParams.boardId !== "string") {
+                    throw new Error("boardId must be a UUID, 'string'");
                 }
 
-                body = await getProfileInWorkspace(authUserId, pathParams.workspaceId, pathParams.profileId);
+                body = await getBoardInWorkspace(authUserId, pathParams.workspaceId, pathParams.boardId);
                 break;
             }
 
-            // GET ALL PROFILES IN WORKSPACE
-            case "GET /workspace/{workspaceId}/profiles": {
+            // GET ALL BOARDS IN WORKSPACE
+            case "GET /workspace/{workspaceId}/boards": {
                 if (!pathParams.workspaceId) {
                     throw new Error("Missing required path parameters");
                 }
@@ -97,7 +97,7 @@ exports.handler = async (event) => {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                body = await getProfilesInWorkspace(authUserId, pathParams.workspaceId);
+                body = await getBoardsInWorkspace(authUserId, pathParams.workspaceId);
                 break;
             }
             

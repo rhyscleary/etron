@@ -21,6 +21,7 @@ import {
     signOut
 } from 'aws-amplify/auth';
 import DropDown from "../../../../components/common/input/DropDown";
+import { isOwnerRole } from "../../../../storage/permissionsStorage";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
@@ -36,6 +37,7 @@ const WorkspaceManagement = () => {
     const [roles, setRoles] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
     const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
+    const [isOwner, setIsOwner] = useState(false);
 
 
     // container for different workspace management options
@@ -80,6 +82,15 @@ const WorkspaceManagement = () => {
                 setRoles(filteredList);
             } catch (error) {
                 console.error("Error fetching roles:", error);
+            }
+
+            // check for owner role
+            try {
+                const ownerCheck = await isOwnerRole();
+                setIsOwner(ownerCheck);
+            } catch (error) {
+                console.error("Error checking owner role:", error);
+                setIsOwner(false);
             }
         }
         fetchData();
@@ -180,11 +191,13 @@ const WorkspaceManagement = () => {
                         />
                     ))}
                 </StackLayout>
-
-                <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
-                    <BasicButton label="Transfer Ownership" danger onPress={() => setTransferDialogVisible(true)}/>
-                    <BasicButton label="Delete Workspace" danger onPress={() => setDeleteDialogVisible(true)}/>
-                </View>
+                
+                {isOwner && (
+                    <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
+                        <BasicButton label="Transfer Ownership" danger onPress={() => setTransferDialogVisible(true)}/>
+                        <BasicButton label="Delete Workspace" danger onPress={() => setDeleteDialogVisible(true)}/>
+                    </View>
+                )}
 
             </ScrollView>
 
