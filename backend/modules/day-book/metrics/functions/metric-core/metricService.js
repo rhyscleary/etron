@@ -2,10 +2,27 @@
 
 const metricRepo = require("@etron/day-book-shared/repositories/metricRepository");
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const { getUploadUrl, getDownloadUrl } = require("@etron/metrics-shared/repositories/metricsBucketRepository");
+const { hasPermission } = require("@etron/shared/utils/permissions");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
 
-async function createMetricInWorkspace(authUserId, workspaceId, payload) {
+// Permissions for this service
+const PERMISSIONS = {
+    VIEW_METRICS: "modules.daybook.metrics.view_metrics",
+    MANAGE_METRICS: "modules.daybook.metrics.manage_metrics",
+};
+
+async function createMetricInWorkspace(authUserId, payload) {
+    const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_METRICS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const { name, dataSourceId, config } = payload;
 
@@ -24,16 +41,30 @@ async function createMetricInWorkspace(authUserId, workspaceId, payload) {
         updatedAt: date
     };
 
+    const thumbnailKey = `workspaces/${workspaceId}/day-book/metrics/${metricId}/thumbnail.jpeg`;
+
+    metricItem.thumbnailKey = thumbnailKey;
+
+    const thumbnailUrl = await getUploadUrl(thumbnailKey, {
+        ContentType: "image/jpeg"
+    });
+
     await metricRepo.addMetric(metricItem);
 
     // add metricId to the associated data source
     await dataSourceRepo.addMetricToDataSource(workspaceId, dataSourceId, metricId);
 
-    return metricItem;
+    return {
+        ...metricItem,
+        thumbnailUrl
+    };
 }
 
-async function updateMetricInWorkspace(authUserId, workspaceId, metricId, payload) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+async function updateMetricInWorkspace(authUserId, metricId, payload) {
+    const workspaceId = payload.workspaceId;
+    await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_METRICS);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
@@ -54,11 +85,25 @@ async function updateMetricInWorkspace(authUserId, workspaceId, metricId, payloa
         config: config
     };
 
-    return metricRepo.updateMetric(workspaceId, metricId, metricItem);
+    const thumbnailUploadUrl = await getUploadUrl(metric.thumbnailKey, {
+        ContentType: "image/jpeg"
+    });
+
+    const updatedMetric = metricRepo.updateMetric(workspaceId, metricId, metricItem);
+
+    const thumbnailUrl = await getDownloadUrl(metric.thumbnailKey);
+
+    return {
+        ...updatedMetric,
+        thumbnailUrl,
+        thumbnailUploadUrl
+    }
 }
 
 async function getMetricInWorkspace(authUserId, workspaceId, metricId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_METRICS);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
@@ -74,7 +119,9 @@ async function getMetricInWorkspace(authUserId, workspaceId, metricId) {
 }
 
 async function getMetricsInWorkspace(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_METRICS);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
@@ -85,6 +132,13 @@ async function getMetricsInWorkspace(authUserId, workspaceId) {
 }
 
 async function deleteMetricInWorkspace(authUserId, workspaceId, metricId) {
+    await validateWorkspaceId(workspaceId);
+    
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_METRICS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     // get metric
     const metric = await metricRepo.getMetricById(workspaceId, metricId);

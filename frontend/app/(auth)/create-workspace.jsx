@@ -50,7 +50,7 @@ const CreateWorkspace = () => {
                     return { needsConfirmation: false };
             }
         } catch (error) {
-            console.log("Error updating user attribute:", error);
+            console.error("Error updating user attribute:", error);
             const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
             setMessage(`Error updating ${fieldName}: ${error.message}`);
             return { needsConfirmation: false, error: true };
@@ -96,7 +96,7 @@ const CreateWorkspace = () => {
             router.replace("/profile");
         } catch (error) {
             setCreating(false);
-            console.log("Error creating workspace: ", error);
+            console.error("Error creating workspace: ", error);
         }
     }
 

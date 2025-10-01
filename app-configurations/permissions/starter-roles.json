@@ -1,13 +1,38 @@
 {
   "manager": [
-    "app.workspace.create_workspace",
-    "app.billing.view_billing",
+    "app.workspace.update_workspace",
+    "app.workspace.manage_modules",
+    "app.workspace.manage_boards",
+    "app.workspace.view_workspace_settings",
+    "app.collaboration.invite_user",
+    "app.collaboration.cancel_invite",
+    "app.collaboration.view_invites",
+    "app.collaboration.manage_roles",
+    "app.collaboration.view_roles",
+    "app.collaboration.manage_users",
     "app.collaboration.view_users",
-    "modules.daybook.entries.create_entries"
+    "app.workspace.view_collaboration_settings",
+    "modules.daybook.datasources.view_dataSources",
+    "modules.daybook.datasources.manage_dataSources",
+    "modules.daybook.datasources.view_data",
+    "modules.daybook.metrics.view_metrics",
+    "modules.daybook.metrics.manage_metrics",
+    "modules.daybook.reports.view_reports",
+    "modules.daybook.reports.manage_drafts",
+    "modules.daybook.reports.view_exports",
+    "modules.daybook.reports.manage_exports",
+    "modules.daybook.reports.manage_templates"
   ],
-  "viewer": [
+  "employee": [
     "app.collaboration.view_users",
-    "modules.daybook.entries.view_entries",
-    "modules.daybook.reports.view_reports"
+    "app.collaboration.view_roles",
+    "app.collaboration.view_invites",
+    "app.workspace.view_workspace_settings",
+    "app.workspace.view_collaboration_settings",
+    "modules.daybook.datasources.view_dataSources",
+    "modules.daybook.datasources.view_data",
+    "modules.daybook.metrics.view_metrics",
+    "modules.daybook.reports.view_reports",
+    "modules.daybook.reports.view_exports"
   ]
 }

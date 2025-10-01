@@ -53,7 +53,7 @@ const WorkspaceDetails = () => {
                     });
                 }
             } catch (error) {
-                console.log("Error loading workspace details: ", error);
+                console.error("Error loading workspace details: ", error);
             }
             setLoading(false);
         }
@@ -114,7 +114,7 @@ const WorkspaceDetails = () => {
 
         } catch (error) {
             setUpdating(false);
-            console.log("Error updating workspace details: ", error);
+            console.error("Error updating workspace details: ", error);
         }
 
         setUpdating(false);

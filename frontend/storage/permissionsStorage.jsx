@@ -9,7 +9,7 @@ export async function saveRole(role) {
         const roleValue = JSON.stringify(role);
         await AsyncStorage.setItem(roleKey, roleValue);
     } catch (error) {
-        console.log("Error saving role: ", error);
+        console.error("Error saving role: ", error);
     }
 }
 
@@ -18,7 +18,7 @@ export async function getRole() {
         const roleValue = await AsyncStorage.getItem(roleKey);
         return roleValue != null ? JSON.parse(roleValue) : null;
     } catch (error) {
-        console.log("Error retrieving role:", error);
+        console.error("Error retrieving role:", error);
         return null;
     }
 }
@@ -28,6 +28,19 @@ export async function getPermissions() {
         const roleValue = await AsyncStorage.getItem(roleKey);
         return roleValue != null ? JSON.parse(roleValue).permissions : null;
     } catch (error) {
-        console.log("Error retrieving permissions:", error);
+        console.error("Error retrieving permissions:", error);
+    }
+}
+
+export async function isOwnerRole() {
+    try {
+        const roleValue = await AsyncStorage.getItem(roleKey);
+        if (!roleValue) return false;
+
+        const role = JSON.parse(roleValue);
+        return !!role.owner;
+    } catch (error) {
+        console.error("Error checking role for owner:", error);
+        return false;
     }
 }
