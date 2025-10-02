@@ -20,6 +20,7 @@ const Footer = ({
 }) => {
   const { bottom: bottomSafeArea } = useSafeAreaInsets();
   const theme = useTheme();
+  const colors = theme?.colors ?? {};
   const { expand, collapse, animatedIndex } = useBottomSheet();
 
   // chevron - two bars rotate between index 0 and index 1 states
@@ -56,11 +57,6 @@ const Footer = ({
       ],
     };
   });
-  const chevronContainerStyle = useMemo(
-    () => [styles.chevronContainer],
-    []
-  );
-
   // TODO: if needed change handle indicator to same centering
   const chevronShiftAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -114,12 +110,10 @@ const Footer = ({
     }
   }, [expand, collapse, animatedIndex, triggerHaptic]);
 
-  if (variant === 'none') {
-    return null;
-  }
-
   const variantStyle = useMemo(() => {
     switch (variant) {
+      case 'none':
+        return null;
       case 'translucent':
         return styles.translucent;
       case 'minimal':
@@ -128,10 +122,10 @@ const Footer = ({
       default:
         return [
           styles.default,
-          { backgroundColor: theme.colors?.primary || '#666' },
+          { backgroundColor: colors.primary || '#666' },
         ];
     }
-  }, [variant, theme.colors]);
+  }, [variant, colors.primary]);
 
   const placementStyle = useMemo(() => {
     switch (placement) {
@@ -145,12 +139,20 @@ const Footer = ({
     }
   }, [placement]);
 
+  if (variant === 'none') {
+    return null;
+  }
+
   return (
     <BottomSheetFooter
       bottomInset={bottomSafeArea}
       animatedFooterPosition={animatedFooterPosition}
     >
-      <AnimatedRectButton style={[containerStyle, placementStyle, variantStyle]} onPress={handleArrowPress}>
+      <AnimatedRectButton
+        style={[containerStyle, placementStyle, variantStyle]}
+        onPress={handleArrowPress}
+        accessibilityRole="button"
+      >
         {variant === 'translucent' && (
           <>
             <BlurView
@@ -163,10 +165,10 @@ const Footer = ({
                 styles.translucentOverlay,
                 {
                   backgroundColor: withAlpha(
-                    theme.colors?.surfaceVariant || theme.colors?.surface || '#1c1c1c',
+                    colors.surfaceVariant || colors.surface || '#1c1c1c',
                     0.18
                   ),
-                  borderColor: withAlpha(theme.colors?.outlineVariant || '#ffffff', 0.15),
+                  borderColor: withAlpha(colors.outlineVariant || '#ffffff', 0.15),
                 },
               ]}
               pointerEvents="none"
@@ -175,7 +177,7 @@ const Footer = ({
         )}
         <Animated.View
           style={[
-            chevronContainerStyle,
+            styles.chevronContainer,
             chevronShiftAnimatedStyle,
           ]}
           pointerEvents="none"
@@ -184,14 +186,14 @@ const Footer = ({
             styles.bar,
             variant === 'minimal' && styles.barMinimal,
             variant === 'minimal' && styles.barMinimalShadow,
-            { backgroundColor: theme.colors?.icon || theme.colors?.onSurface || '#fff' },
+            { backgroundColor: colors.icon || colors.onSurface || '#fff' },
             leftBarAnimatedStyle,
           ]} />
           <Animated.View style={[
             styles.bar,
             variant === 'minimal' && styles.barMinimal,
             variant === 'minimal' && styles.barMinimalShadow,
-            { backgroundColor: theme.colors?.icon || theme.colors?.onSurface || '#fff' },
+            { backgroundColor: colors.icon || colors.onSurface || '#fff' },
             rightBarAnimatedStyle,
           ]} />
         </Animated.View>
@@ -272,4 +274,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Footer;
+export default React.memo(Footer);

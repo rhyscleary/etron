@@ -2,6 +2,8 @@ import React, { useMemo, useCallback } from 'react';
 import { StyleSheet, View, TextInput } from 'react-native';
 import { useTheme, Icon, IconButton } from 'react-native-paper';
 
+export const CONTENTS_SEARCH_BAR_BOTTOM_MARGIN = 8;
+
 const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocus, onBlur }) => {
   const theme = useTheme();
   const dynamicStyles = useMemo(() => ({
@@ -49,7 +51,7 @@ const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocu
 const styles = StyleSheet.create({
   searchbar: {
     marginHorizontal: 0,
-    marginBottom: 8,
+    marginBottom: CONTENTS_SEARCH_BAR_BOTTOM_MARGIN,
     borderRadius: 6,
     height: 36,
     minHeight: 36,

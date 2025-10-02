@@ -6,7 +6,6 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useDerivedValue,
-  runOnJS,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
@@ -36,6 +35,7 @@ const Handle = ({
 }) => {
   const hasFiredRef = useRef(false);
   const theme = useTheme();
+  const colors = theme?.colors ?? {};
 
   // TODO: test different haptics (light, medium, heavy, rigid, etc.), create haptics utility if being used in app more.
   const fireHaptic = useCallback(() => {
@@ -44,24 +44,26 @@ const Handle = ({
   }, [haptics]);
 
   // animations
+  // Reduced to two indices (0 collapsed, 1 expanded)
   const indicatorTransformOriginY = useDerivedValue(() =>
-    interpolate(animatedIndex.value, [0, 1, 2], [-1, 0, 1], Extrapolate.CLAMP)
+    interpolate(animatedIndex.value, [0, 1], [-1, 0], Extrapolate.CLAMP)
   );
 
   const containerStyle = useMemo(
     () => [
       styles.header,
       variant === 'standard' ? styles.standardHandle : styles.compactHandleWrapper,
-      { backgroundColor: useSolidBackground || variant === 'standard' ? (theme?.colors?.surface ?? theme?.colors?.background ?? '#444') : 'transparent' },
+      { backgroundColor: useSolidBackground || variant === 'standard' ? (colors.surface ?? colors.background ?? '#444') : 'transparent' },
       style,
     ],
-    [style, theme?.colors, useSolidBackground, variant]
+    [style, colors.surface, colors.background, useSolidBackground, variant]
   );
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
+    // With only two indices (0 collapsed, 1 expanded) interpolate directly across [0,1]
     const borderTopRadius = interpolate(
       animatedIndex.value,
-      [1, 2],
+      [0, 1],
       [20, 0],
       Extrapolate.CLAMP
     );
@@ -78,8 +80,8 @@ const Handle = ({
   const leftIndicatorAnimatedStyle = useAnimatedStyle(() => {
     const leftIndicatorRotate = interpolate(
       animatedIndex.value,
-      [0, 1, 2],
-      [-ANGLE_30, 0, ANGLE_30],
+      [0, 1],
+      [-ANGLE_30, 0],
       Extrapolate.CLAMP
     );
     return {
@@ -98,8 +100,8 @@ const Handle = ({
   const rightIndicatorAnimatedStyle = useAnimatedStyle(() => {
     const rightIndicatorRotate = interpolate(
       animatedIndex.value,
-      [0, 1, 2],
-      [ANGLE_30, 0, -ANGLE_30],
+      [0, 1],
+      [ANGLE_30, 0],
       Extrapolate.CLAMP
     );
     return {
@@ -111,15 +113,16 @@ const Handle = ({
     };
   });
 
-  const onTouchStart = () => {
+  const onTouchStart = useCallback(() => {
     if (!hasFiredRef.current) {
       hasFiredRef.current = true;
       fireHaptic();
     }
-  };
-  const onTouchEnd = () => {
+  }, [fireHaptic]);
+
+  const onTouchEnd = useCallback(() => {
     hasFiredRef.current = false;
-  };
+  }, []);
 
   const handlePressClose = useCallback(() => {
     if (typeof onClose === 'function') onClose();
@@ -138,14 +141,14 @@ const Handle = ({
             style={styles.compactAppbar}
           >
             {title ? (
-              <Appbar.Content title={title} titleStyle={[styles.compactTitle, { color: theme.colors?.text || theme.colors?.onSurface || '#fff' }]} />
+              <Appbar.Content title={title} titleStyle={[styles.compactTitle, { color: colors.text || colors.onSurface || '#fff' }]} />
             ) : null}
             {showClose ? (
               <Appbar.Action
                 icon={closeIcon}
                 accessibilityLabel={'Close'}
                 onPress={handlePressClose}
-                rippleColor={theme.colors?.backdrop}
+                rippleColor={colors.backdrop}
               />
             ) : null}
           </Appbar.Header>
@@ -161,13 +164,13 @@ const Handle = ({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <Animated.View style={[leftIndicatorStyle, leftIndicatorAnimatedStyle, { backgroundColor: theme.colors?.buttonBackground || theme.colors?.outline || '#999' }]} />
-      <Animated.View style={[rightIndicatorStyle, rightIndicatorAnimatedStyle, { backgroundColor: theme.colors?.buttonBackground || theme.colors?.outline || '#999' }]} />
+        <Animated.View style={[leftIndicatorStyle, leftIndicatorAnimatedStyle, { backgroundColor: colors.buttonBackground || colors.outline || '#999' }]} />
+        <Animated.View style={[rightIndicatorStyle, rightIndicatorAnimatedStyle, { backgroundColor: colors.buttonBackground || colors.outline || '#999' }]} />
     </Animated.View>
   );
 };
 
-export default Handle;
+  export default React.memo(Handle);
 
 const styles = StyleSheet.create({
   header: {

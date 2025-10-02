@@ -194,6 +194,7 @@ const Profile = () => {
                     variant="standard"
                     title="Profile"
                     showClose={false}
+                    initialIndex={1}
                     headerChildren={profileHeaderChildren}
                     enableSearch
                     searchPlaceholder="Filter actions"
@@ -227,6 +228,7 @@ const Profile = () => {
                     footerVariant="none"
                     title="Quick Note"
                     showClose
+                    initialIndex={0}
                     snapPoints={[320, 520]}
                     customContent={quickNoteContent}
                     onChange={(index) => { if (index === -1) setShowQuickNoteSheet(false); }}

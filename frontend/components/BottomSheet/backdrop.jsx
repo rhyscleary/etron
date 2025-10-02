@@ -20,15 +20,14 @@ const Backdrop = ({
   blockAboveIndex = 0,
   onPress, // optional - can close sheet
 }) => {
-  // TODO: move to utils
   const theme = useTheme();
+  const focusedBackground = theme?.colors?.focusedBackground;
+  const primaryColor = theme?.colors?.primary;
   // prefer theme backdrop color else derive from primary
   const overlayColor = useMemo(() => {
-    // TODO: input any needed colors
-    // const base = theme?.colors?.backdrop || theme?.colors?.primary || '#000000';
-    const base = theme?.colors?.focusedBackground || theme?.colors?.primary || '#000000';
+    const base = focusedBackground || primaryColor || '#000000';
     return hexToRgba(base, 0.35);
-  }, [theme]);
+  }, [focusedBackground, primaryColor]);
   const opacityStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       animatedIndex.value,
@@ -52,7 +51,7 @@ const Backdrop = ({
   const pointerEvents = blocking ? 'auto' : 'none';
 
   const containerStyle = useMemo(
-    () => [style, styles.container, opacityStyle],
+    () => [styles.container, opacityStyle, style].filter(Boolean),
     [style, opacityStyle]
   );
 
@@ -67,9 +66,11 @@ const Backdrop = ({
     </Animated.View>
   );
 
-  if (onPress && pointerEvents === 'auto') {
+  const shouldCapturePress = Boolean(onPress) && pointerEvents === 'auto';
+
+  if (shouldCapturePress) {
     return (
-      <Pressable style={StyleSheet.absoluteFill} onPress={onPress}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={onPress} accessibilityRole="button">
         {Inner}
       </Pressable>
     );
@@ -77,7 +78,7 @@ const Backdrop = ({
   return Inner;
 };
 
-export default Backdrop;
+export default React.memo(Backdrop);
 
 const styles = StyleSheet.create({
   container: {
