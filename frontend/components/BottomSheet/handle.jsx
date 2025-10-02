@@ -32,6 +32,8 @@ const Handle = ({
   showClose = true,
   closeIcon = 'close',
   onClose,
+  onLayout,
+  ...restProps
 }) => {
   const hasFiredRef = useRef(false);
   const theme = useTheme();
@@ -131,7 +133,9 @@ const Handle = ({
   if (variant === 'compact') {
     return (
       <Animated.View
+        {...restProps}
         style={[containerStyle, containerAnimatedStyle]}
+        onLayout={onLayout}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -159,7 +163,9 @@ const Handle = ({
 
   return (
     <Animated.View
+      {...restProps}
       style={[containerStyle, containerAnimatedStyle]}
+      onLayout={onLayout}
       renderToHardwareTextureAndroid
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}

@@ -2,6 +2,8 @@
 
 `@gorhom/bottom-sheet` + Reanimated + Paper theme. Use `CustomBottomSheet`.
 
+> ℹ️ **Dynamic sizing** is enabled by default. The wrapper renders the Gorhom pre-configured primitives (`BottomSheetView`, `BottomSheetVirtualizedList`) so content height is measured automatically. Provide `maxDynamicContentSize` when you need to cap the expanded height, or disable the feature with `enableDynamicSizing={false}`.
+
 ## Examples
 Other examples are implemented in profile.jsx
 
@@ -57,6 +59,7 @@ const actions = [
     </View>
   )}
   footerVariant="none"
+  maxDynamicContentSize={480}
   onClose={() => setShow(false)}
 />;
 ```
@@ -93,7 +96,9 @@ sheetRef.current?.close();
 | `keyExtractor` | `(item,index)=>string` | item.id / index | Virtualized list key extractor. |
 | `getItem` | `(data,index)=>any` | `(arr,i)=>arr[i]` | Override VirtualizedList getItem. |
 | `getItemCount` | `(data)=>number` | `arr.length` | Override VirtualizedList getItemCount. |
-| `snapPoints` | `number[]` | auto (~30/50/70%) | Pixel heights ascending. |
+| `snapPoints` | `(number \| string)[]` | `['30%', '100%']` | Base snap points. When dynamic sizing is enabled, the sheet injects the intrinsic content height as an additional snap point. |
+| `enableDynamicSizing` | `boolean` | `true` | Enables Gorhom's dynamic sizing behaviour. Set to `false` to opt-out. |
+| `maxDynamicContentSize` | `number` | window height minus safe-area inset | Caps dynamic sizing so the sheet never grows beyond the provided height. |
 | `initialIndex` | `number` | derived | Starting index (validated). |
 | `title` | `string | ReactNode` | `undefined` | Header (standard) or handle text (compact). |
 | `headerComponent` | `ReactNode` | `undefined` | Full custom header (overrides internal). |
@@ -119,3 +124,4 @@ sheetRef.current?.close();
 
 ## Notes
 * Use `customContent` UI other than list.
+* When dynamic sizing is enabled, Gorhom adds the intrinsic content height as a snap point. Keep this in mind when targeting snap indices imperatively.
