@@ -2,15 +2,14 @@ import { View, StyleSheet } from 'react-native';
 import { Searchbar, useTheme, Chip, IconButton } from 'react-native-paper';
 import React, { useState } from 'react';
 
-const filterOptions = ['All', 'Active', 'Inactive'];
-
 const SearchBar = ({
     placeholder = "Search",
     onSearch = () => {},
     onFilterChange = () => {},
+    filters = ['All', 'Active', 'Inactive'],
 }) => {
     const[searchQuery, setSearchQuery] = useState('');
-    const [selectedFilter, setSelectedFilter] = useState('All');
+    const [selectedFilter, setSelectedFilter] = useState(filters[0] || 'All');
     const [showFilters, setShowFilters] = useState(false);
     const theme = useTheme();
 
@@ -52,7 +51,7 @@ const SearchBar = ({
 
                 {showFilters && (
                     <View style={styles.chipRow}>
-                        {filterOptions.map((filter) => (
+                        {filters.map((filter) => (
                             <Chip
                                 key={filter}
                                 selected={selectedFilter === filter}

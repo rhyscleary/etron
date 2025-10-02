@@ -12,8 +12,11 @@
         "name": "Leave",
         "description": "Request leave",
         "starterModule": false,
-        "cardColor": "",
-        "fontColor": ""
+        "cardColor": "#E8F5E9",
+        "fontColor": "#2E7D32",
+        "keywords": [],
+        "category": "Employees",
+        "icon": "chart-line"
     },
     {
         "key": "workspace_chat",

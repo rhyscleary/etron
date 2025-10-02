@@ -36,7 +36,7 @@ const Header = ({
                         if (onBackPress) {
                             onBackPress();
                         } else {
-                            router.back()
+                            router.back();
                         }
                     })} 
                     />
