@@ -10,23 +10,12 @@ import Handle from './handle';
 import Contents from './contents';
 import SheetHeader from './header';
 
-const DEFAULT_SNAP_POINTS = ['30%', '80%'];
-const MIN_SHEET_HEIGHT = 240;
+const DEFAULT_COLLAPSED_SNAP_POINT = '30%';
+const MAX_HEIGHT_PERCENT = 80;
 
-const deriveMaxSheetHeight = (topInset = 0, windowMetrics) => {
-  const windowHeight = windowMetrics?.height ?? Dimensions.get('window').height;
-  return Math.max(MIN_SHEET_HEIGHT, windowHeight - topInset);
-};
-
-const runWithDoubleRaf = (work) => {
-  if (typeof work !== 'function') return;
-  if (typeof requestAnimationFrame !== 'function') {
-    work();
-    return;
-  }
-  requestAnimationFrame(() => {
-    requestAnimationFrame(work);
-  });
+const calculateMaxSheetHeight = (windowHeight, topInset = 0) => {
+  const availableHeight = windowHeight - topInset;
+  return Math.floor(availableHeight * (MAX_HEIGHT_PERCENT / 100));
 };
 
 const CustomBottomSheetInner = (props, ref) => {
@@ -37,8 +26,8 @@ const CustomBottomSheetInner = (props, ref) => {
     keyExtractor,
     getItem,
     getItemCount,
-    snapPoints,
-    initialIndex,
+    snapPoints: customSnapPoints,
+    initialIndex: customInitialIndex,
     // header
     title,
     headerComponent,
@@ -67,7 +56,7 @@ const CustomBottomSheetInner = (props, ref) => {
     // custom non-list content
     customContent,
     containerStyle: overrideContainerStyle,
-    enableDynamicSizing: enableDynamicSizingProp,
+    enableDynamicSizing: enableDynamicSizingProp = true,
     maxDynamicContentSize: maxDynamicContentSizeProp,
     ...restProps
   } = props;
@@ -76,147 +65,134 @@ const CustomBottomSheetInner = (props, ref) => {
   const insets = useSafeAreaInsets();
   const topInset = insets?.top ?? 0;
   const [searchActive, setSearchActive] = useState(false);
-  const [maxSheetHeight, setMaxSheetHeight] = useState(() => deriveMaxSheetHeight(topInset));
-  // ref
+  
+  // refs
   const bottomSheetRef = useRef(null);
-  const currentIndexRef = useRef(null); // track latest known index
+  const currentIndexRef = useRef(null);
 
-  const lastAppliedInitialIndexRef = useRef(null);
+  // calculate max sheet height (80% of available height)
+  const maxSheetHeight = useMemo(() => {
+    const windowHeight = Dimensions.get('window').height;
+    return calculateMaxSheetHeight(windowHeight, topInset);
+  }, [topInset]);
 
-  const computeMaxSheetHeight = useCallback(
-    (windowMetrics) => deriveMaxSheetHeight(topInset, windowMetrics),
-    [topInset]
-  );
-
+  // update max height on dimension changes
   useEffect(() => {
-    const next = computeMaxSheetHeight();
-    setMaxSheetHeight((prev) => (prev === next ? prev : next));
-  }, [computeMaxSheetHeight]);
-
-  useEffect(() => {
-    const handler = ({ window }) => {
-      const next = computeMaxSheetHeight(window);
-      setMaxSheetHeight((prev) => (prev === next ? prev : next));
-    };
-
-    const subscription = Dimensions.addEventListener('change', handler);
-    return () => {
-      if (subscription?.remove) {
-        subscription.remove();
-      } else if (Dimensions.removeEventListener) {
-        Dimensions.removeEventListener('change', handler);
-      }
-    };
-  }, [computeMaxSheetHeight]);
-  const resolvedSnapPoints = useMemo(() => {
-    if (Array.isArray(snapPoints) && snapPoints.length) {
-      return snapPoints;
-    }
-    return DEFAULT_SNAP_POINTS;
-  }, [snapPoints]);
-
-  const [visibleSnapPointsCount, setVisibleSnapPointsCount] = useState(() => resolvedSnapPoints.length);
-
-  const lastIndex = useMemo(() => Math.max(0, visibleSnapPointsCount - 1), [visibleSnapPointsCount]);
-
-  const enableDynamicSizing = enableDynamicSizingProp ?? true;
-  const maxDynamicContentSize = maxDynamicContentSizeProp ?? maxSheetHeight;
-
-  const resolvedInitialIndex = useMemo(() => {
-    if (lastIndex < 0) return -1;
-    if (typeof initialIndex === 'number' && initialIndex >= 0) {
-      return Math.min(initialIndex, lastIndex);
-    }
-    return lastIndex;
-  }, [initialIndex, lastIndex]);
-
-  useEffect(() => {
-    currentIndexRef.current = resolvedInitialIndex;
-  }, [resolvedInitialIndex]);
-
-  const syncVisibleSnapPointsCount = useCallback(() => {
-    const runtimeSnapPoints = bottomSheetRef.current?.snapPoints;
-    if (Array.isArray(runtimeSnapPoints) && runtimeSnapPoints.length) {
-      setVisibleSnapPointsCount((prev) => (prev === runtimeSnapPoints.length ? prev : runtimeSnapPoints.length));
-      return runtimeSnapPoints.length;
-    }
-    return visibleSnapPointsCount;
-  }, [visibleSnapPointsCount]);
-
-  useEffect(() => {
-    setVisibleSnapPointsCount(resolvedSnapPoints.length);
-  }, [resolvedSnapPoints]);
-
-  useEffect(() => {
-    if (!bottomSheetRef.current) return;
-    if (resolvedInitialIndex < 0) return;
-    if (lastAppliedInitialIndexRef.current === resolvedInitialIndex) return;
-    lastAppliedInitialIndexRef.current = resolvedInitialIndex;
-    runWithDoubleRaf(() => {
-      bottomSheetRef.current?.snapToIndex?.(resolvedInitialIndex);
-      syncVisibleSnapPointsCount();
+    const subscription = Dimensions.addEventListener('change', ({ window }) => {
+      // dont need to trigger re-render
     });
-  }, [resolvedInitialIndex, syncVisibleSnapPointsCount]);
+    return () => subscription?.remove();
+  }, [topInset]);
 
+  // determine if using dynamic sizing
+  const enableDynamicSizing = enableDynamicSizingProp;
+
+  // calculate snap points based on dynamic sizing mode
+  const snapPoints = useMemo(() => {
+    if (enableDynamicSizing) {
+      // when dynamic sizing enabled, only provide collapsed snap point
+      // library adds second snap point for content height
+      const collapsedPoint = Array.isArray(customSnapPoints) && customSnapPoints.length > 0
+        ? customSnapPoints[0]
+        : DEFAULT_COLLAPSED_SNAP_POINT;
+      return [collapsedPoint];
+    }
+    
+    // when dynamic sizing is disabled, use all provided snap points or defaults
+    return Array.isArray(customSnapPoints) && customSnapPoints.length > 0
+      ? customSnapPoints
+      : [DEFAULT_COLLAPSED_SNAP_POINT, '80%'];
+  }, [enableDynamicSizing, customSnapPoints]);
+
+  // calculate initial index based on dynamic sizing mode
+  const initialIndex = useMemo(() => {
+    if (enableDynamicSizing) {
+      if (customInitialIndex === 0) return 0;
+      return 1;
+    }
+    
+    // without dynamic sizing, use custom index or default to last snap point
+    if (typeof customInitialIndex === 'number' && customInitialIndex >= 0) {
+      return Math.min(customInitialIndex, snapPoints.length - 1);
+    }
+    return snapPoints.length - 1;
+  }, [enableDynamicSizing, customInitialIndex, snapPoints.length]);
+
+  const maxDynamicContentSize = useMemo(() => {
+    if (typeof maxDynamicContentSizeProp === 'number') {
+      return Math.min(maxDynamicContentSizeProp, maxSheetHeight);
+    }
+    return maxSheetHeight;
+  }, [maxDynamicContentSizeProp, maxSheetHeight]);
+
+  // track current index
+  useEffect(() => {
+    currentIndexRef.current = initialIndex;
+  }, [initialIndex]);
+
+  // imperative handle for ref methods
   useImperativeHandle(ref, () => ({
-    expand: () => bottomSheetRef.current?.expand?.(),
-    collapse: () => bottomSheetRef.current?.collapse?.(),
+    expand: () => {
+      // expand to the highest available snap point
+      const maxIndex = enableDynamicSizing ? 1 : snapPoints.length - 1;
+      bottomSheetRef.current?.snapToIndex?.(maxIndex);
+    },
+    collapse: () => {
+      // collapse to the first snap point
+      bottomSheetRef.current?.snapToIndex?.(0);
+    },
     close: () => bottomSheetRef.current?.close?.(),
     forceClose: () => bottomSheetRef.current?.forceClose?.(),
     snapToIndex: (index) => {
       if (typeof index !== 'number') return;
-      const maxIndex = Math.max(0, (bottomSheetRef.current?.snapPoints?.length ?? lastIndex + 1) - 1);
-      const target = Math.max(0, Math.min(index, maxIndex));
-      bottomSheetRef.current?.snapToIndex?.(target);
+      const maxIndex = enableDynamicSizing ? 1 : snapPoints.length - 1;
+      const targetIndex = Math.max(0, Math.min(index, maxIndex));
+      bottomSheetRef.current?.snapToIndex?.(targetIndex);
     },
     snapToPosition: (position) => {
-      if (position == null) return;
       bottomSheetRef.current?.snapToPosition?.(position);
     },
-    getCurrentIndex: () => currentIndexRef.current ?? resolvedInitialIndex,
-  }), [lastIndex, resolvedInitialIndex]);
+    getCurrentIndex: () => currentIndexRef.current ?? initialIndex,
+  }), [enableDynamicSizing, initialIndex, snapPoints.length]);
 
   const handleSheetChanges = useCallback((index) => {
     currentIndexRef.current = index;
-    syncVisibleSnapPointsCount();
     onChange?.(index);
-  }, [onChange, syncVisibleSnapPointsCount]);
+  }, [onChange]);
 
   const handleClose = useCallback(() => {
     if (typeof onClose === 'function') return onClose();
     bottomSheetRef.current?.close?.();
   }, [onClose]);
 
-  // utility to expand to max snap point only if not already there
+  // expand to maximum snap point
   const expandToMax = useCallback(() => {
-    bottomSheetRef.current?.expand?.();
-  }, []);
+    const maxIndex = enableDynamicSizing ? 1 : snapPoints.length - 1;
+    bottomSheetRef.current?.snapToIndex?.(maxIndex);
+  }, [enableDynamicSizing, snapPoints.length]);
 
-  // If snap points shrink (e.g., we removed index 2 making index 1 max) and current index is now out of range, snap to new max.
-  useEffect(() => {
-    if (currentIndexRef.current == null) return;
-    const maxIndex = Math.max(0, (bottomSheetRef.current?.snapPoints?.length ?? visibleSnapPointsCount) - 1);
-    if (currentIndexRef.current > maxIndex) {
-      const target = maxIndex;
-      requestAnimationFrame(() => bottomSheetRef.current?.snapToIndex?.(target));
-      currentIndexRef.current = target;
-    }
-  }, [visibleSnapPointsCount]);
+  // last index for components that need it
+  const lastIndex = useMemo(() => {
+    return enableDynamicSizing ? 1 : snapPoints.length - 1;
+  }, [enableDynamicSizing, snapPoints.length]);
+
 
   const renderHandle = useCallback(
-    (handleProps) => (
-      <Handle
-        {...handleProps}
-        variant={variant}
-        title={variant === 'compact' ? title : undefined}
-        showClose={variant === 'compact' ? true : showClose}
-        closeIcon={closeIcon}
-        lastIndex={lastIndex}
-        onClose={handleClose}
-        useSolidBackground={handleSolidBackground}
-      />
-    ),
-    [variant, title, showClose, closeIcon, lastIndex, handleClose, handleSolidBackground]
+    (handleProps) => {
+      return (
+        <Handle
+          {...handleProps}
+          variant={variant}
+          title={variant === 'compact' ? title : undefined}
+          showClose={variant === 'compact' ? true : showClose}
+          closeIcon={closeIcon}
+          lastIndex={lastIndex}
+          onClose={handleClose}
+          useSolidBackground={handleSolidBackground}
+        />
+      );
+    },
+    [closeIcon, handleClose, handleSolidBackground, lastIndex, showClose, title, variant]
   );
 
   const handleBackdropPress = useCallback(() => {
@@ -240,15 +216,17 @@ const CustomBottomSheetInner = (props, ref) => {
   );
 
   const renderFooter = useCallback(
-    (footerProps) => (
-      <Footer
-        {...footerProps}
-        lastIndex={lastIndex}
-        variant={footerVariant}
-        placement={footerPlacement}
-      />
-    ),
-    [lastIndex, footerVariant, footerPlacement]
+    (footerProps) => {
+      return (
+        <Footer
+          {...footerProps}
+          lastIndex={lastIndex}
+          variant={footerVariant}
+          placement={footerPlacement}
+        />
+      );
+    },
+    [footerPlacement, footerVariant, lastIndex]
   );
 
   const renderBackground = useCallback(
@@ -258,7 +236,9 @@ const CustomBottomSheetInner = (props, ref) => {
 
   const scheduleExpand = useCallback(() => {
     if (Platform.OS === 'android') {
-      runWithDoubleRaf(expandToMax);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(expandToMax);
+      });
     } else {
       expandToMax();
     }
@@ -301,8 +281,6 @@ const CustomBottomSheetInner = (props, ref) => {
 
   const footerComponentProp = footerVariant === 'none' ? undefined : renderFooter;
 
-  const bottomSheetSnapPoints = resolvedSnapPoints;
-
   const combinedContainerStyle = useMemo(() => {
     const shadowColor = theme.colors?.shadow || '#000';
     const base = [styles.shadows, { shadowColor }];
@@ -314,11 +292,9 @@ const CustomBottomSheetInner = (props, ref) => {
     <BottomSheet
       ref={bottomSheetRef}
       onChange={handleSheetChanges}
-      index={resolvedInitialIndex}
-      snapPoints={bottomSheetSnapPoints}
+      index={initialIndex}
+      snapPoints={snapPoints}
       enableOverDrag={false}
-      overDragResistanceFactor={1000} // extra guard: very high resistance to upward overdrag
-      // Provide topInset so library's internal max height matches our computed stableMaxHeight
       topInset={topInset}
       enableDynamicSizing={enableDynamicSizing}
       maxDynamicContentSize={maxDynamicContentSize}
