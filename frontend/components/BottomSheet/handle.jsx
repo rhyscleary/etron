@@ -35,6 +35,7 @@ const Handle = ({
   closeIcon = 'close',
   onClose,
   onLayout,
+  textColor,
   // header props for standard variant
   headerComponent,
   headerActionLabel,
@@ -163,7 +164,7 @@ const Handle = ({
             style={styles.compactAppbar}
           >
             {title ? (
-              <Appbar.Content title={title} titleStyle={[styles.compactTitle, { color: colors.text || colors.onSurface || '#fff' }]} />
+              <Appbar.Content title={title} titleStyle={[styles.compactTitle, { color: textColor || colors.text || colors.onSurface || '#fff' }]} />
             ) : null}
             {showClose ? (
               <Appbar.Action
@@ -194,6 +195,7 @@ const Handle = ({
         showClose={showClose}
         onClose={onClose}
         closeIcon={closeIcon}
+        textColor={textColor}
       >
         {headerChildren}
       </SheetHeader>

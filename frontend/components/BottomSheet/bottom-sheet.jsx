@@ -12,6 +12,7 @@ import Contents from './contents';
 const DEFAULT_COLLAPSED_SNAP_POINT = '30%';
 const MAX_HEIGHT_PERCENT = 80;
 
+// Helper functions
 const calculateMaxSheetHeight = (windowHeight, topInset = 0) => {
   const availableHeight = windowHeight - topInset;
   return Math.floor(availableHeight * (MAX_HEIGHT_PERCENT / 100));
@@ -20,49 +21,99 @@ const calculateMaxSheetHeight = (windowHeight, topInset = 0) => {
 const getMaxIndex = (enableDynamicSizing, snapPointsLength) => 
   enableDynamicSizing ? 1 : snapPointsLength - 1;
 
+const getSnapPoints = (enableDynamicSizing, customSnapPoints) => {
+  const collapsedPoint = (Array.isArray(customSnapPoints) && customSnapPoints.length > 0)
+    ? customSnapPoints[0]
+    : DEFAULT_COLLAPSED_SNAP_POINT;
+  
+  return enableDynamicSizing 
+    ? [collapsedPoint]
+    : (Array.isArray(customSnapPoints) && customSnapPoints.length > 0 
+        ? customSnapPoints 
+        : [DEFAULT_COLLAPSED_SNAP_POINT, '80%']);
+};
+
+const getInitialIndex = (enableDynamicSizing, customInitialIndex, snapPointsLength) => {
+  if (enableDynamicSizing) {
+    return customInitialIndex === 0 ? 0 : 1;
+  }
+  
+  if (typeof customInitialIndex === 'number' && customInitialIndex >= 0) {
+    return Math.min(customInitialIndex, snapPointsLength - 1);
+  }
+  return snapPointsLength - 1;
+};
+
+const calculateAdjustedMaxContentSize = (keyboardHeight, maxDynamicContentSize, topInset, bottomInset) => {
+  if (keyboardHeight <= 0) return maxDynamicContentSize;
+  
+  const windowHeight = Dimensions.get('window').height;
+  const availableSpace = windowHeight - keyboardHeight - topInset - bottomInset;
+  return Math.floor(availableSpace * 0.9);
+};
+
 const CustomBottomSheetInner = (props, ref) => {
   const {
+    // Core props
     onChange,
+    onClose,
+    variant = 'standard',
+    snapPoints: customSnapPoints,
+    initialIndex: customInitialIndex,
+    enableDynamicSizing: enableDynamicSizingProp = true,
+    maxDynamicContentSize: maxDynamicContentSizeProp,
+    containerStyle: overrideContainerStyle,
+    
+    // Header configuration
+    header = {},
+    
+    // Search configuration
+    search = {},
+    
+    // Footer configuration
+    footer = {},
+    
+    // List configuration
     data = [1, 2, 3],
     renderItem,
     keyExtractor,
     getItem,
     getItemCount,
-    snapPoints: customSnapPoints,
-    initialIndex: customInitialIndex,
-    // header
-    title,
-    headerComponent,
-    headerActionLabel,
-    onHeaderActionPress,
-    showClose = true,
-    onClose,
-    headerChildren,
-    // variants
-    variant = 'standard', // 'standard' | 'compact'
-    closeIcon = 'close',
-    // handle appearance
-    handleSolidBackground = false,
-    // item interactions
     onItemPress,
     itemTitleExtractor,
-    // empty state
     emptyComponent,
-    // search
-    enableSearch = false,
-    searchPlaceholder,
-    searchPosition = 'top', // 'top' | 'bottom' - controls whether search appears in header or footer
-    footerVariant = 'default', // 'default' | 'translucent' | 'minimal' | 'none' | 'search'
-    footerPlacement = 'right', // 'left' | 'center' | 'right'
-    autoExpandOnSearchFocus = true,
-    autoExpandOnKeyboardShow = true,
-    // custom non-list content
+    
+    // Custom content (alternative to list)
     customContent,
-    containerStyle: overrideContainerStyle,
-    enableDynamicSizing: enableDynamicSizingProp = true,
-    maxDynamicContentSize: maxDynamicContentSizeProp,
+    
     ...restProps
   } = props;
+
+  // Destructure nested configs with defaults
+  const {
+    title = header.title,
+    component: headerComponent = header.component,
+    actionLabel: headerActionLabel = header.actionLabel,
+    onActionPress: onHeaderActionPress = header.onActionPress,
+    showClose = header.showClose ?? true,
+    closeIcon = header.closeIcon ?? 'close',
+    solidBackground: handleSolidBackground = header.solidBackground ?? false,
+    children: headerChildren = header.children,
+    textColor: headerTextColor = header.textColor,
+  } = header;
+
+  const {
+    enabled: enableSearch = search.enabled ?? false,
+    placeholder: searchPlaceholder = search.placeholder,
+    position: searchPosition = search.position ?? 'top',
+    autoExpandOnFocus: autoExpandOnSearchFocus = search.autoExpandOnFocus ?? true,
+    autoExpandOnKeyboard: autoExpandOnKeyboardShow = search.autoExpandOnKeyboard ?? true,
+  } = search;
+
+  const {
+    variant: footerVariant = footer.variant ?? 'default',
+    placement: footerPlacement = footer.placement ?? 'right',
+  } = footer;
 
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -84,28 +135,15 @@ const CustomBottomSheetInner = (props, ref) => {
 
   const enableDynamicSizing = enableDynamicSizingProp;
 
-  const snapPoints = useMemo(() => {
-    const collapsedPoint = (Array.isArray(customSnapPoints) && customSnapPoints.length > 0)
-      ? customSnapPoints[0]
-      : DEFAULT_COLLAPSED_SNAP_POINT;
-    
-    return enableDynamicSizing 
-      ? [collapsedPoint]
-      : (Array.isArray(customSnapPoints) && customSnapPoints.length > 0 
-          ? customSnapPoints 
-          : [DEFAULT_COLLAPSED_SNAP_POINT, '80%']);
-  }, [enableDynamicSizing, customSnapPoints]);
+  const snapPoints = useMemo(() => 
+    getSnapPoints(enableDynamicSizing, customSnapPoints),
+    [enableDynamicSizing, customSnapPoints]
+  );
 
-  const initialIndex = useMemo(() => {
-    if (enableDynamicSizing) {
-      return customInitialIndex === 0 ? 0 : 1;
-    }
-    
-    if (typeof customInitialIndex === 'number' && customInitialIndex >= 0) {
-      return Math.min(customInitialIndex, snapPoints.length - 1);
-    }
-    return snapPoints.length - 1;
-  }, [enableDynamicSizing, customInitialIndex, snapPoints.length]);
+  const initialIndex = useMemo(() => 
+    getInitialIndex(enableDynamicSizing, customInitialIndex, snapPoints.length),
+    [enableDynamicSizing, customInitialIndex, snapPoints.length]
+  );
 
   const maxDynamicContentSize = useMemo(() => 
     typeof maxDynamicContentSizeProp === 'number'
@@ -114,13 +152,10 @@ const CustomBottomSheetInner = (props, ref) => {
     [maxDynamicContentSizeProp, maxSheetHeight]
   );
 
-  const adjustedMaxContentSize = useMemo(() => {
-    if (keyboardHeight <= 0) return maxDynamicContentSize;
-    
-    const windowHeight = Dimensions.get('window').height;
-    const availableSpace = windowHeight - keyboardHeight - topInset - bottomInset;
-    return Math.floor(availableSpace * 0.9);
-  }, [keyboardHeight, topInset, bottomInset, maxDynamicContentSize]);
+  const adjustedMaxContentSize = useMemo(() => 
+    calculateAdjustedMaxContentSize(keyboardHeight, maxDynamicContentSize, topInset, bottomInset),
+    [keyboardHeight, maxDynamicContentSize, topInset, bottomInset]
+  );
 
   const lastIndex = useMemo(() => 
     getMaxIndex(enableDynamicSizing, snapPoints.length),
@@ -189,46 +224,46 @@ const CustomBottomSheetInner = (props, ref) => {
     [showSearchInFooter, footerVariant]
   );
 
-  useImperativeHandle(ref, () => ({
-    expand: () => bottomSheetRef.current?.snapToIndex?.(getMaxIndex(enableDynamicSizing, snapPoints.length)),
-    collapse: () => bottomSheetRef.current?.snapToIndex?.(0),
-    close: () => bottomSheetRef.current?.close?.(),
-    forceClose: () => bottomSheetRef.current?.forceClose?.(),
-    snapToIndex: (index) => {
-      if (typeof index !== 'number') return;
-      const maxIndex = getMaxIndex(enableDynamicSizing, snapPoints.length);
-      bottomSheetRef.current?.snapToIndex?.(Math.max(0, Math.min(index, maxIndex)));
-    },
-    snapToPosition: (position) => bottomSheetRef.current?.snapToPosition?.(position),
-    getCurrentIndex: () => currentIndexRef.current ?? initialIndex,
-  }), [enableDynamicSizing, initialIndex, snapPoints.length]);
+  // Consolidated handle props
+  const handleProps = useMemo(() => ({
+    variant,
+    title: variant === 'compact' ? title : (variant === 'standard' ? title : undefined),
+    showClose,
+    closeIcon,
+    lastIndex,
+    onClose: handleClose,
+    useSolidBackground: handleSolidBackground,
+    headerComponent: variant === 'standard' ? headerComponent : undefined,
+    headerActionLabel: variant === 'standard' ? headerActionLabel : undefined,
+    onHeaderActionPress: variant === 'standard' ? onHeaderActionPress : undefined,
+    headerChildren: variant === 'standard' ? headerChildren : undefined,
+    enableSearch: variant === 'standard' ? showSearchInHandle : false,
+    searchPlaceholder,
+    onSearchChange: setSearchQuery,
+    onSearchFocus: handleSearchFocus,
+    onSearchBlur: handleSearchBlur,
+    searchResetKey,
+    textColor: headerTextColor,
+  }), [variant, title, showClose, closeIcon, lastIndex, handleClose, handleSolidBackground, 
+      headerComponent, headerActionLabel, onHeaderActionPress, headerChildren, showSearchInHandle, 
+      searchPlaceholder, handleSearchFocus, handleSearchBlur, searchResetKey, headerTextColor]);
+
+  // Consolidated footer props
+  const footerProps = useMemo(() => ({
+    lastIndex,
+    variant: effectiveFooterVariant,
+    placement: footerPlacement,
+    searchValue: showSearchInFooter ? searchQuery : '',
+    onSearchChange: showSearchInFooter ? setSearchQuery : undefined,
+    searchPlaceholder: showSearchInFooter ? searchPlaceholder : undefined,
+    onSearchFocus: showSearchInFooter ? handleSearchFocus : undefined,
+    onSearchBlur: showSearchInFooter ? handleSearchBlur : undefined,
+  }), [lastIndex, effectiveFooterVariant, footerPlacement, showSearchInFooter, searchQuery, 
+      searchPlaceholder, handleSearchFocus, handleSearchBlur]);
 
   const renderHandle = useCallback(
-    (handleProps) => (
-      <Handle
-        {...handleProps}
-        variant={variant}
-        title={variant === 'compact' ? title : (variant === 'standard' ? title : undefined)}
-        showClose={showClose}
-        closeIcon={closeIcon}
-        lastIndex={lastIndex}
-        onClose={handleClose}
-        useSolidBackground={handleSolidBackground}
-        headerComponent={variant === 'standard' ? headerComponent : undefined}
-        headerActionLabel={variant === 'standard' ? headerActionLabel : undefined}
-        onHeaderActionPress={variant === 'standard' ? onHeaderActionPress : undefined}
-        headerChildren={variant === 'standard' ? headerChildren : undefined}
-        enableSearch={variant === 'standard' ? showSearchInHandle : false}
-        searchPlaceholder={searchPlaceholder}
-        onSearchChange={setSearchQuery}
-        onSearchFocus={handleSearchFocus}
-        onSearchBlur={handleSearchBlur}
-        searchResetKey={searchResetKey}
-      />
-    ),
-    [variant, title, showClose, closeIcon, lastIndex, handleClose, handleSolidBackground, 
-     headerComponent, headerActionLabel, onHeaderActionPress, headerChildren, showSearchInHandle, 
-     searchPlaceholder, handleSearchFocus, handleSearchBlur, searchResetKey]
+    (props) => <Handle {...props} {...handleProps} />,
+    [handleProps]
   );
 
   const renderBackdrop = useCallback(
@@ -243,27 +278,28 @@ const CustomBottomSheetInner = (props, ref) => {
   );
 
   const renderFooter = useCallback(
-    (footerProps) => (
-      <Footer
-        {...footerProps}
-        lastIndex={lastIndex}
-        variant={effectiveFooterVariant}
-        placement={footerPlacement}
-        searchValue={showSearchInFooter ? searchQuery : ''}
-        onSearchChange={showSearchInFooter ? setSearchQuery : undefined}
-        searchPlaceholder={showSearchInFooter ? searchPlaceholder : undefined}
-        onSearchFocus={showSearchInFooter ? handleSearchFocus : undefined}
-        onSearchBlur={showSearchInFooter ? handleSearchBlur : undefined}
-      />
-    ),
-    [lastIndex, effectiveFooterVariant, footerPlacement, showSearchInFooter, searchQuery, 
-     searchPlaceholder, handleSearchFocus, handleSearchBlur]
+    (props) => <Footer {...props} {...footerProps} />,
+    [footerProps]
   );
 
   const renderBackground = useCallback(
     (backgroundProps) => <Background {...backgroundProps} />,
     []
   );
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    expand: () => bottomSheetRef.current?.snapToIndex?.(lastIndex),
+    collapse: () => bottomSheetRef.current?.snapToIndex?.(0),
+    close: () => bottomSheetRef.current?.close?.(),
+    forceClose: () => bottomSheetRef.current?.forceClose?.(),
+    snapToIndex: (index) => {
+      if (typeof index !== 'number') return;
+      bottomSheetRef.current?.snapToIndex?.(Math.max(0, Math.min(index, lastIndex)));
+    },
+    snapToPosition: (position) => bottomSheetRef.current?.snapToPosition?.(position),
+    getCurrentIndex: () => currentIndexRef.current ?? initialIndex,
+  }), [lastIndex, initialIndex]);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -339,6 +375,7 @@ const CustomBottomSheetInner = (props, ref) => {
           extraBottomPadding={bottomPadding}
           enableSearch={enableSearch}
           searchQuery={searchQuery}
+          textColor={headerTextColor}
         />
       )}
     </BottomSheet>

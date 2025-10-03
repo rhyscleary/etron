@@ -30,6 +30,7 @@ const SheetHeaderComponent = ({
   showDivider = true,
   dividerColor,
   closeIcon = 'close',
+  textColor,
   onHeightChange,
   onLayout,
 }) => {
@@ -40,11 +41,11 @@ const SheetHeaderComponent = ({
     return typeof title === 'string' ? (
       <Appbar.Content
         title={title}
-        titleStyle={styles.headerTitle}
+        titleStyle={[styles.headerTitle, textColor ? { color: textColor } : null]}
         style={styles.appbarContent}
       />
     ) : title;
-  }, [title]);
+  }, [title, textColor]);
 
   const borderColor = dividerColor || theme.colors?.outlineVariant || 'rgba(0,0,0,0.12)';
   const borderStyle = showDivider 

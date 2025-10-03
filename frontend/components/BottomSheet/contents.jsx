@@ -14,6 +14,7 @@ const Contents = ({
   onItemPress,
   itemTitleExtractor,
   theme,
+  textColor,
   // empty state
   emptyComponent,
   extraBottomPadding = 0,
@@ -57,11 +58,12 @@ const Contents = ({
             title={titleText}
             onPress={onItemPress ? () => onItemPress(item, index) : undefined}
             style={styles.listItem}
+            titleStyle={textColor ? { color: textColor } : undefined}
           />
         </View>
       );
     },
-    [itemTitleExtractor, onItemPress, defaultItemBackgroundColor]
+    [itemTitleExtractor, onItemPress, defaultItemBackgroundColor, textColor]
   );
 
   const extractTitle = useCallback((item, index) => {

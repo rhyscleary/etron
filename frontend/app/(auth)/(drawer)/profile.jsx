@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import StackLayout from "../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 import { useTheme, Avatar, List, Divider, TextInput, Button, HelperText } from "react-native-paper";
-import CustomBottomSheet from "../../../components/BottomSheet/bottom-sheet";
+import CustomBottomSheet from "../../../components/BottomSheet";
 
 const Profile = () => {
     const theme = useTheme();
@@ -148,15 +148,20 @@ const Profile = () => {
             {showSheet && (
                 <CustomBottomSheet
                     variant="standard"
-                    title="Quick Actions"
-                    headerActionLabel="Edit"
-                    onHeaderActionPress={() => {/* does nothing */}}
-                    showClose={false}
-                    closeIcon="close"
-                    handleSolidBackground={true}
-                    enableSearch={true}
-                    footerVariant="minimal"
-                    footerPlacement="right"
+                    header={{
+                        title: "Quick Actions",
+                        actionLabel: "Edit",
+                        onActionPress: () => {/* does nothing */},
+                        showClose: false,
+                        solidBackground: true,
+                    }}
+                    search={{
+                        enabled: true,
+                    }}
+                    footer={{
+                        variant: "minimal",
+                        placement: "right",
+                    }}
                     onChange={(index) => {
                         if (index === -1) setShowSheet(false);
                     }}
@@ -173,10 +178,14 @@ const Profile = () => {
             {showCompactSheet && (
                 <CustomBottomSheet
                     variant="compact"
-                    title="Quick Actions"
-                    closeIcon="close"
-                    handleSolidBackground={true}
-                    footerVariant="translucent"
+                    header={{
+                        title: "Quick Actions",
+                        closeIcon: "close",
+                        solidBackground: true,
+                    }}
+                    footer={{
+                        variant: "translucent",
+                    }}
                     onChange={(index) => {
                         if (index === -1) setShowCompactSheet(false);
                     }}
@@ -194,12 +203,16 @@ const Profile = () => {
             {showProfileActionsSheet && (
                 <CustomBottomSheet
                     variant="standard"
-                    title="Profile"
-                    showClose={false}
+                    header={{
+                        title: "Profile",
+                        showClose: false,
+                        children: profileHeaderChildren,
+                    }}
+                    search={{
+                        enabled: true,
+                        placeholder: "Filter actions",
+                    }}
                     initialIndex={1}
-                    headerChildren={profileHeaderChildren}
-                    enableSearch
-                    searchPlaceholder="Filter actions"
                     data={profileActionItems}
                     keyExtractor={(item) => item.label}
                     itemTitleExtractor={(item) => item.label}
@@ -212,9 +225,12 @@ const Profile = () => {
             {showQuickIconSheet && (
                 <CustomBottomSheet
                     variant="compact"
-                    title="Actions"
-                    footerVariant="minimal"
-                    enableSearch={false}
+                    header={{
+                        title: "Actions",
+                    }}
+                    footer={{
+                        variant: "minimal",
+                    }}
                     data={quickIconActions}
                     keyExtractor={(item) => item.label}
                     itemTitleExtractor={(item) => item.label}
@@ -227,9 +243,13 @@ const Profile = () => {
             {showQuickNoteSheet && (
                 <CustomBottomSheet
                     variant="standard"
-                    footerVariant="none"
-                    title="Quick Note"
-                    showClose
+                    header={{
+                        title: "Quick Note",
+                        showClose: true,
+                    }}
+                    footer={{
+                        variant: "none",
+                    }}
                     initialIndex={0}
                     snapPoints={[320, 520]}
                     customContent={quickNoteContent}
@@ -241,10 +261,14 @@ const Profile = () => {
             {showSearchFooterSheet && (
                 <CustomBottomSheet
                     variant="standard"
-                    title="Search in Footer"
-                    showClose
-                    searchPosition="bottom"
-                    enableSearch={true}
+                    header={{
+                        title: "Search in Footer",
+                        showClose: true,
+                    }}
+                    search={{
+                        enabled: true,
+                        position: "bottom",
+                    }}
                     data={settingOptionButtons}
                     keyExtractor={(item) => item.label}
                     itemTitleExtractor={(item) => item.label}
