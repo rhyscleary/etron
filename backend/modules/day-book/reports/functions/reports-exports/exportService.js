@@ -5,10 +5,23 @@ const {v4 : uuidv4} = require('uuid');
 const { getUploadUrl, getDownloadUrl } = require("@etron/reports-shared/repositories/reportsBucketRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { getFileConfig } = require("@etron/reports-shared/utils/exportTypes");
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    VIEW_EXPORTS: "modules.daybook.reports.view_exports",
+    MANAGE_EXPORTS: "modules.daybook.reports.manage_exports",
+};
 
 async function addExportedReport(authUserId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_EXPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const { name, draftId, fileType } = payload;
 
@@ -59,6 +72,13 @@ async function addExportedReport(authUserId, payload) {
 
 async function getExportedReport(authUserId, workspaceId, exportId) {
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_EXPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     const reportExport = await reportRepo.getExportById(workspaceId, exportId);
 
     if (!reportExport) return null;
@@ -68,6 +88,12 @@ async function getExportedReport(authUserId, workspaceId, exportId) {
 
 async function getExportedReports(authUserId, workspaceId) {
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_EXPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     // get all report exports in a workspace
     const reportExports = await reportRepo.getExportsByWorkspaceId(workspaceId);
@@ -79,6 +105,12 @@ async function getExportedReports(authUserId, workspaceId) {
 
 async function getExportDownloadUrl(authUserId, workspaceId, exportId) {
     await validateWorkspaceId(workspaceId);
+    
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_EXPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const reportExport = await reportRepo.getExportById(workspaceId, exportId);
 

@@ -1,16 +1,15 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Searchbar, useTheme, Chip, IconButton } from 'react-native-paper';
 import React, { useState } from 'react';
-
-const filterOptions = ['All', 'Active', 'Inactive'];
 
 const SearchBar = ({
     placeholder = "Search",
     onSearch = () => {},
     onFilterChange = () => {},
+    filters
 }) => {
     const[searchQuery, setSearchQuery] = useState('');
-    const [selectedFilter, setSelectedFilter] = useState('All');
+    const [selectedFilter, setSelectedFilter] = useState(filters[0] || 'All');
     const [showFilters, setShowFilters] = useState(false);
     const theme = useTheme();
 
@@ -28,7 +27,10 @@ const SearchBar = ({
             <Searchbar
                 placeholder={placeholder}
                 placeholderTextColor={theme.colors.placeholderText}
-                onChangeText={setSearchQuery}
+                onChangeText={(text) => {
+                    setSearchQuery(text);
+                    onSearch(text);
+                }}
                 value={searchQuery}
                 onIconPress={handleSearch}
                 style={[
@@ -42,32 +44,42 @@ const SearchBar = ({
                 iconColor={theme.colors.icon}
             />
 
-            <View style={styles.filterToggleContainer}>
-                <IconButton
-                    icon="sort-variant"
-                    size={24}
-                    onPress={() => setShowFilters(!showFilters)}
-                    iconColor={theme.colors.icon}
-                />
+            {filters && filters.length > 0 && (
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipRow}
+                >
+                    {filters.map((filter) => (
+                        <Chip
+                            key={filter}
+                            mode="flat"
+                            showSelectedCheck={false}
+                            selected={selectedFilter === filter}
+                            onPress={() => handleFilterPress(filter)}
+                            style={[
+                                styles.chip,
+                                {
+                                    borderRadius: 14,
+                                    backgroundColor: selectedFilter === filter
+                                        ? theme.colors.primary
+                                        : theme.colors.surfaceVariant,
+                                    paddingVertical: 2
+                                }
+                            ]}
+                            textStyle={{
+                                fontSize: 12,
+                                color: selectedFilter === filter ? theme.colors.onPrimary : theme.colors.text,
+                                lineHeight: 12
+                            }}
+                        >
+                            {filter}
+                        </Chip>
+                    ))}
 
-                {showFilters && (
-                    <View style={styles.chipRow}>
-                        {filterOptions.map((filter) => (
-                            <Chip
-                                key={filter}
-                                selected={selectedFilter === filter}
-                                onPress={() => handleFilterPress(filter)}
-                                style={[
-                                    styles.chip,
-                                    { backgroundColor: theme.colors.background },
-                                ]}
-                            >
-                                {filter}
-                            </Chip>
-                        ))}
-                    </View>
-                )}
-            </View>
+
+                </ScrollView>
+            )}
         </View>
     );
 };
@@ -89,14 +101,12 @@ const styles = StyleSheet.create({
     },
     chipRow: {
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginLeft: 8,
-        gap: 6,
+        paddingVertical: 10,
+        gap: 8,
         alignItems: 'center',
     },
     chip: {
-        marginRight: 6,
-        marginBottom: 6,
+        marginRight: 8,
     },
 });
 

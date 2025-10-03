@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme } from "react-native-paper";
+import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme, Divider } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
@@ -16,6 +16,7 @@ import AvatarButton from "../../../../../components/common/buttons/AvatarButton"
 import { updateUserAttribute } from "aws-amplify/auth";
 import { getUserType } from "../../../../../storage/userStorage";
 import StackLayout from "../../../../../components/layout/StackLayout";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 const ViewUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -25,8 +26,10 @@ const ViewUser = () => {
 	const [workspaceId, setWorkspaceId] = useState(null);
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
 	const [roleName, setRoleName] = useState("");
+    const [joinDate, setJoinDate] = useState("");
 	const [profilePicture, setProfilePicture] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -49,9 +52,12 @@ const ViewUser = () => {
 				const user = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
 				setFirstName(user.given_name);
 				setLastName(user.family_name);
+                setName(user.given_name + " " + user.family_name);
                 setEmail(user.email);
 				//setSelectedRole(user.roleId || "");
+
                 setRoleName();
+                setJoinDate();
 			} catch (error) {
 				console.error("Error fetching user:", error);
 				return;
@@ -72,13 +78,19 @@ const ViewUser = () => {
 
 
 	return (
-		<View style={commonStyles.screen}>
-			<Header 
-                title={firstName || "View User"} 
-                showBack 
-                showEdit 
-                onRightIconPress={() => router.navigate(`/collaboration/edit-user/${userId}`)} 
-            />
+		<ResponsiveScreen
+			header={
+                <Header 
+                    title={firstName || "View User"} 
+                    showBack 
+                    showEdit 
+                    onRightIconPress={() => router.navigate(`/collaboration/edit-user/${userId}`)} 
+                />
+            }
+			center={false}
+			padded
+            scroll={false}
+		>
 
             { loading ? (
                 <View style={commonStyles.centeredContainer}>
@@ -100,14 +112,8 @@ const ViewUser = () => {
 
                         <StackLayout spacing={24}>
                             <TextField
-                                value={firstName}
-                                placeholder="First Name"
-                                isDisabled={true}
-                            />
-
-                            <TextField
-                                value={lastName}
-                                placeholder="Last Name"
+                                value={name}
+                                placeholder="Name"
                                 isDisabled={true}
                             />
 
@@ -122,6 +128,14 @@ const ViewUser = () => {
                                 placeholder="Role"
                                 isDisabled={true}
                             />
+
+                            <TextField
+                                value={"Joined: " + joinDate}
+                                placeholder="Join Date"
+                                isDisabled={true}
+                            />
+
+                            <Divider bold={true} style={{height: 2}}/> 
                         </StackLayout>
 
                         
@@ -139,7 +153,7 @@ const ViewUser = () => {
 
             
 
-		</View>
+		</ResponsiveScreen>
 	);
 };
 

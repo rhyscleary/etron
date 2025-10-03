@@ -4,7 +4,7 @@ Description: >
   eTRON day book function template
 
 Parameters:
-  PermissionsBucketName:
+  AppConfigurationBucketName:
     Type: String
   WorkspaceBucketName:
     Type: String
@@ -20,7 +20,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        PERMISSIONS_BUCKET: !Ref PermissionsBucketName
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
         ATHENA_DATABASE: !Ref AthenaDatabaseName
 

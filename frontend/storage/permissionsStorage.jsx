@@ -31,3 +31,16 @@ export async function getPermissions() {
         console.error("Error retrieving permissions:", error);
     }
 }
+
+export async function isOwnerRole() {
+    try {
+        const roleValue = await AsyncStorage.getItem(roleKey);
+        if (!roleValue) return false;
+
+        const role = JSON.parse(roleValue);
+        return !!role.owner;
+    } catch (error) {
+        console.error("Error checking role for owner:", error);
+        return false;
+    }
+}

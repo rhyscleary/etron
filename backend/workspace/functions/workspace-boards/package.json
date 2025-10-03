@@ -1,7 +1,7 @@
 {
-  "name": "workspace-profiles",
+  "name": "workspace-boards",
   "version": "1.0.0",
-  "description": "The backend for eTRON's profile workspace function",
+  "description": "The backend for eTRON's board workspace function",
   "author": "InSync",
   "dependencies": {
     "axios": ">=1.6.0",
@@ -9,7 +9,7 @@
     "@etron/shared": "file:../../../shared/etron-shared-1.0.0.tgz"
   },
   "scripts": {},
-  "main": "profileHandler.js",
+  "main": "boardHandler.js",
   "keywords": [],
   "license": "ISC"
 }

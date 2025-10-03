@@ -3,7 +3,7 @@
 const { GetObjectCommand, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
 const s3Client = new S3Client({});
 
-const bucketName = process.env.PERMISSIONS_BUCKET;
+const bucketName = process.env.APP_CONFIGURATION_BUCKET;
 
 function handleS3Error(error, message) {
     if (error instanceof S3ServiceException) {

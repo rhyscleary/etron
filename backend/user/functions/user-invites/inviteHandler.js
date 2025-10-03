@@ -11,9 +11,14 @@ exports.handler = async (event) => {
         const pathParams = event.pathParameters || {};
         const queryParams = event.queryStringParameters || {};
         const userId = event.requestContext.authorizer.claims.sub;
+        const authUserEmail = event.requestContext.authorizer.claims.email;
 
         if (!userId) {
             throw new Error("User not authenticated");
+        }
+
+        if (!authUserEmail) {
+            throw new Error("Authenticated user email not found");
         }
 
         const routeKey = `${event.httpMethod} ${event.resource}`;
@@ -21,15 +26,17 @@ exports.handler = async (event) => {
         switch (routeKey) {
             // VIEW INVITES FOR USER EMAIL
             case "GET /user/invites": {
-                if (!queryParams.email) {
-                    throw new Error("Missing required query parameters");
+                const targetEmail = queryParams.email;
+                if (!targetEmail || typeof targetEmail !== "string") {
+                    throw new Error("Missing or invalid email query parameters");
+                }
+                
+                // ensure only the user can fetch their invites
+                if (authUserEmail !== targetEmail) {
+                    throw new Error("Not authorized to view another user's invites");
                 }
 
-                if (typeof queryParams.email !== "string") {
-                    throw new Error("email must be a string");
-                }
-
-                body = await getUserInvites(queryParams.email);
+                body = await getUserInvites(targetEmail);
                 break;
             }
             
