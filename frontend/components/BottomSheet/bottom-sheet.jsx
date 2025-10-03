@@ -49,7 +49,8 @@ const CustomBottomSheetInner = (props, ref) => {
     // search
     enableSearch = false,
     searchPlaceholder,
-    footerVariant = 'default', // 'default' | 'translucent' | 'minimal' | 'none'
+    searchPosition = 'top', // 'top' | 'bottom' - controls whether search appears in header or footer
+    footerVariant = 'default', // 'default' | 'translucent' | 'minimal' | 'none' | 'search'
     footerPlacement = 'right', // 'left' | 'center' | 'right'
     autoExpandOnSearchFocus = true,
     autoExpandOnKeyboardShow = true,
@@ -218,7 +219,7 @@ const CustomBottomSheetInner = (props, ref) => {
           headerActionLabel={variant === 'standard' ? headerActionLabel : undefined}
           onHeaderActionPress={variant === 'standard' ? onHeaderActionPress : undefined}
           headerChildren={variant === 'standard' ? headerChildren : undefined}
-          enableSearch={variant === 'standard' ? enableSearch : false}
+          enableSearch={variant === 'standard' ? showSearchInHandle : false}
           searchPlaceholder={searchPlaceholder}
           onSearchChange={setSearchQuery}
           onSearchFocus={handleSearchFocus}
@@ -227,7 +228,7 @@ const CustomBottomSheetInner = (props, ref) => {
         />
       );
     },
-    [closeIcon, handleClose, handleSolidBackground, lastIndex, showClose, title, variant, headerComponent, headerActionLabel, onHeaderActionPress, headerChildren, enableSearch, searchPlaceholder, handleSearchFocus, handleSearchBlur, searchResetKey]
+    [closeIcon, handleClose, handleSolidBackground, lastIndex, showClose, title, variant, headerComponent, headerActionLabel, onHeaderActionPress, headerChildren, showSearchInHandle, searchPlaceholder, handleSearchFocus, handleSearchBlur, searchResetKey]
   );
 
   const handleBackdropPress = useCallback(() => {
@@ -256,12 +257,17 @@ const CustomBottomSheetInner = (props, ref) => {
         <Footer
           {...footerProps}
           lastIndex={lastIndex}
-          variant={footerVariant}
+          variant={effectiveFooterVariant}
           placement={footerPlacement}
+          searchValue={showSearchInFooter ? searchQuery : ''}
+          onSearchChange={showSearchInFooter ? setSearchQuery : undefined}
+          searchPlaceholder={showSearchInFooter ? searchPlaceholder : undefined}
+          onSearchFocus={showSearchInFooter ? handleSearchFocus : undefined}
+          onSearchBlur={showSearchInFooter ? handleSearchBlur : undefined}
         />
       );
     },
-    [footerPlacement, footerVariant, lastIndex]
+    [footerPlacement, effectiveFooterVariant, lastIndex, showSearchInFooter, searchQuery, searchPlaceholder, handleSearchFocus, handleSearchBlur]
   );
 
   const renderBackground = useCallback(
@@ -290,6 +296,23 @@ const CustomBottomSheetInner = (props, ref) => {
   const handleSearchBlur = useCallback(() => {
     setSearchActive(false);
   }, []);
+
+  // determine search placement based on searchPosition
+  const showSearchInHandle = useMemo(
+    () => enableSearch && searchPosition === 'top',
+    [enableSearch, searchPosition]
+  );
+
+  const showSearchInFooter = useMemo(
+    () => enableSearch && searchPosition === 'bottom',
+    [enableSearch, searchPosition]
+  );
+
+  // automatically set footer variant to 'search' if search is in footer
+  const effectiveFooterVariant = useMemo(
+    () => showSearchInFooter ? 'search' : footerVariant,
+    [showSearchInFooter, footerVariant]
+  );
 
   // track keyboard height for proper bottom inset
   useEffect(() => {

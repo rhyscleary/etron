@@ -4,7 +4,7 @@ import { useTheme, Icon, IconButton } from 'react-native-paper';
 
 export const CONTENTS_SEARCH_BAR_BOTTOM_MARGIN = 8;
 
-const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocus, onBlur }) => {
+const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocus, onBlur, showShadow = false }) => {
   const theme = useTheme();
   const dynamicStyles = useMemo(() => ({
     backgroundColor: theme.colors?.buttonBackgroundAlt || theme.colors?.surfaceVariant || '#494949',
@@ -18,8 +18,13 @@ const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocu
   const placeholderColor = theme.colors?.placeholderText || 'rgba(255,255,255,0.5)';
   const iconColor = theme.colors?.icon || textColor;
 
+  const containerStyle = useMemo(
+    () => [styles.searchbar, dynamicStyles, showShadow && styles.searchbarShadow],
+    [dynamicStyles, showShadow]
+  );
+
   return (
-    <View style={[styles.searchbar, dynamicStyles]}>
+    <View style={containerStyle}>
       <Icon source="magnify" size={20} color={iconColor} style={styles.leftIcon} />
       <TextInput
         value={value}
@@ -76,6 +81,13 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  searchbarShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
 

@@ -8,6 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { useTheme } from 'react-native-paper';
 import { withAlpha } from '../../utils/color';
+import ContentsSearchBar from './contents-search-bar';
 
 const AnimatedRectButton = Animated.createAnimatedComponent(RectButton);
 
@@ -17,6 +18,12 @@ const Footer = ({
   lastIndex = 0,
   variant = 'default',
   placement = 'right',
+  // search variant props
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = 'Search',
+  onSearchFocus,
+  onSearchBlur,
 }) => {
   const { bottom: bottomSafeArea } = useSafeAreaInsets();
   const theme = useTheme();
@@ -118,6 +125,8 @@ const Footer = ({
         return styles.translucent;
       case 'minimal':
         return styles.minimal;
+      case 'search':
+        return null; // search variant uses custom layout
       case 'default':
       default:
         return [
@@ -141,6 +150,26 @@ const Footer = ({
 
   if (variant === 'none') {
     return null;
+  }
+
+  if (variant === 'search') {
+    return (
+      <BottomSheetFooter
+        bottomInset={bottomSafeArea}
+        animatedFooterPosition={animatedFooterPosition}
+      >
+        <Animated.View style={[containerAnimatedStyle, styles.searchFooterContainer]}>
+          <ContentsSearchBar
+            value={searchValue}
+            onChangeText={onSearchChange}
+            placeholder={searchPlaceholder}
+            onFocus={onSearchFocus}
+            onBlur={onSearchBlur}
+            showShadow={true}
+          />
+        </Animated.View>
+      </BottomSheetFooter>
+    );
   }
 
   return (
@@ -271,6 +300,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     shadowOffset: { width: 0, height: 1 },
     elevation: 3,
+  },
+  searchFooterContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
 });
 

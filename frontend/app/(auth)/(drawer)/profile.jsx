@@ -16,6 +16,7 @@ const Profile = () => {
     const [showProfileActionsSheet, setShowProfileActionsSheet] = useState(false); // custom header + search + icons
     const [showQuickIconSheet, setShowQuickIconSheet] = useState(false); // compact style with custom renderItem (icon grid style list)
     const [showQuickNoteSheet, setShowQuickNoteSheet] = useState(false); // NEW: custom content (no list) example
+    const [showSearchFooterSheet, setShowSearchFooterSheet] = useState(false); // NEW: search footer variant
 
     // quick note form state
     const [noteTitle, setNoteTitle] = useState("");
@@ -59,6 +60,7 @@ const Profile = () => {
             setShowQuickIconSheet(false);
             setShowQuickNoteSheet(true); 
         } },
+        { icon: "magnify", label: "Testing - Search Footer Sheet", onPress: () => { setShowSearchFooterSheet(true); } },
     ];
     // custom content for quick note sheet with no list rendering
     const quickNoteContent = (
@@ -233,6 +235,25 @@ const Profile = () => {
                     customContent={quickNoteContent}
                     onChange={(index) => { if (index === -1) setShowQuickNoteSheet(false); }}
                     onClose={() => setShowQuickNoteSheet(false)}
+                />
+            )}
+
+            {showSearchFooterSheet && (
+                <CustomBottomSheet
+                    variant="standard"
+                    title="Search in Footer"
+                    showClose
+                    searchPosition="bottom"
+                    enableSearch={true}
+                    data={settingOptionButtons}
+                    keyExtractor={(item) => item.label}
+                    itemTitleExtractor={(item) => item.label}
+                    onItemPress={(item) => {
+                        setShowSearchFooterSheet(false);
+                        if (typeof item.onPress === 'function') item.onPress();
+                    }}
+                    onChange={(index) => { if (index === -1) setShowSearchFooterSheet(false); }}
+                    onClose={() => setShowSearchFooterSheet(false)}
                 />
             )}
         </View>
