@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useEffect, useState, useImperativeHandle } from 'react';
 import { StyleSheet, Dimensions, Keyboard, Platform } from 'react-native';
-import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetView, useBottomSheetDynamicSnapPoints } from '@gorhom/bottom-sheet';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Backdrop from './backdrop';
@@ -66,6 +66,8 @@ const CustomBottomSheetInner = (props, ref) => {
   const topInset = insets?.top ?? 0;
   const [searchActive, setSearchActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResetKey, setSearchResetKey] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   
   // refs
   const bottomSheetRef = useRef(null);
@@ -126,6 +128,18 @@ const CustomBottomSheetInner = (props, ref) => {
     return maxSheetHeight;
   }, [maxDynamicContentSizeProp, maxSheetHeight]);
 
+  // Adjust max content size when keyboard is visible to fit in available space
+  const adjustedMaxContentSize = useMemo(() => {
+    if (keyboardHeight > 0) {
+      const windowHeight = Dimensions.get('window').height;
+      // available space = window height - keyboard height - top inset - bottom safe area
+      const availableSpace = windowHeight - keyboardHeight - topInset - (insets?.bottom ?? 0);
+      // use 90% to ensure comfortable fit without touching edges
+      return Math.floor(availableSpace * 0.9);
+    }
+    return maxDynamicContentSize;
+  }, [keyboardHeight, topInset, insets?.bottom, maxDynamicContentSize]);
+
   // track current index
   useEffect(() => {
     currentIndexRef.current = initialIndex;
@@ -156,15 +170,25 @@ const CustomBottomSheetInner = (props, ref) => {
     getCurrentIndex: () => currentIndexRef.current ?? initialIndex,
   }), [enableDynamicSizing, initialIndex, snapPoints.length]);
 
+  const clearSearchState = useCallback(() => {
+    setSearchActive(false);
+    setSearchQuery('');
+    setSearchResetKey((prev) => prev + 1);
+  }, []);
+
   const handleSheetChanges = useCallback((index) => {
     currentIndexRef.current = index;
+    if (index === -1) {
+      clearSearchState();
+    }
     onChange?.(index);
-  }, [onChange]);
+  }, [clearSearchState, onChange]);
 
   const handleClose = useCallback(() => {
+    clearSearchState();
     if (typeof onClose === 'function') return onClose();
     bottomSheetRef.current?.close?.();
-  }, [onClose]);
+  }, [clearSearchState, onClose]);
 
   // expand to maximum snap point
   const expandToMax = useCallback(() => {
@@ -196,14 +220,14 @@ const CustomBottomSheetInner = (props, ref) => {
           headerChildren={variant === 'standard' ? headerChildren : undefined}
           enableSearch={variant === 'standard' ? enableSearch : false}
           searchPlaceholder={searchPlaceholder}
-          searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSearchFocus={handleSearchFocus}
           onSearchBlur={handleSearchBlur}
+          searchResetKey={searchResetKey}
         />
       );
     },
-    [closeIcon, handleClose, handleSolidBackground, lastIndex, showClose, title, variant, headerComponent, headerActionLabel, onHeaderActionPress, headerChildren, enableSearch, searchPlaceholder, searchQuery, handleSearchFocus, handleSearchBlur]
+    [closeIcon, handleClose, handleSolidBackground, lastIndex, showClose, title, variant, headerComponent, headerActionLabel, onHeaderActionPress, headerChildren, enableSearch, searchPlaceholder, handleSearchFocus, handleSearchBlur, searchResetKey]
   );
 
   const handleBackdropPress = useCallback(() => {
@@ -259,26 +283,39 @@ const CustomBottomSheetInner = (props, ref) => {
   const handleSearchFocus = useCallback(() => {
     setSearchActive(true);
     if (!autoExpandOnSearchFocus) return;
-    scheduleExpand();
-  }, [autoExpandOnSearchFocus, scheduleExpand]);
+    // expand, keyboard pushes content up
+    expandToMax();
+  }, [autoExpandOnSearchFocus, expandToMax]);
 
   const handleSearchBlur = useCallback(() => {
     setSearchActive(false);
   }, []);
 
-  // keyboard show listener
+  // track keyboard height for proper bottom inset
   useEffect(() => {
-    if (!autoExpandOnKeyboardShow) return;
-    const showEvents = Platform.select({
-      ios: ['keyboardWillShow', 'keyboardDidShow'],
-      default: ['keyboardDidShow']
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const keyboardShowListener = Keyboard.addListener(showEvent, (e) => {
+      setKeyboardHeight(e.endCoordinates.height);
+      
+      // snap to expanded index to trigger resize with new max content size
+      if (autoExpandOnKeyboardShow && bottomSheetRef.current) {
+        setTimeout(() => {
+          bottomSheetRef.current?.snapToIndex?.(1);
+        }, 50);
+      }
     });
-    const subs = showEvents.map(evt => Keyboard.addListener(evt, () => {
-      if (!searchActive) return;
-      scheduleExpand();
-    }));
-    return () => subs.forEach(s => s.remove());
-  }, [autoExpandOnKeyboardShow, scheduleExpand, searchActive]);
+
+    const keyboardHideListener = Keyboard.addListener(hideEvent, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardShowListener.remove();
+      keyboardHideListener.remove();
+    };
+  }, [autoExpandOnKeyboardShow]);
 
   // In compact variant title is rendered in handle
   const includeHeader = variant === 'standard';
@@ -289,6 +326,9 @@ const CustomBottomSheetInner = (props, ref) => {
 
   const bottomInset = insets?.bottom ?? 0;
   const bottomPadding = bottomInset + 8;
+  
+  // keyboard is visible -> use keyboard height, else use 0 to eliminate gap
+  const effectiveBottomInset = keyboardHeight > 0 ? keyboardHeight : 0;
 
   const footerComponentProp = footerVariant === 'none' ? undefined : renderFooter;
 
@@ -307,10 +347,12 @@ const CustomBottomSheetInner = (props, ref) => {
       snapPoints={snapPoints}
       enableOverDrag={false}
       topInset={topInset}
+      bottomInset={effectiveBottomInset}
       enableDynamicSizing={enableDynamicSizing}
-      maxDynamicContentSize={maxDynamicContentSize}
-      keyboardBehavior="interactive"
+      maxDynamicContentSize={adjustedMaxContentSize}
+      keyboardBehavior="extend"
       keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
       enablePanDownToClose
       handleComponent={renderHandle}
       backdropComponent={renderBackdrop}

@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useCallback } from "react";
+import React, { useMemo, useRef, useCallback, useState, useEffect } from "react";
 import { StyleSheet, View } from "react-native";
 import { useTheme, Appbar } from "react-native-paper";
 import SheetHeader from './header';
@@ -43,15 +43,37 @@ const Handle = ({
   // search props for standard variant
   enableSearch = false,
   searchPlaceholder,
-  searchQuery,
   onSearchChange,
   onSearchFocus,
   onSearchBlur,
+  searchResetKey,
   ...restProps
 }) => {
   const hasFiredRef = useRef(false);
   const theme = useTheme();
   const colors = theme?.colors ?? {};
+  const [searchValue, setSearchValue] = useState('');
+  const lastResetKeyRef = useRef(searchResetKey);
+
+  useEffect(() => {
+    if (!enableSearch) {
+      setSearchValue('');
+      lastResetKeyRef.current = searchResetKey;
+      return;
+    }
+
+    if (typeof searchResetKey === 'number' && searchResetKey !== lastResetKeyRef.current) {
+      setSearchValue('');
+      lastResetKeyRef.current = searchResetKey;
+    }
+  }, [enableSearch, searchResetKey]);
+
+  const handleSearchChange = useCallback((text) => {
+    setSearchValue(text);
+    onSearchChange?.(text);
+  }, [onSearchChange]);
+
+  const effectivePlaceholder = searchPlaceholder ?? 'Search';
 
   // TODO: test different haptics (light, medium, heavy, rigid, etc.), create haptics utility if being used in app more.
   const fireHaptic = useCallback(() => {
@@ -60,7 +82,6 @@ const Handle = ({
   }, [haptics]);
 
   // animations
-  // Reduced to two indices (0 collapsed, 1 expanded)
   const indicatorTransformOriginY = useDerivedValue(() =>
     interpolate(animatedIndex.value, [0, 1], [-1, 0], Extrapolate.CLAMP)
   );
@@ -76,7 +97,6 @@ const Handle = ({
   );
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
-    // With only two indices (0 collapsed, 1 expanded) interpolate directly across [0,1]
     const borderTopRadius = interpolate(
       animatedIndex.value,
       [0, 1],
@@ -217,9 +237,9 @@ const Handle = ({
       {shouldRenderSearch && (
         <View style={styles.searchContainer} pointerEvents="box-none">
           <ContentsSearchBar
-            value={searchQuery}
-            onChangeText={onSearchChange}
-            placeholder={searchPlaceholder}
+            value={searchValue}
+            onChangeText={handleSearchChange}
+            placeholder={effectivePlaceholder}
             onFocus={onSearchFocus}
             onBlur={onSearchBlur}
           />

@@ -118,6 +118,7 @@ const Contents = ({
       ListEmptyComponent={emptyComponent}
       renderItem={renderItem || defaultRenderItem}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
       contentContainerStyle={contentContainerStyle}
     />
   );
