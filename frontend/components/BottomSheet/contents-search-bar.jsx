@@ -6,22 +6,18 @@ export const CONTENTS_SEARCH_BAR_BOTTOM_MARGIN = 8;
 
 const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocus, onBlur, showShadow = false }) => {
   const theme = useTheme();
-  const dynamicStyles = useMemo(() => ({
-    backgroundColor: theme.colors?.buttonBackgroundAlt || theme.colors?.surfaceVariant || '#494949',
-  }), [theme.colors]);
-
-  const handleClear = useCallback(() => {
-    if (onChangeText) onChangeText('');
-  }, [onChangeText]);
-
+  const backgroundColor = theme.colors?.buttonBackgroundAlt || theme.colors?.surfaceVariant || '#494949';
   const textColor = theme.colors?.text || theme.colors?.onSurface || '#fff';
   const placeholderColor = theme.colors?.placeholderText || 'rgba(255,255,255,0.5)';
   const iconColor = theme.colors?.icon || textColor;
 
-  const containerStyle = useMemo(
-    () => [styles.searchbar, dynamicStyles, showShadow && styles.searchbarShadow],
-    [dynamicStyles, showShadow]
-  );
+  const handleClear = useCallback(() => onChangeText?.(''), [onChangeText]);
+
+  const containerStyle = [
+    styles.searchbar,
+    { backgroundColor },
+    showShadow && styles.searchbarShadow,
+  ];
 
   return (
     <View style={containerStyle}>

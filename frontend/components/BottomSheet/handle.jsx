@@ -11,7 +11,9 @@ import Animated, {
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
-export const transformOrigin = ({ x, y }, ...transformations) => {
+const ANGLE_30 = Math.PI / 6;
+
+const transformOrigin = ({ x, y }, ...transformations) => {
   "worklet";
   return [
     { translateX: x },
@@ -21,8 +23,6 @@ export const transformOrigin = ({ x, y }, ...transformations) => {
     { translateY: y * -1 },
   ];
 };
-
-const ANGLE_30 = Math.PI / 6;
 
 const Handle = ({
   style,
@@ -56,13 +56,7 @@ const Handle = ({
   const lastResetKeyRef = useRef(searchResetKey);
 
   useEffect(() => {
-    if (!enableSearch) {
-      setSearchValue('');
-      lastResetKeyRef.current = searchResetKey;
-      return;
-    }
-
-    if (typeof searchResetKey === 'number' && searchResetKey !== lastResetKeyRef.current) {
+    if (!enableSearch || (typeof searchResetKey === 'number' && searchResetKey !== lastResetKeyRef.current)) {
       setSearchValue('');
       lastResetKeyRef.current = searchResetKey;
     }
@@ -73,12 +67,10 @@ const Handle = ({
     onSearchChange?.(text);
   }, [onSearchChange]);
 
-  const effectivePlaceholder = searchPlaceholder ?? 'Search';
-
-  // TODO: test different haptics (light, medium, heavy, rigid, etc.), create haptics utility if being used in app more.
   const fireHaptic = useCallback(() => {
-    if (!haptics) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (haptics) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
   }, [haptics]);
 
   // animations
@@ -86,14 +78,21 @@ const Handle = ({
     interpolate(animatedIndex.value, [0, 1], [-1, 0], Extrapolate.CLAMP)
   );
 
+  const backgroundColor = useMemo(() => {
+    if (useSolidBackground || variant === 'standard') {
+      return colors.surface ?? colors.background ?? '#444';
+    }
+    return 'transparent';
+  }, [useSolidBackground, variant, colors.surface, colors.background]);
+
   const containerStyle = useMemo(
     () => [
       styles.header,
       variant === 'standard' ? styles.standardHandle : styles.compactHandleWrapper,
-      { backgroundColor: useSolidBackground || variant === 'standard' ? (colors.surface ?? colors.background ?? '#444') : 'transparent' },
+      { backgroundColor },
       style,
     ],
-    [style, colors.surface, colors.background, useSolidBackground, variant]
+    [style, backgroundColor, variant]
   );
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
@@ -109,41 +108,26 @@ const Handle = ({
     };
   });
 
-  const leftIndicatorStyle = useMemo(
-    () => ({ ...styles.indicator, ...styles.leftIndicator }),
-    []
-  );
+  const leftIndicatorStyle = [styles.indicator, styles.leftIndicator];
+  const rightIndicatorStyle = [styles.indicator, styles.rightIndicator];
+  
   const leftIndicatorAnimatedStyle = useAnimatedStyle(() => {
-    const leftIndicatorRotate = interpolate(
-      animatedIndex.value,
-      [0, 1],
-      [-ANGLE_30, 0],
-      Extrapolate.CLAMP
-    );
+    const rotation = interpolate(animatedIndex.value, [0, 1], [-ANGLE_30, 0], Extrapolate.CLAMP);
     return {
       transform: transformOrigin(
         { x: 0, y: indicatorTransformOriginY.value },
-        { rotate: `${leftIndicatorRotate}rad` },
+        { rotate: `${rotation}rad` },
         { translateX: -5 }
       ),
     };
   });
 
-  const rightIndicatorStyle = useMemo(
-    () => ({ ...styles.indicator, ...styles.rightIndicator }),
-    []
-  );
   const rightIndicatorAnimatedStyle = useAnimatedStyle(() => {
-    const rightIndicatorRotate = interpolate(
-      animatedIndex.value,
-      [0, 1],
-      [ANGLE_30, 0],
-      Extrapolate.CLAMP
-    );
+    const rotation = interpolate(animatedIndex.value, [0, 1], [ANGLE_30, 0], Extrapolate.CLAMP);
     return {
       transform: transformOrigin(
         { x: 0, y: indicatorTransformOriginY.value },
-        { rotate: `${rightIndicatorRotate}rad` },
+        { rotate: `${rotation}rad` },
         { translateX: 5 }
       ),
     };
@@ -195,8 +179,10 @@ const Handle = ({
     );
   }
 
-  // render header for standard variant
   const shouldRenderHeader = variant === 'standard' && (title || headerComponent || headerActionLabel || headerChildren || showClose);
+  const shouldRenderSearch = variant === 'standard' && enableSearch;
+  const searchPlaceholderText = searchPlaceholder ?? 'Search';
+
   const renderedHeader = useMemo(() => {
     if (!shouldRenderHeader) return null;
     if (headerComponent) return headerComponent;
@@ -213,8 +199,6 @@ const Handle = ({
       </SheetHeader>
     );
   }, [shouldRenderHeader, headerComponent, title, headerActionLabel, onHeaderActionPress, showClose, onClose, closeIcon, headerChildren]);
-
-  const shouldRenderSearch = variant === 'standard' && enableSearch;
 
   return (
     <Animated.View
@@ -239,7 +223,7 @@ const Handle = ({
           <ContentsSearchBar
             value={searchValue}
             onChangeText={handleSearchChange}
-            placeholder={effectivePlaceholder}
+            placeholder={searchPlaceholderText}
             onFocus={onSearchFocus}
             onBlur={onSearchBlur}
           />

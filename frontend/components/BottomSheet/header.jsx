@@ -8,13 +8,15 @@ export const SHEET_HEADER_DISPLAY_NAME = 'SheetHeader';
 const resolveVerticalMargins = (styleInput) => {
   const flattened = StyleSheet.flatten(styleInput);
   if (!flattened) return 0;
+  
   const base = Number.isFinite(flattened.margin) ? flattened.margin : 0;
   const vertical = Number.isFinite(flattened.marginVertical) ? flattened.marginVertical : base;
   const top = Number.isFinite(flattened.marginTop) ? flattened.marginTop : vertical;
-  const bottomValue = Number.isFinite(flattened.marginBottom)
-    ? flattened.marginBottom
-    : vertical || SHEET_HEADER_BOTTOM_MARGIN;
-  return (Number.isFinite(top) ? top : 0) + (Number.isFinite(bottomValue) ? bottomValue : 0);
+  const bottom = Number.isFinite(flattened.marginBottom) 
+    ? flattened.marginBottom 
+    : (vertical || SHEET_HEADER_BOTTOM_MARGIN);
+  
+  return (top || 0) + (bottom || 0);
 };
 
 const SheetHeaderComponent = ({
@@ -35,26 +37,21 @@ const SheetHeaderComponent = ({
 
   const renderedTitle = useMemo(() => {
     if (!title) return null;
-    if (typeof title === 'string') {
-      return (
-        <Appbar.Content
-          title={title}
-          titleStyle={styles.headerTitle}
-          style={styles.appbarContent}
-        />
-      );
-    }
-    // custom node
-    return title;
+    return typeof title === 'string' ? (
+      <Appbar.Content
+        title={title}
+        titleStyle={styles.headerTitle}
+        style={styles.appbarContent}
+      />
+    ) : title;
   }, [title]);
 
-  const borderStyle = useMemo(() => {
-    if (!showDivider) return null;
-    const color = dividerColor || theme.colors?.outlineVariant || 'rgba(0,0,0,0.12)';
-    return { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: color };
-  }, [showDivider, dividerColor, theme.colors]);
+  const borderColor = dividerColor || theme.colors?.outlineVariant || 'rgba(0,0,0,0.12)';
+  const borderStyle = showDivider 
+    ? { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: borderColor }
+    : null;
 
-  const combinedStyle = useMemo(() => [styles.headerRow, borderStyle, style], [borderStyle, style]);
+  const combinedStyle = [styles.headerRow, borderStyle, style];
   const verticalMargins = useMemo(() => resolveVerticalMargins(combinedStyle), [combinedStyle]);
 
   const handleLayout = useCallback((event) => {

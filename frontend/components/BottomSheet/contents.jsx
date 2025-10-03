@@ -25,28 +25,19 @@ const Contents = ({
   const resolvedColors = resolvedTheme?.colors ?? {};
   const { buttonBackground, surfaceVariant, surface } = resolvedColors;
 
-  const defaultKeyExtractor = useCallback((item, index) => (item?.id?.toString?.() ?? String(index)), []);
-  const effectiveKeyExtractor = useMemo(
-    () => keyExtractor ?? defaultKeyExtractor,
-    [keyExtractor, defaultKeyExtractor]
-  );
-
+  const defaultKeyExtractor = useCallback((item, index) => 
+    item?.id?.toString?.() ?? String(index), []);
+  
   const defaultGetItemCount = useCallback((arr) => arr?.length ?? 0, []);
-  const effectiveGetItemCount = useMemo(
-    () => getItemCount ?? defaultGetItemCount,
-    [getItemCount, defaultGetItemCount]
-  );
-
+  
   const defaultGetItem = useCallback((arr, index) => arr[index], []);
-  const effectiveGetItem = useMemo(
-    () => getItem ?? defaultGetItem,
-    [getItem, defaultGetItem]
-  );
 
-  const defaultItemBackgroundColor = useMemo(
-    () => buttonBackground || surfaceVariant || surface || '#2c2c2c',
-    [buttonBackground, surfaceVariant, surface]
-  );
+  const effectiveKeyExtractor = keyExtractor || defaultKeyExtractor;
+  const effectiveGetItemCount = getItemCount || defaultGetItemCount;
+  const effectiveGetItem = getItem || defaultGetItem;
+
+  const defaultItemBackgroundColor = 
+    buttonBackground || surfaceVariant || surface || '#2c2c2c';
 
   const defaultRenderItem = useCallback(
     ({ item, index }) => {
@@ -73,35 +64,30 @@ const Contents = ({
     [itemTitleExtractor, onItemPress, defaultItemBackgroundColor]
   );
 
+  const extractTitle = useCallback((item, index) => {
+    if (itemTitleExtractor) return itemTitleExtractor(item, index);
+    if (typeof item === 'string' || typeof item === 'number') return String(item);
+    try { return JSON.stringify(item); } catch { return ''; }
+  }, [itemTitleExtractor]);
+
   const filteredData = useMemo(() => {
-    if (!enableSearch) return data;
-    if (!searchQuery.trim()) return data;
+    if (!enableSearch || !searchQuery.trim()) return data;
+    
     const lowered = searchQuery.toLowerCase();
     const count = effectiveGetItemCount(data);
     const results = [];
+    
     for (let i = 0; i < count; i++) {
       const item = effectiveGetItem(data, i);
-      let titleText;
-      if (itemTitleExtractor) {
-        titleText = itemTitleExtractor(item, i);
-      } else if (typeof item === 'string' || typeof item === 'number') {
-        titleText = String(item);
-      } else if (item?.label) {
-        titleText = item.label;
-      } else {
-        try { titleText = JSON.stringify(item); } catch { titleText = ''; }
-      }
+      const titleText = extractTitle(item, i);
       if (titleText?.toLowerCase?.().includes(lowered)) {
         results.push(item);
       }
     }
     return results;
-  }, [enableSearch, searchQuery, data, effectiveGetItemCount, effectiveGetItem, itemTitleExtractor]);
+  }, [enableSearch, searchQuery, data, effectiveGetItemCount, effectiveGetItem, extractTitle]);
 
-  const contentPaddingBottom = useMemo(
-    () => CONTENT_VERTICAL_PADDING + (Number.isFinite(extraBottomPadding) ? extraBottomPadding : 0),
-    [extraBottomPadding]
-  );
+  const contentPaddingBottom = CONTENT_VERTICAL_PADDING + (Number.isFinite(extraBottomPadding) ? extraBottomPadding : 0);
 
   const contentContainerStyle = useMemo(
     () => [styles.contentContainer, { paddingBottom: contentPaddingBottom }],

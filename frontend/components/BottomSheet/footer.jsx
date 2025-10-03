@@ -12,6 +12,10 @@ import ContentsSearchBar from './contents-search-bar';
 
 const AnimatedRectButton = Animated.createAnimatedComponent(RectButton);
 
+const ANGLE_30 = Math.PI / 6;
+const BAR_WIDTH = 14;
+const SHIFT_MAGNITUDE = (BAR_WIDTH * Math.sin(ANGLE_30)) / 2;
+
 const Footer = ({
   animatedFooterPosition,
   haptics = true,
@@ -30,127 +34,70 @@ const Footer = ({
   const colors = theme?.colors ?? {};
   const { expand, collapse, animatedIndex } = useBottomSheet();
 
-  // chevron - two bars rotate between index 0 and index 1 states
-  const ANGLE_30 = Math.PI / 6;
-  const BAR_WIDTH = 14;
-  const SHIFT_MAGNITUDE = (BAR_WIDTH * Math.sin(ANGLE_30)) / 2;
-
-  const leftBarAnimatedStyle = useAnimatedStyle(() => {
-    const leftRotate = interpolate(
-      animatedIndex.value,
-      [0, 1],
-      [-ANGLE_30, ANGLE_30],
-      Extrapolate.CLAMP
-    );
-    return {
-      transform: [
-        { rotate: `${leftRotate}rad` },
-        { translateX: -5 },
-      ],
-    };
-  });
-
-  const rightBarAnimatedStyle = useAnimatedStyle(() => {
-    const rightRotate = interpolate(
-      animatedIndex.value,
-      [0, 1],
-      [ANGLE_30, -ANGLE_30],
-      Extrapolate.CLAMP
-    );
-    return {
-      transform: [
-        { rotate: `${rightRotate}rad` },
-        { translateX: 5 },
-      ],
-    };
-  });
-  // TODO: if needed change handle indicator to same centering
-  const chevronShiftAnimatedStyle = useAnimatedStyle(() => ({
+  const leftBarAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
-      {
-        translateY: interpolate(
-          animatedIndex.value,
-          [0, 1],
-          [-SHIFT_MAGNITUDE, SHIFT_MAGNITUDE],
-          Extrapolate.CLAMP
-        ),
-      },
+      { rotate: `${interpolate(animatedIndex.value, [0, 1], [-ANGLE_30, ANGLE_30], Extrapolate.CLAMP)}rad` },
+      { translateX: -5 },
     ],
   }));
 
-  // visible only near 0 lastIndex snap points
-  const containerAnimatedStyle = useAnimatedStyle(
-    () => {
-      if (lastIndex <= 1) {
-        return { opacity: 1 }; // only one or two snap points - always visible
-      }
-      const midFadeInStart = 0.6; // distamce from 0 before starting to hide
-      const midFadeOutEnd = lastIndex - 0.6; // distance to last before showing again
-      return {
-        opacity: interpolate(
-          animatedIndex.value,
-          [0, midFadeInStart, midFadeOutEnd, lastIndex],
-          [1, 0, 0, 1],
-          Extrapolate.CLAMP
-        ),
-      };
-    },
-    [animatedIndex, lastIndex]
-  );
-  const containerStyle = useMemo(
-    () => [containerAnimatedStyle, styles.container],
-    [containerAnimatedStyle]
-  );
+  const rightBarAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { rotate: `${interpolate(animatedIndex.value, [0, 1], [ANGLE_30, -ANGLE_30], Extrapolate.CLAMP)}rad` },
+      { translateX: 5 },
+    ],
+  }));
 
-  // TODO: test different haptics (light, medium, heavy, rigid, etc.), create haptics utility if being used in app more.
+  const chevronShiftAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{
+      translateY: interpolate(animatedIndex.value, [0, 1], [-SHIFT_MAGNITUDE, SHIFT_MAGNITUDE], Extrapolate.CLAMP),
+    }],
+  }));
+
+  const containerAnimatedStyle = useAnimatedStyle(() => {
+    if (lastIndex <= 1) return { opacity: 1 };
+    
+    const midFadeInStart = 0.6;
+    const midFadeOutEnd = lastIndex - 0.6;
+    return {
+      opacity: interpolate(
+        animatedIndex.value,
+        [0, midFadeInStart, midFadeOutEnd, lastIndex],
+        [1, 0, 0, 1],
+        Extrapolate.CLAMP
+      ),
+    };
+  }, [lastIndex]);
   const triggerHaptic = useCallback(() => {
-    if (!haptics) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (haptics) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
   }, [haptics]);
 
-  const handleArrowPress = useCallback(() => {
-    triggerHaptic();
-    if (animatedIndex.value === 0) {
-      expand();
-    } else {
-      collapse();
-    }
-  }, [expand, collapse, animatedIndex, triggerHaptic]);
-
   const variantStyle = useMemo(() => {
-    switch (variant) {
-      case 'none':
-        return null;
-      case 'translucent':
-        return styles.translucent;
-      case 'minimal':
-        return styles.minimal;
-      case 'search':
-        return null; // search variant uses custom layout
-      case 'default':
-      default:
-        return [
-          styles.default,
-          { backgroundColor: colors.primary || '#666' },
-        ];
-    }
+    if (variant === 'none' || variant === 'search') return null;
+    if (variant === 'translucent') return styles.translucent;
+    if (variant === 'minimal') return styles.minimal;
+    return [styles.default, { backgroundColor: colors.primary || '#666' }];
   }, [variant, colors.primary]);
 
   const placementStyle = useMemo(() => {
-    switch (placement) {
-      case 'left':
-        return styles.placeLeft;
-      case 'center':
-        return styles.placeCenter;
-      case 'right':
-      default:
-        return styles.placeRight;
-    }
+    if (placement === 'left') return styles.placeLeft;
+    if (placement === 'center') return styles.placeCenter;
+    return styles.placeRight;
   }, [placement]);
 
-  if (variant === 'none') {
-    return null;
-  }
+  const containerStyle = useMemo(
+    () => [containerAnimatedStyle, styles.container, placementStyle, variantStyle],
+    [containerAnimatedStyle, placementStyle, variantStyle]
+  );
+
+  const handleArrowPress = useCallback(() => {
+    triggerHaptic();
+    animatedIndex.value === 0 ? expand() : collapse();
+  }, [expand, collapse, animatedIndex, triggerHaptic]);
+
+  if (variant === 'none') return null;
 
   if (variant === 'search') {
     return (
@@ -178,7 +125,7 @@ const Footer = ({
       animatedFooterPosition={animatedFooterPosition}
     >
       <AnimatedRectButton
-        style={[containerStyle, placementStyle, variantStyle]}
+        style={containerStyle}
         onPress={handleArrowPress}
         accessibilityRole="button"
       >
