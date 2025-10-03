@@ -65,6 +65,7 @@ const CustomBottomSheetInner = (props, ref) => {
   const insets = useSafeAreaInsets();
   const topInset = insets?.top ?? 0;
   const [searchActive, setSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // refs
   const bottomSheetRef = useRef(null);
@@ -183,16 +184,26 @@ const CustomBottomSheetInner = (props, ref) => {
         <Handle
           {...handleProps}
           variant={variant}
-          title={variant === 'compact' ? title : undefined}
-          showClose={variant === 'compact' ? true : showClose}
+          title={variant === 'compact' ? title : (variant === 'standard' ? title : undefined)}
+          showClose={showClose}
           closeIcon={closeIcon}
           lastIndex={lastIndex}
           onClose={handleClose}
           useSolidBackground={handleSolidBackground}
+          headerComponent={variant === 'standard' ? headerComponent : undefined}
+          headerActionLabel={variant === 'standard' ? headerActionLabel : undefined}
+          onHeaderActionPress={variant === 'standard' ? onHeaderActionPress : undefined}
+          headerChildren={variant === 'standard' ? headerChildren : undefined}
+          enableSearch={variant === 'standard' ? enableSearch : false}
+          searchPlaceholder={searchPlaceholder}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchFocus={handleSearchFocus}
+          onSearchBlur={handleSearchBlur}
         />
       );
     },
-    [closeIcon, handleClose, handleSolidBackground, lastIndex, showClose, title, variant]
+    [closeIcon, handleClose, handleSolidBackground, lastIndex, showClose, title, variant, headerComponent, headerActionLabel, onHeaderActionPress, headerChildren, enableSearch, searchPlaceholder, searchQuery, handleSearchFocus, handleSearchBlur]
   );
 
   const handleBackdropPress = useCallback(() => {
@@ -310,24 +321,8 @@ const CustomBottomSheetInner = (props, ref) => {
     >
       {customContent ? (
         <BottomSheetView
-          style={{ flex: 1, paddingHorizontal: 16, paddingBottom: bottomPadding, paddingTop: includeHeader ? 0 : 12 }}
+          style={{ flex: 1, paddingHorizontal: 16, paddingBottom: bottomPadding, paddingTop: 12 }}
         >
-          {includeHeader && (
-            headerComponent ? (
-              headerComponent
-            ) : (
-              <SheetHeader
-                title={title}
-                actionLabel={headerActionLabel}
-                onActionPress={onHeaderActionPress}
-                showClose={showClose}
-                onClose={headerCloseHandler}
-                closeIcon={closeIcon}
-              >
-                {headerChildren}
-              </SheetHeader>
-            )
-          )}
           {customContent}
         </BottomSheetView>
       ) : (
@@ -337,23 +332,13 @@ const CustomBottomSheetInner = (props, ref) => {
           keyExtractor={keyExtractor}
           getItem={getItem}
           getItemCount={getItemCount}
-          headerComponent={includeHeader ? headerComponent : undefined}
-          title={includeHeader ? title : undefined}
-          headerActionLabel={includeHeader ? headerActionLabel : undefined}
-          onHeaderActionPress={includeHeader ? onHeaderActionPress : undefined}
-          showClose={includeHeader ? showClose : false}
-          onClose={headerCloseHandler}
-          headerChildren={includeHeader ? headerChildren : undefined}
           onItemPress={onItemPress}
           itemTitleExtractor={itemTitleExtractor}
           theme={theme}
           emptyComponent={emptyComponent}
           extraBottomPadding={bottomPadding}
-          closeIcon={includeHeader ? closeIcon : undefined}
           enableSearch={enableSearch}
-          searchPlaceholder={searchPlaceholder}
-          onSearchFocus={handleSearchFocus}
-          onSearchBlur={handleSearchBlur}
+          searchQuery={searchQuery}
         />
       )}
     </BottomSheet>

@@ -1,6 +1,8 @@
 import React, { useMemo, useRef, useCallback } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useTheme, Appbar } from "react-native-paper";
+import SheetHeader from './header';
+import ContentsSearchBar from './contents-search-bar';
 import Animated, {
   Extrapolate,
   interpolate,
@@ -33,6 +35,18 @@ const Handle = ({
   closeIcon = 'close',
   onClose,
   onLayout,
+  // header props for standard variant
+  headerComponent,
+  headerActionLabel,
+  onHeaderActionPress,
+  headerChildren,
+  // search props for standard variant
+  enableSearch = false,
+  searchPlaceholder,
+  searchQuery,
+  onSearchChange,
+  onSearchFocus,
+  onSearchBlur,
   ...restProps
 }) => {
   const hasFiredRef = useRef(false);
@@ -161,6 +175,27 @@ const Handle = ({
     );
   }
 
+  // render header for standard variant
+  const shouldRenderHeader = variant === 'standard' && (title || headerComponent || headerActionLabel || headerChildren || showClose);
+  const renderedHeader = useMemo(() => {
+    if (!shouldRenderHeader) return null;
+    if (headerComponent) return headerComponent;
+    return (
+      <SheetHeader
+        title={title}
+        actionLabel={headerActionLabel}
+        onActionPress={onHeaderActionPress}
+        showClose={showClose}
+        onClose={onClose}
+        closeIcon={closeIcon}
+      >
+        {headerChildren}
+      </SheetHeader>
+    );
+  }, [shouldRenderHeader, headerComponent, title, headerActionLabel, onHeaderActionPress, showClose, onClose, closeIcon, headerChildren]);
+
+  const shouldRenderSearch = variant === 'standard' && enableSearch;
+
   return (
     <Animated.View
       {...restProps}
@@ -170,8 +205,26 @@ const Handle = ({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      <View style={styles.indicatorWrapper}>
         <Animated.View style={[leftIndicatorStyle, leftIndicatorAnimatedStyle, { backgroundColor: colors.buttonBackground || colors.outline || '#999' }]} />
         <Animated.View style={[rightIndicatorStyle, rightIndicatorAnimatedStyle, { backgroundColor: colors.buttonBackground || colors.outline || '#999' }]} />
+      </View>
+      {shouldRenderHeader && (
+        <View style={styles.headerContainer} pointerEvents="box-none">
+          {renderedHeader}
+        </View>
+      )}
+      {shouldRenderSearch && (
+        <View style={styles.searchContainer} pointerEvents="box-none">
+          <ContentsSearchBar
+            value={searchQuery}
+            onChangeText={onSearchChange}
+            placeholder={searchPlaceholder}
+            onFocus={onSearchFocus}
+            onBlur={onSearchBlur}
+          />
+        </View>
+      )}
     </Animated.View>
   );
 };
@@ -186,8 +239,24 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   standardHandle: {
-    paddingVertical: 14,
+    paddingTop: 14,
+    paddingBottom: 0,
     width: '100%',
+  },
+  indicatorWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 14,
+    width: '100%',
+  },
+  headerContainer: {
+    width: '100%',
+    paddingHorizontal: 12,
+  },
+  searchContainer: {
+    width: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 4,
   },
   compactHandleWrapper: {
     paddingTop: 4,

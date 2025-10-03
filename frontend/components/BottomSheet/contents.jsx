@@ -1,9 +1,7 @@
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme, List } from 'react-native-paper';
 import { BottomSheetVirtualizedList } from '@gorhom/bottom-sheet';
-import SheetHeader, { SHEET_HEADER_DISPLAY_NAME } from './header';
-import ContentsSearchBar from './contents-search-bar';
 
 const CONTENT_VERTICAL_PADDING = 2;
 
@@ -13,27 +11,15 @@ const Contents = ({
   keyExtractor,
   getItem,
   getItemCount,
-  headerComponent,
-  title,
-  headerActionLabel,
-  onHeaderActionPress,
-  // header customisation
-  showClose = true,
-  onClose,
-  headerChildren,
   onItemPress,
   itemTitleExtractor,
   theme,
   // empty state
   emptyComponent,
   extraBottomPadding = 0,
-  closeIcon,
   enableSearch = false,
-  searchPlaceholder = 'Search',
-  onSearchFocus,
-  onSearchBlur,
+  searchQuery = '',
 }) => {
-  const [query, setQuery] = useState('');
   const themeFromContext = useTheme();
   const resolvedTheme = theme ?? themeFromContext;
   const resolvedColors = resolvedTheme?.colors ?? {};
@@ -89,8 +75,8 @@ const Contents = ({
 
   const filteredData = useMemo(() => {
     if (!enableSearch) return data;
-    if (!query.trim()) return data;
-    const lowered = query.toLowerCase();
+    if (!searchQuery.trim()) return data;
+    const lowered = searchQuery.toLowerCase();
     const count = effectiveGetItemCount(data);
     const results = [];
     for (let i = 0; i < count; i++) {
@@ -110,48 +96,7 @@ const Contents = ({
       }
     }
     return results;
-  }, [enableSearch, query, data, effectiveGetItemCount, effectiveGetItem, itemTitleExtractor]);
-
-  const headerContent = useMemo(() => {
-    if (headerComponent) {
-      return headerComponent;
-    }
-
-    if (!title && !headerActionLabel && !showClose && !headerChildren) return null;
-
-    return (
-      <SheetHeader
-        title={title}
-        actionLabel={headerActionLabel}
-        onActionPress={onHeaderActionPress}
-        showClose={showClose}
-        onClose={onClose}
-        closeIcon={closeIcon}
-      >
-        {headerChildren}
-      </SheetHeader>
-    );
-  }, [headerComponent, title, headerActionLabel, onHeaderActionPress, showClose, onClose, closeIcon, headerChildren]);
-
-  const listHeaderComponent = useMemo(() => {
-    if (!headerContent && !enableSearch) return null;
-    return (
-      <View pointerEvents="box-none" style={styles.headerWrapper}>
-        {headerContent}
-        {enableSearch && (
-          <View style={styles.searchWrapper}>
-            <ContentsSearchBar
-              value={query}
-              onChangeText={setQuery}
-              placeholder={searchPlaceholder}
-              onFocus={onSearchFocus}
-              onBlur={onSearchBlur}
-            />
-          </View>
-        )}
-      </View>
-    );
-  }, [headerContent, enableSearch, query, searchPlaceholder, onSearchFocus, onSearchBlur]);
+  }, [enableSearch, searchQuery, data, effectiveGetItemCount, effectiveGetItem, itemTitleExtractor]);
 
   const contentPaddingBottom = useMemo(
     () => CONTENT_VERTICAL_PADDING + (Number.isFinite(extraBottomPadding) ? extraBottomPadding : 0),
@@ -174,7 +119,6 @@ const Contents = ({
       renderItem={renderItem || defaultRenderItem}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={contentContainerStyle}
-      ListHeaderComponent={listHeaderComponent}
     />
   );
 };
@@ -182,13 +126,6 @@ const Contents = ({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-  },
-  headerWrapper: {
-    paddingHorizontal: 12,
-    paddingTop: 4,
-  },
-  searchWrapper: {
-    marginTop: 4,
   },
   contentContainer: {
     paddingVertical: CONTENT_VERTICAL_PADDING,
