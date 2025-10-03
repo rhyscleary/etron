@@ -1,4 +1,4 @@
-    // Author(s): Rhys Cleary
+// Author(s): Rhys Cleary
 
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useRouter } from "expo-router";
@@ -23,6 +23,7 @@ import {
 import DropDown from "../../../../components/common/input/DropDown";
 import { isOwnerRole } from "../../../../storage/permissionsStorage";
 import { hasPermission } from "../../../../utils/permissions";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
@@ -207,9 +208,15 @@ const WorkspaceManagement = () => {
     }
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Workspace" showBack />
-
+		<ResponsiveScreen
+			header={
+                <Header title="Workspace" showBack />
+            }
+			center={false}
+			padded={false}
+            scroll={true}
+        >
+		
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {menuOptions.map(item => (
@@ -307,7 +314,7 @@ const WorkspaceManagement = () => {
                     onSelect={(roleId) => setSelectedRole(roleId)}
                 />
             </BasicDialog>
-        </View>
+        </ResponsiveScreen>
     )
 }
 

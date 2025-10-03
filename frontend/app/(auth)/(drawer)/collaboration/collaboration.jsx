@@ -7,6 +7,7 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import DescriptiveButton from "../../../../components/common/buttons/DescriptiveButton";
 import StackLayout from "../../../../components/layout/StackLayout";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const Collaboration = () => {
     const router = useRouter();
@@ -21,8 +22,14 @@ const Collaboration = () => {
     ];
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Collaboration" showMenu />
+		<ResponsiveScreen
+			header={
+                <Header title="Collaboration" showMenu />
+            }
+			center={false}
+			padded={false}
+            scroll={true}
+		>
 
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
@@ -41,7 +48,7 @@ const Collaboration = () => {
 
             </ScrollView>
 
-        </View>
+        </ResponsiveScreen>
     )
 }
 

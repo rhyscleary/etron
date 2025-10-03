@@ -2,100 +2,159 @@
 
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-import { Text } from "react-native-paper";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
-import ModuleCard from "../../../../components/cards/moduleCard";
 import BasicDialog from "../../../../components/overlays/BasicDialog";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
+import SearchBar from "../../../../components/common/input/SearchBar";
+import ListCard from "../../../../components/cards/listCard";
+import { apiGet, apiPost } from "../../../../utils/api/apiClient";
+import endpoints from "../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import { Text } from "react-native-paper";
+import { hasPermission } from "../../../../utils/permissions";
 
-const AddModules = () => {
-    
+const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
     const [loading, setLoading] = useState(false);
+    const [modules, setModules] = useState([]);
+    const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [selectedFilter, setSelectedFilter] = useState("All");
     const [installDialogVisible, setInstallDialogVisible] = useState(false);
     const [selectedModule, setSelectedModule] = useState(null);
 
-    const modules = [
-        {   
-            moduleId: "123",
-            title: "Leave",
-            description: "Let employees request leave and review the information",
-            icon: "book",
-            keywords: ["report", "insights"]
-        },
-        {
-            moduleId: "1234",
-            title: "",
-            description: "",
-            icon: "",
-            keywords: []
-        },
-        {
-            moduleId: "12345",
-            title: "",
-            description: "",
-            icon: "",
-            keywords: []
-        },
-        {
-            moduleId: "1234544",
-            title: "",
-            description: "",
-            icon: "",
-            keywords: []
-        },
-        {
-            moduleId: "123rttg45",
-            title: "",
-            description: "",
-            icon: "",
-            keywords: []
-        },
-    ]
+    useEffect(() => {
+        const init = async () => {
+            const id = await getWorkspaceId();
+
+            // check permissions to view this screen
+            const allowed = await hasPermission("app.workspace.manage_modules");
+            if (!allowed) {
+                router.back(); // navigate the user off the screen
+                return;
+            }
+            
+            setWorkspaceId(id);
+
+            if (id) {
+                await fetchModules(id);
+            }
+        };
+        init();
+    }, []);
+
+    const fetchModules = async (id) => {
+        if (!id) return;
+
+        try {
+            setLoading(true);
+
+            const response = await apiGet(
+                endpoints.workspace.modules.getUninstalledModules(id)
+            );
+            console.log(response);
+
+            setModules(response || []);
+        } catch (error) {
+            console.error("Error fetching modules:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const filteredModules = useMemo(() => {
+        return modules.filter((module) => {
+            const matchesFilter =
+                selectedFilter === "All" || (module.categories || []).includes(selectedFilter);
+
+            const matchesSearch = 
+                module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                module.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (module.keywords || []).some((key) =>
+                    key.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            
+            return matchesFilter && matchesSearch;
+        });
+    }, [searchQuery, selectedFilter, modules]);
+
+    const handleModuleInstallation = async () => {
+        console.log("Installing module:", selectedModule?.key);
+        try {
+            // call api
+            await apiPost(endpoints.workspace.modules.install(workspaceId, selectedModule.key));
+
+            // if successful remove form the list
+            setModules((previous) => previous.filter((module) => module.key !== selectedModule.key));
+
+            // background refetch
+            fetchModules();
+        } catch (error) {
+            console.error("Failed to install module:", error);
+            // show toast
+        } finally {
+            setInstallDialogVisible(false);
+            setSelectedModule(null);
+        }
+    };
 
     const renderModules = ({item}) => (
-        <ModuleCard
-            title={item.title}
-            description={item.description}
-            icon={item.icon}
+        <ListCard
+            title={item.name}
+            content={item.description}
+            leftElement={item.icon || "puzzle"}
+            rightIcon="download"
             onPress={() => {
                 setSelectedModule(item);
                 setInstallDialogVisible(true);
-                
-                console.log(item.moduleId);
             }}
+            cardStyle={item.cardColor ? { backgroundColor: item.cardColor } : undefined }
+            titleStyle={item.fontColor ? { color: item.fontColor } : undefined }
         />
     );
-
-    const handleModuleInstallation = () => {
-
-    };
     
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Add Modules" showBack />
-            
-            {/*Search bar here*/}
+		<ResponsiveScreen
+			header={<Header title="Add Modules" showBack />}
+			center={false}
+			padded={false}
+            scroll={false}
+		> 
             
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" />
+                        <Text>Loading Modules...</Text>
                     </View>
                 ) : (
                     <FlatList
-                        data={modules}
+                        data={filteredModules}
                         renderItem={renderModules}
-                        keyExtractor={item => item.moduleId}
-                        ItemSeparatorComponent={() => <View style={{height: 12}} />}
+                        keyExtractor={item => item.key}
+                        ItemSeparatorComponent={() => <View style={{height: 20}} />}
+                        refreshing={loading}
+                        onRefresh={() => fetchModules(workspaceId)}
+                        ListEmptyComponent={() => (
+                            <View style={styles.emptyContainer}>
+                                <Text style={styles.emptyText}>No Modules Available</Text>
+                            </View>
+                        )}
+                        ListHeaderComponent={
+                            <SearchBar 
+                                placeholder="Search modules"
+                                onSearch={setSearchQuery}
+                                onFilterChange={setSelectedFilter}
+                                filters={availableFilters}
+                            />
+                        }
                     />
                 )}
             </View>
             
             <BasicDialog
                 visible={installDialogVisible}
-                message={`Install the ${selectedModule?.title || "selected"} module?`}
+                message={`Install the ${selectedModule?.name || "selected"} module?`}
                 leftActionLabel="Cancel"
                 handleLeftAction={() => {
                     setInstallDialogVisible(false);
@@ -104,7 +163,7 @@ const AddModules = () => {
                 rightActionLabel="Install"
                 handleRightAction={handleModuleInstallation}
             />
-        </View>
+        </ResponsiveScreen>
     )
 };
 
@@ -116,6 +175,15 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center"
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
+    },
+    emptyText: {
+        fontSize: 16,
     }
 })
 

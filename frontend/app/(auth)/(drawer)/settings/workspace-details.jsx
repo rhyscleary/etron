@@ -14,6 +14,7 @@ import TextField from "../../../../components/common/input/TextField";
 import { getWorkspaceId, getWorkspaceInfo, saveWorkspaceInfo } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
 import UnsavedChangesDialog from "../../../../components/overlays/UnsavedChangesDialog";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 
 const WorkspaceDetails = () => {
@@ -134,8 +135,12 @@ const WorkspaceDetails = () => {
     }
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Workspace Details" showBack onBackPress={handleBackPress}/>
+		<ResponsiveScreen
+			header={<Header title="Workspace Details" showBack onBackPress={handleBackPress}/>}
+			center={false}
+			padded
+            scroll={false}
+		>
 
             <View style={styles.contentContainer}>
                 {loading ? (
@@ -183,7 +188,7 @@ const WorkspaceDetails = () => {
                 handleLeftAction={handleDiscardChanges}
                 handleRightAction={() => setShowUnsavedDialog(false)}
             />
-        </View>
+        </ResponsiveScreen>
     )
 }
 

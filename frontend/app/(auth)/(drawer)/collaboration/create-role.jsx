@@ -9,6 +9,7 @@ import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { apiGet, apiPost } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import { router } from "expo-router";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const CreateRole = () => {
     const [roleName, setRoleName] = useState("");
@@ -71,14 +72,19 @@ const CreateRole = () => {
     };
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Create Role"
-                showBack
-                showCheck
-                onRightIconPress={handleCheck}
-            />
-
+		<ResponsiveScreen
+			header={
+                <Header
+                    title="Create Role"
+                    showBack
+                    showCheck
+                    onRightIconPress={handleCheck}
+                />
+            }
+			center={false}
+			padded
+            scroll={true}
+		>
             <ScrollView contentContainerStyle={{ paddingBottom: 64 }}>
                 <TextInput
                     label="Role Name"
@@ -109,7 +115,7 @@ const CreateRole = () => {
                     </View>
                 ))}
             </ScrollView>
-        </View>
+        </ResponsiveScreen>
     );
 };
 
