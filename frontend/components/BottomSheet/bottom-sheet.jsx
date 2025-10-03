@@ -182,6 +182,10 @@ const CustomBottomSheetInner = (props, ref) => {
     if (index === -1) {
       clearSearchState();
     }
+    // Dismiss keyboard when snapping to lowest point (index 0)
+    if (index === 0) {
+      Keyboard.dismiss();
+    }
     onChange?.(index);
   }, [clearSearchState, onChange]);
 
