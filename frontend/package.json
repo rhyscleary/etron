@@ -24,6 +24,7 @@
     "@aws-amplify/ui-react-native": "^2.5.3",
     "@aws-sdk/client-cognito-identity-provider": "^3.825.0",
     "@expo/vector-icons": "^14.1.0",
+    "@gorhom/bottom-sheet": "^5.2.6",
     "@react-native-async-storage/async-storage": "2.1.2",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-navigation/bottom-tabs": "^7.3.10",
