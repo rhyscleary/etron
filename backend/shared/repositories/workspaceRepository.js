@@ -69,6 +69,12 @@ async function updateRole(workspaceId, roleId, data) {
         expressionAttributeNames["#permissions"] = "permissions";
     }
 
+    if (data.hasAccess !== undefined) {
+        updateFields.push("#hasAccess = :hasAccess");
+        expressionAttributeValues[":hasAccess"] = data.hasAccess
+        expressionAttributeNames["#hasAccess"] = "hasAccess";
+    }
+
     updateFields.push("#updatedAt = :updatedAt");
     expressionAttributeValues[":updatedAt"] = new Date().toISOString();
     expressionAttributeNames["#updatedAt"] = "updatedAt";
@@ -163,27 +169,28 @@ async function getOwnerRoleId(workspaceId) {
     return owner ? owner.sk.replace("role#", "") : null;
 }
 
-// PROFILES
+// BOARDS
 
-// add profile to workspace
-async function addProfile(profileItem) {
-    profileItem = (result.Attributes || []).map(({sk, ...rest}) => ({
+// add board to workspace
+async function addBoard(boardItem) {
+    const {boardId, ...rest} = boardItem;
+    const updatedBoardItem = {
         ...rest,
-        sk: profileId.replace(`profile#${profileId}`)
-    }));
+        sk: `board#${boardId}`
+    }
 
     // send request to datastore
     await dynamoDB.send(
         new PutCommand( {
             TableName: tableName,
-            Item: profileItem
+            Item: updatedBoardItem
         })
     );
 }
 
-// remove profile from workspace
-async function removeProfile(workspaceId, profileId) {
-    const sk = `profile#${profileId}`;
+// remove board from workspace
+async function removeBoard(workspaceId, boardId) {
+    const sk = `board#${boardId}`;
     
     // send request to delete entry
     await dynamoDB.send(
@@ -197,8 +204,8 @@ async function removeProfile(workspaceId, profileId) {
     );
 }
 
-// update profile in workspace
-async function updateProfile(workspaceId, profileId, data) {
+// update board in workspace
+async function updateBoard(workspaceId, boardId, data) {
     const updateFields = [];
     const expressionAttributeValues = {};
     const expressionAttributeNames = {};
@@ -209,17 +216,23 @@ async function updateProfile(workspaceId, profileId, data) {
         expressionAttributeNames["#name"] = "name";
     }
 
-    if (data.layout !== undefined) {
-        updateFields.push("#layout = :layout");
-        expressionAttributeValues[":layout"] = data.layout
-        expressionAttributeNames["#layout"] = "layout";
+    if (data.config !== undefined) {
+        updateFields.push("#config = :config");
+        expressionAttributeValues[":config"] = data.config
+        expressionAttributeNames["#config"] = "config";
+    }
+
+    if (data.isDashboard !== undefined) {
+        updateFields.push("#isDashboard = :isDashboard");
+        expressionAttributeValues[":isDashboard"] = data.isDashboard
+        expressionAttributeNames["#isDashboard"] = "isDashboard";
     }
 
     updateFields.push("#updatedAt = :updatedAt");
     expressionAttributeValues[":updatedAt"] = new Date().toISOString();
     expressionAttributeNames["#updatedAt"] = "updatedAt";
 
-    const sk = `profile#${profileId}`;
+    const sk = `board#${boardId}`;
 
     const result = await dynamoDB.send(
         new UpdateCommand( {
@@ -240,13 +253,13 @@ async function updateProfile(workspaceId, profileId, data) {
 
     return {
         ...rest,
-        profileId: skValue.replace("profile#", "")
+        boardId: skValue.replace("board#", "")
     };
 }
 
-// get profile in a workspace
-async function getProfileById(workspaceId, profileId) {
-    const sk = `profile#${profileId}`;
+// get board in a workspace
+async function getBoardById(workspaceId, boardId) {
+    const sk = `board#${boardId}`;
     
     const result = await dynamoDB.send(
         new GetCommand({
@@ -268,27 +281,27 @@ async function getProfileById(workspaceId, profileId) {
     
     return {
         ...rest,
-        profileId: skValue.replace("profile#", "")
+        boardId: skValue.replace("board#", "")
     };
 }
 
-// get all profiles in a workspace
-async function getProfilesByWorkspaceId(workspaceId) {
-    // get the profiles in a workspace
+// get all boards in a workspace
+async function getBoardsByWorkspaceId(workspaceId) {
+    // get the boards in a workspace
     const result = await dynamoDB.send(
             new QueryCommand({
                 TableName: tableName,
-                KeyConditionExpression: "workspaceId = :workspaceId AND begins_with(sk, :prefix)",
+                KeyConditionExpression: "workspaceId = :workspaceId AND begins_with(sk, :board)",
                 ExpressionAttributeValues: {
                     ":workspaceId": workspaceId,
-                    ":prefix": "profile#"
+                    ":board": "board#"
                 }
             })
         );
 
     return (result.Items || null).map(({sk, ...rest}) => ({
         ...rest,
-        profileId: sk.replace("profile#", "")
+        boardId: sk.replace("board#", "")
     }));
 }
 
@@ -533,11 +546,11 @@ module.exports = {
     getRoleById,
     getRolesByWorkspaceId,
     getOwnerRoleId,
-    addProfile,
-    updateProfile,
-    removeProfile,
-    getProfileById,
-    getProfilesByWorkspaceId,
+    addBoard,
+    updateBoard,
+    removeBoard,
+    getBoardById,
+    getBoardsByWorkspaceId,
     addWorkspace,
     removeWorkspace,
     getWorkspaceById,

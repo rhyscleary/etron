@@ -5,8 +5,21 @@ const workspaceUsersRepository = require ("@etron/shared/repositories/workspaceU
 const { getDefaultPermissions } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    MANAGE_ROLES: "app.collaboration.manage_roles",
+    VIEW_ROLES: "app.collaboration.view_roles"
+};
 
 async function createRoleInWorkspace(authUserId, workspaceId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const { name, permissions } = payload;
@@ -42,7 +55,8 @@ async function createRoleInWorkspace(authUserId, workspaceId, payload) {
         name: name,
         permissions: rolePermissions,
         createdAt: date,
-        updatedAt: date
+        updatedAt: date,
+        hasAccess: {}
     };
 
     await workspaceRepo.addRole(roleItem);
@@ -51,6 +65,12 @@ async function createRoleInWorkspace(authUserId, workspaceId, payload) {
 }
 
 async function deleteRoleInWorkspace(authUserId, workspaceId, roleId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
@@ -70,6 +90,12 @@ async function deleteRoleInWorkspace(authUserId, workspaceId, roleId) {
 }
 
 async function getRoleInWorkspace(authUserId, workspaceId, roleId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
@@ -96,12 +122,24 @@ async function getRoleOfUserInWorkspace(authUserId, workspaceId) {
 }
 
 async function getRolesInWorkspace(authUserId, workspaceId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     return await workspaceRepo.getRolesByWorkspaceId(workspaceId);
 }
 
 async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_ROLES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const role = await workspaceRepo.getRoleById(workspaceId, roleId);
@@ -110,10 +148,15 @@ async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
         throw new Error("Role not found:", roleId);
     }
 
-    const { name, permissions } = payload;
+    const { name, permissions, hasAccess } = payload;
 
-    if (name && typeof name !== "string") {
-        throw new Error("'name' must be a string");
+    const updatedFields = {};
+
+    if (name) {
+        if (typeof name !== "string") {
+            throw new Error("'name' must be a string");
+        }
+        updatedFields.name = name;
     }
 
     if (permissions) {
@@ -126,9 +169,32 @@ async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
                 throw new Error("Each permission must be a string key");
             }
         }
+
+        updatedFields.permissions = permissions;
     }
 
-    return workspaceRepo.updateRole(workspaceId, roleId, payload);
+    if (hasAccess) {
+        if (typeof hasAccess !== "object" || Array.isArray(hasAccess)) {
+            throw new Error("'hasAccess' must be an object");
+        }
+
+        // merge and duplicate
+        const existingAccess = role.hasAccess || {};
+        const mergedAccess = { ...existingAccess };
+
+        for (const [resourceType, ids] of Object.entries(hasAccess)) {
+            if (!Array.isArray(ids)) {
+                throw new Error(`'hasAccess.${resourceType}' must be an array`);
+            }
+
+            const existingIds = Array.isArray(existingAccess[resourceType]) ? existingAccess[resourceType] : [];
+            mergedAccess[resourceType] = Array.from(new Set([...existingIds, ...ids]));
+        }
+
+        updatedFields.hasAccess = mergedAccess;
+    }
+
+    return workspaceRepo.updateRole(workspaceId, roleId, updatedFields);
 }
 
 module.exports = {

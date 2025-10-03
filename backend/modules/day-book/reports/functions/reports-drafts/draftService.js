@@ -4,10 +4,23 @@ const reportRepo = require("@etron/reports-shared/repositories/reportsRepository
 const {v4 : uuidv4} = require('uuid');
 const { deleteFolder, getUploadUrl, getDownloadUrl } = require("@etron/reports-shared/repositories/reportsBucketRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    VIEW_REPORTS: "modules.daybook.reports.view_reports",
+    MANAGE_DRAFTS: "modules.daybook.reports.manage_drafts",
+};
 
 async function createDraftReport(authUserId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DRAFTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const { name } = payload;
 
@@ -55,6 +68,12 @@ async function createDraftReport(authUserId, payload) {
 async function updateDraftReport(authUserId, draftId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DRAFTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const draft = await reportRepo.getDraftById(workspaceId, draftId);
 
@@ -107,6 +126,13 @@ async function updateDraftReport(authUserId, draftId, payload) {
 
 async function getDraftReport(authUserId, workspaceId, draftId) {
     await validateWorkspaceId(workspaceId);
+    
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_REPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     const draft = await reportRepo.getDraftById(workspaceId, draftId);
 
     if (!draft) return null;
@@ -128,6 +154,12 @@ async function getDraftReport(authUserId, workspaceId, draftId) {
 
 async function getDraftReports(authUserId, workspaceId) {
     await validateWorkspaceId(workspaceId);
+    
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_REPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     // get all drafts in a workspace
     const drafts = await reportRepo.getDraftsByWorkspaceId(workspaceId);
@@ -157,6 +189,12 @@ async function getDraftReports(authUserId, workspaceId) {
 
 async function deleteDraftReport(authUserId, workspaceId, draftId) {
     await validateWorkspaceId(workspaceId);
+    
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DRAFTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     // get draft details
     const draft = await reportRepo.getDraftById(workspaceId, draftId);

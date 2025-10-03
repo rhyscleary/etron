@@ -4,7 +4,7 @@ Description: >
   eTRON user-domain functions template
 
 Parameters:
-  PermissionsBucketName:
+  AppConfigurationBucketName:
     Type: String
 
 Globals:
@@ -15,7 +15,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        PERMISSIONS_BUCKET: !Ref PermissionsBucketName
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
 
 Resources:
 

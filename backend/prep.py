@@ -10,7 +10,7 @@ TARGET_FOLDERS = [
     "workspace/functions/workspace-core",
     "workspace/functions/workspace-invites",
     "workspace/functions/workspace-modules",
-    "workspace/functions/workspace-profiles",
+    "workspace/functions/workspace-boards",
     "workspace/functions/workspace-roles",
     "workspace/functions/workspace-users",
     "modules/day-book/data-sources",
