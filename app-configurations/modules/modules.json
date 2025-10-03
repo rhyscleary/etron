@@ -4,42 +4,54 @@
         "name": "Day Book",
         "description": "Connect to data sources and track real-time metrics",
         "starterModule": true,
-        "cardColor": "",
-        "fontColor": ""
+        "cardColor": "#0E3529",
+        "fontColor": "#06D6A0",
+        "keywords": ["daybook", "day book", "day", "metrics", "data", "reports", "tracking"],
+        "categories": ["Financial", "Marketing"],
+        "icon": "chart-line"
     },
     {
         "key": "leave",
         "name": "Leave",
         "description": "Request leave",
         "starterModule": false,
-        "cardColor": "#E8F5E9",
-        "fontColor": "#2E7D32",
-        "keywords": [],
-        "category": "Employees",
-        "icon": "chart-line"
+        "cardColor": "#293158",
+        "fontColor": "#BCD4F6",
+        "keywords": ["leave", "request"],
+        "categories": ["Employees"],
+        "icon": "airplane"
     },
     {
         "key": "workspace_chat",
         "name": "Workspace Chat",
         "description": "Communicate with your employees wherever they are",
         "starterModule": false,
-        "cardColor": "",
-        "fontColor": ""
+        "cardColor": "#293158",
+        "fontColor": "#BCD4F6",
+        "keywords": ["workspace", "chat", "communication", "employees"],
+        "categories": ["Employees"],
+        "icon": "chat"
     },
     {
         "key": "document_library",
         "name": "Document Library",
         "description": "Manage your works documents in one place",
         "starterModule": false,
-        "cardColor": "",
-        "fontColor": ""
+        "cardColor": "#293158",
+        "fontColor": "#BCD4F6",
+        "keywords": ["document", "library"],
+        "categories": ["Employees"],
+        "icon": "file-document-multiple"
     },
     {
         "key": "expense_tracker",
-        "name": "Expenses Tracker",
+        "name": "Expense Tracker",
         "description": "Upload receipts and track your expenses in one place",
         "starterModule": false,
-        "cardColor": "",
-        "fontColor": ""
+        "cardColor": "#5D2353",
+        "fontColor": "#CCC1EC",
+        "keywords": ["expenses", "tracker", "receipts"],
+        "categories": ["Financial"],
+        "icon": "hand-coin"
     }
 ]

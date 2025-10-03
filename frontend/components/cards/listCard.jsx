@@ -6,7 +6,8 @@ import { Avatar, Card, Icon, IconButton, Text, useTheme } from "react-native-pap
 import { commonStyles } from "../../assets/styles/stylesheets/common";
 
 const ListCard = ({
-    leftIcon,
+    leftElement,
+    leftElementType = "icon",
     title,
     subtitle,
     content,
@@ -28,6 +29,30 @@ const ListCard = ({
     const defaultSubtitleStyle = { color: theme.colors.text, fontSize: 15, marginTop: 6 };
     const defaultContentStyle = { color: theme.colors.text, fontSize: 14, lineHeight: 20, marginTop: 8 };
 
+    // render the left element 
+    const renderLeftElement = () => {
+        if (!leftElement) return null;
+
+        switch (leftElementType) {
+            case "icon":
+                return typeof leftElement === "string" ? (
+                    <Icon source={leftElement} size={32} />
+                ) : (
+                    leftElement
+                );
+            case "avatar":
+                return typeof leftElement === "string" ? (
+                    <Avatar.Icon size={32} icon={leftElement} />
+                ) : (
+                    leftElement
+                );
+            case "custom":
+                return leftElement;
+            default:
+                return null;
+        }
+    }
+
     const CardBody = (
         <Card
             mode="elevated"
@@ -36,13 +61,7 @@ const ListCard = ({
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
 
                 {/* Left Icon */}
-                {leftIcon && (
-                    typeof leftIcon === 'string' ? (
-                        <Card.Icon icon={leftIcon} />
-                    ) : (
-                        leftIcon
-                    )
-                )}
+                {renderLeftElement()}
 
                 {/* Content Block */}
                 <View style={{ flex: 1, marginHorizontal: 8 }}>

@@ -6,7 +6,7 @@ const SearchBar = ({
     placeholder = "Search",
     onSearch = () => {},
     onFilterChange = () => {},
-    filters = ['All', 'Active', 'Inactive'],
+    filters
 }) => {
     const[searchQuery, setSearchQuery] = useState('');
     const [selectedFilter, setSelectedFilter] = useState(filters[0] || 'All');
@@ -27,7 +27,10 @@ const SearchBar = ({
             <Searchbar
                 placeholder={placeholder}
                 placeholderTextColor={theme.colors.placeholderText}
-                onChangeText={setSearchQuery}
+                onChangeText={(text) => {
+                    setSearchQuery(text);
+                    onSearch(text);
+                }}
                 value={searchQuery}
                 onIconPress={handleSearch}
                 style={[
@@ -41,39 +44,42 @@ const SearchBar = ({
                 iconColor={theme.colors.icon}
             />
 
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipRow}
-            >
-                {filters.map((filter) => (
-                    <Chip
-                        key={filter}
-                        mode="flat"
-                        showSelectedCheck={false}
-                        selected={selectedFilter === filter}
-                        onPress={() => handleFilterPress(filter)}
-                        style={[
-                            styles.chip,
-                            {
-                                backgroundColor: selectedFilter === filter
-                                    ? theme.colors.primary
-                                    : theme.colors.surfaceVariant,
-                                paddingVertical: 2
-                            }
-                        ]}
-                        textStyle={{
-                            fontSize: 12,
-                            color: selectedFilter === filter ? theme.colors.onPrimary : theme.colors.text,
-                            lineHeight: 12
-                        }}
-                    >
-                        {filter}
-                    </Chip>
-                ))}
+            {filters && filters.length > 0 && (
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipRow}
+                >
+                    {filters.map((filter) => (
+                        <Chip
+                            key={filter}
+                            mode="flat"
+                            showSelectedCheck={false}
+                            selected={selectedFilter === filter}
+                            onPress={() => handleFilterPress(filter)}
+                            style={[
+                                styles.chip,
+                                {
+                                    borderRadius: 14,
+                                    backgroundColor: selectedFilter === filter
+                                        ? theme.colors.primary
+                                        : theme.colors.surfaceVariant,
+                                    paddingVertical: 2
+                                }
+                            ]}
+                            textStyle={{
+                                fontSize: 12,
+                                color: selectedFilter === filter ? theme.colors.onPrimary : theme.colors.text,
+                                lineHeight: 12
+                            }}
+                        >
+                            {filter}
+                        </Chip>
+                    ))}
 
 
-            </ScrollView>
+                </ScrollView>
+            )}
         </View>
     );
 };

@@ -12,6 +12,7 @@ import { apiGet, apiPost } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { Text } from "react-native-paper";
+import { hasPermission } from "../../../../utils/permissions";
 
 const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
     const [loading, setLoading] = useState(false);
@@ -25,6 +26,14 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
     useEffect(() => {
         const init = async () => {
             const id = await getWorkspaceId();
+
+            // check permissions to view this screen
+            const allowed = await hasPermission("app.workspace.manage_modules");
+            if (!allowed) {
+                router.back(); // navigate the user off the screen
+                return;
+            }
+            
             setWorkspaceId(id);
 
             if (id) {
@@ -56,7 +65,7 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
     const filteredModules = useMemo(() => {
         return modules.filter((module) => {
             const matchesFilter =
-                selectedFilter === "All" || module.category === selectedFilter;
+                selectedFilter === "All" || (module.categories || []).includes(selectedFilter);
 
             const matchesSearch = 
                 module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,6 +102,7 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
         <ListCard
             title={item.name}
             content={item.description}
+            leftElement={item.icon || "puzzle"}
             rightIcon="download"
             onPress={() => {
                 setSelectedModule(item);
