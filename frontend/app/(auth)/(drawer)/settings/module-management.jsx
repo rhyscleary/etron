@@ -2,8 +2,8 @@
 
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 import Header from "../../../../components/layout/Header";
-import { useEffect, useMemo, useState } from "react";
-import { router } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
 import BasicDialog from "../../../../components/overlays/BasicDialog";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 import SearchBar from "../../../../components/common/input/SearchBar";
@@ -11,7 +11,7 @@ import ListCard from "../../../../components/cards/listCard";
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
-import { Text } from "react-native-paper";
+import { List, Text, useTheme } from "react-native-paper";
 import { hasPermission } from "../../../../utils/permissions";
 import CustomBottomSheet from "../../../../components/BottomSheet/bottom-sheet";
 
@@ -24,6 +24,8 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
     const [unInstallDialogVisible, setUninstallDialogVisible] = useState(false);
     const [selectedModule, setSelectedModule] = useState(null);
     const [showModuleActionsSheet, setShowModuleActionsSheet] = useState(false);
+
+    const theme = useTheme();
 
     useEffect(() => {
         const init = async () => {
@@ -81,8 +83,9 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
         });
     }, [searchQuery, selectedFilter, modules]);
 
-    const handleModuleUnInstall = async () => {
-        console.log("Uninstalling module:", selectedModule?.key);
+    const handleModuleUninstall = async () => {
+        if (!selectedModule) return;
+        console.log("Uninstalling module:", selectedModule.key);
         try {
             // call api
             await apiDelete(endpoints.workspace.modules.uninstall(workspaceId, selectedModule.key));
@@ -102,6 +105,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
     };
 
     const handleModuleToggle = async () => {
+        if (!selectedModule) return;
         console.log("Toggling module:", selectedModule?.key);
         try {
             // call api
@@ -112,8 +116,6 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
         } catch (error) {
             console.error("Failed to toggle module:", error);
             // show toast
-        } finally {
-            setSelectedModule(null);
         }
     };
 
@@ -132,6 +134,17 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
         />
     );
 
+    const handleTogglePress = useCallback(async () => {
+        setShowModuleActionsSheet(false);
+        if (selectedModule) await handleModuleToggle();
+    }, [selectedModule]);
+
+    const handleUninstallPress = () => {
+        setShowModuleActionsSheet(false);
+        setSelectedModule(module);
+        setUninstallDialogVisible(true);
+    };
+
     const moduleActionItems = useMemo(() => {
         if (!selectedModule) return [];
 
@@ -139,21 +152,15 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
             {
                 icon: selectedModule.enabled ? "toggle-switch-off" : "toggle-switch",
                 label: selectedModule.enabled ? "Disable" : "Enable",
-                onPress: async () => {
-                    setShowModuleActionsSheet(false);
-                    await handleModuleToggle();
-                },
+                onPress: handleTogglePress,
             },
             {
                 icon: "trash-can-outline",
                 label: "Uninstall",
-                onPress: () => {
-                    setShowModuleActionsSheet(false);
-                    setUninstallDialogVisible(true);
-                },
+                onPress: handleUninstallPress,
             },
         ];
-    }, [selectedModule]);
+    }, [selectedModule, handleTogglePress, handleUninstallPress]);
 
     console.log(selectedModule, moduleActionItems)
     
@@ -206,20 +213,49 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                 }}
                 rightActionLabel="Uninstall"
                 rightDanger={true}
-                handleRightAction={handleModuleUnInstall}
+                handleRightAction={handleModuleUninstall}
             />
 
             {showModuleActionsSheet && selectedModule && (
                 <CustomBottomSheet
                     variant="standard"
-                    title={selectedModule.name}
-                    showClose
+                    header={{
+                        title: selectedModule.name,
+                        showClose: false,
+                    }}
+                    footer={{
+                        variant: "none"
+                    }}
                     data={moduleActionItems}
                     keyExtractor={(item) => item.label}
                     itemTitleExtractor={(item) => item.label}
-                    onItemPress={(item) => item.onPress?.()}
-                    onChange={(index) => { if (index === -1) setShowModuleActionsSheet(false); }}
-                    onClose={() => setShowModuleActionsSheet(false)}
+                    renderItem={({ item }) => (
+                        <List.Item
+                            title={item.label}
+                            left={(props) => (
+                                <List.Icon 
+                                    {...props} 
+                                    icon={item.icon}
+                                    color={item.label === "Uninstall" ? theme.colors.error : props.color} 
+                                />
+                            )}
+                            titleStyle={{
+                                color: item.label === "Uninstall" ? theme.colors.error : theme.colors.text,
+                            }}
+                            onPress={() => item.label === "Uninstall"
+                                ? handleUninstallPress()
+                                : handleTogglePress()
+                            }
+                        />
+                    )}
+                    onChange={(index) => {
+                        if (index === -1) { 
+                            setShowModuleActionsSheet(false); 
+                        }
+                    }}
+                    onClose={() => {
+                        setShowModuleActionsSheet(false);
+                    }}
                 />
             )}
         </ResponsiveScreen>
