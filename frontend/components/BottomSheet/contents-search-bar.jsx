@@ -2,22 +2,25 @@ import React, { useMemo, useCallback } from 'react';
 import { StyleSheet, View, TextInput } from 'react-native';
 import { useTheme, Icon, IconButton } from 'react-native-paper';
 
-const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocus, onBlur }) => {
+export const CONTENTS_SEARCH_BAR_BOTTOM_MARGIN = 8;
+
+const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocus, onBlur, showShadow = false }) => {
   const theme = useTheme();
-  const dynamicStyles = useMemo(() => ({
-    backgroundColor: theme.colors?.buttonBackgroundAlt || theme.colors?.surfaceVariant || '#494949',
-  }), [theme.colors]);
-
-  const handleClear = useCallback(() => {
-    if (onChangeText) onChangeText('');
-  }, [onChangeText]);
-
+  const backgroundColor = theme.colors?.buttonBackgroundAlt || theme.colors?.surfaceVariant || '#494949';
   const textColor = theme.colors?.text || theme.colors?.onSurface || '#fff';
   const placeholderColor = theme.colors?.placeholderText || 'rgba(255,255,255,0.5)';
   const iconColor = theme.colors?.icon || textColor;
 
+  const handleClear = useCallback(() => onChangeText?.(''), [onChangeText]);
+
+  const containerStyle = [
+    styles.searchbar,
+    { backgroundColor },
+    showShadow && styles.searchbarShadow,
+  ];
+
   return (
-    <View style={[styles.searchbar, dynamicStyles]}>
+    <View style={containerStyle}>
       <Icon source="magnify" size={20} color={iconColor} style={styles.leftIcon} />
       <TextInput
         value={value}
@@ -49,7 +52,7 @@ const ContentsSearchBar = ({ value, onChangeText, placeholder = 'Search', onFocu
 const styles = StyleSheet.create({
   searchbar: {
     marginHorizontal: 0,
-    marginBottom: 8,
+    marginBottom: CONTENTS_SEARCH_BAR_BOTTOM_MARGIN,
     borderRadius: 6,
     height: 36,
     minHeight: 36,
@@ -74,6 +77,13 @@ const styles = StyleSheet.create({
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  searchbarShadow: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });
 

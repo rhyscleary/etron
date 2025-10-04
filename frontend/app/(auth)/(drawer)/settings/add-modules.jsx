@@ -88,7 +88,7 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
             setModules((previous) => previous.filter((module) => module.key !== selectedModule.key));
 
             // background refetch
-            fetchModules();
+            await fetchModules(workspaceId);
         } catch (error) {
             console.error("Failed to install module:", error);
             // show toast

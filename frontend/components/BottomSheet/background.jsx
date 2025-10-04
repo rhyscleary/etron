@@ -9,21 +9,16 @@ import { useTheme } from 'react-native-paper';
 
 const Background = ({ style, animatedIndex }) => {
   const theme = useTheme();
-  // fallback color
-  const endColor = theme?.colors?.background || theme?.colors.surface || '#383838';
-  // get start color otherwise fallback
-  const startColor = theme?.colors?.focusedBackground || theme?.colors?.surface || '#4c5063';
+  const colors = theme?.colors ?? {};
+  const endColor = colors.background || colors.surface || '#383838';
+  const startColor = colors.focusedBackground || colors.surface || '#4c5063';
 
   const colorAnimatedStyle = useAnimatedStyle(() => ({
-    backgroundColor: interpolateColor(
-      animatedIndex.value,
-      [0, 1],
-      [startColor, endColor]
-    ),
+    backgroundColor: interpolateColor(animatedIndex.value, [0, 1], [startColor, endColor]),
   }), [startColor, endColor]);
   
   const radiusAnimatedStyle = useAnimatedStyle(() => {
-    const r = interpolate(animatedIndex.value, [1, 2], [20, 0], Extrapolate.CLAMP);
+    const r = interpolate(animatedIndex.value, [0, 1], [20, 0], Extrapolate.CLAMP);
     return {
       borderTopLeftRadius: r,
       borderTopRightRadius: r,
@@ -31,12 +26,9 @@ const Background = ({ style, animatedIndex }) => {
     };
   });
 
-  const containerStyle = useMemo(
-    () => [style, colorAnimatedStyle, radiusAnimatedStyle],
-    [style, colorAnimatedStyle, radiusAnimatedStyle]
-  );
+  const containerStyle = [colorAnimatedStyle, radiusAnimatedStyle, style].filter(Boolean);
 
   return <Animated.View pointerEvents="none" style={containerStyle} />;
 };
 
-export default Background;
+export default React.memo(Background);

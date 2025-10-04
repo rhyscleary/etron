@@ -20,41 +20,32 @@ const Backdrop = ({
   blockAboveIndex = 0,
   onPress, // optional - can close sheet
 }) => {
-  // TODO: move to utils
   const theme = useTheme();
-  // prefer theme backdrop color else derive from primary
-  const overlayColor = useMemo(() => {
-    // TODO: input any needed colors
-    // const base = theme?.colors?.backdrop || theme?.colors?.primary || '#000000';
-    const base = theme?.colors?.focusedBackground || theme?.colors?.primary || '#000000';
-    return hexToRgba(base, 0.35);
-  }, [theme]);
+  const focusedBackground = theme?.colors?.focusedBackground;
+  const primaryColor = theme?.colors?.primary;
+  
+  const overlayColor = useMemo(() => 
+    hexToRgba(focusedBackground || primaryColor || '#000000', 0.35),
+    [focusedBackground, primaryColor]
+  );
+  
   const opacityStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      animatedIndex.value,
-      [0, 1],
-      [0, 1],
-      Extrapolate.CLAMP
-    ),
+    opacity: interpolate(animatedIndex.value, [0, 1], [0, 1], Extrapolate.CLAMP),
   }));
 
   const [blocking, setBlocking] = useState(false);
   const isBlocking = useDerivedValue(() => animatedIndex.value > blockAboveIndex, [blockAboveIndex]);
+  
   useAnimatedReaction(
     () => isBlocking.value,
-    (val) => {
-      if (val !== blocking) {
-        runOnJS(setBlocking)(val);
-      }
-    },
+    (val) => val !== blocking && runOnJS(setBlocking)(val),
     [blocking]
   );
+  
   const pointerEvents = blocking ? 'auto' : 'none';
 
-  const containerStyle = useMemo(
-    () => [style, styles.container, opacityStyle],
-    [style, opacityStyle]
-  );
+  const containerStyle = [styles.container, opacityStyle, style].filter(Boolean);
+  const shouldCapturePress = Boolean(onPress) && pointerEvents === 'auto';
 
   const Inner = (
     <Animated.View style={containerStyle} pointerEvents={pointerEvents}>
@@ -67,17 +58,14 @@ const Backdrop = ({
     </Animated.View>
   );
 
-  if (onPress && pointerEvents === 'auto') {
-    return (
-      <Pressable style={StyleSheet.absoluteFill} onPress={onPress}>
-        {Inner}
-      </Pressable>
-    );
-  }
-  return Inner;
+  return shouldCapturePress ? (
+    <Pressable style={StyleSheet.absoluteFill} onPress={onPress} accessibilityRole="button">
+      {Inner}
+    </Pressable>
+  ) : Inner;
 };
 
-export default Backdrop;
+export default React.memo(Backdrop);
 
 const styles = StyleSheet.create({
   container: {

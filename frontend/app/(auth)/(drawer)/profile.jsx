@@ -6,7 +6,7 @@ import { router } from "expo-router";
 import StackLayout from "../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 import { useTheme, Avatar, List, Divider, TextInput, Button, HelperText } from "react-native-paper";
-import CustomBottomSheet from "../../../components/BottomSheet/bottom-sheet";
+import CustomBottomSheet from "../../../components/BottomSheet";
 
 const Profile = () => {
     const theme = useTheme();
@@ -16,6 +16,7 @@ const Profile = () => {
     const [showProfileActionsSheet, setShowProfileActionsSheet] = useState(false); // custom header + search + icons
     const [showQuickIconSheet, setShowQuickIconSheet] = useState(false); // compact style with custom renderItem (icon grid style list)
     const [showQuickNoteSheet, setShowQuickNoteSheet] = useState(false); // NEW: custom content (no list) example
+    const [showSearchFooterSheet, setShowSearchFooterSheet] = useState(false); // NEW: search footer variant
 
     // quick note form state
     const [noteTitle, setNoteTitle] = useState("");
@@ -59,6 +60,7 @@ const Profile = () => {
             setShowQuickIconSheet(false);
             setShowQuickNoteSheet(true); 
         } },
+        { icon: "magnify", label: "Testing - Search Footer Sheet", onPress: () => { setShowSearchFooterSheet(true); } },
     ];
     // custom content for quick note sheet with no list rendering
     const quickNoteContent = (
@@ -146,15 +148,20 @@ const Profile = () => {
             {showSheet && (
                 <CustomBottomSheet
                     variant="standard"
-                    title="Quick Actions"
-                    headerActionLabel="Edit"
-                    onHeaderActionPress={() => {/* does nothing */}}
-                    showClose={false}
-                    closeIcon="close"
-                    handleSolidBackground={true}
-                    enableSearch={true}
-                    footerVariant="minimal"
-                    footerPlacement="right"
+                    header={{
+                        title: "Quick Actions",
+                        actionLabel: "Edit",
+                        onActionPress: () => {/* does nothing */},
+                        showClose: false,
+                        solidBackground: true,
+                    }}
+                    search={{
+                        enabled: true,
+                    }}
+                    footer={{
+                        variant: "minimal",
+                        placement: "right",
+                    }}
                     onChange={(index) => {
                         if (index === -1) setShowSheet(false);
                     }}
@@ -171,10 +178,14 @@ const Profile = () => {
             {showCompactSheet && (
                 <CustomBottomSheet
                     variant="compact"
-                    title="Quick Actions"
-                    closeIcon="close"
-                    handleSolidBackground={true}
-                    footerVariant="translucent"
+                    header={{
+                        title: "Quick Actions",
+                        closeIcon: "close",
+                        solidBackground: true,
+                    }}
+                    footer={{
+                        variant: "translucent",
+                    }}
                     onChange={(index) => {
                         if (index === -1) setShowCompactSheet(false);
                     }}
@@ -192,11 +203,16 @@ const Profile = () => {
             {showProfileActionsSheet && (
                 <CustomBottomSheet
                     variant="standard"
-                    title="Profile"
-                    showClose={false}
-                    headerChildren={profileHeaderChildren}
-                    enableSearch
-                    searchPlaceholder="Filter actions"
+                    header={{
+                        title: "Profile",
+                        showClose: false,
+                        children: profileHeaderChildren,
+                    }}
+                    search={{
+                        enabled: true,
+                        placeholder: "Filter actions",
+                    }}
+                    initialIndex={1}
                     data={profileActionItems}
                     keyExtractor={(item) => item.label}
                     itemTitleExtractor={(item) => item.label}
@@ -209,9 +225,12 @@ const Profile = () => {
             {showQuickIconSheet && (
                 <CustomBottomSheet
                     variant="compact"
-                    title="Actions"
-                    footerVariant="minimal"
-                    enableSearch={false}
+                    header={{
+                        title: "Actions",
+                    }}
+                    footer={{
+                        variant: "minimal",
+                    }}
                     data={quickIconActions}
                     keyExtractor={(item) => item.label}
                     itemTitleExtractor={(item) => item.label}
@@ -224,13 +243,41 @@ const Profile = () => {
             {showQuickNoteSheet && (
                 <CustomBottomSheet
                     variant="standard"
-                    footerVariant="none"
-                    title="Quick Note"
-                    showClose
+                    header={{
+                        title: "Quick Note",
+                        showClose: true,
+                    }}
+                    footer={{
+                        variant: "none",
+                    }}
+                    initialIndex={0}
                     snapPoints={[320, 520]}
                     customContent={quickNoteContent}
                     onChange={(index) => { if (index === -1) setShowQuickNoteSheet(false); }}
                     onClose={() => setShowQuickNoteSheet(false)}
+                />
+            )}
+
+            {showSearchFooterSheet && (
+                <CustomBottomSheet
+                    variant="standard"
+                    header={{
+                        title: "Search in Footer",
+                        showClose: true,
+                    }}
+                    search={{
+                        enabled: true,
+                        position: "bottom",
+                    }}
+                    data={settingOptionButtons}
+                    keyExtractor={(item) => item.label}
+                    itemTitleExtractor={(item) => item.label}
+                    onItemPress={(item) => {
+                        setShowSearchFooterSheet(false);
+                        if (typeof item.onPress === 'function') item.onPress();
+                    }}
+                    onChange={(index) => { if (index === -1) setShowSearchFooterSheet(false); }}
+                    onClose={() => setShowSearchFooterSheet(false)}
                 />
             )}
         </View>
