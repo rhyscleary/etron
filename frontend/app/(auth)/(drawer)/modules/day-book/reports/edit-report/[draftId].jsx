@@ -8,17 +8,17 @@ import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
 import { Portal, Dialog, Button } from "react-native-paper";
-import { useLocalSearchParams, useRouter } from "expo-router"; // ✅ added useRouter
+import { useLocalSearchParams, useRouter } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
-import { uploadTemplate } from "../../../../../../../utils/templateUploader"; 
+import { createNewTemplate } from "../../../../../../../utils/templateUploader"; 
 import { useTheme } from "react-native-paper";
 
 const EditReport = () => {
   const { draftId } = useLocalSearchParams();
-  const router = useRouter(); // ✅ router instance
+  const router = useRouter();
   const [editorContent, setEditorContent] = useState("");
   const [dialogVisible, setDialogVisible] = useState(false);
   const [fileName, setFileName] = useState("Report");
@@ -252,17 +252,23 @@ const EditReport = () => {
       return;
     }
 
-    const success = await uploadTemplate({
-      workspaceId,
-      templateName: fileName,
-      editorContent,
-    });
+    try {
+      const newTemplateId = await createNewTemplate({
+        workspaceId,
+        templateName: fileName, // reusing report name as template name
+      });
 
-    if (success) {
-      Alert.alert("Success", "Template saved successfully");
-      setIsEditing(false);
-      initSentRef.current = false;
-      router.push("/modules/day-book/reports/templates"); // ✅ redirect
+      if (newTemplateId) {
+        Alert.alert("Success", "Template saved successfully");
+        setIsEditing(false);
+        initSentRef.current = false;
+        router.push(`/modules/day-book/reports/templates/${newTemplateId}`);
+      } else {
+        Alert.alert("Error", "Failed to save template");
+      }
+    } catch (err) {
+      console.error("Failed to save as template:", err);
+      Alert.alert("Error", "Failed to save as template");
     }
   };
 
@@ -289,8 +295,8 @@ const EditReport = () => {
         )}
 
         {isEditing && (
-          <TouchableOpacity style={styles.templateButton} onPress={handleSaveAsTemplate}>
-            <Text style={styles.templateButtonText}>Save as Template</Text>
+          <TouchableOpacity style={styles.saveTemplateButton} onPress={handleSaveAsTemplate}>
+            <Text style={styles.saveTemplateButtonText}>Save as Template</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -362,13 +368,13 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   editButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
-  templateButton: {
+  saveTemplateButton: {
     backgroundColor: "#34C759",
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 6,
   },
-  templateButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
+  saveTemplateButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
   webview: { flex: 1 },
   input: {
     borderWidth: 1, borderColor: "#ccc", padding: 8, marginTop: 10, borderRadius: 5,
