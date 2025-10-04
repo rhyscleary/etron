@@ -1,16 +1,19 @@
-import React, { useMemo, useRef, useCallback } from "react";
-import { StyleSheet } from "react-native";
+import React, { useMemo, useRef, useCallback, useState, useEffect } from "react";
+import { StyleSheet, View } from "react-native";
 import { useTheme, Appbar } from "react-native-paper";
+import SheetHeader from './header';
+import ContentsSearchBar from './contents-search-bar';
 import Animated, {
   Extrapolate,
   interpolate,
   useAnimatedStyle,
   useDerivedValue,
-  runOnJS,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
-export const transformOrigin = ({ x, y }, ...transformations) => {
+const ANGLE_30 = Math.PI / 6;
+
+const transformOrigin = ({ x, y }, ...transformations) => {
   "worklet";
   return [
     { translateX: x },
@@ -20,8 +23,6 @@ export const transformOrigin = ({ x, y }, ...transformations) => {
     { translateY: y * -1 },
   ];
 };
-
-const ANGLE_30 = Math.PI / 6;
 
 const Handle = ({
   style,
@@ -33,35 +34,72 @@ const Handle = ({
   showClose = true,
   closeIcon = 'close',
   onClose,
+  onLayout,
+  textColor,
+  // header props for standard variant
+  headerComponent,
+  headerActionLabel,
+  onHeaderActionPress,
+  headerChildren,
+  // search props for standard variant
+  enableSearch = false,
+  searchPlaceholder,
+  onSearchChange,
+  onSearchFocus,
+  onSearchBlur,
+  searchResetKey,
+  ...restProps
 }) => {
   const hasFiredRef = useRef(false);
   const theme = useTheme();
+  const colors = theme?.colors ?? {};
+  const [searchValue, setSearchValue] = useState('');
+  const lastResetKeyRef = useRef(searchResetKey);
 
-  // TODO: test different haptics (light, medium, heavy, rigid, etc.), create haptics utility if being used in app more.
+  useEffect(() => {
+    if (!enableSearch || (typeof searchResetKey === 'number' && searchResetKey !== lastResetKeyRef.current)) {
+      setSearchValue('');
+      lastResetKeyRef.current = searchResetKey;
+    }
+  }, [enableSearch, searchResetKey]);
+
+  const handleSearchChange = useCallback((text) => {
+    setSearchValue(text);
+    onSearchChange?.(text);
+  }, [onSearchChange]);
+
   const fireHaptic = useCallback(() => {
-    if (!haptics) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (haptics) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
   }, [haptics]);
 
   // animations
   const indicatorTransformOriginY = useDerivedValue(() =>
-    interpolate(animatedIndex.value, [0, 1, 2], [-1, 0, 1], Extrapolate.CLAMP)
+    interpolate(animatedIndex.value, [0, 1], [-1, 0], Extrapolate.CLAMP)
   );
+
+  const backgroundColor = useMemo(() => {
+    if (useSolidBackground || variant === 'standard') {
+      return colors.surface ?? colors.background ?? '#444';
+    }
+    return 'transparent';
+  }, [useSolidBackground, variant, colors.surface, colors.background]);
 
   const containerStyle = useMemo(
     () => [
       styles.header,
       variant === 'standard' ? styles.standardHandle : styles.compactHandleWrapper,
-      { backgroundColor: useSolidBackground || variant === 'standard' ? (theme?.colors?.surface ?? theme?.colors?.background ?? '#444') : 'transparent' },
+      { backgroundColor },
       style,
     ],
-    [style, theme?.colors, useSolidBackground, variant]
+    [style, backgroundColor, variant]
   );
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
     const borderTopRadius = interpolate(
       animatedIndex.value,
-      [1, 2],
+      [0, 1],
       [20, 0],
       Extrapolate.CLAMP
     );
@@ -71,55 +109,41 @@ const Handle = ({
     };
   });
 
-  const leftIndicatorStyle = useMemo(
-    () => ({ ...styles.indicator, ...styles.leftIndicator }),
-    []
-  );
+  const leftIndicatorStyle = [styles.indicator, styles.leftIndicator];
+  const rightIndicatorStyle = [styles.indicator, styles.rightIndicator];
+  
   const leftIndicatorAnimatedStyle = useAnimatedStyle(() => {
-    const leftIndicatorRotate = interpolate(
-      animatedIndex.value,
-      [0, 1, 2],
-      [-ANGLE_30, 0, ANGLE_30],
-      Extrapolate.CLAMP
-    );
+    const rotation = interpolate(animatedIndex.value, [0, 1], [-ANGLE_30, 0], Extrapolate.CLAMP);
     return {
       transform: transformOrigin(
         { x: 0, y: indicatorTransformOriginY.value },
-        { rotate: `${leftIndicatorRotate}rad` },
+        { rotate: `${rotation}rad` },
         { translateX: -5 }
       ),
     };
   });
 
-  const rightIndicatorStyle = useMemo(
-    () => ({ ...styles.indicator, ...styles.rightIndicator }),
-    []
-  );
   const rightIndicatorAnimatedStyle = useAnimatedStyle(() => {
-    const rightIndicatorRotate = interpolate(
-      animatedIndex.value,
-      [0, 1, 2],
-      [ANGLE_30, 0, -ANGLE_30],
-      Extrapolate.CLAMP
-    );
+    const rotation = interpolate(animatedIndex.value, [0, 1], [ANGLE_30, 0], Extrapolate.CLAMP);
     return {
       transform: transformOrigin(
         { x: 0, y: indicatorTransformOriginY.value },
-        { rotate: `${rightIndicatorRotate}rad` },
+        { rotate: `${rotation}rad` },
         { translateX: 5 }
       ),
     };
   });
 
-  const onTouchStart = () => {
+  const onTouchStart = useCallback(() => {
     if (!hasFiredRef.current) {
       hasFiredRef.current = true;
       fireHaptic();
     }
-  };
-  const onTouchEnd = () => {
+  }, [fireHaptic]);
+
+  const onTouchEnd = useCallback(() => {
     hasFiredRef.current = false;
-  };
+  }, []);
 
   const handlePressClose = useCallback(() => {
     if (typeof onClose === 'function') onClose();
@@ -128,7 +152,9 @@ const Handle = ({
   if (variant === 'compact') {
     return (
       <Animated.View
+        {...restProps}
         style={[containerStyle, containerAnimatedStyle]}
+        onLayout={onLayout}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -138,14 +164,14 @@ const Handle = ({
             style={styles.compactAppbar}
           >
             {title ? (
-              <Appbar.Content title={title} titleStyle={[styles.compactTitle, { color: theme.colors?.text || theme.colors?.onSurface || '#fff' }]} />
+              <Appbar.Content title={title} titleStyle={[styles.compactTitle, { color: textColor || colors.text || colors.onSurface || '#fff' }]} />
             ) : null}
             {showClose ? (
               <Appbar.Action
                 icon={closeIcon}
                 accessibilityLabel={'Close'}
                 onPress={handlePressClose}
-                rippleColor={theme.colors?.backdrop}
+                rippleColor={colors.backdrop}
               />
             ) : null}
           </Appbar.Header>
@@ -154,20 +180,62 @@ const Handle = ({
     );
   }
 
+  const shouldRenderHeader = variant === 'standard' && (title || headerComponent || headerActionLabel || headerChildren || showClose);
+  const shouldRenderSearch = variant === 'standard' && enableSearch;
+  const searchPlaceholderText = searchPlaceholder ?? 'Search';
+
+  const renderedHeader = useMemo(() => {
+    if (!shouldRenderHeader) return null;
+    if (headerComponent) return headerComponent;
+    return (
+      <SheetHeader
+        title={title}
+        actionLabel={headerActionLabel}
+        onActionPress={onHeaderActionPress}
+        showClose={showClose}
+        onClose={onClose}
+        closeIcon={closeIcon}
+        textColor={textColor}
+      >
+        {headerChildren}
+      </SheetHeader>
+    );
+  }, [shouldRenderHeader, headerComponent, title, headerActionLabel, onHeaderActionPress, showClose, onClose, closeIcon, headerChildren]);
+
   return (
     <Animated.View
+      {...restProps}
       style={[containerStyle, containerAnimatedStyle]}
+      onLayout={onLayout}
       renderToHardwareTextureAndroid
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      <Animated.View style={[leftIndicatorStyle, leftIndicatorAnimatedStyle, { backgroundColor: theme.colors?.buttonBackground || theme.colors?.outline || '#999' }]} />
-      <Animated.View style={[rightIndicatorStyle, rightIndicatorAnimatedStyle, { backgroundColor: theme.colors?.buttonBackground || theme.colors?.outline || '#999' }]} />
+      <View style={styles.indicatorWrapper}>
+        <Animated.View style={[leftIndicatorStyle, leftIndicatorAnimatedStyle, { backgroundColor: colors.buttonBackground || colors.outline || '#999' }]} />
+        <Animated.View style={[rightIndicatorStyle, rightIndicatorAnimatedStyle, { backgroundColor: colors.buttonBackground || colors.outline || '#999' }]} />
+      </View>
+      {shouldRenderHeader && (
+        <View style={styles.headerContainer} pointerEvents="box-none">
+          {renderedHeader}
+        </View>
+      )}
+      {shouldRenderSearch && (
+        <View style={styles.searchContainer} pointerEvents="box-none">
+          <ContentsSearchBar
+            value={searchValue}
+            onChangeText={handleSearchChange}
+            placeholder={searchPlaceholderText}
+            onFocus={onSearchFocus}
+            onBlur={onSearchBlur}
+          />
+        </View>
+      )}
     </Animated.View>
   );
 };
 
-export default Handle;
+  export default React.memo(Handle);
 
 const styles = StyleSheet.create({
   header: {
@@ -177,8 +245,24 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   standardHandle: {
-    paddingVertical: 14,
+    paddingTop: 14,
+    paddingBottom: 0,
     width: '100%',
+  },
+  indicatorWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: 14,
+    width: '100%',
+  },
+  headerContainer: {
+    width: '100%',
+    paddingHorizontal: 12,
+  },
+  searchContainer: {
+    width: '100%',
+    paddingHorizontal: 12,
+    paddingTop: 4,
   },
   compactHandleWrapper: {
     paddingTop: 4,
