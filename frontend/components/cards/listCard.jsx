@@ -13,7 +13,6 @@ const ListCard = ({
     content,
     onPress,
     rightIcon = [],
-    contentRightIcons = [],
     cardStyle,
     titleStyle,
     subtitleStyle,
@@ -97,14 +96,22 @@ const ListCard = ({
                 {/* Right Icon */}
                 {rightIcon && (
                     typeof rightIcon === 'string' ? (
-                        <IconButton
-                            icon={rightIcon}
-                            onPress={onRightPress}
-                            size={26}
-                            color={theme.colors.primary}
-                            style={{ alignSelf: 'center' }}
-                            accessibilityLabel={rightAccessibilityLabel}
-                        />
+                        onRightPress ? (
+                            <IconButton
+                                icon={rightIcon}
+                                onPress={onRightPress}
+                                size={26}
+                                style={{ alignSelf: 'center' }}
+                                accessibilityLabel={rightAccessibilityLabel}
+                            />
+                        ) : (
+                            <Icon
+                                source={rightIcon}
+                                size={26}
+                                style={{ alignSelf: 'center' }}
+                                accessibilityLabel={rightAccessibilityLabel}
+                            />
+                        )
                     ) : (
                         rightIcon
                     )
@@ -115,13 +122,14 @@ const ListCard = ({
     );
 
 
-    return onPress ? (
-        <TouchableOpacity onPress={onPress}>
-            {CardBody}
-        </TouchableOpacity>
-    ) : (
-        CardBody
-    );
+    if (onPress) {
+        return (
+            <TouchableOpacity onPress={onPress}>
+                {CardBody}
+            </TouchableOpacity>
+        );
+    }
+    return CardBody;
 };
 
 const styles = StyleSheet.create({
