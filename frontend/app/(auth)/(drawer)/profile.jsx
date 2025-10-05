@@ -36,7 +36,7 @@ const Profile = () => {
         { icon: 'chart-timeline-variant', label: 'View Metrics', onPress: () => router.navigate('/modules/day-book/metrics/metric-management') },
         { icon: 'file-chart', label: 'Reports', onPress: () => router.navigate('/modules/day-book/reports/report-management') },
         { icon: 'bell', label: 'Alerts', onPress: () => router.navigate('/modules/day-book/notifications/notifications') },
-        { icon: 'account-multiple-plus', label: 'Invite User', onPress: () => router.navigate('/collaboration/collaboration') },
+        { icon: 'account-multiple-plus', label: 'Invite User', onPress: () => router.navigate('/collaboration') },
     ]), [router]);
 
     const settingOptionButtons = [
@@ -44,7 +44,7 @@ const Profile = () => {
         { icon: "database", label: "Data Sources", onPress: () => router.navigate("/modules/day-book/data-management/data-management") },
         { icon: "chart-line", label: "Metrics", onPress: () => router.navigate("/modules/day-book/metrics/metric-management") },
         { icon: "bell", label: "Notifications", onPress: () => router.navigate("/modules/day-book/notifications/notifications") },
-        { icon: "account-group", label: "Collaboration", onPress: () => router.navigate("/collaboration/collaboration") },
+        { icon: "account-group", label: "Collaboration", onPress: () => router.navigate("/collaboration") },
         { icon: "poll", label: "Testing - Example Graph Display", onPress: () => router.navigate("/graphs") },
         { icon: "file-chart", label: "Reports", onPress:() => router.navigate("/modules/day-book/reports/report-management") },
         // Testing Bottom Screen
