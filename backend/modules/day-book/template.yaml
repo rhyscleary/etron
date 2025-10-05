@@ -172,6 +172,14 @@ Resources:
             Path: /day-book/data-sources/preview/remote
             Method: post
             RestApiId: !Ref eTRONApi
+
+        GetAvailableSheets:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/available-spreadsheets
+            Method: get
+            RestApiId: !Ref eTRONApi
+
             
 
   MetricFunction:

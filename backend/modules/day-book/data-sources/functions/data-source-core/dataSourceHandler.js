@@ -19,6 +19,15 @@ exports.handler = async (event) => {
         const routeKey = `${event.httpMethod} ${event.resource}`;
 
         switch (routeKey) {
+
+            // GET AVAILABLE SPREADSHEETS
+            case "GET /day-book/data-sources/available-spreadsheets": {
+                const { sourceType } = queryParams;
+                if (!sourceType) throw new Error("Missing sourceType query parameter");
+                body = await getAvailableSpreadsheets(authUserId, sourceType);
+                break;
+            }
+
             // ADD REMOTE DATA SOURCE
             case "POST /day-book/data-sources/remote": {
                 if (!requestJSON.workspaceId) {

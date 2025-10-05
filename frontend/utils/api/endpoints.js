@@ -84,7 +84,18 @@ const endpoints = {
                 remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
                 viewData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
                 viewDataForMetric: (dataSourceId, metricId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
-                getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`
+                getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`,
+                getAvailableSheets: `${DATASOURCES_BASE_URL}/available-sheets`,
+                
+                // google sheets specific endpoints
+                integrations: {
+                    getUserTokens: `${DATASOURCES_BASE_URL}/integrations/user-tokens`,
+
+                    google: {
+                        linkGoogle: `${DATASOURCES_BASE_URL}/integrations/google/link`
+                    },
+
+                }
             },
 
             metrics: {
