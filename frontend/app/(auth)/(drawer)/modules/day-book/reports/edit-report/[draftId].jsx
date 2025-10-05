@@ -13,7 +13,7 @@ import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
-import { createNewTemplate } from "../../../../../../../utils/templateUploader"; 
+import { createNewTemplate, uploadUpdatedTemplate } from "../../../../../../../utils/templateUploader"; 
 import { useTheme } from "react-native-paper";
 
 const EditReport = () => {
@@ -21,7 +21,9 @@ const EditReport = () => {
   const router = useRouter();
   const [editorContent, setEditorContent] = useState("");
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [templateDialogVisible, setTemplateDialogVisible] = useState(false); // 🔑 new state
   const [fileName, setFileName] = useState("Report");
+  const [templateName, setTemplateName] = useState("Untitled Template"); // 🔑 new state
   const [reportId, setReportId] = useState(null);
   const [workspaceId, setWorkspaceId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -251,20 +253,36 @@ const EditReport = () => {
       Alert.alert("Error", "Missing workspace ID.");
       return;
     }
+    setTemplateDialogVisible(true); // 🔑 open dialog to ask name
+  };
 
+  const confirmSaveTemplate = async () => {
+    setTemplateDialogVisible(false);
     try {
       const newTemplateId = await createNewTemplate({
         workspaceId,
-        templateName: fileName, // reusing report name as template name
+        templateName: templateName,
       });
 
       if (newTemplateId) {
-        Alert.alert("Success", "Template saved successfully");
-        setIsEditing(false);
-        initSentRef.current = false;
-        router.push(`/modules/day-book/reports/templates/${newTemplateId}`);
+        // 🔑 immediately update with content
+        const success = await uploadUpdatedTemplate({
+          workspaceId,
+          templateId: newTemplateId,
+          templateName,
+          editorContent,
+        });
+
+        if (success) {
+          Alert.alert("Success", "Template saved successfully");
+          setIsEditing(false);
+          initSentRef.current = false;
+          router.push(`/modules/day-book/reports/edit-template/${newTemplateId}`);
+        } else {
+          Alert.alert("Error", "Template created but failed to upload content");
+        }
       } else {
-        Alert.alert("Error", "Failed to save template");
+        Alert.alert("Error", "Failed to create template");
       }
     } catch (err) {
       console.error("Failed to save as template:", err);
@@ -287,16 +305,13 @@ const EditReport = () => {
         <TouchableOpacity style={styles.exportButton} onPress={() => setDialogVisible(true)}>
           <Text style={styles.exportButtonText}>Export PDF</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.saveTemplateButton} onPress={handleSaveAsTemplate}>
+            <Text style={styles.saveTemplateButtonText}>Save as Template</Text>
+        </TouchableOpacity>
 
         {!isEditing && (
           <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
             <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-        )}
-
-        {isEditing && (
-          <TouchableOpacity style={styles.saveTemplateButton} onPress={handleSaveAsTemplate}>
-            <Text style={styles.saveTemplateButtonText}>Save as Template</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -338,6 +353,21 @@ const EditReport = () => {
           <Dialog.Actions>
             <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
             <Button onPress={handleExport}>Export</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      {/* Save as Template dialog */}
+      <Portal>
+        <Dialog visible={templateDialogVisible} onDismiss={() => setTemplateDialogVisible(false)}>
+          <Dialog.Title>Save as Template</Dialog.Title>
+          <Dialog.Content>
+            <Text>Enter template name:</Text>
+            <TextInput style={styles.input} value={templateName} onChangeText={setTemplateName} />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setTemplateDialogVisible(false)}>Cancel</Button>
+            <Button onPress={confirmSaveTemplate}>Save</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
