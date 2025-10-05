@@ -420,8 +420,8 @@ async function getRemotePreview(authUserId, payload) {
         const {valid, error } = validateFormat(translatedData);
         if (!valid) throw new Error(`Invalid data format: ${error}`);
 
-        // return the data
-        return translateData.slice(0, 50);
+        // return the first 50 rows
+        return translatedData.slice(0, 50);
 
     } catch (error) {
         // if the data source fails polling return error
@@ -434,8 +434,33 @@ async function getRemotePreview(authUserId, payload) {
     }
 }
 
-function getAvailableSpreadsheets(authUserId, payload) {
-    const {  } = payload;
+async function getAvailableSpreadsheets(authUserId, sourceType) {
+    try {
+        // get adapter
+        if (!sourceType) {
+            throw new Error("Please specify a type of data source");
+        }
+
+        // try to get adapter (will also check if it exists)
+        const adapter = adapterFactory.getAdapter(sourceType);
+
+        if (!adapter) {
+            throw new Error("The data source specified is not supported");
+        }
+
+
+        const sheets = await adapter.getAvailableSheets(authUserId);
+
+        return {
+            status: "success",
+            data: sheets
+        };
+    } catch (error) {
+        return {
+            status: "error",
+            errorMessage: error.message
+        };
+    }
 }
 
 function sanitiseIdentifier(name) {
@@ -531,5 +556,6 @@ module.exports = {
     getRemotePreview,
     viewData,
     viewDataForMetric,
-    getLocalDataSourceUploadUrl
+    getLocalDataSourceUploadUrl,
+    getAvailableSpreadsheets
 };
