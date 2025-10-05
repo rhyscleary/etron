@@ -34,7 +34,6 @@
     "@shopify/react-native-skia": "^2.2.18",
     "aws-amplify": "^6.15.5",
     "axios": "^1.10.0",
-    "csvtojson": "^2.0.10",
     "expo": "53.0.22",
     "expo-auth-session": "~6.2.1",
     "expo-blur": "~14.1.5",

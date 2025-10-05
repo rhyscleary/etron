@@ -1,6 +1,6 @@
 // Author(s): Noah Bradley
 
-import { Platform, View, StyleSheet, KeyboardAvoidingView, ScrollView, Keyboard } from "react-native";
+import { Platform, View, StyleSheet, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import { useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,24 +20,25 @@ export default function ResponsiveScreen({
         <KeyboardAwareScrollView
             enableOnAndroid
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             extraScrollHeight={20}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             enableAutomaticScroll
             extraHeight={Platform.OS === "android" ? 80 : 0}
         >
-            <View style={contentStyles}>
-                {children}
-            </View>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <View style={contentStyles}>{children}</View>
+            </TouchableWithoutFeedback>
         </KeyboardAwareScrollView>
     ) : (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior="padding"
         >
-            <View style={contentStyles}>
-                {children}
-            </View>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <View style={contentStyles}>{children}</View>
+            </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
     )
 
