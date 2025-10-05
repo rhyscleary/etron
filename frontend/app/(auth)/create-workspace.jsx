@@ -100,9 +100,13 @@ const CreateWorkspace = () => {
         }
     }
 
+    function navigateToJoinWorkspace() {
+        router.navigate("/(auth)/join-workspace");
+    }
+
     return (
         <View style={commonStyles.screen}>
-            <Header title="Create Workspace" showBack />
+            <Header title="Create Workspace" />
 
             <View>
                 <StackLayout spacing={30}> 
@@ -134,6 +138,11 @@ const CreateWorkspace = () => {
                     />
                 </View>
             </View>
+
+            <BasicButton
+                label={"Join Workspace"}
+                onPress={(navigateToJoinWorkspace)}
+            />
         </View>
     )
 }

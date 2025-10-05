@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button } from "react-native-paper";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { apiGet, apiPost } from "../../../../utils/api/apiClient";
@@ -21,6 +21,7 @@ const InviteUser = () => {
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [inviting, setInviting] = useState(false);
+  const { from } = useLocalSearchParams();
 
   useEffect(() => {
     const fetchId = async () => {
@@ -78,9 +79,9 @@ const InviteUser = () => {
       console.log("Invite sent:", result);
 
       // redirects to invite list after sending the invite
-      router.navigate("/collaboration/invites");
+      if (from == "invites") router.back();
+      else router.replace("/collaboration/invites");
       setInviting(false);
-
     } catch (error) {
       console.error("Error sending invite:", error);
       setInviting(false);
