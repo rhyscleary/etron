@@ -12,26 +12,27 @@ async function getHeaders() {
     };
 }
 
-async function request(method, path, body = {}, params = {}, extraHeaders = {}) {
-    const headers = { ...(await getHeaders()), ...extraHeaders };
-
+async function request(method, path, body = {}, params = {}, config = {}) {
+    const baseHeaders = await getHeaders();
+    const mergedHeaders = { ...baseHeaders, ...(config.headers || {}) };
     const requestConfig = {
         method,
         url: path,
-        headers,
-        params
-    }
-
-    if (['post', 'put', 'patch'].includes(method)) {
+        headers: mergedHeaders,
+        params: config.params || params,
+        timeout: config.timeout,
+    };
+    if (["post", "put", "patch"].includes(String(method).toLowerCase())) {
         requestConfig.data = body;
     }
-    
     try {
         const response = await axios(requestConfig);
         return response.data;
     } catch (error) {
         if (error.response) {
-            throw new Error(`Server error ${error.response.status}: ${JSON.stringify(error.response.data)}`)
+            throw new Error(
+                `Server error ${error.response.status}: ${JSON.stringify(error.response.data)}`
+            );
         }
         throw new Error(error.message);
     }
@@ -45,8 +46,8 @@ export async function apiGet(path, params = {}) {
     return request('get', path, {}, params);
 }
 
-export async function apiPut(path, body = {}, extraHeaders = {}) {
-    return request('put', path, body, {}, extraHeaders);
+export async function apiPut(path, body = {}, config = {}) {
+    return request('put', path, body, {}, config);
 }
 
 export async function apiPatch(path, body = {}) {
@@ -56,3 +57,33 @@ export async function apiPatch(path, body = {}) {
 export async function apiDelete(path, params = {}) {
     return request('delete', path, {}, params);
 }
+
+// Default export: axios-like client used throughout services/adapters
+const apiClient = {
+    async get(url, config = {}) {
+        const baseHeaders = await getHeaders();
+        const headers = { ...baseHeaders, ...(config.headers || {}) };
+        const resp = await axios({ method: 'get', url, headers, params: config.params, timeout: config.timeout });
+        return { data: resp.data, status: resp.status, headers: resp.headers };
+    },
+    async post(url, data = {}, config = {}) {
+        const baseHeaders = await getHeaders();
+        const headers = { ...baseHeaders, ...(config.headers || {}) };
+        const resp = await axios({ method: 'post', url, data, headers, params: config.params, timeout: config.timeout });
+        return { data: resp.data, status: resp.status, headers: resp.headers };
+    },
+    async put(url, data = {}, config = {}) {
+        const baseHeaders = await getHeaders();
+        const headers = { ...baseHeaders, ...(config.headers || {}) };
+        const resp = await axios({ method: 'put', url, data, headers, params: config.params, timeout: config.timeout });
+        return { data: resp.data, status: resp.status, headers: resp.headers };
+    },
+    async delete(url, config = {}) {
+        const baseHeaders = await getHeaders();
+        const headers = { ...baseHeaders, ...(config.headers || {}) };
+        const resp = await axios({ method: 'delete', url, headers, params: config.params, timeout: config.timeout });
+        return { data: resp.data, status: resp.status, headers: resp.headers };
+    },
+};
+
+export default apiClient;

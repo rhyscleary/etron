@@ -1,74 +1,101 @@
-// utility functions can be used across different adapters
+/**
+ * Base adapter utilities
+ * Shared helper functions for all data source adapters
+ */
+
+/**
+ * Delays execution for a specified number of milliseconds
+ * @param {number} ms - Milliseconds to delay
+ * @returns {Promise<void>}
+ */
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Validates that a source ID is provided and is a non-empty string
+ * @param {string} sourceId - The source ID to validate
+ * @throws {Error} If sourceId is missing or invalid
+ */
 export const validateSourceId = (sourceId) => {
-  if (!sourceId) {
-    throw new Error("Source ID is required");
+  if (!sourceId || typeof sourceId !== "string" || sourceId.trim() === "") {
+    throw new Error("Invalid or missing source ID");
   }
 };
 
-export const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return (
-    date.toLocaleDateString() +
-    " " +
-    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-  );
-};
+/**
+ * Formats a date object or ISO string into a human-readable format
+ * @param {Date|string} date - The date to format
+ * @param {Object} options - Formatting options
+ * @param {string} options.format - Format type: 'short', 'long', 'iso' (default: 'short')
+ * @returns {string} Formatted date string
+ */
+export const formatDate = (date, options = {}) => {
+  const { format = "short" } = options;
 
-export const validateConnectionData = (connectionData, requiredFields) => {
-  const missing = requiredFields.filter(
-    (field) => !connectionData[field]?.trim()
-  );
-  if (missing.length > 0) {
-    throw new Error(`Missing required fields: ${missing.join(", ")}`);
+  if (!date) return "";
+
+  const dateObj = date instanceof Date ? date : new Date(date);
+
+  if (isNaN(dateObj.getTime())) {
+    return "";
+  }
+
+  switch (format) {
+    case "iso":
+      return dateObj.toISOString();
+    case "long":
+      return dateObj.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    case "short":
+    default:
+      return dateObj.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
   }
 };
 
-export const sanitizeConnectionData = (connectionData) => {
-  const sanitized = {};
-  Object.keys(connectionData).forEach((key) => {
-    const value = connectionData[key];
-    if (typeof value === "string") {
-      sanitized[key] = value.trim();
-    } else {
-      sanitized[key] = value;
-    }
-  });
-  return sanitized;
-};
-
-export const createConnectionId = (type, connectionData) => {
-  const timestamp = Date.now();
-  const identifier =
-    connectionData.name ||
-    connectionData.url ||
-    connectionData.hostname ||
-    "connection";
-  const sanitized = identifier.toLowerCase().replace(/[^a-z0-9]/g, "-");
-  return `${type}-${sanitized}-${timestamp}`;
-};
-
-export const validateUrl = (url) => {
-  try {
-    const parsed = new URL(url);
-    return {
-      isValid: true,
-      protocol: parsed.protocol,
-      hostname: parsed.hostname,
-      port: parsed.port,
-    };
-  } catch (error) {
-    return { isValid: false, error: error.message };
+/**
+ * Validates connection status
+ * @param {boolean} isConnected - Connection status
+ * @param {string} adapterName - Name of the adapter for error messages
+ * @throws {Error} If not connected
+ */
+export const validateConnection = (isConnected, adapterName = "Adapter") => {
+  if (!isConnected) {
+    throw new Error(`${adapterName} is not connected. Please connect first.`);
   }
 };
 
-export const createTestResult = (success, data = {}, error = null) => {
+/**
+ * Creates a standardized error response
+ * @param {string} message - Error message
+ * @param {string} code - Error code (optional)
+ * @returns {Object} Error object
+ */
+export const createError = (message, code = "ADAPTER_ERROR") => {
   return {
-    status: success ? "success" : "error",
-    timestamp: new Date().toISOString(),
-    data: success ? data : null,
-    error: error ? error.message || error : null,
-    ...data,
+    success: false,
+    error: message,
+    code,
+  };
+};
+
+/**
+ * Creates a standardized success response
+ * @param {*} data - Response data
+ * @param {string} message - Optional success message
+ * @returns {Object} Success object
+ */
+export const createSuccess = (data, message = null) => {
+  return {
+    success: true,
+    data,
+    ...(message && { message }),
   };
 };

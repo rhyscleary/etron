@@ -7,8 +7,10 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { themes } from '../assets/styles/themes/themes';
 import SafeView from '../components/layout/SafeView';
 import { Authenticator } from '@aws-amplify/ui-react-native';
-import { VerificationProvider } from '../components/layout/VerificationContext'; // temp until backend
-import DrawerLayout from './(auth)/(drawer)/_layout';
+import { VerificationProvider } from '../contexts/VerificationContext'; // temp until backend
+import { AppProvider } from '../contexts/AppContext';
+import { Amplify } from 'aws-amplify';
+
 import * as Linking from 'expo-linking';
 
 Linking.addEventListener('url', (event) => { //deep linking; used for microsoft/google sign in redirects
@@ -23,15 +25,17 @@ export default function RootLayout() {
             <Authenticator.Provider>
                 {/*Wrap the drawer layout around the safe area and the slot */}
                 {/* temp until backend */}
-                <VerificationProvider> 
-                    <GestureHandlerRootView style={{ flex: 1 }}>
-                        <SafeAreaProvider>
-                            <SafeView>            
-                                <Slot />
-                            </SafeView>
-                        </SafeAreaProvider>
-                    </GestureHandlerRootView>
-                </VerificationProvider> 
+                <AppProvider>
+                    <VerificationProvider> 
+                        <GestureHandlerRootView style={{ flex: 1 }}>
+                            <SafeAreaProvider>
+                                <SafeView>            
+                                    <Slot />
+                                </SafeView>
+                            </SafeAreaProvider>
+                        </GestureHandlerRootView>
+                    </VerificationProvider>
+                </AppProvider>
             </Authenticator.Provider>
         </PaperProvider>
     );
