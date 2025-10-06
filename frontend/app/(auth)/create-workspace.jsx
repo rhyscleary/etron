@@ -93,7 +93,7 @@ const CreateWorkspace = () => {
 
 
             // navigate to the profile
-            router.replace("/profile");
+            router.replace("/dashboard");
         } catch (error) {
             setCreating(false);
             console.error("Error creating workspace: ", error);

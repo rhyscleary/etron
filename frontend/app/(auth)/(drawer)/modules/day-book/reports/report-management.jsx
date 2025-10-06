@@ -82,7 +82,7 @@ const handleReportCreation = async () => {
             {/* Temporary back button */}
             <Button
                 title="Temporary - Back to Dashboard"
-                onPress={() => router.navigate("/profile")}
+                onPress={() => router.navigate("/dashboard")}
             />
 
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>

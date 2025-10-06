@@ -26,7 +26,7 @@ const Settings = () => {
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
                     {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")}>
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/dashboard")}>
                         <Pressable>
                             <Text>Go to Profile</Text>
                         </Pressable>

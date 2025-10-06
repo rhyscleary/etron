@@ -204,7 +204,7 @@ const Profile = () => {
                 <CustomBottomSheet
                     variant="standard"
                     header={{
-                        title: "Profile",
+                        title: "dashboard",
                         showClose: false,
                         children: profileHeaderChildren,
                     }}
