@@ -1,7 +1,8 @@
 // Author(s): Noah Bradley
 
-import { Platform, View, StyleSheet, KeyboardAvoidingView, ScrollView, Keyboard } from "react-native";
+import { Platform, View, StyleSheet, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
+import { useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ResponsiveScreen({
@@ -13,34 +14,36 @@ export default function ResponsiveScreen({
     footer
 }) {
     const contentStyles = [styles.content, padded && styles.padded, center && styles.centerGrow]
+    const theme = useTheme();
 
     const Body = scroll ? (
         <KeyboardAwareScrollView
             enableOnAndroid
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
             extraScrollHeight={20}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
             enableAutomaticScroll
             extraHeight={Platform.OS === "android" ? 80 : 0}
         >
-            <View style={contentStyles}>
-                {children}
-            </View>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <View style={contentStyles}>{children}</View>
+            </TouchableWithoutFeedback>
         </KeyboardAwareScrollView>
     ) : (
         <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior="padding"
         >
-            <View style={contentStyles}>
-                {children}
-            </View>
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                <View style={contentStyles}>{children}</View>
+            </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
     )
 
     return (
-        <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+        <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
             {header ? (
                 <View style={styles.header}>
                     {header}
@@ -52,7 +55,7 @@ export default function ResponsiveScreen({
             </View>
 
             {footer ? (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
                     {footer}
                 </View>
             ) :  null }
@@ -68,5 +71,5 @@ const styles = StyleSheet.create({
     centerGrow: {justifyContent: "center" },
     header: { width: "100%" },
     body: { flex: 1 },
-    footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8 },
+    footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8},
 });

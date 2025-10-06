@@ -115,6 +115,7 @@ export default function AuthLayout() {
 
     const saveUserInfoIntoStorage = async() => {
         const workspaceId = await getWorkspaceId();
+        const userAttributes = await fetchUserAttributes();
         try {
             const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
             await saveUserInfo(userInfo);  // Saves into local storage
@@ -124,7 +125,6 @@ export default function AuthLayout() {
     }
 
     useEffect(() => {
-        //if (checked) return;
 
         const loadLayout = async () => {
             console.log("(AuthLayout) Auth status:", authStatus);
@@ -157,16 +157,10 @@ export default function AuthLayout() {
                     console.log("Paused redirect due to verifying password.");
                 }
             }
-
-            //setChecked(true);
         }
         loadLayout();
 
      }, [authStatus, verifyingPassword]); // temp until backend
-
-     /*if (!checked) {
-        return <ActivityIndicator size="large" />
-     }*/
 
     return (         
         <>

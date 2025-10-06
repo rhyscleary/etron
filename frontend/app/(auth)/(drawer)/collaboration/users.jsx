@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { apiGet } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const Users = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
@@ -73,13 +74,19 @@ const Users = () => {
     });
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Users"
-                showBack
-                showPlus
-                onRightIconPress={() => router.navigate("/collaboration/invite-user")}
-            />
+		<ResponsiveScreen
+			header={
+                <Header
+                    title="Users"
+                    showBack
+                    showPlus
+                    onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { from: "users" } })}
+                />            
+            }
+			center={false}
+			padded={false}
+            scroll={true}
+		>
 
             {/* Search Box */}
             <TextInput
@@ -141,7 +148,7 @@ const Users = () => {
                     )
                 }
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
 

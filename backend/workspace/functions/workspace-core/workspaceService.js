@@ -5,6 +5,14 @@ const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRep
 const appConfigRepo = require("@etron/shared/repositories/appConfigBucketRepository");
 const { getUserById, updateUser } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    UPDATE: "app.workspace.update_workspace",
+    DELETE: "",
+    TRANSFER: ""
+};
 
 async function createWorkspace(authUserId, data) {
     if (!data.name) {
@@ -29,7 +37,7 @@ async function createWorkspace(authUserId, data) {
     const existingWorkspace = await workspaceRepo.getWorkspaceByOwnerId(authUserId);
     if (existingWorkspace && existingWorkspace.length > 0) {
         return {message: "User has already created a workspace"}
-    };
+    }
 
     const workspaceId = uuidv4();
     const date = new Date().toISOString();
@@ -49,8 +57,47 @@ async function createWorkspace(authUserId, data) {
     await workspaceRepo.addWorkspace(workspaceItem);
 
     // search modules and add defaults to workspace
+    const appModules = await appConfigRepo.getAppModules();
+    const starterModules = appModules.filter(module => module.starterModules === true);
+
+    for (const starter of starterModules) {
+        const moduleId = uuidv4();
+
+        const moduleItem = {
+            workspaceId,
+            moduleId,
+            moduleKey: starter.key,
+            name: starter.name,
+            description: starter.description,
+            cardColor: starter.cardColor,
+            fontColor: starter.fontColor,
+            enabled: true,
+            installedAt: date,
+            updatedAt: date
+        };
+
+        await workspaceRepo.addModule(moduleItem);
+    }
 
     // add dashboard board to the workspace
+    const boardId = uuidv4();
+
+    const boardItem = {
+        workspaceId,
+        boardId,
+        name: "Dashboard",
+        config: {},
+        isDashboard: true,
+        editedBy: [authUserId],
+        createdAt: date,
+        updatedAt: date
+    };
+
+    const thumbnailKey = `workspaces/${workspaceId}/boards/${boardId}/thumbnail.jpeg`;
+
+    boardItem.thumbnailKey = thumbnailKey;
+
+    await workspaceRepo.addBoard(boardItem);
 
     // add owner and manager roles with permissions to workspace
     const ownerRoleId = uuidv4();
@@ -61,20 +108,22 @@ async function createWorkspace(authUserId, data) {
 
     // create role items
     const ownerRoleItem = {
-        workspaceId: workspaceId,
+        workspaceId,
         roleId: ownerRoleId,
         name: "Owner",
         owner: true,
         permissions: [],
+        hasAccess: {boards: [boardId]},
         createdAt: date,
         updatedAt: date
     };
 
     const managerRoleItem = {
-        workspaceId: workspaceId,
+        workspaceId,
         roleId: managerRoleId,
         name: "Manager",
         permissions: starterRolePerms.manager,
+        hasAccess: {boards: [boardId]},
         createdAt: date,
         updatedAt: date
     };
@@ -84,6 +133,7 @@ async function createWorkspace(authUserId, data) {
         roleId: employeeRoleId,
         name: "Employee",
         permissions: starterRolePerms.employee,
+        hasAccess: {boards: [boardId]},
         createdAt: date,
         updatedAt: date
     }
@@ -120,7 +170,12 @@ async function createWorkspace(authUserId, data) {
     };
 }
 
-async function updateWorkspace(authUserId, workspaceId, payload) {
+async function updateWorkspace(authUserId, workspaceId, payload) {;
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.UPDATE);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
     
     const { name, location, description } = payload;
 
@@ -150,6 +205,11 @@ async function updateWorkspace(authUserId, workspaceId, payload) {
 }
 
 async function deleteWorkspace(authUserId, workspaceId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.DELETE);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const workspace = await workspaceRepo.getWorkspaceById(workspaceId);
 
@@ -219,6 +279,11 @@ async function getWorkspaceByUserId(userId) {
 }
 
 async function transferWorkspaceOwnership(authUserId, workspaceId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.TRANSFER);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const { receipientUserId, newRoleId } = payload;
 

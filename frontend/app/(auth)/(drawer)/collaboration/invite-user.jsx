@@ -3,21 +3,25 @@
 import React, { useState, useEffect } from "react";
 import { View, ScrollView, TouchableOpacity } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button } from "react-native-paper";
-import { router } from "expo-router"; // ✅ import router
-
+import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { apiGet, apiPost } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
+import DropDown from "../../../../components/common/input/DropDown";
+import StackLayout from "../../../../components/layout/StackLayout";
+import TextField from "../../../../components/common/input/TextField";
+import BasicButton from "../../../../components/common/buttons/BasicButton";
 
 const InviteUser = () => {
   const [workspaceId, setWorkspaceId] = useState(null);
   const [userEmail, setUserEmail] = useState("");
-  const [userType, setUserType] = useState("employee");
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
-  const [roleDialogVisible, setRoleDialogVisible] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const { from } = useLocalSearchParams();
 
   useEffect(() => {
     const fetchId = async () => {
@@ -33,9 +37,11 @@ const InviteUser = () => {
     const fetchRoles = async () => {
       try {
         const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
-        console.log("Fetched roles:", result);
+        const fetchedRoles = result;
 
-        setRoles(result || []);
+        // filter out the owner role
+        const filtered = (fetchedRoles || []).filter(role => !role.owner);
+        setRoles(filtered);
       } catch (error) {
         console.error("Error fetching roles:", error);
       }
@@ -44,23 +50,24 @@ const InviteUser = () => {
     fetchRoles();
   }, [workspaceId]);
 
-  const handleCheck = async () => {
+  const handleSendInvite = async () => {
     if (!userEmail || !selectedRole || !workspaceId) {
       console.warn("Missing data for invite.");
       return;
     }
 
     try {
-      const selectedRoleObj = roles.find(role => role.name === selectedRole);
+      const selectedRoleObj = roles.find(role => role.roleId === selectedRole);
 
       if (!selectedRoleObj) {
         console.warn("Selected role not found in roles list.");
         return;
       }
 
+      setInviting(true);
+
       const data = {
-        email: userEmail,
-        type: userType,
+        email: userEmail.trim(),
         roleId: selectedRoleObj.roleId,
       };
 
@@ -71,72 +78,55 @@ const InviteUser = () => {
 
       console.log("Invite sent:", result);
 
-      // ✅ Redirect to invites list after sending invite
-      router.navigate("/collaboration/invites");
-
+      // redirects to invite list after sending the invite
+      if (from == "invites") router.back();
+      else router.replace("/collaboration/invites");
+      setInviting(false);
     } catch (error) {
       console.error("Error sending invite:", error);
+      setInviting(false);
     }
   };
 
   return (
-    <View style={commonStyles.screen}>
-      <Header title="Invite User" showBack showCheck onRightIconPress={handleCheck} />
-
-      <TextInput
-        label="Email Address"
-        value={userEmail}
-        onChangeText={setUserEmail}
-        mode="outlined"
-        style={{ marginVertical: 16 }}
-      />
-
-      <Text style={{ marginBottom: 4 }}>User Type</Text>
-      <RadioButton.Group onValueChange={setUserType} value={userType}>
-        <RadioButton.Item label="Manager" value="manager" />
-        <RadioButton.Item label="Employee" value="employee" />
-      </RadioButton.Group>
-
-      <TouchableOpacity onPress={() => setRoleDialogVisible(true)}>
-        <TextInput
-          label="Select Role"
-          value={selectedRole}
-          mode="outlined"
-          editable={false}
-          right={<TextInput.Icon icon="menu-down" />}
-          style={{ marginTop: 8 }}
+		<ResponsiveScreen
+			header={
+        <Header title="Invite User" showBack />        
+      }
+			center={false}
+			padded
+      scroll={false}
+		>
+      <StackLayout spacing={34}>
+        <TextField
+          label="Email Address"
+          value={userEmail}
+          placeholder="Email"
+          onChangeText={setUserEmail}
         />
-      </TouchableOpacity>
 
-      <Portal>
-        <Dialog visible={roleDialogVisible} onDismiss={() => setRoleDialogVisible(false)}>
-          <Dialog.Title>Select a Role</Dialog.Title>
-          <Dialog.ScrollArea>
-            <ScrollView style={{ paddingHorizontal: 16 }}>
-              {roles.map((role) => (
-                <TouchableOpacity
-                  key={role.roleId}
-                  onPress={() => {
-                    setSelectedRole(role.name);
-                    setRoleDialogVisible(false);
-                  }}
-                  style={{
-                    paddingVertical: 12,
-                    borderBottomWidth: 1,
-                    borderBottomColor: "#eee",
-                  }}
-                >
-                  <Text>{role.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </Dialog.ScrollArea>
-          <Dialog.Actions>
-            <Button onPress={() => setRoleDialogVisible(false)}>Cancel</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
-    </View>
+        <DropDown
+          title="Select Role"
+          items={roles.map(role => ({ label: role.name, value: role.roleId }))}
+          value={selectedRole}
+          onSelect={setSelectedRole}
+          showRouterButton={false}
+        />
+      </StackLayout>
+
+
+                        
+      <View style={commonStyles.inlineButtonContainer}>
+        <BasicButton 
+          label={inviting ? "Inviting..." : "Invite"} 
+          onPress={handleSendInvite}
+          disabled={inviting}
+        />
+      </View>
+              
+
+      
+    </ResponsiveScreen>
   );
 };
 

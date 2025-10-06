@@ -9,6 +9,7 @@ import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { apiGet, apiPut, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { router, useLocalSearchParams } from "expo-router";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 const EditRole = () => {
   const { roleId } = useLocalSearchParams();
@@ -88,13 +89,19 @@ const EditRole = () => {
   };
 
   return (
-    <View style={commonStyles.screen}>
-      <Header
-        title="Edit Role"
-        showBack
-        showCheck
-        onRightIconPress={handleCheck}
-      />
+		<ResponsiveScreen
+			header={
+        <Header
+          title="Edit Role"
+          showBack
+          showCheck
+          onRightIconPress={handleCheck}
+        />
+      }
+			center={false}
+			padded
+      scroll={true}
+		>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 64 }}>
         <TextInput
@@ -153,7 +160,7 @@ const EditRole = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </View>
+    </ResponsiveScreen>
   );
 };
 

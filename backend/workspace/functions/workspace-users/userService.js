@@ -5,6 +5,13 @@ const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRep
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { getUserByEmail } = require("@etron/shared/utils/auth");
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    MANAGE_USERS: "app.collaboration.manage_users",
+    VIEW_USERS: "app.collaboration.view_users"
+};
 
 async function addUserToWorkspace(workspaceId, payload) {
     await validateWorkspaceId(workspaceId);
@@ -57,6 +64,12 @@ async function addUserToWorkspace(workspaceId, payload) {
 }
 
 async function updateUserInWorkspace(authUserId, workspaceId, userId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_USERS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     const { roleId } = payload;
@@ -94,12 +107,24 @@ async function getUserInWorkspace(authUserId, workspaceId, userId) {
 }
 
 async function getUsersInWorkspace(authUserId, workspaceId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_USERS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     return workspaceUsersRepo.getUsersByWorkspaceId(workspaceId);
 }
 
 async function removeUserFromWorkspace(authUserId, workspaceId, userId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_USERS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     await validateWorkspaceId(workspaceId);
 
     await workspaceUsersRepo.removeUser(workspaceId, userId);

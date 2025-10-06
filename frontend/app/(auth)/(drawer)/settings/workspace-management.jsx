@@ -1,4 +1,4 @@
-    // Author(s): Rhys Cleary
+// Author(s): Rhys Cleary
 
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useRouter } from "expo-router";
@@ -21,6 +21,9 @@ import {
     signOut
 } from 'aws-amplify/auth';
 import DropDown from "../../../../components/common/input/DropDown";
+import { isOwnerRole } from "../../../../storage/permissionsStorage";
+import { hasPermission } from "../../../../utils/permissions";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
@@ -36,13 +39,30 @@ const WorkspaceManagement = () => {
     const [roles, setRoles] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
     const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
+    const [isOwner, setIsOwner] = useState(false);
+    const [menuOptions, setMenuOptions] = useState([]);
 
 
     // container for different workspace management options
-    const workspaceOptionButtons = [
-            { label: "Workspace Details", description: "Update name, location and description", onPress: () => router.navigate("/settings/workspace-details") },
-            { label: "Module Management", description: "Add and remove modules from the workspace", onPress: () => router.navigate("/settings/module-management") },
-            { label: "Board Management", description: "Edit boards within the workspace", onPress: () => router.navigate("/settings/board-management") },
+    const permissionButtonMap = [
+            {
+                permKey: "app.workspace.update_workspace", 
+                label: "Workspace Details", 
+                description: "Update name, location and description", 
+                onPress: () => router.navigate("/settings/workspace-details") 
+            },
+            {
+                permKey: "app.workspace.manage_modules", 
+                label: "Module Management", 
+                description: "Add and remove modules from the workspace", 
+                onPress: () => router.navigate("/settings/module-management") 
+            },
+            {
+                permKey: "app.workspace.manage_boards",
+                label: "Board Management", 
+                description: "Edit boards within the workspace", 
+                onPress: () => router.navigate("/settings/board-management") 
+            },
     ];
 
     useEffect(() => {
@@ -50,6 +70,26 @@ const WorkspaceManagement = () => {
             const workspaceId = await getWorkspaceId();
             setWorkspaceId(workspaceId);
             console.log("WorkspaceId:", workspaceId);
+
+            // check for owner role
+            try {
+                const ownerCheck = await isOwnerRole();
+                setIsOwner(ownerCheck);
+            } catch (error) {
+                console.error("Error checking owner role:", error);
+                setIsOwner(false);
+            }
+
+            // filter menu buttons by permissions
+            const filteredOptions = [];
+            for (const option of permissionButtonMap) {
+                const allowed = option.permKey ? await hasPermission(option.permKey) : true;
+
+                if (allowed) filteredOptions.push(option);
+            }
+            setMenuOptions(filteredOptions);
+
+            if (!isOwner) return;
 
             try {
                 const currentUser = await getCurrentUser();
@@ -81,10 +121,12 @@ const WorkspaceManagement = () => {
             } catch (error) {
                 console.error("Error fetching roles:", error);
             }
+
         }
         fetchData();
     }, []);
 
+    // DELETE WORKSPACE
     async function handleConfirmDeletion() {
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
@@ -121,6 +163,7 @@ const WorkspaceManagement = () => {
         setPasswordError(false);
     }
 
+    // TRANSFER OWNERSHIP
     async function handleConfirmTransfer() {
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
@@ -165,12 +208,18 @@ const WorkspaceManagement = () => {
     }
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Workspace" showBack />
-
+		<ResponsiveScreen
+			header={
+                <Header title="Workspace" showBack />
+            }
+			center={false}
+			padded={false}
+            scroll={true}
+        >
+		
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
-                    {workspaceOptionButtons.map((item) => (
+                    {menuOptions.map(item => (
                         <DescriptiveButton 
                             key={item.label}
                             icon={item.icon}
@@ -180,11 +229,13 @@ const WorkspaceManagement = () => {
                         />
                     ))}
                 </StackLayout>
-
-                <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
-                    <BasicButton label="Transfer Ownership" danger onPress={() => setTransferDialogVisible(true)}/>
-                    <BasicButton label="Delete Workspace" danger onPress={() => setDeleteDialogVisible(true)}/>
-                </View>
+                
+                {isOwner && (
+                    <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
+                        <BasicButton label="Transfer Ownership" danger onPress={() => setTransferDialogVisible(true)}/>
+                        <BasicButton label="Delete Workspace" danger onPress={() => setDeleteDialogVisible(true)}/>
+                    </View>
+                )}
 
             </ScrollView>
 
@@ -263,7 +314,7 @@ const WorkspaceManagement = () => {
                     onSelect={(roleId) => setSelectedRole(roleId)}
                 />
             </BasicDialog>
-        </View>
+        </ResponsiveScreen>
     )
 }
 
