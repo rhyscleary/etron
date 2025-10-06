@@ -1,19 +1,20 @@
 import React from "react";
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { Slot } from "expo-router";
-import { Divider, Text, useTheme } from "react-native-paper";
+import { Divider, Text, useTheme, Appbar } from "react-native-paper";
 import { View } from "react-native";
 import { Drawer } from "expo-router/drawer"
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useNavigation, DrawerActions } from "@react-navigation/native";
 
 //const Drawer = createDrawerNavigator();
 
-function CustomDrawer(props) {
+const CustomDrawer = (props) => {
+    const { navigation } = props;
+
     return (
         <DrawerContentScrollView {...props}>
-            <View>
-                <Text>Hello</Text>
-            </View>
+            <Appbar.Action icon="close" onPress={() => navigation.closeDrawer()} />
             <DrawerItemList {...props} />
         </DrawerContentScrollView>
     );
