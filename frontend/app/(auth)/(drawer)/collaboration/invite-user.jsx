@@ -21,7 +21,7 @@ const InviteUser = () => {
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState("");
   const [inviting, setInviting] = useState(false);
-  const { from } = useLocalSearchParams();
+  const { navigatedFrom } = useLocalSearchParams();
 
   useEffect(() => {
     const fetchId = async () => {
@@ -78,8 +78,7 @@ const InviteUser = () => {
 
       console.log("Invite sent:", result);
 
-      // redirects to invite list after sending the invite
-      if (from == "invites") router.back();
+      if (navigatedFrom == "invites") router.back();
       else router.replace("/collaboration/invites");
       setInviting(false);
     } catch (error) {

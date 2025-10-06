@@ -78,7 +78,7 @@ const Users = () => {
                     title="Users"
                     showBack
                     showPlus
-                    onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { from: "users" } })}
+                    onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "users" } })}
                 />            
             }
 			center={false}
