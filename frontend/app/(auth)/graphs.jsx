@@ -18,7 +18,7 @@ const graphs = () => {
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={34}>
                     {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
+                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/dashboard")} />
                     <BarChart data = {data} />
                     <LineChart data = {data} />
                     <PieChart data = {data} />

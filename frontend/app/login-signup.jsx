@@ -3,7 +3,7 @@
 import { useRouter, Link, useLocalSearchParams } from "expo-router";
 import { Text } from 'react-native-paper';
 import { useEffect, useState } from "react";
-import { View } from 'react-native';
+import { View, Linking, Modal, TextInput } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
@@ -11,10 +11,28 @@ import GoogleButton from '../components/common/buttons/GoogleButton';
 import MicrosoftButton from '../components/common/buttons/MicrosoftButton';
 import Divider from "../components/layout/Divider";
 import { commonStyles } from "../assets/styles/stylesheets/common";
-import Header from "../components/layout/Header";
+import ResponsiveScreen from "../components/layout/ResponsiveScreen";
 import accountService from '../services/AccountService';
+import { Amplify } from 'aws-amplify';
 import { useApp } from "../contexts/AppContext";
+import { 
+    signIn, 
+    signUp, 
+    confirmSignUp, 
+    signInWithRedirect, 
+    getCurrentUser, 
+    signOut,
+    updateUserAttributes,
+    fetchUserAttributes,
+    resendSignUpCode
+} from 'aws-amplify/auth';
+
+import { apiGet } from "../utils/api/apiClient";
+import endpoints from "../utils/api/endpoints";
+import { saveWorkspaceInfo } from "../storage/workspaceStorage";
 import VerificationDialog from "../components/overlays/VerificationDialog";
+
+//Amplify.configure(awsmobile);
 
 function LoginSignup() {
     const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
@@ -28,15 +46,14 @@ function LoginSignup() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
-    const [verificationError, setVerificationError] = useState('');
-    const [resendCooldown, setResendCooldown] = useState(0);
     const [loading, setLoading] = useState(false);
     const [socialLoading, setSocialLoading] = useState({ google: false, microsoft: false });
     const [signedOutForLinking, setSignedOutForLinking] = useState(!isLinking);
 
     const router = useRouter();
     const theme = useTheme();
-    const { actions } = useApp();
+
+    const { user, actions } = useApp();
 
     // Setup AccountService callbacks
     useEffect(() => {
@@ -59,7 +76,7 @@ function LoginSignup() {
                 await actions.login(provider);
             }
         });
-    }, [router, actions]);
+    }, [router, actions.login]);
 
     // Handle sign out for linking
     useEffect(() => {
@@ -83,21 +100,27 @@ function LoginSignup() {
         return () => subscription?.remove();
     }, []);
 
-    // Resend cooldown timer
-    useEffect(() => {
-        if (resendCooldown > 0) {
-            const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-            return () => clearTimeout(timer);
+    const setHasWorkspaceAttribute = async (value) => {
+        try {
+            await updateUserAttributes({
+                userAttributes: {
+                    'custom:has_workspace': value ? 'true' : 'false'
+                }
+            });
+        } catch (error) {
+            console.error("Unable to update user attribute has_workspace:", error);
         }
-    }, [resendCooldown]);
+    }
 
     const handleResend = async () => {
         if (resendCooldown > 0) return;
-        const result = await accountService.resendVerificationCode(email);
-        if (result.success) {
+        try {
+            await resendSignUpCode({username: email});
             setResendCooldown(60);
+        } catch (error) {
+            console.error("Error resending the code", error);
         }
-    };
+    }
 
     const handleSignIn = async () => {
         setLoading(true);
@@ -154,8 +177,6 @@ function LoginSignup() {
                     router.push('/(auth)/(drawer)/settings/account/accounts');
                 }, 1000);
             }
-        } else {
-            setVerificationError(result.error || 'Verification failed');
         }
     };
 
@@ -235,18 +256,18 @@ function LoginSignup() {
                             disabled={!signedOutForLinking && isLinking}
                         />
 
-                        {!isSignUpBool && (
-                            <View style={{ marginTop: 10 }}>
-                                <Link href="/reset-password">
-                                    <Text style={{
-                                        textDecorationLine: 'underline'
-                                    }}>
-                                        Forgot Your Password?
-                                    </Text>
-                                </Link>
-                            </View>
-                        )}
-                    </View>
+                    {!isSignUpBool && (
+                        <View style={{ marginTop: 10 }}>
+                            <Link href="/reset-password">
+                                <Text style={{
+                                    textDecorationLine: 'underline'
+                                }}>
+                                    Forgot Your Password?
+                                </Text>
+                            </Link>
+                        </View>
+                    )}
+                </View>
 
                     {isSignUpBool && (
                         <TextField
@@ -268,18 +289,18 @@ function LoginSignup() {
                     />
                 </View>
 
-                {message && (
-                    <Text style={{
-                        color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                        textAlign: 'center'
-                    }}>
-                        {message}
-                    </Text>
-                )}
-
-                <Text style={{ fontSize: 20, textAlign: 'center' }}>
-                    OR
+            {message && (
+                <Text style={{
+                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
+                    textAlign: 'center'
+                }}>
+                    {message}
                 </Text>
+            )}
+
+            <Text style={{ fontSize: 20, textAlign: 'center' }}>
+                OR
+            </Text>
 
                 <View style={{ gap: 20, marginTop: -10 }}>
                     <GoogleButton
@@ -299,7 +320,7 @@ function LoginSignup() {
                     />
                 </View>
 
-                <Divider />
+            <Divider />
 
                 <BasicButton
                     label={isSignUpBool ? 'Already have an account? Log In'
@@ -311,16 +332,77 @@ function LoginSignup() {
                     disabled={!signedOutForLinking && isLinking}
                 />
 
-                <VerificationDialog
+            {message && (
+                <Text style={{ 
+                    marginTop: 30, 
+                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
+                    textAlign: 'center'
+                }}>
+                    {message}
+                </Text>
+            )}
+
+                <Modal
                     visible={showVerificationModal}
-                    code={verificationCode}
-                    setCode={setVerificationCode}
-                    onConfirm={handleConfirmCode}
-                    onResend={handleResend}
-                    resendCooldown={resendCooldown}
-                    onLater={() => setShowVerificationModal(false)}
-                    error={verificationError}
-                />
+                    animationType="slide"
+                    transparent={true}
+                >
+                    <View style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.5)'
+                    }}>
+                        <View style={{
+                            backgroundColor: theme.colors.background,
+                            padding: 10,
+                            borderRadius: 10,
+                            width: '65%',
+                            alignItems: 'center'
+                        }}>
+                            <Text style={{ fontSize: 24, marginBottom: 20 }}>
+                                Enter Verification Code
+                            </Text>
+
+                            <TextInput
+                                placeholder="Code"
+                                value={verificationCode}
+                                onChangeText={setVerificationCode}
+                                keyboardType="numeric"
+                                style={{ 
+                                    borderWidth: 1, 
+                                    padding: 10, 
+                                    marginBottom: 20,
+                                    borderColor: theme.colors.outline,
+                                    borderRadius: 5,
+                                    minWidth: 200
+                                }}
+                            />
+
+                            <View style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                width: '100%',
+                                marginBottom: 20
+                            }}>
+                                <BasicButton
+                                    label="Cancel"
+                                    fullWidth='true'
+                                    danger="true"
+                                    onPress={() => setShowVerificationModal(false)}
+                                    style={{ marginRight: 10 }}
+                                />
+
+                                <BasicButton
+                                    label="Confirm"
+                                    fullWidth='true'
+                                    onPress={handleConfirmCode}
+                                    style={{ marginLeft: 10 }}
+                                />
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </View>
         </View>
     );

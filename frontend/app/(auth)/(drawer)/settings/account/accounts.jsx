@@ -7,6 +7,9 @@ import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
 import Header from '../../../../../components/layout/Header';
 import BasicDialog from '../../../../../components/overlays/BasicDialog';
 import AccountCard from '../../../../../components/cards/accountCard';
+import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
+import { AccountStorage } from '../../../../../storage/accountStorage';
+import { router } from 'expo-router';
 
 const Accounts = () => {
     const {
@@ -29,17 +32,31 @@ const Accounts = () => {
         getDisplayName
     } = useAccount();
 
+    const handleSignOut = async () => {
+        try {
+            await AccountStorage.signOutUser();
+            router.replace('/login-signup');
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
+
     if (error) {
         console.error('Account management error:', error);
     }
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Accounts"
-                showBack
-            />
-
+        <ResponsiveScreen
+			header = {
+				<Header
+					title="Accounts"
+					showBack
+				/>
+			}
+			footer = {
+				<BasicButton label="Sign Out" fullWidth onPress={handleSignOut} />
+			}
+		>
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <View style={{ padding: 16 }}>
                     {loading ? (
@@ -94,7 +111,7 @@ const Accounts = () => {
                 rightDanger
                 handleRightAction={confirmRemoveAccount}
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
 

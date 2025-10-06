@@ -20,23 +20,23 @@ Linking.addEventListener('url', (event) => { //deep linking; used for microsoft/
 const currentTheme = themes['dark'];
 
 export default function RootLayout() {
-    return (    
-        <PaperProvider theme={currentTheme}>
-            <Authenticator.Provider>
-                {/*Wrap the drawer layout around the safe area and the slot */}
-                {/* temp until backend */}
-                <AppProvider>
-                    <VerificationProvider> 
-                        <GestureHandlerRootView style={{ flex: 1 }}>
+    return (
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <PaperProvider theme={currentTheme}>
+                <Authenticator.Provider>
+                    {/*Wrap the drawer layout around the safe area and the slot */}
+                    {/* temp until backend */}
+                    <AppProvider>
+                        <VerificationProvider> 
                             <SafeAreaProvider>
                                 <SafeView>            
                                     <Slot />
                                 </SafeView>
                             </SafeAreaProvider>
-                        </GestureHandlerRootView>
-                    </VerificationProvider>
-                </AppProvider>
-            </Authenticator.Provider>
-        </PaperProvider>
+                        </VerificationProvider>
+                    </AppProvider>
+                </Authenticator.Provider>
+            </PaperProvider>
+        </GestureHandlerRootView>
     );
 }

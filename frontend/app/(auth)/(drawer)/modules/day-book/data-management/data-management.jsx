@@ -295,12 +295,10 @@ const DataManagement = () => {
 						"/modules/day-book/data-management/create-data-connection"
 					)
 				}
-			/>
+				/>
 
       {/*Temporary redirect to profile screen*/}
-      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
-
-      {/* Demo Mode Indicator */}
+      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />      {/* Demo Mode Indicator */}
       {isDemoMode && (
         <View style={styles.demoModeIndicator}>
           <Text style={styles.demoModeText}>

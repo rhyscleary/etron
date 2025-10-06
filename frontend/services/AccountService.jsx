@@ -82,6 +82,11 @@ class AccountService {
           this.showMessage('Account linked but failed to save locally', true);
         }
         this.isLinking = false;
+        // Navigate to accounts page after linking
+        this.navigate('/(auth)/(drawer)/settings/account/accounts');
+      } else {
+        // Navigate to workspace choice after regular login
+        this.navigate('/(auth)/workspace-choice');
       }
     } catch (error) {
       console.error('Error handling auth success:', error);
@@ -113,7 +118,6 @@ class AccountService {
             // Handle auth success and account linking
             await this.handleAuthSuccess('Cognito');
             
-            this.navigate("(auth)/profile");
             return { success: true, result };
         } catch (error) {
             console.log('Error signing in:', error);
@@ -285,10 +289,9 @@ class AccountService {
                             const provider = url.includes('google') ? 'Google' : 
                                            url.includes('microsoft') ? 'Microsoft' : 'OAuth';
                             
-                            // Handle auth success and account linking (will also fetch workspace)
+                            // Handle auth success and account linking (will also fetch workspace and navigate)
                             await this.handleAuthSuccess(provider);
                             
-                            this.navigate("(auth)/profile");
                             resolve({ success: true, user });
                         } catch (error) {
                             console.log('No authenticated user found after social sign-in');

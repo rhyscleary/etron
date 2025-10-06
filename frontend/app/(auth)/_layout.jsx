@@ -143,7 +143,7 @@ export default function AuthLayout() {
                 } else {
                     saveUserInfoIntoStorage();
                     console.log("Showing authenticated profile page.");
-                    router.replace("/(auth)/profile")
+                    router.replace("/(auth)/dashboard")
                 }
 
             } else if (authStatus === `configuring`) {

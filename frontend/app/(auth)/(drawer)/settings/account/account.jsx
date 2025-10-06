@@ -19,6 +19,7 @@ import {
     signIn
 } from 'aws-amplify/auth';
 import BasicButton from '../../../../../components/common/buttons/BasicButton';
+import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
 
 const Account = () => {
     const theme = useTheme();
@@ -76,37 +77,33 @@ const Account = () => {
     }
 
     return(
-        <View style={commonStyles.screen}>
-            <Header title="Manage Account" showBack />
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer} >
-                <StackLayout spacing={127}>
-                    <View style={styles.contentContainer}>
-                        {loading ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" />
-                            </View>
-                        ) : (
-                            <DescriptiveButton
-                                key={"Accounts"}
-                                label={"Accounts"}
-                                description={email}
-                                onPress={() => router.navigate("/settings/account/accounts")}
-                            />
-                        )}
+        <ResponsiveScreen
+            header = {<Header title="Manage Account" showBack />}
+            center = {false}
+        >
+            <StackLayout spacing={12}>
+                {loading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" />
                     </View>
-                    <StackLayout spacing={12}>
-                        {accountSettingsButtons.map((item) => (
-                            <DescriptiveButton
-                                key={item.label}
-                                label={item.label}
-                                description={item.description}
-                                onPress={item.onPress}
-                            />
-                        ))}
-                    </StackLayout>
-                </StackLayout>
+                ) : (
+                    <DescriptiveButton
+                        key={"Accounts"}
+                        label={"Accounts"}
+                        description={email}
+                        onPress={() => router.navigate("/settings/account/accounts")}
+                    />
+                )}
+                {accountSettingsButtons.map((item) => (
+                    <DescriptiveButton
+                        key={item.label}
+                        label={item.label}
+                        description={item.description}
+                        onPress={item.onPress}
+                    />
+                ))}
+            </StackLayout>
                 
-            </ScrollView>
             <BasicDialog
                 visible={dialogVisible}
                 message={"Are you sure you want to delete your account? You will have seven days to login before your data is permanently removed."}
@@ -133,7 +130,7 @@ const Account = () => {
                 rightDanger
                 handleRightAction={handleDelete}
             />
-        </View>
+        </ResponsiveScreen>
     )
 }
 

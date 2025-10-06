@@ -101,8 +101,8 @@ const Contents = ({
       style={styles.wrapper}
       data={filteredData}
       keyExtractor={effectiveKeyExtractor}
-      getItemCount={effectiveGetItemCount}
-      getItem={effectiveGetItem}
+      getItemCount={(data) => data?.length ?? 0}
+      getItem={(data, index) => data[index]}
       ListEmptyComponent={emptyComponent}
       renderItem={renderItem || defaultRenderItem}
       keyboardShouldPersistTaps="handled"
