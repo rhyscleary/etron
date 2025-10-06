@@ -16,7 +16,7 @@ const DarkTheme = {
         //outline: '#577590', // the colour for text input and button outlines
         outline: '#476580', // new outline?
         //buttonBackground: '#2B2B2B', // background for cards and outlined buttons
-        buttonBackgroundAlt: '#2B2B2B',
+        buttonBackgroundAlt: '#2A2A2A',
         buttonBackground: "#2C2C2C",
         background : "rgb(29, 27, 30)",
 
