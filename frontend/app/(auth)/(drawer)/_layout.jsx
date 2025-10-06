@@ -39,7 +39,7 @@ export default function DrawerLayout() {
             }}
         >
 
-            <Drawer.Screen name="profile" />
+            <Drawer.Screen name="dashboard" />
 
             <Drawer.Screen 
                 name="collaboration/collaboration"

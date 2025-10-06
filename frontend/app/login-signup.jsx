@@ -143,7 +143,7 @@ function LoginSignup() {
                                     // save locally and go to profile screen
                                     await saveWorkspaceInfo(workspace);
                                     router.dismissAll();
-                                    router.replace("(auth)/profile");
+                                    router.replace("(auth)/dashboard");
                                 } catch (error) {
                                     console.error("Error fetching workspace:", error);
                                     setMessage("Unable to locate workspace. Please try again."); 
@@ -151,7 +151,7 @@ function LoginSignup() {
                             }
 
                             router.dismissAll();
-                            router.replace("(auth)/profile");
+                            router.replace("(auth)/dashboard");
 
                         } catch (error) {
                             console.error('No authenticated user found after social sign-in');
@@ -279,7 +279,7 @@ function LoginSignup() {
                         // save locally and go to profile screen
                         await saveWorkspaceInfo(workspace);
                         router.dismissAll();
-                        router.replace("(auth)/profile");
+                        router.replace("(auth)/dashboard");
                     } catch (error) {
                         console.error("Error fetching workspace:", error);
                         setMessage("Unable to locate workspace. Please try again."); 
