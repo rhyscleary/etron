@@ -145,22 +145,6 @@ const CreateMetric = () => {
         setStep((prev) => prev + 1);
     };
 
-    /*async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
-        const workspaceId = await getWorkspaceId();
-        const prunedData = {
-            data: dataSourceData,
-        }
-        const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
-        const result = uploadData({
-            path: S3FilePath,
-            data: JSON.stringify(prunedData),
-            options: {
-                bucket: 'workspaces'
-            }
-        }).result;
-        console.log("Pruned data uploaded successfully.")
-    }*/
-
     async function uploadMetricSettings() {
         console.log("Uploading metric details...");
         if (!metricName) {
@@ -204,7 +188,7 @@ const CreateMetric = () => {
         
         console.log("Form completed");
         //router.navigate("/modules/day-book/metrics/metric-management"); 
-        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround?
+        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround? it's a lack of stack and a _layout for metrics. This can be fixed now.
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
@@ -477,7 +461,6 @@ const CreateMetric = () => {
 			padded
             scroll={true}
 		>
-
             <View style={styles.content}>
                 {renderFormStep()}
 
