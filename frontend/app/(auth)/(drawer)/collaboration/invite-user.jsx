@@ -90,9 +90,7 @@ const InviteUser = () => {
 
   return (
 		<ResponsiveScreen
-			header={
-        <Header title="Invite User" showBack />        
-      }
+			header={<Header title="Invite User" showBack />}
 			center={false}
 			padded
       scroll={false}
@@ -113,9 +111,7 @@ const InviteUser = () => {
           showRouterButton={false}
         />
       </StackLayout>
-
-
-                        
+            
       <View style={commonStyles.inlineButtonContainer}>
         <BasicButton 
           label={inviting ? "Inviting..." : "Invite"} 
@@ -123,9 +119,7 @@ const InviteUser = () => {
           disabled={inviting}
         />
       </View>
-              
 
-      
     </ResponsiveScreen>
   );
 };

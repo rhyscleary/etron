@@ -12,7 +12,6 @@ import endpoints from "../../../../utils/api/endpoints";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const Users = () => {
-    const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -24,9 +23,8 @@ const Users = () => {
 
     const fetchIdAndUsers = async () => {
         try {
-            const id = await getWorkspaceId();
-            setWorkspaceId(id);
-            const result = await apiGet(endpoints.workspace.users.getUsers(id));
+            const workspaceId = await getWorkspaceId();
+            const result = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
             setUsers(result);
         } catch (error) {
             console.error("Failed to fetch users:", error);
