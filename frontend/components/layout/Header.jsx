@@ -2,6 +2,7 @@
 
 import { useRouter } from "expo-router";
 import { Appbar, useTheme, Searchbar } from "react-native-paper";
+import { useNavigation } from '@react-navigation/native';
 
 /*
 TODO:
@@ -28,6 +29,8 @@ const Header = ({
     const router = useRouter();
     const theme = useTheme();
 
+    const navigation = useNavigation();
+
     return (
         <Appbar.Header mode="center-aligned" style={[{backgroundColor: theme.colors.background}, {marginBottom: 12}]}>
             {
@@ -41,7 +44,7 @@ const Header = ({
                     })} 
                     />
                 ) : showMenu ? (
-                    <Appbar.Action icon="menu" onPress={() => {}} />
+                    <Appbar.Action icon="menu" onPress={() => navigation.openDrawer()} />
                 ) : null
             }
             

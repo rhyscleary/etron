@@ -1,6 +1,6 @@
 // Author(s): Matthew Page
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { View, FlatList, Pressable, StyleSheet, TouchableOpacity } from "react-native";
 import { Card, Text, useTheme } from "react-native-paper";
 import { router } from "expo-router";
@@ -16,16 +16,14 @@ const Invites = () => {
   const theme = useTheme();
   const [invites, setInvites] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [workspaceId, setWorkspaceId] = useState(null);
 
   useEffect(() => {
     const fetchWorkspaceIdAndInvites = async () => {
       try {
-        const id = await getWorkspaceId();
-        setWorkspaceId(id);
+        const workspaceId = await getWorkspaceId();
 
         const result = await apiGet(
-          endpoints.workspace.invites.getInvitesSent(id)
+          endpoints.workspace.invites.getInvitesSent(workspaceId)
         );
 
         console.log("Invites:", result);
@@ -67,7 +65,7 @@ const Invites = () => {
           title="Invites"
           showBack
           showPlus
-          onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { from: "invites" } })}
+          onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "invites" } })}
         />      
       }
 			center={false}

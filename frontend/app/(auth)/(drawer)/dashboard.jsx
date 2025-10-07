@@ -40,7 +40,7 @@ const Profile = () => {
     ]), [router]);
 
     const settingOptionButtons = [
-        { icon: "cog", label: "Settings", onPress: () => router.navigate("/settings/settings")},
+        { icon: "cog", label: "Settings", onPress: () => router.navigate("/settings")},
         { icon: "database", label: "Data Sources", onPress: () => router.navigate("/modules/day-book/data-management/data-management") },
         { icon: "chart-line", label: "Metrics", onPress: () => router.navigate("/modules/day-book/metrics/metric-management") },
         { icon: "bell", label: "Notifications", onPress: () => router.navigate("/modules/day-book/notifications/notifications") },
@@ -204,7 +204,7 @@ const Profile = () => {
                 <CustomBottomSheet
                     variant="standard"
                     header={{
-                        title: "Profile",
+                        title: "dashboard",
                         showClose: false,
                         children: profileHeaderChildren,
                     }}
