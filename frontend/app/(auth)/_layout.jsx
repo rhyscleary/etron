@@ -122,7 +122,7 @@ export default function AuthLayout() {
                     router.replace("/(auth)/workspace-choice");
                 } else {
                     console.log("Showing authenticated profile page.");
-                    router.replace("/(auth)/profile")
+                    router.replace("/(auth)/dashboard")
                 }
 
             } else if (authStatus === `configuring`) {

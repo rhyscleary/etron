@@ -93,16 +93,20 @@ const CreateWorkspace = () => {
 
 
             // navigate to the profile
-            router.replace("/profile");
+            router.replace("/dashboard");
         } catch (error) {
             setCreating(false);
             console.error("Error creating workspace: ", error);
         }
     }
 
+    function navigateToJoinWorkspace() {
+        router.navigate("/(auth)/join-workspace");
+    }
+
     return (
         <View style={commonStyles.screen}>
-            <Header title="Create Workspace" showBack />
+            <Header title="Create Workspace" />
 
             <View>
                 <StackLayout spacing={30}> 
@@ -134,6 +138,11 @@ const CreateWorkspace = () => {
                     />
                 </View>
             </View>
+
+            <BasicButton
+                label={"Join Workspace"}
+                onPress={(navigateToJoinWorkspace)}
+            />
         </View>
     )
 }

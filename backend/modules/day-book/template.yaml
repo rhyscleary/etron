@@ -4,7 +4,7 @@ Description: >
   eTRON day book function template
 
 Parameters:
-  PermissionsBucketName:
+  AppConfigurationBucketName:
     Type: String
   WorkspaceBucketName:
     Type: String
@@ -20,7 +20,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        PERMISSIONS_BUCKET: !Ref PermissionsBucketName
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
         ATHENA_DATABASE: !Ref AthenaDatabaseName
 
@@ -172,13 +172,21 @@ Resources:
             Path: /day-book/data-sources/preview/remote
             Method: post
             RestApiId: !Ref eTRONApi
+
+        GetAvailableSheets:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/available-spreadsheets
+            Method: get
+            RestApiId: !Ref eTRONApi
+
             
 
   MetricFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./metrics
-      Handler: handlers/metricHandler.handler
+      CodeUri: ./metrics/functions/metric-core
+      Handler: metricHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Metrics
@@ -221,7 +229,7 @@ Resources:
           Type: Api 
           Properties:
             Path: /day-book/metrics/{metricId}
-            Method: put
+            Method: patch
             RestApiId: !Ref eTRONApi
 
         GetMetricById:

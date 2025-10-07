@@ -17,6 +17,7 @@ import endpoints from '../../../../../../utils/api/endpoints';
 import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
 
 import ColorPicker from 'react-native-wheel-color-picker';
+import ResponsiveScreen from '../../../../../../components/layout/ResponsiveScreen';
 
 
 const CreateMetric = () => {
@@ -35,6 +36,7 @@ const CreateMetric = () => {
                     endpoints.modules.day_book.data_sources.getDataSources,
                     { workspaceId }
                 )
+                console.log(dataSourcesFromApi);
                 setDataSourceMappings(dataSourcesFromApi.map(
                     dataSource => ({
                         id: dataSource.dataSourceId,
@@ -143,22 +145,6 @@ const CreateMetric = () => {
         setStep((prev) => prev + 1);
     };
 
-    /*async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
-        const workspaceId = await getWorkspaceId();
-        const prunedData = {
-            data: dataSourceData,
-        }
-        const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
-        const result = uploadData({
-            path: S3FilePath,
-            data: JSON.stringify(prunedData),
-            options: {
-                bucket: 'workspaces'
-            }
-        }).result;
-        console.log("Pruned data uploaded successfully.")
-    }*/
-
     async function uploadMetricSettings() {
         console.log("Uploading metric details...");
         if (!metricName) {
@@ -167,6 +153,7 @@ const CreateMetric = () => {
 
         let workspaceId = await getWorkspaceId();
         let metricDetails = {
+            workspaceId,
             name: metricName,
             dataSourceId: dataSourceId,
             config: {
@@ -180,8 +167,7 @@ const CreateMetric = () => {
         }
         let result = await apiPost(
             endpoints.modules.day_book.metrics.add,
-            metricDetails,
-            { workspaceId }
+            metricDetails
         );
         console.log("Uploaded metric details via API result:", result);
     }
@@ -202,7 +188,7 @@ const CreateMetric = () => {
         
         console.log("Form completed");
         //router.navigate("/modules/day-book/metrics/metric-management"); 
-        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround?
+        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround? it's a lack of stack and a _layout for metrics. This can be fixed now.
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
@@ -234,7 +220,7 @@ const CreateMetric = () => {
                         />
 
                         <Button icon="file" mode="text" onPress={showDataModal}>
-                            Validate Data
+                            View Data
                         </Button>
 
                         <DropDown
@@ -469,9 +455,12 @@ const CreateMetric = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Header title="New Metric" showBack customBackAction={handleBack}/>
-
+		<ResponsiveScreen
+			header={<Header title="New Metric" showBack customBackAction={handleBack} />}
+			center={false}
+			padded
+            scroll={true}
+		>
             <View style={styles.content}>
                 {renderFormStep()}
 
@@ -483,7 +472,7 @@ const CreateMetric = () => {
                     />
                 </View>
             </View>    
-        </View>
+        </ResponsiveScreen>
     )
 }
 

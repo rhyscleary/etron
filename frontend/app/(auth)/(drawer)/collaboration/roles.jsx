@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 
 const Roles = () => {
@@ -41,13 +42,19 @@ const Roles = () => {
     }, []);
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Roles"
-                showBack
-                showPlus
-                onRightIconPress={() => router.navigate("/collaboration/create-role")}
-            />
+		<ResponsiveScreen
+			header={
+                <Header
+                    title="Roles"
+                    showBack
+                    showPlus
+                    onRightIconPress={() => router.navigate("/collaboration/create-role")}
+                />             
+            }
+			center={false}
+			padded={false}
+            scroll={true}
+		>
 
             <FlatList
                 data={roles}
@@ -80,7 +87,7 @@ const Roles = () => {
                     )
                 }
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
 

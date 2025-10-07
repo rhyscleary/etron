@@ -14,17 +14,14 @@ Globals:
 Parameters:
   WorkspaceBucketName:
     Type: String
+  AppConfigurationBucketName:
+    Type: String
   AthenaDatabaseName:
     Type: String
     Default: etron_day_book_db
     
 
 Resources:
-
-  PermissionsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub etron-permissions-bucket-${AWS::AccountId}-${AWS::Region}
 
   AthenaGlueDatabase:
     Type: AWS::Glue::Database
@@ -38,20 +35,21 @@ Resources:
     Properties:
       TemplateURL: ./workspace/template.yaml
       Parameters:
-        PermissionsBucketName: !Ref PermissionsBucket
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        WorkspaceBucketName: !Ref WorkspaceBucketName
         
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./user/template.yaml
       Parameters:
-        PermissionsBucketName: !Ref PermissionsBucket
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
         
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./modules/day-book/template.yaml
       Parameters:
-        PermissionsBucketName: !Ref PermissionsBucket
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
         AthenaDatabaseName: !Ref AthenaDatabaseName
