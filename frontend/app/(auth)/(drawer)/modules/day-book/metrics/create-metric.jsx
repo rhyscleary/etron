@@ -12,6 +12,10 @@ import MetricCheckbox from '../../../../../../components/common/buttons/MetricCh
 import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
 import GraphTypes from './graph-types';
 
+import {
+    fetchUserAttributes,
+    getCurrentUser
+} from 'aws-amplify/auth';
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
 import endpoints from '../../../../../../utils/api/endpoints';
 import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
@@ -49,7 +53,6 @@ const CreateMetric = () => {
         }
         initialiseDataSourceList();
     }, []);
-
 
     const [dataSourceId, setDataSourceId] = useState();  // Id of data source chosen by user
     const [dataSourceData, setDataSourceData] = useState([]);  // Data from the chosen data source
@@ -176,6 +179,11 @@ const CreateMetric = () => {
                 dependentVariables: chosenDependentVariables,
                 colours: coloursState,
                 //selectedRows,  // TODO: implement separate function to prune the data when it gets uploaded
+            },
+            user: {
+                userId,
+                firstName,
+                lastName
             }
         }
         let result = await apiPost(
@@ -185,6 +193,26 @@ const CreateMetric = () => {
         );
         console.log("Uploaded metric details via API result:", result);
     }
+
+    const [userId, setUserId] = useState(null);
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+
+    useEffect(() => {
+        async function loadUser() {
+            try {
+                const { userId } = await getCurrentUser();
+                const attributes = await fetchUserAttributes();
+                setUserId(userId);
+                setFirstName(attributes.given_name || "");
+                setLastName(attributes.family_name || "");
+                console.log("Loaded user info:", userId, attributes);
+            } catch (error) {
+                console.error("Error fetching user info:", error);
+            }
+        }
+        loadUser();
+    }, []);
 
     const handleFinish = async () => {
 
@@ -213,10 +241,16 @@ const CreateMetric = () => {
 
     const [chosenIndependentVariable, setChosenIndependentVariable] = useState([]);
     const [chosenDependentVariables, setChosenDependentVariables] = useState([]);
-    const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
+    const [coloursState, setColoursState] = useState(['#ed1c24','#d11cd5','#5f80c7ff','#57ff0a','#ffde17','#f26522']);
     const [wheelIndex, setWheelIndex] = useState(0);
     const [metricName, setMetricName] = useState('');
     const [selectedRows, setSelectedRows] = useState([]);
+
+    const dependentArray = Array.isArray(chosenDependentVariables)
+        ? chosenDependentVariables
+        : chosenDependentVariables
+            ? [chosenDependentVariables]
+            : [];
 
     const renderFormStep = () => {
         switch (step) {
@@ -261,17 +295,19 @@ const CreateMetric = () => {
                         {["bar", "pie"].includes(selectedMetric) ? (
                             <MetricRadioButton
                                 items={dataSourceVariableNames}
-                                selected={chosenDependentVariables}
+                                selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables[0] : chosenDependentVariables}
                                 onChange={(selection) => {
-                                    setChosenDependentVariables(selection);
+                                    const next = selection ? [selection] : [];
+                                    setChosenDependentVariables(next);
                                 }}
                             />
                         ) : (
                             <MetricCheckbox
                                 items={dataSourceVariableNames}
-                                selected={chosenDependentVariables}
+                                selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables : []}
                                 onChange={(selection) => {
-                                    setChosenDependentVariables(selection);
+                                    const next = Array.isArray(selection) ? selection : selection ? [selection] : [];
+                                    setChosenDependentVariables(next);
                                 }}
                             />
                         )}
@@ -289,10 +325,11 @@ const CreateMetric = () => {
                             
                             <Chip
                                 onPress={() => {
-                                    if (selectedRows.length === dataSourceData.length) {
+                                    const rowIds = dataSourceData.map((row) => row[dataSourceVariableNames[0]]);
+                                    if (selectedRows.length === rowIds.length) {
                                         setSelectedRows([]);
                                     } else {
-                                        setSelectedRows(dataSourceData.map((row) => row[0]));
+                                        setSelectedRows(rowIds);
                                     }
                                 }}
                                 style={{
@@ -314,7 +351,7 @@ const CreateMetric = () => {
 
                         {showChecklist && (
                             <MetricCheckbox
-                                items={dataSourceData.map((row) => row[0])} // use first column (e.g. Name)
+                                items={dataSourceData.map((row) => row[dataSourceVariableNames[0]])}
                                 selected={selectedRows}
                                 onChange={(selection) => setSelectedRows(selection)}
                             />
@@ -409,14 +446,14 @@ const CreateMetric = () => {
                         />
                         
                         {/* Variable selector chips */}
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 10 }}>
-                            {chosenDependentVariables.map((variable, index) => (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 5 }}>
+                            {dependentArray.map((variable, index) => (
                                 <Chip
                                     key={index}
                                     selected={wheelIndex === index}
                                     onPress={() => setWheelIndex(index)}
                                     style={{ 
-                                        margin: 4,
+                                        marginTop: 4,
                                         backgroundColor: wheelIndex === index ? theme.colors.primary : theme.colors.placeholder,
                                     }}
                                     showSelectedCheck = {false}
@@ -427,7 +464,7 @@ const CreateMetric = () => {
                         </View>
                         
                         {/* Single colour picker for the active variable */}
-                        <View style={{ marginTop: 10, justifyContent: "center", flexDirection: "row" }}>
+                        <View style={{ marginTop: 0, justifyContent: "center", flexDirection: "row" }}>
                             <ColorPicker
                                 color={coloursState[wheelIndex]}
                                 onColorChange={(newColor) => {
@@ -441,7 +478,7 @@ const CreateMetric = () => {
                                 sliderSize={30}
                                 noSnap={true}
                                 gapSize={10}
-                                palette={['#000000','#ed1c24','#d11cd5','#2b5fceff','#57ff0a','#ffde17','#f26522','#888888']}
+                                palette={['#000000','#ed1c24','#d11cd5','#5f80c7ff','#57ff0a','#ffde17','#f26522','#ffffffff']}
                             />
                         </View>
                         
@@ -450,10 +487,16 @@ const CreateMetric = () => {
                             <Card.Content>
                                 <View style={styles.graphCardContainer}>
                                     {graphDef.render({
-                                        data: convertToGraphData(dataSourceData),
+                                        data: convertToGraphData(
+                                            selectedRows.length > 0
+                                                ? dataSourceData.filter(
+                                                    (row) => selectedRows.includes(row[dataSourceVariableNames[0]])
+                                                )
+                                                : dataSourceData
+                                        ),
                                         xKey: chosenIndependentVariable,
-                                        yKeys: chosenDependentVariables,
-                                        colours: coloursState, // dynamic per-variable colours
+                                        yKeys: dependentArray,
+                                        colours: coloursState,
                                     })}
                                 </View>
                             </Card.Content>
@@ -497,12 +540,13 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     card: {
-        height: 260,
+        height: 250,
+        width: "100%",
         marginTop: 20,
     },
     graphCardContainer: {
-        height: "100%",
         width: "100%",
+        height: "100%",
     },
     container: {
         flex: 1,

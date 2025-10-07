@@ -44,9 +44,14 @@ const MetricManagement = () => {
 
     useEffect(() => {
         async function sortMetrics() {
-            const { userId } = await getCurrentUser();
-            setMetricsUser(metrics.filter(metric => metric.createdBy == userId))
-            setMetricsOther(metrics.filter(metric => metric.createdBy != userId))
+            const { userId, attributes } = await getCurrentUser();
+            const mappedMetrics = metrics.map(metric => ({
+                ...metric,
+                firstName: metric.firstName || "Unknown",
+                lastName: metric.lastName || "User",
+            }));
+            setMetricsUser(mappedMetrics.filter(metric => metric.createdBy === userId));
+            setMetricsOther(mappedMetrics.filter(metric => metric.createdBy !== userId));
         }
         sortMetrics();
     }, [metrics])
@@ -88,6 +93,7 @@ const MetricManagement = () => {
 
 const metricCardList = (loadingMetrics, metrics) => {
     const theme = useTheme();
+    const router = useRouter();
     return (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
             {!loadingMetrics &&
@@ -130,6 +136,16 @@ const metricCardList = (loadingMetrics, metrics) => {
                                         }}
                                     >
                                         {metric.name}
+                                    </Text>
+
+                                    <Text
+                                        style={{
+                                            color: "white",
+                                            fontSize: 10,
+                                            marginTop: 2,
+                                        }}
+                                    >
+                                        {metric.firstName} {metric.lastName}
                                     </Text>
                                 </Card.Content>
                             </Card>
