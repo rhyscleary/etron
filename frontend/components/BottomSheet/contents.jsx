@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useTheme, List } from 'react-native-paper';
-import { BottomSheetVirtualizedList } from '@gorhom/bottom-sheet';
+import { BottomSheetFlatList } from '@gorhom/bottom-sheet';
 
 const CONTENT_VERTICAL_PADDING = 2;
 
@@ -97,12 +97,10 @@ const Contents = ({
   );
 
   return (
-    <BottomSheetVirtualizedList
+    <BottomSheetFlatList
       style={styles.wrapper}
       data={filteredData}
       keyExtractor={effectiveKeyExtractor}
-      getItemCount={(data) => data?.length ?? 0}
-      getItem={(data, index) => data[index]}
       ListEmptyComponent={emptyComponent}
       renderItem={renderItem || defaultRenderItem}
       keyboardShouldPersistTaps="handled"
