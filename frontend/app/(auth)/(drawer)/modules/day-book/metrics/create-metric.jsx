@@ -99,24 +99,6 @@ const CreateMetric = () => {
         });
     }, [dataSourceData.length, rowLimit]);
 
-
-    /*const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
-    const font = useFont(inter, 12);
-
-    function GraphTooltip({text, xPosition, yPosition}) {  // Creates a small overlay for the graph at the specified position (usually where the user clicks)
-        return (<>
-            <SkiaText
-                color = "grey"
-                font = {font}
-                text = {"test"}
-                x = {xPosition}
-                y = {yPosition - 15}
-            />
-            <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
-        </>)
-    }*/
-
-
     function convertToGraphData(rows) {
         let output = rows.map(row => {
             const newRow = {};
