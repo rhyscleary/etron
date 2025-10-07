@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import GraphTypes from '../graph-types';
 import inter from "../../../../../../../assets/styles/fonts/Inter_18pt-Regular.ttf";
-import { useFont } from "@shopify/react-native-skia";
 import BasicButton from "../../../../../../../components/common/buttons/BasicButton";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { apiGet, apiDelete } from "../../../../../../../utils/api/apiClient";
@@ -39,8 +38,6 @@ const ViewMetric = () => {
 
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
     const router = useRouter();
-
-    const font = useFont(inter, 12);
 
     useEffect(() => {
         async function getMetricSettings() {
@@ -93,7 +90,7 @@ const ViewMetric = () => {
         return output;
     }
 
-    if (metricDownloadStatus != "downloaded" || !font) {
+    if (metricDownloadStatus != "downloaded") {
         return (
             <View style={commonStyles.screen}>
                 <Header title="Loading..." showBack />
