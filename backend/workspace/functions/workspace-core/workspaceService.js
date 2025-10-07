@@ -71,6 +71,9 @@ async function createWorkspace(authUserId, data) {
             description: starter.description,
             cardColor: starter.cardColor,
             fontColor: starter.fontColor,
+            keywords: starter.keywords,
+            categories: starter.categories,
+            icon: starter.icon,
             enabled: true,
             installedAt: date,
             updatedAt: date
