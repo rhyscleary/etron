@@ -12,8 +12,8 @@ async function getHeaders() {
     };
 }
 
-async function request(method, path, body = {}, params = {}) {
-    const headers = await getHeaders();
+async function request(method, path, body = {}, params = {}, extraHeaders = {}) {
+    const headers = { ...(await getHeaders()), ...extraHeaders };
 
     const requestConfig = {
         method,
@@ -22,7 +22,7 @@ async function request(method, path, body = {}, params = {}) {
         params
     }
 
-    if (['post', 'put'].includes(method)) {
+    if (['post', 'put', 'patch'].includes(method)) {
         requestConfig.data = body;
     }
     
@@ -45,8 +45,12 @@ export async function apiGet(path, params = {}) {
     return request('get', path, {}, params);
 }
 
-export async function apiPut(path, body = {}) {
-    return request('put', path, body, {});
+export async function apiPut(path, body = {}, extraHeaders = {}) {
+    return request('put', path, body, {}, extraHeaders);
+}
+
+export async function apiPatch(path, body = {}) {
+    return request('patch', path, body, {});
 }
 
 export async function apiDelete(path, params = {}) {

@@ -64,10 +64,12 @@ const ViewMetric = () => {
 
             try {  // Download metric data
                 let apiResultData = await apiGet(
-                    endpoints.modules.day_book.data_sources.viewData(apiResultMetric.dataSourceId),
+                    //endpoints.modules.day_book.data_sources.viewData(apiResultMetric.dataSourceId),
+                    endpoints.modules.day_book.data_sources.viewDataForMetric(apiResultMetric.dataSourceId, metricId),
                     { workspaceId }
                 )
                 setMetricData(apiResultData.data);
+                console.log("pruned data:", apiResultData.data);
             } catch (error) {
                 console.error("Error downloading pruned data:", error);
                 setMetricDownloadStatus("failed");

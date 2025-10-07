@@ -22,12 +22,10 @@ import useDataSources from "../../../../../../hooks/useDataSource";
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
 
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
-import { list } from "aws-amplify/storage";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet } from "../../../../../../utils/api/apiClient";
 
 const DataManagement = () => {
-	const [dataSourcePaths, setDataSourcePaths] = useState([]);
 	const [loadingDataSourcePaths, setLoadingDataSourcePaths] = useState(true);
 
 	const [dataSourceMappings, setDataSourceMappings] = useState([]);
@@ -46,28 +44,9 @@ const DataManagement = () => {
 					id: dataSource.dataSourceId
 				})));
 			} catch (error) {
-				console.log("error getting data sources from api:", error);
+				console.error("Error getting data sources from api:", error);
 			}
-			//
-
-			const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
-			try {
-				const result = await list ({
-					path: filePathPrefix,
-					options: {
-						bucket: 'workspaces',
-					}
-				});
-				setDataSourcePaths(Array.from(new Set(	// Set prevents duplicates
-					result.items.map((item) => item.path
-						.slice(filePathPrefix.length)	// Cuts off file path
-						.split('/')[0]	// Cuts off everything inside the folder
-					)
-				)));
-				setLoadingDataSourcePaths(false);
-			} catch (error) {
-				console.log("Error getting workspace data sources:", error);
-			}
+			setLoadingDataSourcePaths(false);
 		}
 		getWorkspaceDataSources();
 	}, []);
@@ -196,7 +175,7 @@ const DataManagement = () => {
 					}
 				/>
 				{/*Temporary redirect to profile screen*/}
-				<Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+				<Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
 				<View style={styles.loadingContainer}>
 					<ActivityIndicator size="large" />
 					<Text style={styles.loadingText}>Loading data sources...</Text>
@@ -219,7 +198,7 @@ const DataManagement = () => {
 					}
 				/>
 				{/*Temporary redirect to profile screen*/}
-				<Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+				<Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
 				<View style={styles.errorContainer}>
 					<Text variant="headlineSmall" style={styles.errorTitle}>
 						Unable to Load Data Sources
@@ -251,7 +230,7 @@ const DataManagement = () => {
 			/>
 
 			{/*Temporary redirect to profile screen*/}
-			<Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
+			<Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/dashboard")} />
 
 			<ScrollView
 				style={styles.container}

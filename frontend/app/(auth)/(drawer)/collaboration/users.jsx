@@ -9,9 +9,9 @@ import { useEffect, useState } from "react";
 import { apiGet } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const Users = () => {
-    const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,12 +23,11 @@ const Users = () => {
 
     const fetchIdAndUsers = async () => {
         try {
-            const id = await getWorkspaceId();
-            setWorkspaceId(id);
-            const result = await apiGet(endpoints.workspace.users.getUsers(id));
+            const workspaceId = await getWorkspaceId();
+            const result = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
             setUsers(result);
         } catch (error) {
-            console.log("Failed to fetch users:", error);
+            console.error("Failed to fetch users:", error);
         } finally {
             setLoading(false);
         }
@@ -73,13 +72,19 @@ const Users = () => {
     });
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Users"
-                showBack
-                showPlus
-                onRightIconPress={() => router.navigate("/collaboration/invite-user")}
-            />
+		<ResponsiveScreen
+			header={
+                <Header
+                    title="Users"
+                    showBack
+                    showPlus
+                    onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "users" } })}
+                />            
+            }
+			center={false}
+			padded={false}
+            scroll={true}
+		>
 
             {/* Search Box */}
             <TextInput
@@ -121,7 +126,7 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => router.navigate(`/collaboration/edit-user/${item.userId || item.id}`)}
+                        onPress={() => router.navigate(`/collaboration/view-user/${item.userId || item.id}`)}
                     >
                         <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>
@@ -141,7 +146,7 @@ const Users = () => {
                     )
                 }
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
 

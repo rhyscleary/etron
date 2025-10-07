@@ -1,44 +1,59 @@
 // Author(s): Rhys Cleary
 
-const { UserType } = require("@etron/shared/constants/enums");
+const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
 
-async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
-    if (!data.email || !data.type) {
-        throw new Error("Missing required fields");
-    }
+// Permissions for this service
+const PERMISSIONS = {
+    INVITE_USER: "app.collaboration.invite_user",
+    CANCEL_INVITE: "app.collaboration.cancel_invite",
+    VIEW_INVITES: "app.collaboration.view_invites"
+};
 
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+async function inviteUsertoWorkspace(authUserId, workspaceId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.INVITE_USER);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
 
-    // convert type to lowercase
-    const type = data.type.toLowerCase();
+    await validateWorkspaceId(workspaceId);
 
-    // check if the user type is valid
-    if (!Object.values(UserType).includes(type)) {
-        throw new Error(`Invalid type of user: ${type}`);
+    const { email, roleId } = payload;
+
+    if (!email || typeof email !== "string") {
+        throw new Error("Please specify a email");
     }
 
-    // if a role is specified check if it's valid
-    if (data.roleId !== undefined) {
-        
+    if (!roleId || typeof roleId !== "string") {
+        throw new Error("Please specify a roleId");
+    }
+
+    // check the role is valid
+    const role = await workspaceRepo.getRoleById(workspaceId, roleId);
+
+    if (!role) {
+        throw new Error("Role not found:", roleId);
+    }
+
+    // prevent assigning the Owner role to another user
+    if (role.owner) {
+        throw new Error("A workspace is limited to one owner");
     }
 
     // check if the user exists in the workspace
-    const user = await workspaceUsersRepo.getUsersByWorkspaceIdAndEmail(workspaceId, data.email);
+    const user = await workspaceUsersRepo.getUserByWorkspaceIdAndEmail(workspaceId, email);
 
-    if (user?.[0]) {
+    if (user) {
         return {message: "User is already part of the workspace"};
     }
 
-    const existingInvites = await workspaceInvitesRepo.getInvitesByWorkspaceIdAndEmail(workspaceId, data.email);  
-    if (existingInvites?.[0]) {
+    const existingInvite = await workspaceInvitesRepo.getInviteByWorkspaceIdAndEmail(workspaceId, email);  
+    if (existingInvite) {
         return {message: "User is already invited to the workspace"};
     }
 
@@ -49,11 +64,10 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
     
     // create a new invite item
     const inviteItem = {
-        workspaceId: workspaceId,
-        inviteId: inviteId,
-        email: data.email,
-        type: type,
-        roleId: data.roleId || null,
+        workspaceId,
+        inviteId,
+        email,
+        roleId,
         status: "pending",
         createdAt: date,
         expireAt: expireAt
@@ -65,16 +79,18 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, data) {
 }
 
 async function cancelInviteToWorkspace(authUserId, workspaceId, inviteId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.CANCEL_INVITE);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
 
+    await validateWorkspaceId(workspaceId);
+
     const invite = await workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
 
     if (!invite) {
-        throw new Error("Invite not found");
+        throw new Error("Invite not found:", inviteId);
     }
 
     await workspaceInvitesRepo.removeInviteById(workspaceId, inviteId);
@@ -94,19 +110,29 @@ async function cancelUsersInvites(email) {
         await workspaceInvitesRepo.removeInviteById(item.workspaceId, item.inviteId);
     }
     
-    return {message: "Invites cancelled"}
+    return {message: "Invites cancelled"};
 }
 
 async function getInvite(workspaceId, inviteId) {
-    return workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
-}
-
-async function getSentInvites(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_INVITES);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
+
+    await validateWorkspaceId(workspaceId);
+
+    return workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
+}
+
+async function getSentInvites(authUserId, workspaceId) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_INVITES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
+    await validateWorkspaceId(workspaceId);
 
     return workspaceInvitesRepo.getInvitesByWorkspaceId(workspaceId);
 }

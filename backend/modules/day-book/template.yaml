@@ -4,7 +4,7 @@ Description: >
   eTRON day book function template
 
 Parameters:
-  PermissionsBucketName:
+  AppConfigurationBucketName:
     Type: String
   WorkspaceBucketName:
     Type: String
@@ -20,7 +20,7 @@ Globals:
       - x86_64
     Environment:
       Variables:
-        PERMISSIONS_BUCKET: !Ref PermissionsBucketName
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
         ATHENA_DATABASE: !Ref AthenaDatabaseName
 
@@ -46,6 +46,8 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Metrics
         - DynamoDBCrudPolicy:
             TableName: Workspaces
         - DynamoDBCrudPolicy:
@@ -150,6 +152,13 @@ Resources:
             Method: get
             RestApiId: !Ref eTRONApi
 
+        ViewDataForMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/view-data-for-metric/{metricId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
         RemoveDataSource:
           Type: Api 
           Properties:
@@ -163,13 +172,21 @@ Resources:
             Path: /day-book/data-sources/preview/remote
             Method: post
             RestApiId: !Ref eTRONApi
+
+        GetAvailableSheets:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/available-spreadsheets
+            Method: get
+            RestApiId: !Ref eTRONApi
+
             
 
   MetricFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./metrics
-      Handler: handlers/metricHandler.handler
+      CodeUri: ./metrics/functions/metric-core
+      Handler: metricHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Metrics
@@ -212,7 +229,7 @@ Resources:
           Type: Api 
           Properties:
             Path: /day-book/metrics/{metricId}
-            Method: put
+            Method: patch
             RestApiId: !Ref eTRONApi
 
         GetMetricById:
@@ -376,6 +393,67 @@ Resources:
             Method: delete
             RestApiId: !Ref eTRONApi
 
+  ReportExportsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./reports/functions/reports-exports
+      Handler: exportHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        AddExport:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        GetExport:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports/{exportId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetExports:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetExportDownloadUrl:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports/{exportId}/download
+            Method: get
+            RestApiId: !Ref eTRONApi
 
   DataSourcePollFunction:
     Type: AWS::Serverless::Function

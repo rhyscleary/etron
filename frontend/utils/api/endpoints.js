@@ -13,7 +13,7 @@ const endpoints = {
             update: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getWorkspace: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getByUserId: (userId) => `${WORKSPACE_BASE_URL}/users/${userId}`,
-            transfer: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/transfer/${userId}`,
+            transfer: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/transfer`,
             delete: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
             getDefaultPermissions: `${WORKSPACE_BASE_URL}/permissions` 
         },
@@ -31,23 +31,24 @@ const endpoints = {
             update: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
             delete: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
             getRole: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
+            getRoleOfUser: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roleOfUser`,
             getRoles: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles`,
         },
 
         users: {
-            add: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/invites/${inviteId}`,
+            add: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users`,
             update: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             remove: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             getUser: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
             getUsers: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users`,
         },
 
-        profiles: {
-            create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/profiles`,
-            update: (workspaceId, profileId) => `${WORKSPACE_BASE_URL}/${workspaceId}/profiles/${profileId}`,
-            delete: (workspaceId, profileId) => `${WORKSPACE_BASE_URL}/${workspaceId}/profiles/${profileId}`,
-            getProfile: (workspaceId, profileId) => `${WORKSPACE_BASE_URL}/${workspaceId}/profiles/${profileId}`,
-            getProfiles: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/profiles`
+        boards: {
+            create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`,
+            update: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+            delete: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+            getProfile: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+            getProfiles: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`
         },
 
         modules: {
@@ -82,7 +83,19 @@ const endpoints = {
                 testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
                 remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
                 viewData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
-                getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`
+                viewDataForMetric: (dataSourceId, metricId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
+                getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`,
+                getAvailableSheets: `${DATASOURCES_BASE_URL}/available-sheets`,
+                
+                // google sheets specific endpoints
+                integrations: {
+                    getUserTokens: `${DATASOURCES_BASE_URL}/integrations/user-tokens`,
+
+                    google: {
+                        linkGoogle: `${DATASOURCES_BASE_URL}/integrations/google/link`
+                    },
+
+                }
             },
 
             metrics: {
@@ -98,7 +111,7 @@ const endpoints = {
                     createDraft: `${REPORTS_BASE_URL}/drafts`,
                     updateDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
                     getDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
-                    getDrafts: `${REPORTS_BASE_URL}/drafts`,
+                    getDrafts: (workspaceId) => `${REPORTS_BASE_URL}/drafts?workspaceId=${workspaceId}`,
                     deleteDraft: (draftId) => `${REPORTS_BASE_URL}/drafts/${draftId}`,
                 },
                 templates: {
@@ -109,9 +122,10 @@ const endpoints = {
                     deleteTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
                 },
                 exports: { 
-                    addExport: ``,
-                    getExport: ``,
-                    getExports: ``,
+                    addExport: `${REPORTS_BASE_URL}/exports`,
+                    getExport: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}`,
+                    getExports: `${REPORTS_BASE_URL}/exports`,
+                    getExportDownloadUrl: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}/download`,
                 }
             },
         }

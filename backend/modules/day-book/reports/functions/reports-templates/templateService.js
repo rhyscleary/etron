@@ -2,16 +2,30 @@
 
 const reportRepo = require("@etron/reports-shared/repositories/reportsRepository");
 const {v4 : uuidv4} = require('uuid');
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { deleteFolder, getUploadUrl, getDownloadUrl } = require("@etron/reports-shared/repositories/reportsBucketRepository");
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    VIEW_REPORTS: "modules.daybook.reports.view_reports",
+    MANAGE_TEMPLATES: "modules.daybook.reports.manage_templates",
+};
 
 async function createTemplateReport(authUserId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
 
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_TEMPLATES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     const { name } = payload;
 
     if (!name || typeof name !== "string") {
-        throw new Error("There is no name specified for the template");
+        throw new Error("No name for the template");
     }
 
     const templateId = uuidv4();
@@ -28,14 +42,14 @@ async function createTemplateReport(authUserId, payload) {
         lastEdited: currentDate
     };
 
-    const fileKey = `workspaces/${workspaceId}/day-book/reports/templates/${templateId}/report.docx`;
+    const fileKey = `workspaces/${workspaceId}/day-book/reports/templates/${templateId}/report.html`;
     const thumbnailKey = `workspaces/${workspaceId}/day-book/reports/templates/${templateId}/thumbnail.jpeg`;
 
     templateItem.fileKey = fileKey;
     templateItem.thumbnailKey = thumbnailKey;
 
     const fileUploadUrl = await getUploadUrl(fileKey, { 
-        ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ContentType: "text/html"
     });
 
     const thumbnailUrl = await getUploadUrl(thumbnailKey, {
@@ -54,6 +68,12 @@ async function createTemplateReport(authUserId, payload) {
 async function updateTemplateReport(authUserId, templateId, payload) {
     const workspaceId = payload.workspaceId;
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_TEMPLATES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     const template = await reportRepo.getTemplateById(workspaceId, templateId);
 
@@ -80,7 +100,7 @@ async function updateTemplateReport(authUserId, templateId, payload) {
 
     if (isFileUpdated) {
         fileUploadUrl = await getUploadUrl(template.fileKey, {
-            ContentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ContentType: "text/html"
         });
     }
 
@@ -106,6 +126,13 @@ async function updateTemplateReport(authUserId, templateId, payload) {
 
 async function getTemplateReport(authUserId, workspaceId, templateId) {
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_REPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
     const template = await reportRepo.getTemplateById(workspaceId, templateId);
 
     if (!template) return null;
@@ -127,6 +154,12 @@ async function getTemplateReport(authUserId, workspaceId, templateId) {
 
 async function getTemplateReports(authUserId, workspaceId) {
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_REPORTS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     // get all templates in a workspace
     const templates = await reportRepo.getTemplatesByWorkspaceId(workspaceId);
@@ -156,6 +189,12 @@ async function getTemplateReports(authUserId, workspaceId) {
 
 async function deleteTemplateReport(authUserId, workspaceId, templateId) {
     await validateWorkspaceId(workspaceId);
+
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_TEMPLATES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
 
     // get template details
     const template = await reportRepo.getTemplateById(workspaceId, templateId);

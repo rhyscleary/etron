@@ -50,7 +50,7 @@ const CreateWorkspace = () => {
                     return { needsConfirmation: false };
             }
         } catch (error) {
-            console.log("Error updating user attribute:", error);
+            console.error("Error updating user attribute:", error);
             const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
             setMessage(`Error updating ${fieldName}: ${error.message}`);
             return { needsConfirmation: false, error: true };
@@ -93,16 +93,20 @@ const CreateWorkspace = () => {
 
 
             // navigate to the profile
-            router.replace("/profile");
+            router.replace("/dashboard");
         } catch (error) {
             setCreating(false);
-            console.log("Error creating workspace: ", error);
+            console.error("Error creating workspace: ", error);
         }
+    }
+
+    function navigateToJoinWorkspace() {
+        router.navigate("/(auth)/join-workspace");
     }
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Create Workspace" showBack />
+            <Header title="Create Workspace" />
 
             <View>
                 <StackLayout spacing={30}> 
@@ -134,6 +138,11 @@ const CreateWorkspace = () => {
                     />
                 </View>
             </View>
+
+            <BasicButton
+                label={"Join Workspace"}
+                onPress={(navigateToJoinWorkspace)}
+            />
         </View>
     )
 }

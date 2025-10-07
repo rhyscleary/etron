@@ -6,9 +6,10 @@ import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
 import { Text, TextInput, Checkbox, Button, Portal, Dialog } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
-import { apiGet, apiPut, apiDelete } from "../../../../../utils/api/apiClient";
+import { apiGet, apiPut, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { router, useLocalSearchParams } from "expo-router";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 const EditRole = () => {
   const { roleId } = useLocalSearchParams();
@@ -68,7 +69,7 @@ const EditRole = () => {
         permissions: permissions.filter((p) => p.enabled).map((p) => p.key),
       };
 
-      await apiPut(endpoints.workspace.roles.update(workspaceId, roleId), data);
+      await apiPatch(endpoints.workspace.roles.update(workspaceId, roleId), data);
       router.navigate("/collaboration/roles");
     } catch (error) {
       console.error("Failed to update role:", error);
@@ -88,13 +89,19 @@ const EditRole = () => {
   };
 
   return (
-    <View style={commonStyles.screen}>
-      <Header
-        title="Edit Role"
-        showBack
-        showCheck
-        onRightIconPress={handleCheck}
-      />
+		<ResponsiveScreen
+			header={
+        <Header
+          title="Edit Role"
+          showBack
+          showCheck
+          onRightIconPress={handleCheck}
+        />
+      }
+			center={false}
+			padded
+      scroll={true}
+		>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 64 }}>
         <TextInput
@@ -153,7 +160,7 @@ const EditRole = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </View>
+    </ResponsiveScreen>
   );
 };
 

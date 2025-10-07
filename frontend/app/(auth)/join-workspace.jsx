@@ -54,7 +54,7 @@ const JoinWorkspace = () => {
                     setInvites(processedInvites);
                 }
             } catch (error) {
-                console.log("Error loading workspace invites:", error);
+                console.error("Error loading workspace invites:", error);
             }
             setLoading(false);
         }
@@ -87,7 +87,7 @@ const JoinWorkspace = () => {
                     return { needsConfirmation: false };
             }
         } catch (error) {
-            console.log("Error updating user attribute:", error);
+            console.error("Error updating user attribute:", error);
             const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
             setMessage(`Error updating ${fieldName}: ${error.message}`);
             return { needsConfirmation: false, error: true };
@@ -109,9 +109,14 @@ const JoinWorkspace = () => {
             const workspaceId = selectedInvite.workspaceId;
             const inviteId = selectedInvite.inviteId;
 
+            const payload = {
+                inviteId
+            }
+
             // try adding user to the workspace
             await apiPost(
-                endpoints.workspace.users.add(workspaceId, inviteId)
+                endpoints.workspace.users.add(workspaceId),
+                payload
             )
 
             // if successful store workspace info
@@ -130,16 +135,20 @@ const JoinWorkspace = () => {
 
 
             // navigate to the profile
-            router.navigate("/profile");
+            router.navigate("/dashboard");
         } catch (error) {
             setJoining(false);
-            console.log("Error joining workspace: ", error);
+            console.error("Error joining workspace: ", error);
         }
+    }
+
+    function navigateToCreateWorkspace() {
+        router.navigate("/(auth)/create-workspace");
     }
 
     return (
         <View style={commonStyles.screen}>
-            <Header title="Join Workspace" showBack />
+            <Header title="Join Workspace" />
 
             <Text style={{ fontSize: 16, marginBottom: 12 }}>
               You have the following options:
@@ -176,6 +185,10 @@ const JoinWorkspace = () => {
                 )}
 
             </View>
+            <BasicButton
+                label={"Create Workspace"}
+                onPress={navigateToCreateWorkspace}
+            />
         </View>
     )
 

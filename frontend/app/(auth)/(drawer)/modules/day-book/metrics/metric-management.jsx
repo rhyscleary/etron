@@ -32,9 +32,10 @@ const MetricManagement = () => {
                     endpoints.modules.day_book.metrics.getMetrics,
                     { workspaceId }
                 );
+                console.log(metricData);
                 setMetrics(metricData);
             } catch (error) {
-                console.log("Error getting workspace metrics:", error);
+                console.error("Error getting workspace metrics:", error);
             } finally {
                 setLoadingMetrics(false);
             }
@@ -66,7 +67,7 @@ const MetricManagement = () => {
                 <SearchBar/>
 
                 {/*Temporary redirect to profile screen*/}
-                <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
+                <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/dashboard")} />
 
                 <ScrollView>
 

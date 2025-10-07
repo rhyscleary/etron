@@ -40,7 +40,7 @@ const getSupportedTypes = () => [
       displayName: "Google Sheets",
       categoryDisplayName: "Spreadsheets",
       route:
-        "/modules/day-book/data-management/data-connection-inputs/google-sheets",
+        "/modules/day-book/data-management/data-connection-inputs/google",
       sortOrder: 1,
       isEnabled: true,
       helpText: "Import data directly from your Google Sheets",

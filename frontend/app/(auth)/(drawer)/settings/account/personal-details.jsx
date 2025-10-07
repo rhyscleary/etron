@@ -6,15 +6,12 @@ import Header from '../../../../../components/layout/Header';
 import StackLayout from "../../../../../components/layout/StackLayout";
 import TextField from "../../../../../components/common/input/TextField";
 import BasicButton from "../../../../../components/common/buttons/BasicButton";
-import { Text, useTheme, Alert } from "react-native-paper";
-import { Pressable, View, Button, ActivityIndicator } from "react-native";
+import { Text, useTheme } from "react-native-paper";
+import { View, Button, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { Image } from 'expo-image';
-import { uploadData, getUrl } from 'aws-amplify/storage';
 import { Buffer } from 'buffer';
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { apiPost, apiPut} from "../../../../../utils/api/apiClient";
+import { apiPut} from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { router } from 'expo-router';
 
@@ -24,10 +21,11 @@ import {
     confirmUserAttribute,
     getCurrentUser
 } from 'aws-amplify/auth';
-import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhoto, uploadProfilePhotoFromDevice, uploadProfilePhotoToS3 } from "../../../../../utils/profilePhoto";
+import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhoto, getPhotoFromDevice, saveProfilePhoto } from "../../../../../utils/profilePhoto";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import UnsavedChangesDialog from "../../../../../components/overlays/UnsavedChangesDialog";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 global.Buffer = global.Buffer || Buffer
 
@@ -54,28 +52,11 @@ const PersonalDetails = () => {
         phoneNumber: false,
     })
 
-    // Function for uploading photo to S3
-    const handleUploadPhoto = async () => {
-        try {
-            const newUri = await uploadProfilePhotoFromDevice();
-            setProfilePhotoUri(newUri);
-            setPhotoChanged(true);
-        } catch (error) {
-            console.log(error.message);
-        }
-    }
-
-    const handleRemovePhoto = () => {
-        // this will show initials
-        setProfilePhotoUri(null);
-        setPhotoChanged(true);
-    };
-
     useEffect(() => {
         loadProfileData();
     }, []);
 
-     async function loadProfileData() {
+    async function loadProfileData() {
         setLoading(true);
         try {
             const userAttributes = await fetchUserAttributes();
@@ -92,7 +73,7 @@ const PersonalDetails = () => {
             const profilePhotoUri = await loadProfilePhoto();
             setProfilePhotoUri(profilePhotoUri || null);
 
-            // set original values 
+            // set original values
             setOriginalData({
                 firstName: userAttributes.given_name || "",
                 lastName: userAttributes.family_name || "",
@@ -101,13 +82,30 @@ const PersonalDetails = () => {
             });
             
         } catch (error) {
-            console.log("Error loading personal details: ", error);
+            console.error("Error loading personal details: ", error);
             setMessage("Error loading personal details");
         }
         setLoading(false);
     }
 
-    useEffect(() => {
+    // Function for uploading photo to S3
+    const handleUploadPhoto = async () => {
+        try {
+            const newUri = await getPhotoFromDevice();
+            setProfilePhotoUri(newUri);
+            setPhotoChanged(true);
+        } catch (error) {
+            console.error("Error uploading photo s3:", error.message);
+        }
+    }
+
+    const handleRemovePhoto = () => {
+        // this will show initials
+        setProfilePhotoUri(null);
+        setPhotoChanged(true);
+    };
+
+    useEffect(() => {  // Whenever user edits any data, check to see if it's different to the original and flag that a change exists
         const changed =
             firstName.trim() !== originalData.firstName ||
             lastName.trim() !== originalData.lastName ||
@@ -125,28 +123,33 @@ const PersonalDetails = () => {
             setNeedsPhoneConfirmation(false);
             setConfirmationCode("");
         } catch (error) {
-            console.log("Error confirming user attribute:", error);
+            console.error("Error confirming user attribute:", error);
             setMessage(`Error confirming phone number: ${error.message}`);
         }
     }*/
 
     async function handleUpdate() {
+        // Initialise the beginning of the update process
         setMessage("");
         setUpdating(true);
         
+        // Array of potential errors; false unless there's an error
         const newErrors = {
-            firstName: !firstName.trim(),
+            firstName: !firstName.trim(), // True (error) if empty
             lastName: !lastName.trim(),
             phoneNumber: phoneNumber && (phoneNumber.length < 9 || phoneNumber.length > 10),
         };
         setErrors(newErrors);
 
+        // Stops update if any errors are present
         if (Object.values(newErrors).some(Boolean)) {
             setUpdating(false);
             return;
         }
         
+        // Performs updates
         try {
+            // Goes through each potential update, adding them to a json list if changed
             const updateData = {};
 
             if (firstName.trim() !== originalData.firstName) {
@@ -158,14 +161,13 @@ const PersonalDetails = () => {
             }
 
             if (phoneNumber.trim() !== originalData.phoneNumber) {
-                // adds country code for australia (do we need to handle other countries?)
                 const formattedPhone = phoneNumber.startsWith('+61') ? phoneNumber : `+61${phoneNumber}`;
                 updateData.phone_number = formattedPhone.trim();
             }
 
             if (photoChanged) {
                 if (profilePhotoUri) {
-                    const s3Url = await uploadProfilePhotoToS3(profilePhotoUri);
+                    const s3Url = await saveProfilePhoto(profilePhotoUri);
                     updateData.picture = s3Url;
                 } else {
                     updateData.picture = "";
@@ -173,7 +175,7 @@ const PersonalDetails = () => {
                 }
             }
 
-            // if there are no changed fields don't send anything
+            // If there are no changed fields, don't update anything
             if (Object.keys(updateData).length === 0) {
                 setMessage("There are no changed fields to update");
                 setUpdating(false);
@@ -183,12 +185,10 @@ const PersonalDetails = () => {
             let workspaceId = await getWorkspaceId();
             let { userId } = await getCurrentUser();
             
-            const result = await apiPut(
+            await apiPut(
                 endpoints.user.core.updateUser(userId, workspaceId),
                 updateData
             );
-
-            console.log(result);
 
             setOriginalData({
                 firstName,
@@ -198,22 +198,20 @@ const PersonalDetails = () => {
             });
             setPhotoChanged(false);
             setMessage("Personal details updated successfully");
-
         } catch (error) {
-            console.log("Error updating personal details: ", error);
+            console.error("Error updating personal details: ", error);
             setMessage(`Error updating personal details: ${error.message}`);
         }
 
         setUpdating(false);
     }
 
-    // handle phone confirmation code
+    // Handles the confirmation code for updating phone number
     async function handlePhoneConfirmation() {
         if (!confirmationCode.trim()) {
             setMessage("Please enter the confirmation code");
             return;
         }
-        
         await handleConfirmPhoneNumber("phone_number", confirmationCode);
     }
 
@@ -230,9 +228,10 @@ const PersonalDetails = () => {
         router.back();
     }
 
-    return(
-        <View style={commonStyles.screen}>
-            <Header title="Personal Details" showBack onBackPress={handleBackPress}/>
+    return (
+        <ResponsiveScreen
+            header = {<Header title="Personal Details" showBack onBackPress={handleBackPress}/>}
+        >
             { loading ? (
                 <View style={commonStyles.centeredContainer}>
                     <ActivityIndicator size="large" />
@@ -319,25 +318,28 @@ const PersonalDetails = () => {
                         )}
                     </StackLayout>
 
-                    <View style={commonStyles.inlineButtonContainer}>
-                        <BasicButton 
-                            label={updating ? "Updating..." : "Update"} 
-                            onPress={handleUpdate}
-                            disabled={updating}
-                        />
+                    <View style={{ flexDirection: 'row', justifyContent: 'center'}}>
+                        {message && (
+                            <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
+                                <Text style={{ 
+                                    color: message.includes('Error') || message.includes('error') ? 
+                                        theme.colors.error : theme.colors.primary,
+                                    textAlign: 'center'
+                                }}>
+                                    {message}
+                                </Text>
+                            </View>
+                        )}
+                        <View style={commonStyles.inlineButtonContainer}>
+                            <BasicButton 
+                                label={updating ? "Updating..." : "Update"} 
+                                onPress={handleUpdate}
+                                disabled={updating}
+                            />
+                        </View>
                     </View>
 
-                    {message && (
-                        <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
-                            <Text style={{ 
-                                color: message.includes('Error') || message.includes('error') ? 
-                                    theme.colors.error : theme.colors.primary,
-                                textAlign: 'center'
-                            }}>
-                                {message}
-                            </Text>
-                        </View>
-                    )}
+                    
                 </View>
             )}
 
@@ -347,7 +349,7 @@ const PersonalDetails = () => {
                 handleLeftAction={handleDiscardChanges}
                 handleRightAction={() => setShowUnsavedDialog(false)}
             />
-        </View> 
+        </ResponsiveScreen> 
     )
 }
 

@@ -5,6 +5,7 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { Text, TextInput, Chip } from "react-native-paper";
 import { useState } from "react";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const WorkspaceLog = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -35,8 +36,12 @@ const WorkspaceLog = () => {
     );
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Workspace Log" showBack />
+        <ResponsiveScreen
+            header={<Header title="Workspace Log" showBack />}
+            center={false}
+            padded
+            scroll={true}
+        >
 
             {/* Search Bar */}
             <TextInput
@@ -87,7 +92,7 @@ const WorkspaceLog = () => {
                     </RNText>
                 }
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
 

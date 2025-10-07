@@ -1,16 +1,24 @@
 // Author(s): Rhys Cleary
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
 const {v4 : uuidv4} = require('uuid');
-const { getAppModules } = require("@etron/shared/repositories/s3BucketRepository");
+const { getAppModules } = require("@etron/shared/repositories/appConfigBucketRepository");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
+const { hasPermission } = require("@etron/shared/utils/permissions");
+
+// Permissions for this service
+const PERMISSIONS = {
+    MANAGE_MODULES: "app.workspace.manage_modules"
+};
 
 async function installModule(authUserId, workspaceId, moduleKey) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_MODULES);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
+
+    await validateWorkspaceId(workspaceId);
 
     const appModules = await getAppModules();
 
@@ -32,11 +40,14 @@ async function installModule(authUserId, workspaceId, moduleKey) {
 
     // create a new module item
     const moduleItem = {
-        workspaceId: workspaceId,
-        moduleId: moduleId,
+        workspaceId,
+        moduleId,
         moduleKey: selectedModule.key,
         name: selectedModule.name,
         description: selectedModule.description,
+        cardColor: selectedModule.cardColor,
+        fontColor: selectedModule.fontColor,
+        enabled: true,
         installedAt: date,
         updatedAt: date
     };
@@ -47,11 +58,13 @@ async function installModule(authUserId, workspaceId, moduleKey) {
 }
 
 async function toggleModule(authUserId, workspaceId, moduleKey) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_MODULES);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
+
+    await validateWorkspaceId(workspaceId);
 
     const [module] = await workspaceRepo.getModuleByKey(workspaceId, moduleKey);
 
@@ -66,11 +79,13 @@ async function toggleModule(authUserId, workspaceId, moduleKey) {
 }
 
 async function uninstallModule(authUserId, workspaceId, moduleKey) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_MODULES);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
+
+    await validateWorkspaceId(workspaceId);
 
     const [module] = await workspaceRepo.getModuleByKey(workspaceId, moduleKey);
 
@@ -84,11 +99,13 @@ async function uninstallModule(authUserId, workspaceId, moduleKey) {
 }
 
 async function getAvailableModules(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_MODULES);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
+
+    await validateWorkspaceId(workspaceId);
 
     const appModules = await getAppModules();
 
@@ -104,11 +121,6 @@ async function getAvailableModules(authUserId, workspaceId) {
 }
 
 async function getInstalledModules(authUserId, workspaceId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
-
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
 
     return workspaceRepo.getModulesByWorkspaceId(workspaceId);
 }
