@@ -30,10 +30,10 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install dependencies for building
+      - name: Prepare shared packages and clean installs
         run: |
           cd backend
-          npm install
+          python3 prep.py
 
       - name: Build the SAM application
         run: |
