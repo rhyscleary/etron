@@ -32,7 +32,12 @@ const Header = ({
     const navigation = useNavigation();
 
     return (
-        <Appbar.Header mode="center-aligned" style={[{backgroundColor: theme.colors.background}, {marginBottom: 12}]}>
+        <Appbar.Header mode="center-aligned"
+            style={{
+                backgroundColor: theme.colors.background,
+                marginBottom: 12
+            }}
+        >
             {
                 showBack ? (
                     <Appbar.BackAction onPress={customBackAction || (() => {

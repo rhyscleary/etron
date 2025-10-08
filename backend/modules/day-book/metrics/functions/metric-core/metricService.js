@@ -6,7 +6,6 @@ const { getUploadUrl, getDownloadUrl } = require("@etron/metrics-shared/reposito
 const { hasPermission } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
-const { hasPermission } = require("@etron/shared/utils/permissions");
 
 // Permissions for this service
 const PERMISSIONS = {

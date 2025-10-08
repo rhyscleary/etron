@@ -90,7 +90,7 @@ const ViewMetric = () => {
         return output;
     }
 
-    if (metricDownloadStatus != "downloaded") {
+    if (metricDownloadStatus !== "downloaded") {
         return (
             <View style={commonStyles.screen}>
                 <Header title="Loading..." showBack />
