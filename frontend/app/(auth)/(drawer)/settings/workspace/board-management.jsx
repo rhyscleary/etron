@@ -122,8 +122,12 @@ const BoardManagement = () => {
             center={false}
             padded={false}
             scroll={false}
-        > 
+        >
             
+            <SearchBar 
+                placeholder="Search boards"
+                onSearch={setSearchQuery}
+            /> 
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
@@ -145,12 +149,6 @@ const BoardManagement = () => {
                                 <Text style={styles.emptyText}>No Boards Created</Text>
                             </View>
                         )}
-                        ListHeaderComponent={
-                            <SearchBar 
-                                placeholder="Search boards"
-                                onSearch={setSearchQuery}
-                            />
-                        }
                     />
                 )}
             </View>
