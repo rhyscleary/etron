@@ -21,6 +21,7 @@ const MetricManagement = () => {
     const [metricsUser, setMetricsUser] = useState([]);
     const [metricsOther, setMetricsOther] = useState([]);
     const [loadingMetrics, setLoadingMetrics] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         async function getWorkspaceMetrics() {
@@ -58,7 +59,11 @@ const MetricManagement = () => {
             <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric")}/>
             
             <View style={{ flex: 1 }}>
-                <SearchBar/>
+                {/* Search bar */}
+                <SearchBar 
+                    placeholder="Search boards"
+                    onSearch={setSearchQuery}
+                />
 
                 <ScrollView>
 
