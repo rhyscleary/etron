@@ -3,8 +3,8 @@
 import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
 import Divider from "../../../../../../components/layout/Divider.jsx";
 import { View, Button, ActivityIndicator, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
-import Header from "../../../../../../components/layout/Header";
-import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
+import Header from "../../../../../../components/layout/Header.jsx";
+import { commonStyles } from "../../../../../../assets/styles/stylesheets/common.js";
 import { useRouter } from "expo-router";
 import { Text, useTheme, Card } from "react-native-paper";
 import { useEffect, useState } from "react";
@@ -25,7 +25,6 @@ const MetricManagement = () => {
     useEffect(() => {
         async function getWorkspaceMetrics() {
             const workspaceId = await getWorkspaceId();
-            const filePathPrefix = `workspaces/${workspaceId}/day-book/metrics/`
 
             try {
                 const metricData = await apiGet(
@@ -60,9 +59,6 @@ const MetricManagement = () => {
             
             <View style={{ flex: 1 }}>
                 <SearchBar/>
-
-                {/*Temporary redirect to profile screen*/}
-                <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/dashboard")} />
 
                 <ScrollView>
 
