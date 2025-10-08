@@ -13,25 +13,30 @@ import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
-import { createNewTemplate, uploadUpdatedTemplate } from "../../../../../../../utils/templateUploader"; 
+import { createNewTemplate, uploadUpdatedTemplate } from "../../../../../../../utils/templateUploader";
 import { useTheme } from "react-native-paper";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import CustomBottomSheet from "../../../../../../../components/BottomSheet/bottom-sheet";
 
 const EditReport = () => {
   const { draftId } = useLocalSearchParams();
   const router = useRouter();
   const [editorContent, setEditorContent] = useState("");
   const [dialogVisible, setDialogVisible] = useState(false);
-  const [templateDialogVisible, setTemplateDialogVisible] = useState(false); // 🔑 new state
+  const [templateDialogVisible, setTemplateDialogVisible] = useState(false);
   const [fileName, setFileName] = useState("Report");
-  const [templateName, setTemplateName] = useState("Untitled Template"); // 🔑 new state
+  const [templateName, setTemplateName] = useState("Untitled Template");
   const [reportId, setReportId] = useState(null);
   const [workspaceId, setWorkspaceId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const webViewRef = useRef(null);
   const initSentRef = useRef(false);
   const theme = useTheme();
+  const bottomSheetRef = useRef(null);
 
+  // Fetch workspace ID
   useEffect(() => {
     const fetchWorkspaceId = async () => {
       try {
@@ -44,6 +49,7 @@ const EditReport = () => {
     fetchWorkspaceId();
   }, []);
 
+  // Fetch draft
   useEffect(() => {
     const fetchDraft = async () => {
       if (!draftId || !workspaceId) return;
@@ -72,8 +78,8 @@ const EditReport = () => {
     fetchDraft();
   }, [draftId, workspaceId]);
 
-  const pellHtml = useMemo(() => {
-    return `
+  // Editor HTML
+  const pellHtml = useMemo(() => `
     <!DOCTYPE html>
     <html>
       <head>
@@ -95,11 +101,7 @@ const EditReport = () => {
             const editor = window.pell.init({
               element: document.getElementById('editor'),
               onChange: html => {
-                try {
-                  window.ReactNativeWebView.postMessage(html);
-                } catch (e) {
-                  window.postMessage(JSON.stringify({ type: 'edit', html }), '*');
-                }
+                try { window.ReactNativeWebView.postMessage(html); } catch (e) {}
               },
               defaultParagraphSeparator: 'p',
               styleWithCSS: true
@@ -107,95 +109,59 @@ const EditReport = () => {
 
             function setContent(html) {
               editor.content.innerHTML = html || '';
-              try {
-                const range = document.createRange();
-                range.selectNodeContents(editor.content);
-                range.collapse(false);
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-              } catch (err) {}
+              const range = document.createRange();
+              range.selectNodeContents(editor.content);
+              range.collapse(false);
+              const sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(range);
             }
 
             function receiveMessage(event) {
-              let data = event && event.data;
-              try {
-                if (typeof data === 'string') {
-                  data = JSON.parse(data);
-                }
-              } catch (e) {}
-              if (!data) return;
-
-              if (data.type === 'init' || data.type === 'load') {
-                setContent(data.html || data.content || '');
-                try {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'loaded' }));
-                } catch (e) {
-                  window.postMessage(JSON.stringify({ type: 'loaded' }), '*');
-                }
-              }
+              let data = event.data;
+              try { data = JSON.parse(data); } catch (e) {}
+              if (data?.type === 'init' || data?.type === 'load') setContent(data.html || data.content || '');
             }
 
-            document.addEventListener('message', receiveMessage, false);
-            window.addEventListener('message', receiveMessage, false);
-            window.__setEditorContent = setContent;
+            document.addEventListener('message', receiveMessage);
+            window.addEventListener('message', receiveMessage);
           })();
         </script>
       </body>
     </html>
-    `;
-  }, []);
+  `, []);
 
-  const readOnlyHtml = useMemo(() => {
-    return `
+  // Read-only HTML
+  const readOnlyHtml = useMemo(() => `
     <!DOCTYPE html>
     <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { font-family:sans-serif; padding:12px; }
-        </style>
-      </head>
-      <body>
-        ${editorContent || "<p><i>No content</i></p>"}
-      </body>
+      <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:sans-serif;padding:12px;}</style></head>
+      <body>${editorContent || "<p><i>No content</i></p>"}</body>
     </html>
-    `;
-  }, [editorContent]);
+  `, [editorContent]);
 
+  // Initialize editor
   const sendInitToWebView = (html) => {
     if (!webViewRef.current) return;
     try {
       webViewRef.current.postMessage(JSON.stringify({ type: 'init', html: html || '' }));
       initSentRef.current = true;
     } catch (err) {
-      setTimeout(() => {
-        try {
-          webViewRef.current?.postMessage(JSON.stringify({ type: 'init', html: html || '' }));
-          initSentRef.current = true;
-        } catch (e) {
-          console.warn("Failed to post init to WebView:", e);
-        }
-      }, 200);
+      // ignore
     }
   };
 
   useEffect(() => {
-    if (!isEditing) {
-      initSentRef.current = false;
-      return;
-    }
-    if (!initSentRef.current) {
+    if (isEditing && !initSentRef.current) {
       setTimeout(() => sendInitToWebView(editorContent), 120);
     }
   }, [isEditing, editorContent]);
 
   const handleWebViewLoadEnd = () => {
-    if (isEditing && !initSentRef.current) {
-      sendInitToWebView(editorContent);
-    }
+    if (isEditing && !initSentRef.current) sendInitToWebView(editorContent);
   };
 
+  // Export PDF
   const exportAsPDF = async (customFileName) => {
     try {
       const file = await RNHTMLtoPDF.convert({
@@ -203,19 +169,9 @@ const EditReport = () => {
         fileName: "temp_report",
         base64: false,
       });
-
-      const downloadDir =
-        Platform.OS === "android"
-          ? RNFS.DownloadDirectoryPath
-          : RNFS.DocumentDirectoryPath;
-
-      const destPath = `${downloadDir}/${customFileName}.pdf`;
-
-      if (await RNFS.exists(destPath)) {
-        await RNFS.unlink(destPath);
-      }
+      const destPath = `${Platform.OS === "android" ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath}/${customFileName}.pdf`;
+      if (await RNFS.exists(destPath)) await RNFS.unlink(destPath);
       await RNFS.moveFile(file.filePath, destPath);
-
       Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
     } catch (err) {
       console.error("PDF export failed:", err);
@@ -233,14 +189,7 @@ const EditReport = () => {
       Alert.alert("Error", "Missing workspace or draft ID.");
       return;
     }
-
-    const success = await uploadUpdatedReport({
-      workspaceId,
-      reportId: draftId,
-      reportName: fileName,
-      editorContent
-    });
-
+    const success = await uploadUpdatedReport({ workspaceId, reportId: draftId, reportName: fileName, editorContent });
     if (success) {
       Alert.alert("Success", "Report updated successfully");
       setIsEditing(false);
@@ -249,34 +198,21 @@ const EditReport = () => {
   };
 
   const handleSaveAsTemplate = async () => {
-    if (!workspaceId) {
-      Alert.alert("Error", "Missing workspace ID.");
-      return;
-    }
-    setTemplateDialogVisible(true); // 🔑 open dialog to ask name
+    if (!workspaceId) return Alert.alert("Error", "Missing workspace ID.");
+    setTemplateDialogVisible(true);
   };
 
   const confirmSaveTemplate = async () => {
     setTemplateDialogVisible(false);
     try {
-      const newTemplateId = await createNewTemplate({
-        workspaceId,
-        templateName: templateName,
-      });
-
+      const newTemplateId = await createNewTemplate({ workspaceId, templateName });
       if (newTemplateId) {
-        // 🔑 immediately update with content
-        const success = await uploadUpdatedTemplate({
-          workspaceId,
-          templateId: newTemplateId,
-          templateName,
-          editorContent,
-        });
-
+        const success = await uploadUpdatedTemplate({ workspaceId, templateId: newTemplateId, templateName, editorContent });
         if (success) {
           Alert.alert("Success", "Template saved successfully");
           setIsEditing(false);
           initSentRef.current = false;
+          // navigate to edit-template path (ensure route exists)
           router.push(`/modules/day-book/reports/edit-template/${newTemplateId}`);
         } else {
           Alert.alert("Error", "Template created but failed to upload content");
@@ -290,54 +226,48 @@ const EditReport = () => {
     }
   };
 
+  // Header action handlers
+  const onHeaderEditPress = () => {
+    if (isEditing) {
+      // if editing, act as save
+      handleSaveReport();
+    } else {
+      setIsEditing(true);
+    }
+  };
+
+  const onHeaderEllipsisPress = () => {
+    setSheetVisible(true);
+  };
+
   return (
     <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
+      {/* Use the project's Header component with the built-in props.
+          - showEdit/showCheck control the edit/save icon.
+          - showEllipsis makes the ellipsis visible.
+          - onRightIconPress handles edit/save action.
+          - onEllipsisPress opens the sheet. */}
       <Header
         title={reportId ? "Edit Report" : "New Report"}
-        showBack={!isEditing}
+        showBack
+        showEdit={!isEditing}
         showCheck={isEditing}
-        showEllipsis={!isEditing}   
-        onRightIconPress={isEditing ? handleSaveReport : undefined}
+        showEllipsis={true}
+        onRightIconPress={onHeaderEditPress}
+        onEllipsisPress={onHeaderEllipsisPress}
       />
-
-      {/* Buttons row */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.exportButton} onPress={() => setDialogVisible(true)}>
-          <Text style={styles.exportButtonText}>Export PDF</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.saveTemplateButton} onPress={handleSaveAsTemplate}>
-            <Text style={styles.saveTemplateButtonText}>Save as Template</Text>
-        </TouchableOpacity>
-
-        {!isEditing && (
-          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-        )}
-      </View>
 
       <WebView
         key={isEditing ? "editor" : "viewer"}
         ref={webViewRef}
-        originWhitelist={['*']}
+        originWhitelist={["*"]}
         source={{ html: isEditing ? pellHtml : readOnlyHtml }}
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
         onMessage={(event) => {
           if (!isEditing) return;
-          try {
-            const data = event.nativeEvent.data;
-            try {
-              const maybeJson = JSON.parse(data);
-              if (maybeJson && maybeJson.type === 'loaded') {
-                return;
-              }
-            } catch (e) {}
-            setEditorContent(event.nativeEvent.data);
-          } catch (err) {
-            console.warn("Failed to process onMessage from WebView:", err);
-          }
+          setEditorContent(event.nativeEvent.data);
         }}
         onLoadEnd={handleWebViewLoadEnd}
       />
@@ -371,43 +301,104 @@ const EditReport = () => {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+
+      {/* overlay to allow dismiss by tapping outside */}
+      {sheetVisible && (
+        <TouchableOpacity
+          style={styles.overlay}
+          activeOpacity={1}
+          onPress={() => setSheetVisible(false)}
+        />
+      )}
+
+      {/* Bottom sheet (options) */}
+      <CustomBottomSheet
+        visible={sheetVisible}
+        onDismiss={() => setSheetVisible(false)}
+        header={{ title: "Report Options", showClose: true }}
+        enableDynamicSizing
+        footer={{ variant: "none" }}
+        customContent={
+          <View style={styles.sheetContent}>
+            <TouchableOpacity
+              style={styles.sheetButton}
+              onPress={() => {
+                setSheetVisible(false);
+                setIsEditing(true);
+              }}
+            >
+              <Icon name="pencil" size={22} color="#444" />
+              <Text style={styles.sheetText}>Edit Report</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sheetButton}
+              onPress={() => {
+                setSheetVisible(false);
+                setDialogVisible(true);
+              }}
+            >
+              <Icon name="file-pdf-box" size={22} color="#444" />
+              <Text style={styles.sheetText}>Export as PDF</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sheetButton}
+              onPress={() => {
+                setSheetVisible(false);
+                handleSaveReport();
+              }}
+            >
+              <Icon name="content-save" size={22} color="#444" />
+              <Text style={styles.sheetText}>Save Report</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sheetButton}
+              onPress={() => {
+                setSheetVisible(false);
+                handleSaveAsTemplate();
+              }}
+            >
+              <Icon name="file-upload-outline" size={22} color="#444" />
+              <Text style={styles.sheetText}>Save as Template</Text>
+            </TouchableOpacity>
+          </View>
+        }
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  exportButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  exportButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
-  editButton: {
-    backgroundColor: "#FF9500",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  editButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
-  saveTemplateButton: {
-    backgroundColor: "#34C759",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-  },
-  saveTemplateButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
   webview: { flex: 1 },
   input: {
-    borderWidth: 1, borderColor: "#ccc", padding: 8, marginTop: 10, borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 8,
+    marginTop: 10,
+    borderRadius: 5,
+  },
+  sheetContent: {
+    flexDirection: "column",
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
+  sheetButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  sheetText: { marginLeft: 12, fontSize: 16, color: "#333" },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.3)",
   },
 });
 
