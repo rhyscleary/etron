@@ -1,19 +1,20 @@
 // Author(s): Rhys Cleary
 
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
-import Header from "../../../../components/layout/Header";
+import Header from "../../../../../components/layout/Header";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { router, useFocusEffect } from "expo-router";
-import BasicDialog from "../../../../components/overlays/BasicDialog";
-import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
-import SearchBar from "../../../../components/common/input/SearchBar";
-import ListCard from "../../../../components/cards/listCard";
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../../../utils/api/apiClient";
-import endpoints from "../../../../utils/api/endpoints";
-import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import BasicDialog from "../../../../../components/overlays/BasicDialog";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import SearchBar from "../../../../../components/common/input/SearchBar";
+import ListCard from "../../../../../components/cards/listCard";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../../../../utils/api/apiClient";
+import endpoints from "../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { List, Text, useTheme } from "react-native-paper";
-import { hasPermission } from "../../../../utils/permissions";
-import CustomBottomSheet from "../../../../components/BottomSheet/bottom-sheet";
+import { hasPermission } from "../../../../../utils/permissions";
+import CustomBottomSheet from "../../../../../components/BottomSheet/bottom-sheet";
+import { FlashList } from "@shopify/flash-list";
 
 const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
     const [loading, setLoading] = useState(false);
@@ -47,6 +48,18 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
         init();
     }, []);
 
+    useFocusEffect(
+        useCallback(() => {
+            const refetchModules = async () => {
+                if (workspaceId) {
+                    await fetchModules(workspaceId);
+                }
+            };
+
+            refetchModules();
+        }, [workspaceId])
+    );
+
     const fetchModules = async (id) => {
         if (!id) return;
 
@@ -59,7 +72,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
 
             console.log(response);
 
-            setModules(response || []);
+            setModules((response || []).sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error("Error fetching modules:", error);
         } finally {
@@ -106,7 +119,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
 
     const handleModuleToggle = async () => {
         if (!selectedModule) return;
-        console.log("Toggling module:", selectedModule?.key);
+        console.log(`Toggling module: ${selectedModule?.key}. WorkspaceId: ${workspaceId}`);
         try {
             // call api
             await apiPut(endpoints.workspace.modules.toggle(workspaceId, selectedModule.key));
@@ -127,6 +140,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
             rightIcon="dots-horizontal"
             onRightPress={() => {
                 setSelectedModule(item);
+                console.log(item);
                 setShowModuleActionsSheet(true);
             }}
             cardStyle={item.cardColor ? { backgroundColor: item.cardColor } : undefined }
@@ -161,46 +175,48 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
             },
         ];
     }, [selectedModule, handleTogglePress, handleUninstallPress]);
-
-    console.log(selectedModule, moduleActionItems)
     
     return (
 		<ResponsiveScreen
-			header={<Header title="Modules" showBack showPlus onRightIconPress={() => router.navigate("/settings/add-modules")} />}
+			header={<Header title="Modules" showBack showPlus onRightIconPress={() => router.navigate("/settings/workspace/add-modules")} />}
 			center={false}
 			padded={false}
             scroll={false}
 		> 
             
             <View style={styles.contentContainer}>
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" />
-                        <Text>Loading Modules...</Text>
-                    </View>
-                ) : (
-                    <FlatList
-                        data={filteredModules}
-                        renderItem={renderModules}
-                        keyExtractor={item => item.key}
-                        ItemSeparatorComponent={() => <View style={{height: 20}} />}
-                        refreshing={loading}
-                        onRefresh={() => fetchModules(workspaceId)}
-                        ListEmptyComponent={() => (
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No Modules Installed</Text>
-                            </View>
-                        )}
-                        ListHeaderComponent={
-                            <SearchBar 
-                                placeholder="Search modules"
-                                onSearch={setSearchQuery}
-                                onFilterChange={setSelectedFilter}
-                                filters={availableFilters}
-                            />
-                        }
-                    />
-                )}
+                {/* Search bar and filter */}
+                <SearchBar 
+                    placeholder="Search modules"
+                    onSearch={setSearchQuery}
+                    onFilterChange={setSelectedFilter}
+                    filters={availableFilters}
+                />
+
+                <View style={styles.listContainer}>
+                    {loading ? (
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" />
+                            <Text>Loading Modules...</Text>
+                        </View>
+                    ) : (
+                        <FlashList
+                            data={filteredModules}
+                            renderItem={renderModules}
+                            keyExtractor={item => item.key}
+                            estimatedItemSize={100}
+                            drawDistance={1}
+                            ItemSeparatorComponent={() => <View style={{height: 20}} />}
+                            refreshing={loading}
+                            onRefresh={() => fetchModules(workspaceId)}
+                            ListEmptyComponent={() => (
+                                <View style={styles.emptyContainer}>
+                                    <Text style={styles.emptyText}>No Modules Installed</Text>
+                                </View>
+                            )}
+                        />
+                    )}
+                </View>
             </View>
 
             <BasicDialog
@@ -265,6 +281,10 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
 const styles = StyleSheet.create({
     contentContainer: {
         flex: 1,
+    },
+    listContainer: {
+        flex: 1,
+        position: "relative",
     },
     loadingContainer: {
         flex: 1,

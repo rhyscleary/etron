@@ -12,7 +12,7 @@ const Settings = () => {
 
     const settingOptionButtons = [
         { icon: "account", label: "Account", onPress: () => router.navigate("/settings/account/account")},
-        { icon: "briefcase-outline", label: "Workspace", onPress: () => router.navigate("/settings/workspace-management") },
+        { icon: "briefcase-outline", label: "Workspace", onPress: () => router.navigate("/settings/workspace/workspace-management") },
         { icon: "palette-outline", label: "Themes", onPress: () => router.navigate("/settings/theme-settings") },
         { icon: "", label: "Accessibility", onPress: () => router.navigate("/settings/accessibility-settings") },
         { icon: "information-outline", label: "Support", onPress: () => router.navigate("/settings/support-settings") },
