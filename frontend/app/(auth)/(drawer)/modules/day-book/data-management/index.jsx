@@ -24,6 +24,7 @@ import DataConnectionButton from "../../../../../../components/common/buttons/Da
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet } from "../../../../../../utils/api/apiClient";
+import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
 
 const DataManagement = () => {
 	const [loadingDataSourcePaths, setLoadingDataSourcePaths] = useState(true);
@@ -161,77 +162,32 @@ const DataManagement = () => {
 		return grouped;
 	};
 
-	if (loading) {
-		return (
-			<View style={commonStyles.screen}>
-				<Header
-					title="Data Management"
-					showMenu
-					showPlus
-					onRightIconPress={() =>
-						router.navigate(
-							"/modules/day-book/data-management/create-data-connection"
-						)
-					}
-				/>
-				{/*Temporary redirect to profile screen*/}
-				<Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
-				<View style={styles.loadingContainer}>
-					<ActivityIndicator size="large" />
-					<Text style={styles.loadingText}>Loading data sources...</Text>
-				</View>
-			</View>
-		);
-	}
-
-	if (error) {
-		return (
-			<View style={commonStyles.screen}>
-				<Header
-					title="Data Management"
-					showMenu
-					showPlus
-					onRightIconPress={() =>
-						router.navigate(
-							"/modules/day-book/data-management/create-data-connection"
-						)
-					}
-				/>
-				{/*Temporary redirect to profile screen*/}
-				<Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
-				<View style={styles.errorContainer}>
-					<Text variant="headlineSmall" style={styles.errorTitle}>
-						Unable to Load Data Sources
-					</Text>
-					<Text variant="bodyMedium" style={styles.errorMessage}>
-						{error}
-					</Text>
-					<Pressable style={styles.retryButton} onPress={refresh}>
-						<Text style={styles.retryButtonText}>Try Again</Text>
-					</Pressable>
-				</View>
-			</View>
-		);
-	}
-
 	const groupedSources = groupSourcesByCategory();
 
-	return (
-		<View style={commonStyles.screen}>
-			<Header
-				title="Data Management"
-				showMenu
-				showPlus
-				onRightIconPress={() =>
-					router.navigate(
-						"/modules/day-book/data-management/create-data-connection"
-					)
-				}
-			/>
-
-			{/*Temporary redirect to profile screen*/}
-			<Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/dashboard")} />
-
+	let body = null;
+	if (loading) {
+		body = (
+			<View style={styles.loadingContainer}>
+				<ActivityIndicator size="large" />
+				<Text style={styles.loadingText}>Loading data sources...</Text>
+			</View>
+		);
+	} else if (error) {
+		body = (
+			<View style={styles.errorContainer}>
+				<Text variant="headlineSmall" style={styles.errorTitle}>
+					Unable to Load Data Sources
+				</Text>
+				<Text variant="bodyMedium" style={styles.errorMessage}>
+					{error}
+				</Text>
+				<Pressable style={styles.retryButton} onPress={refresh}>
+					<Text style={styles.retryButtonText}>Try Again</Text>
+				</Pressable>
+			</View>
+		);
+	} else {
+		body = (
 			<ScrollView
 				style={styles.container}
 				showsVerticalScrollIndicator={false}
@@ -265,7 +221,27 @@ const DataManagement = () => {
 					</View>
 				))}
 			</ScrollView>
-		</View>
+		)
+	}
+
+	return (
+		<ResponsiveScreen
+			header={<Header
+				title="Data Management"
+				showMenu
+				showPlus
+				onRightIconPress={() =>
+					router.navigate(
+						"/modules/day-book/data-management/create-data-connection"
+					)
+				}
+			/>}
+			center={false}
+			padded={false}
+			scroll={true}
+		>
+			{body}
+		</ResponsiveScreen>
 	);
 };
 
