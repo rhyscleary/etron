@@ -127,6 +127,7 @@ const BoardManagement = () => {
             <SearchBar 
                 placeholder="Search boards"
                 onSearch={setSearchQuery}
+          
             /> 
             <View style={styles.contentContainer}>
                 {loading ? (
