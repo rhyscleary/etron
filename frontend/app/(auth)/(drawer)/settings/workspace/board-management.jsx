@@ -123,12 +123,12 @@ const BoardManagement = () => {
             padded={false}
             scroll={false}
         >
-            
+
             <SearchBar 
                 placeholder="Search boards"
                 onSearch={setSearchQuery}
-          
-            /> 
+            />
+
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>

@@ -9,9 +9,12 @@ const SearchBar = ({
     filters
 }) => {
     const[searchQuery, setSearchQuery] = useState('');
-    const [selectedFilter, setSelectedFilter] = useState(filters[0] || 'All');
-    const [showFilters, setShowFilters] = useState(false);
     const theme = useTheme();
+
+    // create filter state if filters exist
+    const [selectedFilter, setSelectedFilter] = useState(
+        filters && filters.length > 0 ? filters[0] : null
+    );
 
     const handleSearch = () => {
         onSearch(searchQuery);
@@ -92,12 +95,6 @@ const styles = StyleSheet.create({
     searchbar: {
         borderRadius: 10,
         borderWidth: 1,
-    },
-    filterToggleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: -5,
-        marginLeft: -10,
     },
     chipRow: {
         flexDirection: 'row',
