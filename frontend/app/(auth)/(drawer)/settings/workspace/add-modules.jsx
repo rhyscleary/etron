@@ -14,9 +14,10 @@ import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { Text } from "react-native-paper";
 import { hasPermission } from "../../../../../utils/permissions";
 import { FlashList } from "@shopify/flash-list";
+import PlaceholderBoard from "../../../../../components/skeleton/PlaceholderBoard";
 
 const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [modules, setModules] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -48,8 +49,6 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
         if (!id) return;
 
         try {
-            setLoading(true);
-
             const response = await apiGet(
                 endpoints.workspace.modules.getUninstalledModules(id)
             );
@@ -132,28 +131,22 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
                 />
 
                 <View style={styles.listContainer}>
-                    {loading ? (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" />
-                            <Text>Loading Modules...</Text>
-                        </View>
-                    ) : (
-                        <FlashList
-                            data={filteredModules}
-                            renderItem={renderModules}
-                            keyExtractor={item => item.key}
-                            estimatedItemSize={100}
-                            drawDistance={1}
-                            ItemSeparatorComponent={() => <View style={{height: 20}} />}
-                            refreshing={loading}
-                            onRefresh={() => fetchModules(workspaceId)}
-                            ListEmptyComponent={() => (
+                    <FlashList
+                        data={loading ? Array.from({ length: 5 }) : filteredModules}
+                        renderItem={loading ? () => <PlaceholderBoard size="small" /> : renderModules}
+                        keyExtractor={(item, index) => loading ? `placeholder-${index}` : item.key}
+                        estimatedItemSize={100}
+                        drawDistance={1}
+                        ItemSeparatorComponent={() => <View style={{height: 20}} />}
+                        onRefresh={() => fetchModules(workspaceId)}
+                        ListEmptyComponent={
+                            !loading ? (
                                 <View style={styles.emptyContainer}>
                                     <Text style={styles.emptyText}>No Modules Available</Text>
                                 </View>
-                            )}
-                        />
-                    )}
+                            ) : null
+                        }
+                    />
                 </View>
             </View>
             
@@ -179,11 +172,6 @@ const styles = StyleSheet.create({
     listContainer: {
         flex: 1,
         position: "relative",
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center"
     },
     emptyContainer: {
         flex: 1,
