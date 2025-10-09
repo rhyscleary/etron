@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useTheme } from "react-native-paper";
-//import ShimmerPlaceholder from "react-native-shimmer-placeholder";
+import ShimmerPlaceholder from "react-native-shimmer-placeholder";
 import LinearGradient from "react-native-linear-gradient";
 
 const PlaceholderBoard = ({ size = "small" }) => {
