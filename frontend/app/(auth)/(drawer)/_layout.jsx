@@ -3,7 +3,7 @@ import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawe
 import { useTheme, Appbar, Icon } from "react-native-paper";
 import { View } from "react-native";
 import { Drawer } from "expo-router/drawer"
-import BasicButton from "../../../components/common/buttons/BasicButton";
+import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 
 //const Drawer = createDrawerNavigator();
 
@@ -25,17 +25,32 @@ const CustomDrawer = (props) => {
             />
             {drawerState == "default" ? (
                 <View>
-                    <BasicButton
+                    <DescriptiveButton
                         label="Boards"
+                        icon="view-dashboard"
                         onPress={() => setDrawerState("boards")}
+                        transparentBackground
+                        altText
+                        showChevron={false}
                     />
-                    <BasicButton
+                    <DescriptiveButton
                         label="Day Book"
+                        icon="calendar"
                         onPress={() => setDrawerState("day-book")}
+                        transparentBackground
+                        altText
+                        showChevron={false}
                     />
                 </View>
             ) : (
-                <BasicButton label="Back" onPress={() => setDrawerState("default")} />
+                <DescriptiveButton
+                    label="Back"
+                    icon="arrow-left"
+                    onPress={() => setDrawerState("default")}
+                    transparentBackground
+                    altText
+                    showChevron={false}
+                />
             )}            
             <DrawerItemList {...props} />
         </DrawerContentScrollView>
