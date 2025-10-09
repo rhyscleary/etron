@@ -128,9 +128,10 @@ const Profile = () => {
             header={
                 <Header title="Dashboard" showMenu />
             }
-			center={false}
-			padded={false}
-            scroll={true}
+		center={false}
+		padded={false}
+		// Prevent nesting VirtualizedLists inside a ScrollView which triggers the warning
+		scroll={false}
         >         
             <StackLayout spacing={12}>
                 {settingOptionButtons.map((item) => (
