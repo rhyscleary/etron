@@ -1,10 +1,11 @@
 // Author(s): Rhys Cleary, Holly Wyatt
 
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Icon, useTheme } from 'react-native-paper';
 
 const DescriptiveButton = ({
     icon,
+    image,
     label,
     description,
     onPress,
@@ -42,7 +43,12 @@ const DescriptiveButton = ({
             ]}
         >
             <View style={styles.innerContainer}>
-                {icon ? (
+                {image ? (
+                    <Image
+                        source={image}
+                        style={styles.imageIcon}
+                    />
+                ) : icon ? (
                     <Icon
                         source={icon}
                         size={28}
@@ -92,6 +98,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 8,
         paddingHorizontal: 10,
+    },
+    imageIcon: {
+        width: 28,
+        height: 28,
+        resizeMode: 'contain',
     },
     textContainer: {
         flex: 1,
