@@ -10,6 +10,7 @@ import { RadioButton } from 'react-native-paper';
 import { apiPost } from "../../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../../utils/api/endpoints"
 import { router } from 'expo-router';
+import ResponsiveScreen from '../../../../../../../components/layout/ResponsiveScreen';
 
 const LocalCSV = () => {
     const [deviceFilePath, setDeviceFilePath] = useState(null);
@@ -111,7 +112,8 @@ const LocalCSV = () => {
 
     return (
         <>
-            <Button onPress={userSelectFile} title="Pick a CSV File" disabled={isUploadingData} />
+            <ResponsiveScreen>
+                <Button onPress={userSelectFile} title="Pick a CSV File" disabled={isUploadingData} />
             
             {dataDetailsStatus == "none" && (
                 <Text>No data selected</Text>
@@ -133,6 +135,8 @@ const LocalCSV = () => {
                     <Button onPress={handleFinalise} title="Create Source" disabled={isUploadingData || dataSourceName == ""} />
                 </View>
             )}
+            </ResponsiveScreen>
+            
         </>
     );
 }
