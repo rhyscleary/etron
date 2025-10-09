@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { useTheme, Appbar, Icon } from "react-native-paper";
-import { View, StyleSheet } from "react-native";
+import { View } from "react-native";
 import { Drawer } from "expo-router/drawer"
 import BasicButton from "../../../components/common/buttons/BasicButton";
 
@@ -23,20 +23,20 @@ const CustomDrawer = (props) => {
                     : setDrawerState("default")
                 }}
             />
-                {drawerState == "default" ? (
-                    <View>
-                        <BasicButton
-                            label="Boards"
-                            onPress={() => setDrawerState("boards")}
-                        />
-                        <BasicButton
-                            label="Day Book"
-                            onPress={() => setDrawerState("day-book")}
-                        />
-                    </View>
-                ) : (
-                    <BasicButton label="Back" onPress={() => setDrawerState("default")} />
-                )}            
+            {drawerState == "default" ? (
+                <View>
+                    <BasicButton
+                        label="Boards"
+                        onPress={() => setDrawerState("boards")}
+                    />
+                    <BasicButton
+                        label="Day Book"
+                        onPress={() => setDrawerState("day-book")}
+                    />
+                </View>
+            ) : (
+                <BasicButton label="Back" onPress={() => setDrawerState("default")} />
+            )}            
             <DrawerItemList {...props} />
         </DrawerContentScrollView>
     );
@@ -130,26 +130,3 @@ export default function DrawerLayout() {
         </Drawer>
     );
 }
-const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 12,
-    flexGrow: 1,
-  },
-  topButtons: {
-    paddingHorizontal: 12,
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  bottomBlock: {
-    marginTop: "auto",
-    paddingTop: 8,
-    paddingHorizontal: 0,
-  },
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: "#FFFFFF",
-    marginHorizontal: 12,
-    marginBottom: 8,
-  },
-});
