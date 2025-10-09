@@ -145,7 +145,7 @@ const CreateMetric = () => {
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
                 colours: coloursState,
-                //selectedRows,  // TODO: implement separate function to prune the data when it gets uploaded
+                selectedRows: selectedRows,
             },
             user: {
                 userId,

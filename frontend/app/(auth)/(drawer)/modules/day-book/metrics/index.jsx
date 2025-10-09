@@ -110,7 +110,7 @@ const metricCardList = (loadingMetrics, metrics) => {
                                 width: "45%"
                             }}
                             onPress={() =>
-                                router.navigate(`./view-metric/${metric.metricId}`)
+                                router.navigate(`/modules/day-book/metrics/view-metric/${metric.metricId}`)
                             }
                         >
                             <Card
