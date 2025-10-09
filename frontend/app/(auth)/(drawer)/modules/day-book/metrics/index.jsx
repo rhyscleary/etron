@@ -13,6 +13,7 @@ import GraphTypes from "./graph-types.jsx";
 import endpoints from "../../../../../../utils/api/endpoints.js";
 import { apiGet } from "../../../../../../utils/api/apiClient.jsx";
 import { getCurrentUser } from "aws-amplify/auth";
+import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen.jsx";
 
 const MetricManagement = () => {
     const router = useRouter();
@@ -55,9 +56,14 @@ const MetricManagement = () => {
     const [color, setColor] = useState('#ff0000');
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric")}/>
-            
+        <ResponsiveScreen
+            header={
+                <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric")}/>
+            }
+            center={false}
+            padded={false}
+            scroll={false}
+        >
             <View style={{ flex: 1 }}>
                 {/* Search bar */}
                 <SearchBar 
@@ -84,7 +90,7 @@ const MetricManagement = () => {
                     </View>
                 </ScrollView>
             </View>
-        </View>
+        </ResponsiveScreen>
     )
 }
 

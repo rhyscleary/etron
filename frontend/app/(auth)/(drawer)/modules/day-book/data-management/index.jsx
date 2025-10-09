@@ -25,6 +25,7 @@ import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet } from "../../../../../../utils/api/apiClient";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
+import useDataSource from "../../../../../../hooks/useDataSource";
 
 const DataManagement = () => {
   // Use the app context
@@ -58,6 +59,21 @@ const DataManagement = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastManualRefresh, setLastManualRefresh] = useState(0);
   const hasInitiallyLoadedRef = useRef(false);
+
+  // refresh data sources list (used by pull-to-refresh and retry)
+  const handleRefresh = useCallback(async () => {
+    try {
+      setIsRefreshing(true);
+      console.log('[DataManagement] manual refresh triggered');
+      await refresh();
+      setLastManualRefresh(Date.now());
+    } catch (err) {
+      console.error('[DataManagement] handleRefresh error', err);
+      Alert.alert('Refresh failed', 'Unable to refresh data sources.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refresh]);
 
   // Auto-refresh when data sources count changes
   useEffect(() => {
@@ -105,7 +121,7 @@ const DataManagement = () => {
       }
     }, [dataSourcesList]) // Include dataSourcesList to log current state
   );
-  // Combine UI from both branches into a single coherent render
+
   const formatLastSync = useCallback((dateString) => {
     if (!dateString) return "Unknown";
     const date = new Date(dateString);
@@ -120,6 +136,66 @@ const DataManagement = () => {
     if (diffHours < 24) return `${diffHours}h ago`;
     return `${diffDays}d ago`;
   }, []);
+
+
+  const { dataSourceService } = useDataSource();
+
+  // request sync for a data source; use dataSourceService to fetch preview then refresh state
+  const handleSyncSource = useCallback(async (sourceId) => {
+    setIsRefreshing(true);
+    try {
+      if (dataSourceService && typeof dataSourceService.syncDataSource === 'function') {
+        await dataSourceService.syncDataSource(sourceId);
+      } else if (dataSourceService && typeof dataSourceService.viewData === 'function') {
+        await dataSourceService.viewData(sourceId);
+      } else {
+        console.warn('[DataManagement] No dataSourceService.syncDataSource available, falling back to refresh');
+      }
+
+      if (typeof forceUpdate === 'function') {
+        try { await forceUpdate(sourceId); } catch (err) { await forceUpdate(); }
+      } else {
+        refresh();
+      }
+
+      Alert.alert('Sync complete', 'Data source sync/preview completed successfully.');
+    } catch (err) {
+      console.error('[DataManagement] handleSyncSource error', err);
+      Alert.alert('Error', 'Could not complete sync.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [dataSourceService, forceUpdate, refresh]);
+
+  // confirm and disconnect a data source
+  const handleDisconnectSource = useCallback((sourceId, sourceName) => {
+    Alert.alert(
+      'Disconnect data source',
+      `Are you sure you want to disconnect "${sourceName || sourceId}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Disconnect', style: 'destructive', onPress: async () => {
+          try {
+            await disconnectDataSource(sourceId);
+          } catch (err) {
+            console.error('[DataManagement] disconnectDataSource error', err);
+            Alert.alert('Error', 'Failed to disconnect data source.');
+          }
+        } }
+      ]
+    );
+  }, [disconnectDataSource]);
+
+  // test connection (placeholder)
+  const handleTestConnection = useCallback(async (sourceId) => {
+    try {
+      refresh();
+      Alert.alert('Test Connection', 'Connection test requested.');
+    } catch (err) {
+      console.error('[DataManagement] handleTestConnection error', err);
+      Alert.alert('Error', 'Connection test failed.');
+    }
+  }, [refresh]);
 
   const renderDataSourceCard = useCallback((source) => {
     const adapterInfo = getAdapterInfo(source.type);
