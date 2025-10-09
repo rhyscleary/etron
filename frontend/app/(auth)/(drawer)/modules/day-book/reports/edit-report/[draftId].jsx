@@ -34,7 +34,6 @@ const EditReport = () => {
   const webViewRef = useRef(null);
   const initSentRef = useRef(false);
   const theme = useTheme();
-  const bottomSheetRef = useRef(null);
 
   // Fetch workspace ID
   useEffect(() => {
@@ -212,7 +211,6 @@ const EditReport = () => {
           Alert.alert("Success", "Template saved successfully");
           setIsEditing(false);
           initSentRef.current = false;
-          // navigate to edit-template path (ensure route exists)
           router.push(`/modules/day-book/reports/edit-template/${newTemplateId}`);
         } else {
           Alert.alert("Error", "Template created but failed to upload content");
@@ -226,10 +224,8 @@ const EditReport = () => {
     }
   };
 
-  // Header action handlers
   const onHeaderEditPress = () => {
     if (isEditing) {
-      // if editing, act as save
       handleSaveReport();
     } else {
       setIsEditing(true);
@@ -242,11 +238,6 @@ const EditReport = () => {
 
   return (
     <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
-      {/* Use the project's Header component with the built-in props.
-          - showEdit/showCheck control the edit/save icon.
-          - showEllipsis makes the ellipsis visible.
-          - onRightIconPress handles edit/save action.
-          - onEllipsisPress opens the sheet. */}
       <Header
         title={reportId ? "Edit Report" : "New Report"}
         showBack
@@ -302,7 +293,7 @@ const EditReport = () => {
         </Dialog>
       </Portal>
 
-      {/* overlay to allow dismiss by tapping outside */}
+      {/* Overlay for bottom sheet dismiss */}
       {sheetVisible && (
         <TouchableOpacity
           style={styles.overlay}
@@ -311,61 +302,57 @@ const EditReport = () => {
         />
       )}
 
-      {/* Bottom sheet (options) */}
-      <CustomBottomSheet
-        visible={sheetVisible}
-        onDismiss={() => setSheetVisible(false)}
-        header={{ title: "Report Options", showClose: true }}
-        enableDynamicSizing
-        footer={{ variant: "none" }}
-        customContent={
-          <View style={styles.sheetContent}>
-            <TouchableOpacity
-              style={styles.sheetButton}
-              onPress={() => {
-                setSheetVisible(false);
-                setIsEditing(true);
-              }}
-            >
-              <Icon name="pencil" size={22} color="#444" />
-              <Text style={styles.sheetText}>Edit Report</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.sheetButton}
-              onPress={() => {
-                setSheetVisible(false);
-                setDialogVisible(true);
-              }}
-            >
-              <Icon name="file-pdf-box" size={22} color="#444" />
-              <Text style={styles.sheetText}>Export as PDF</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.sheetButton}
-              onPress={() => {
-                setSheetVisible(false);
-                handleSaveReport();
-              }}
-            >
-              <Icon name="content-save" size={22} color="#444" />
-              <Text style={styles.sheetText}>Save Report</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.sheetButton}
-              onPress={() => {
-                setSheetVisible(false);
-                handleSaveAsTemplate();
-              }}
-            >
-              <Icon name="file-upload-outline" size={22} color="#444" />
-              <Text style={styles.sheetText}>Save as Template</Text>
-            </TouchableOpacity>
-          </View>
-        }
-      />
+{/* Bottom sheet (always mounted, visibility controlled by prop) */}
+            {/* Ellipsis-triggered Quick Actions Bottom Sheet */}
+            {sheetVisible && (
+                <CustomBottomSheet
+                    variant="standard"
+                    header={{
+                        showClose: false,
+                        solidBackground: true,
+                    }}
+                    search={{
+                        enabled: false, // no search needed for this sheet
+                    }}
+                    footer={{
+                        variant: "minimal",
+                        placement: "right",
+                    }}
+                    onChange={(index) => {
+                        if (index === -1) setSheetVisible(false);
+                    }}
+                    onClose={() => setSheetVisible(false)}
+                    data={[
+                        {
+                            label: "Export as PDF",
+                            onPress: () => {
+                                setSheetVisible(false);
+                                setDialogVisible(true);
+                            },
+                        },
+                        {
+                            label: "Save Report",
+                            onPress: () => {
+                                setSheetVisible(false);
+                                handleSaveReport();
+                            },
+                        },
+                        {
+                            label: "Save as Template",
+                            onPress: () => {
+                                setSheetVisible(false);
+                                handleSaveAsTemplate();
+                            },
+                        },
+                    ]}
+                    keyExtractor={(item) => item.label}
+                    itemTitleExtractor={(item) => item.label}
+                    onItemPress={(item) => {
+                        setSheetVisible(false);
+                        if (typeof item.onPress === "function") item.onPress();
+                    }}
+                />
+            )}
     </View>
   );
 };
