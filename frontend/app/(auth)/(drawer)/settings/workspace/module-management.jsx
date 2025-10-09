@@ -14,7 +14,7 @@ import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { List, Text, useTheme } from "react-native-paper";
 import { hasPermission } from "../../../../../utils/permissions";
 import CustomBottomSheet from "../../../../../components/BottomSheet/bottom-sheet";
-import { FlashList } from "@shopify/flash-list";
+//import { FlashList } from "@shopify/flash-list";
 import PlaceholderBoard from "../../../../../components/skeleton/PlaceholderBoard";
 
 const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
