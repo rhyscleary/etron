@@ -15,6 +15,7 @@ import { List, Text, useTheme } from "react-native-paper";
 import { hasPermission } from "../../../../../utils/permissions";
 import CustomBottomSheet from "../../../../../components/BottomSheet/bottom-sheet";
 import { FlashList } from "@shopify/flash-list";
+import PlaceholderBoard from "../../../../../components/skeleton/PlaceholderBoard";
 
 const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
     const [loading, setLoading] = useState(false);
@@ -195,10 +196,13 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
 
                 <View style={styles.listContainer}>
                     {loading ? (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" />
-                            <Text>Loading Modules...</Text>
-                        </View>
+                        <FlashList
+                            data={Array.from({ length: 5 })}
+                            renderItem={() => <PlaceholderBoard size="small" />}
+                            keyExtractor={(item, index) => `placeholder-${index}`}
+                            estimatedItemSize={100}
+                            ItemSeparatorComponent={() => <View style={{height: 20}} />}
+                        />
                     ) : (
                         <FlashList
                             data={filteredModules}
@@ -285,11 +289,6 @@ const styles = StyleSheet.create({
     listContainer: {
         flex: 1,
         position: "relative",
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center"
     },
     emptyContainer: {
         flex: 1,
