@@ -1,16 +1,42 @@
-import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
+import { useState } from "react";
+import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
 import { useTheme, Appbar, Icon } from "react-native-paper";
+import { View } from "react-native";
 import { Drawer } from "expo-router/drawer"
-import { useNavigationState } from "@react-navigation/native";
+import BasicButton from "../../../components/common/buttons/BasicButton";
 
 //const Drawer = createDrawerNavigator();
 
 const CustomDrawer = (props) => {
-    const { navigation } = props;
+    const { navigation, drawerState, setDrawerState } = props;
 
     return (
         <DrawerContentScrollView {...props}>
-            <Appbar.Action icon="arrow-left" onPress={() => navigation.closeDrawer()} />
+            <Appbar.Action
+                icon={drawerState == "default"
+                    ? "menu-open"
+                    : "arrow-left-thin"
+                }
+                onPress={() => {
+                    drawerState == "default"
+                    ? navigation.closeDrawer()
+                    : setDrawerState("default")
+                }}
+            />
+            {drawerState == "default" ? (
+                <View>
+                    <BasicButton
+                        label="Boards"
+                        onPress={() => setDrawerState("boards")}
+                    />
+                    <BasicButton
+                        label="Day Book"
+                        onPress={() => setDrawerState("day-book")}
+                    />
+                </View>
+            ) : (
+                <BasicButton label="Back" onPress={() => setDrawerState("default")} />
+            )}            
             <DrawerItemList {...props} />
         </DrawerContentScrollView>
     );
@@ -30,22 +56,28 @@ function DrawerButton({ route, name, icon }) {
     );
 }
 
-const screens = [
-    { name: "dashboard", label: "Dashboard", icon: "view-dashboard" },
-    { name: "modules/day-book/reports", label: "Reports", icon: "file-chart" },
-    { name: "modules/day-book/data-management", label: "Data Management", icon: "database" },
-    { name: "modules/day-book/metrics", label: "Metrics", icon: "chart-line" },
-    { name: "modules/day-book/notifications", label: "Notifications", icon: "bell" },
+const generalOptions = [
+    { name: "settings-account", label: "Account", icon: "account" },
     { name: "collaboration", label: "Collaboration", icon: "account-group" },
     { name: "settings", label: "Settings", icon: "cog" }
 ]
 
+const dayBookOptions = [
+    { name: "modules/day-book/reports", label: "Reports", icon: "file-chart" },
+    { name: "modules/day-book/data-management", label: "Data Management", icon: "database" },
+    { name: "modules/day-book/metrics", label: "Metrics", icon: "chart-line" },
+    { name: "modules/day-book/notifications", label: "Notifications", icon: "bell" },
+]
+
 export default function DrawerLayout() {
     const theme = useTheme();
+    const [drawerState, setDrawerState] = useState("default");
 
     return (
         <Drawer
-            drawerContent={CustomDrawer}
+            drawerContent={(props) => (
+                <CustomDrawer {...props} drawerState={drawerState} setDrawerState={setDrawerState} />
+            )}
             screenOptions={{
                 headerShown: false,
                 drawerType: 'front',
@@ -58,7 +90,32 @@ export default function DrawerLayout() {
                 }
             }}
         >
-            {screens.map(({ name, label, icon }) => (
+            <Drawer.Screen
+                name={"dashboard"}
+                options={{
+                    drawerLabel: "Dashboard",
+                    drawerIcon: ({ color, size }) => (
+                        <Icon source={"view-dashboard"} color={color} size={size} />
+                    ),
+                    drawerItemStyle: { display: drawerState == "boards" ? "flex" : "none"}
+                }}
+            />
+
+            {dayBookOptions.map(({ name, label, icon }) => (
+                <Drawer.Screen
+                    key={name}
+                    name={name}
+                    options={{
+                        drawerLabel: label,
+                        drawerIcon: ({ color, size }) => (
+                            <Icon source={icon} color={color} size={size} />
+                        ),
+                        drawerItemStyle: { display: drawerState == "day-book" ? "flex" : "none"}
+                    }}
+                />
+            ))}
+
+            {generalOptions.map(({ name, label, icon }) => (
                 <Drawer.Screen
                     key={name}
                     name={name}
