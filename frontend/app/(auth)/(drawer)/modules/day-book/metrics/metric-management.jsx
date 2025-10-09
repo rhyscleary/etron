@@ -1,4 +1,4 @@
-// Author(s): Matthew Parkinson, Noah Bradley
+// metric management page for day-book module
 
 import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
 import Divider from "../../../../../../components/layout/Divider.jsx";
@@ -94,7 +94,10 @@ const metricCardList = (loadingMetrics, metrics) => {
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
             {!loadingMetrics &&
                 metrics.map((metric) => {
-                    const previewImage = GraphTypes[metric.config.type]?.previewImage;
+                    // FIXED: Defensive checks for metric.config
+                    const previewImage = metric?.config?.type 
+                        ? GraphTypes[metric.config.type]?.previewImage 
+                        : null;
 
                     return (
                         <TouchableOpacity

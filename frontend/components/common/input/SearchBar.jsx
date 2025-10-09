@@ -6,7 +6,7 @@ const SearchBar = ({
     placeholder = "Search",
     onSearch = () => {},
     onFilterChange = () => {},
-    filters
+    filters = [] // FIXED: Default to empty array
 }) => {
     const[searchQuery, setSearchQuery] = useState('');
     const [selectedFilter, setSelectedFilter] = useState(filters[0] || 'All');

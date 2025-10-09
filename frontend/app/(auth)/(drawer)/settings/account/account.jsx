@@ -1,4 +1,4 @@
-// Author(s): Holly Wyatt
+// account settings page
 
 import { View, ScrollView, ActivityIndicator, StyleSheet } from 'react-native'
 import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { apiDelete } from '../../../../../utils/api/apiClient';
 import BasicDialog from '../../../../../components/overlays/BasicDialog';
 import { useTheme } from "react-native-paper";
-import { useVerification } from '../../../../../contexts/VerificationContext';
+import { useVerificationStore } from '../../../../../stores';
 import { verifyPassword } from '../../../../../utils/verifyPassword';
 
 import {
@@ -29,7 +29,9 @@ const Account = () => {
     const [passwordError, setPasswordError] = useState(false);
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
-    const { verifyingPassword, setVerifyingPassword } = useVerification();
+    
+    // Zustand store
+    const setVerifyingPassword = useVerificationStore((state) => state.setVerifying);
 
     useEffect(() => {
         setLoading(true);

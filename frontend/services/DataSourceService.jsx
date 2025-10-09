@@ -38,9 +38,13 @@ class DataSourceService {
       try {
   const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.getDataSources);
   const workspaceId = await getSavedWorkspaceId();
+        
+        // FIXED: Gracefully handle missing workspace
         if (!workspaceId) {
-          throw new Error('No workspace selected. Please select a workspace.');
+          console.warn('[DataSourceService] No workspace selected - returning empty array');
+          return [];
         }
+        
   // Only send workspaceId per request
   const params = { workspaceId };
         let response;
@@ -66,7 +70,7 @@ class DataSourceService {
             console.log('[DataSourceService] getConnectedDataSources data preview', preview);
           } catch {}
         } catch (error) {
-          // Error details for the outgoing request
+          // Enhanced error logging
           console.error('[DataSourceService] getConnectedDataSources GET failed', {
             endpointUrl,
             params,
@@ -375,12 +379,8 @@ class DataSourceService {
       });
 
   // prepare payload matching backend contract
-      // query param: workspaceId
-      // body: { name, type, config }
-      // NOTE: endpoints file exposes addRemote / addLocal (no generic 'add')
       const dataSourceEndpoints = endpoints?.modules?.day_book?.data_sources || {};
       let endpointUrl = null;
-      // choose local vs remote creation endpoint (defaults to remote)
       if (config?.isLocal || config?.mode === 'local') {
         endpointUrl = this.resolveEndpoint(dataSourceEndpoints.addLocal);
       } else {
@@ -394,15 +394,13 @@ class DataSourceService {
         if (!obj || typeof obj !== 'object') return obj;
         const out = Array.isArray(obj) ? [] : {};
         Object.entries(obj).forEach(([k, v]) => {
-          if (v === undefined) return; // drop undefined
+          if (v === undefined) return;
           if (v && typeof v === 'object') out[k] = sanitize(v);
           else out[k] = v;
         });
         return out;
       };
 
-      // Normalize adapter type to API contract (e.g., 'custom-api' -> 'api')
-      // TODO: fix this, so it is just api
       const normalizeType = (t) => {
         if (!t) return t;
         const map = { 'custom-api': 'api', 'csv-file': 'csv', 'custom-ftp': 'ftp' };

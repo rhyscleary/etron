@@ -2,7 +2,7 @@ import { Slot, router } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { fetchUserAttributes, signOut, updateUserAttributes } from 'aws-amplify/auth';
-import { useVerification } from '../../contexts/VerificationContext'; // temp until backend
+import { useVerificationStore } from '../../stores';
 import { getWorkspaceId, removeWorkspaceInfo } from '../../storage/workspaceStorage';
 import { saveUserInfo } from '../../storage/userStorage';
 import { saveRole, getRole, getPermissions } from '../../storage/permissionsStorage';
@@ -12,7 +12,7 @@ import { unloadProfilePhoto } from '../../utils/profilePhoto';
 
 export default function AuthLayout() {
     const { authStatus } = useAuthenticator();
-    const { verifyingPassword } = useVerification();// temp until backend
+    const verifyingPassword = useVerificationStore((state) => state.isVerifying);
     // const [checked, setChecked] = useState(false);
 
     const setHasWorkspaceAttribute = async (value) => {
@@ -160,7 +160,7 @@ export default function AuthLayout() {
         }
         loadLayout();
 
-     }, [authStatus, verifyingPassword]); // temp until backend
+     }, [authStatus, verifyingPassword]);
 
     return (         
         <>

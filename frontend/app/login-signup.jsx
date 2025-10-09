@@ -1,4 +1,4 @@
-// Author(s): Matthew Parkinson, Holly Wyatt, Rhys Cleary
+// login and signup page
 
 import { useRouter, Link, useLocalSearchParams } from "expo-router";
 import { Text } from 'react-native-paper';
@@ -14,7 +14,6 @@ import { commonStyles } from "../assets/styles/stylesheets/common";
 import ResponsiveScreen from "../components/layout/ResponsiveScreen";
 import accountService from '../services/AccountService';
 import { Amplify } from 'aws-amplify';
-import { useApp } from "../contexts/AppContext";
 import { 
     signIn, 
     signUp, 
@@ -53,8 +52,6 @@ function LoginSignup() {
     const router = useRouter();
     const theme = useTheme();
 
-    const { user, actions } = useApp();
-
     // Setup AccountService callbacks
     useEffect(() => {
         accountService.setCallbacks({
@@ -72,11 +69,11 @@ function LoginSignup() {
                 }
             },
             onAuthSuccess: async (provider) => {
-                // Use the unified login action from context
-                await actions.login(provider);
+                // No longer using context - AccountService handles everything
+                console.log(`[LoginSignup] Auth success with ${provider}`);
             }
         });
-    }, [router, actions.login]);
+    }, [router]);
 
     // Handle sign out for linking
     useEffect(() => {

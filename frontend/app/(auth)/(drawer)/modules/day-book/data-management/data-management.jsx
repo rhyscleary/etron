@@ -1,6 +1,5 @@
-// Author(s): Holly Wyatt, Noah Bradley
+// data management page for day-book module
 
-// DataManagement.js
 import { useState, useEffect, useRef, useCallback } from "react";
 import { RefreshControl, Button } from "react-native";
 import { Pressable, ScrollView, View, StyleSheet, Alert, TouchableOpacity } from "react-native";
@@ -17,7 +16,7 @@ import {
 	getAdapterInfo,
 	getCategoryDisplayName,
 } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
-import { useApp } from "../../../../../../contexts/AppContext";
+import { useAppStore } from "../../../../../../stores";
 
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
 
@@ -26,31 +25,19 @@ import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet } from "../../../../../../utils/api/apiClient";
 
 const DataManagement = () => {
-  // Use the app context
-  const { dataSources, system, actions } = useApp();
+  // Use Zustand store with selective subscriptions
+  const dataSourcesList = useAppStore((state) => state.dataSources);
+  const loading = useAppStore((state) => state.isLoading);
+  const hasError = useAppStore((state) => state.hasError);
+  const error = useAppStore((state) => state.error);
+  const isDemoMode = useAppStore((state) => state.isDemoMode);
+  const disconnectDataSource = useAppStore((state) => state.disconnectDataSource);
+  const refreshDataSources = useAppStore((state) => state.refreshDataSources);
+  const connectDataSource = useAppStore((state) => state.connectDataSource);
   
-  const {
-    list: dataSourcesList,
-    count,
-    connected,
-    errors,
-    isDemoMode,
-    updateTrigger
-  } = dataSources;
-
-  const {
-    isLoading: loading,
-    hasError,
-    error
-  } = system;
-
-  const {
-    disconnectDataSource,
-    refreshDataSources: refresh,
-    connectDataSource,
-    connectProvider,
-    forceUpdate
-  } = actions;
+  // Derived values
+  const count = dataSourcesList.length;
+  const connected = dataSourcesList.filter((ds) => ds.status === 'connected').length;
 
   // Track previous data sources count for change detection
   const prevCountRef = useRef(count);
@@ -91,7 +78,7 @@ const DataManagement = () => {
     useCallback(() => {
       if (!hasInitiallyLoadedRef.current) {
   console.log('DataManagement screen focused for first time, refreshing data...', { existingCount: dataSourcesList.length });
-        refresh();
+        refreshDataSources();
         hasInitiallyLoadedRef.current = true;
   console.log('DataManagement initial focus load flag set');
       } else {
@@ -242,8 +229,8 @@ const DataManagement = () => {
             )
           }
         />
-        {/*Temporary redirect to profile screen*/}
-        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+        {/*Temporary redirect to dashboard screen*/}
+        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <Text style={styles.loadingText}>Loading data sources...</Text>
@@ -265,8 +252,8 @@ const DataManagement = () => {
             )
           }
         />
-        {/*Temporary redirect to profile screen*/}
-        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
+        {/*Temporary redirect to dashboard screen*/}
+        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
         <View style={styles.errorContainer}>
           <Text variant="headlineSmall" style={styles.errorTitle}>
             Unable to Load Data Sources
@@ -297,8 +284,8 @@ const DataManagement = () => {
 				}
 				/>
 
-      {/*Temporary redirect to profile screen*/}
-      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />      {/* Demo Mode Indicator */}
+      {/*Temporary redirect to dashboard screen*/}
+      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />      {/* Demo Mode Indicator */}
       {isDemoMode && (
         <View style={styles.demoModeIndicator}>
           <Text style={styles.demoModeText}>
