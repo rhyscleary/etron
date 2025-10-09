@@ -138,7 +138,10 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
                         estimatedItemSize={100}
                         drawDistance={1}
                         ItemSeparatorComponent={() => <View style={{height: 20}} />}
-                        onRefresh={() => fetchModules(workspaceId)}
+                        onRefresh={async () => {
+                            setLoading(true);
+                            await fetchModules(workspaceId);
+                        }}
                         ListEmptyComponent={
                             !loading ? (
                                 <View style={styles.emptyContainer}>

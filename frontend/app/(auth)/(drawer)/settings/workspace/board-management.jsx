@@ -13,9 +13,13 @@ import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { List, Text, useTheme } from "react-native-paper";
 import { hasPermission } from "../../../../../utils/permissions";
+import { getCurrentUser } from "aws-amplify/auth";
+
+const AMOUNT_PLACEHOLDERS = 5;
 
 const BoardManagement = () => {
-    const [loading, setLoading] = useState(false);
+    const theme = useTheme();
+    const [loading, setLoading] = useState(true);
     const [boards, setBoards] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -23,8 +27,8 @@ const BoardManagement = () => {
     const [boardName, setBoardName] = useState("");
     const [inputError, setInputError] = useState(false);
     const [inputErrorMessage, setInputErrorMessage] = useState("");
-
-    const theme = useTheme();
+    const [creatorNameCache, setCreatorNameCache] = useState({});
+    const [currentUserId, setCurrentUserId] = useState(null);
 
     useEffect(() => {
         const init = async () => {
@@ -38,7 +42,14 @@ const BoardManagement = () => {
             }
             
             setWorkspaceId(id);
-            console.log("hello")
+
+            // get the current users id
+            try {
+                const { userId } = await getCurrentUser();
+                setCurrentUserId(userId);
+            } catch (error) {
+                console.warn("Failed to get current users id:", error);
+            }
 
             if (id) {
                 await fetchBoards(id);
@@ -47,7 +58,7 @@ const BoardManagement = () => {
         init();
     }, []);
 
-    const fetchBoards = async (id) => {
+    const fetchBoards = useCallback(async (id) => {
         if (!id) return;
 
         try {
@@ -57,6 +68,11 @@ const BoardManagement = () => {
                 endpoints.workspace.boards.getBoards(id)
             );
 
+            const sanitized = Array.isArray(response) ? response.filter(Boolean) : [];
+            setBoards(sanitized);
+
+            
+
             console.log(response);
 
             setBoards(Array.isArray(response) ? response.filter(Boolean) : []);
@@ -65,7 +81,7 @@ const BoardManagement = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentUserId, creatorNameCache]);
 
     const filteredBoards = useMemo(() => {
         return (boards || []).filter((board) => {

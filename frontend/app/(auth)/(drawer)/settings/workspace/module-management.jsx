@@ -18,7 +18,7 @@ import CustomBottomSheet from "../../../../../components/BottomSheet/bottom-shee
 import PlaceholderBoard from "../../../../../components/skeleton/PlaceholderBoard";
 
 const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [modules, setModules] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -53,6 +53,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
         useCallback(() => {
             const refetchModules = async () => {
                 if (workspaceId) {
+                    setLoading(true);
                     await fetchModules(workspaceId);
                 }
             };
@@ -65,8 +66,6 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
         if (!id) return;
 
         try {
-            setLoading(true);
-
             const response = await apiGet(
                 endpoints.workspace.modules.getInstalledModules(id)
             );
@@ -195,31 +194,25 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                 />
 
                 <View style={styles.listContainer}>
-                    {loading ? (
-                        <FlashList
-                            data={Array.from({ length: 5 })}
-                            renderItem={() => <PlaceholderBoard size="small" />}
-                            keyExtractor={(item, index) => `placeholder-${index}`}
-                            estimatedItemSize={100}
-                            ItemSeparatorComponent={() => <View style={{height: 20}} />}
-                        />
-                    ) : (
-                        <FlashList
-                            data={filteredModules}
-                            renderItem={renderModules}
-                            keyExtractor={item => item.key}
-                            estimatedItemSize={100}
-                            drawDistance={1}
-                            ItemSeparatorComponent={() => <View style={{height: 20}} />}
-                            refreshing={loading}
-                            onRefresh={() => fetchModules(workspaceId)}
-                            ListEmptyComponent={() => (
+                    <FlashList
+                        data={loading ? Array.from({ length: 5 }) : filteredModules}
+                        renderItem={loading ? () => <PlaceholderBoard size="small" /> : renderModules}
+                        keyExtractor={(item, index) => loading ? `placeholder-${index}` : item.key}
+                        estimatedItemSize={100}
+                        drawDistance={1}
+                        ItemSeparatorComponent={() => <View style={{height: 20}} />}
+                        onRefresh={async () => {
+                            setLoading(true);
+                            await fetchModules(workspaceId);
+                        }}
+                        ListEmptyComponent={
+                            !loading ? (
                                 <View style={styles.emptyContainer}>
                                     <Text style={styles.emptyText}>No Modules Installed</Text>
                                 </View>
-                            )}
-                        />
-                    )}
+                            ) : null
+                        }
+                    />
                 </View>
             </View>
 
