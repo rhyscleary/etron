@@ -9,6 +9,7 @@ import { useEffect, useState, useCallback } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
 
 const Reports = () => {
   const [workspaceId, setWorkspaceId] = useState(null);
@@ -69,9 +70,10 @@ const Reports = () => {
   };
 
   return (
-    <View style={commonStyles.screen}>
-      <Header title="Reports" showBack />
-
+    <ResponsiveScreen
+      header={<Header title="Reports" showMenu />}
+      scroll={true} padded={false} center={false}
+    >
       {/* Temporary test button */}
       <View style={{ margin: 12 }}>
         <Button title="Create Test Report" onPress={createTestReport} />
@@ -122,7 +124,7 @@ const Reports = () => {
           )
         }
       />
-    </View>
+    </ResponsiveScreen>
   );
 };
 

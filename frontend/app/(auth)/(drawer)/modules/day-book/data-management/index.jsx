@@ -24,6 +24,7 @@ import DataConnectionButton from "../../../../../../components/common/buttons/Da
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet } from "../../../../../../utils/api/apiClient";
+import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
 
 const DataManagement = () => {
   // Use the app context
@@ -90,10 +91,10 @@ const DataManagement = () => {
   useFocusEffect(
     useCallback(() => {
       if (!hasInitiallyLoadedRef.current) {
-  console.log('DataManagement screen focused for first time, refreshing data...', { existingCount: dataSourcesList.length });
+        console.log('DataManagement screen focused for first time, refreshing data...', { existingCount: dataSourcesList.length });
         refresh();
         hasInitiallyLoadedRef.current = true;
-  console.log('DataManagement initial focus load flag set');
+        console.log('DataManagement initial focus load flag set');
       } else {
         console.log('DataManagement screen focused, skipping refresh (already loaded)');
         console.log('[DataManagement] Current data sources on focus:', dataSourcesList.length, 'total');
@@ -104,70 +105,9 @@ const DataManagement = () => {
       }
     }, [dataSourcesList]) // Include dataSourcesList to log current state
   );
-
-  // Enhanced refresh function
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    setLastManualRefresh(Date.now());
-    try {
-      console.log('[DataManagement] Manual refresh triggered');
-      await refresh();
-      // Log all data sources after refresh
-      console.log('[DataManagement] Data sources after refresh:', dataSourcesList.length, 'total');
-      console.log('[DataManagement] All data sources in data-management page:');
-      dataSourcesList.forEach((source, index) => {
-        console.log(`  [${index + 1}] ID: ${source.id}, Type: ${source.type}, Name: ${source.name}, Status: ${source.status}`);
-      });
-      // Remove forceUpdate - refresh should handle state updates
-    } catch (error) {
-      console.error('Failed to refresh:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [refresh]);
-
-  const handleDisconnectSource = useCallback(async (sourceId, sourceName) => {
-    Alert.alert(
-      "Disconnect Data Source",
-      `Are you sure you want to disconnect "${sourceName}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Disconnect",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await disconnectDataSource(sourceId);
-              // The context will handle the refresh automatically
-              Alert.alert("Success", "Data source disconnected successfully");
-            } catch (error) {
-              Alert.alert("Error", "Failed to disconnect data source");
-            }
-          },
-        },
-      ]
-    );
-  }, [disconnectDataSource]);
-
-  const handleSyncSource = useCallback(async (sourceId) => {
-    try {
-      await refresh();
-      Alert.alert("Success", "Data source synced successfully");
-    } catch (error) {
-      Alert.alert("Sync Failed", error.message);
-    }
-  }, [refresh]);
-
-  const handleTestConnection = useCallback(async (sourceId) => {
-    try {
-      // Test connection logic would need to be implemented
-      Alert.alert("Success", "Connection test successful");
-    } catch (error) {
-      Alert.alert("Connection Test Failed", error.message);
-    }
-  }, []);
-
+  // Combine UI from both branches into a single coherent render
   const formatLastSync = useCallback((dateString) => {
+    if (!dateString) return "Unknown";
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
@@ -185,27 +125,16 @@ const DataManagement = () => {
     const adapterInfo = getAdapterInfo(source.type);
     if (!adapterInfo) return null;
 
-    const isProcessing = source.status === "syncing" || source.status === "testing";
-
     return (
       <View key={source.id} style={{ marginBottom: 12 }}>
         <DataConnectionButton
           label={source.name}
           height={60}
-           onNavigate={() => {
-            {
-          router.navigate(
-            `/modules/day-book/data-management/select-data-source/${source.id}`
-          );}
-        }}
+          onNavigate={() => router.navigate(`/modules/day-book/data-management/select-data-source/${source.id}`)}
           onSync={() => handleSyncSource(source.id)}
           onDelete={() => handleDisconnectSource(source.id, source.name)}
           onTest={() => handleTestConnection(source.id)}
-          onSettings={() =>
-            router.navigate(
-              `/modules/day-book/data-management/update-data-source/${source.id}`
-            )
-          }
+          onSettings={() => router.navigate(`/modules/day-book/data-management/update-data-source/${source.id}`)}
         />
       </View>
     );
@@ -226,95 +155,39 @@ const DataManagement = () => {
     return grouped;
   }, [dataSourcesList]);
 
-  // REMOVED: Auto-refresh timer - only refresh when actually needed
-  // Instead, add a manual refresh button or pull-to-refresh only
+  const groupedSources = groupSourcesByCategory();
 
+  // Build the body based on loading/error/normal states
+  let body = null;
   if (loading && !isRefreshing) {
-    return (
-      <View style={commonStyles.screen}>
-        <Header
-          title="Data Management"
-          showMenu
-          showPlus
-          onRightIconPress={() =>
-            router.navigate(
-              "/modules/day-book/data-management/create-data-connection"
-            )
-          }
-        />
-        {/*Temporary redirect to profile screen*/}
-        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>Loading data sources...</Text>
-        </View>
+    body = (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.loadingText}>Loading data sources...</Text>
       </View>
     );
-  }
-
-  if (hasError) {
-    return (
-      <View style={commonStyles.screen}>
-        <Header
-          title="Data Management"
-          showMenu
-          showPlus
-          onRightIconPress={() =>
-            router.navigate(
-              "/modules/day-book/data-management/create-data-connection"
-            )
-          }
-        />
-        {/*Temporary redirect to profile screen*/}
-        <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
-        <View style={styles.errorContainer}>
-          <Text variant="headlineSmall" style={styles.errorTitle}>
-            Unable to Load Data Sources
-          </Text>
-          <Text variant="bodyMedium" style={styles.errorMessage}>
-            {error}
-          </Text>
-          <Pressable style={styles.retryButton} onPress={handleRefresh}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
-          </Pressable>
-        </View>
+  } else if (hasError) {
+    body = (
+      <View style={styles.errorContainer}>
+        <Text variant="headlineSmall" style={styles.errorTitle}>
+          Unable to Load Data Sources
+        </Text>
+        <Text variant="bodyMedium" style={styles.errorMessage}>
+          {error}
+        </Text>
+        <Pressable style={styles.retryButton} onPress={handleRefresh}>
+          <Text style={styles.retryButtonText}>Try Again</Text>
+        </Pressable>
       </View>
     );
-  }
-
-	const groupedSources = groupSourcesByCategory();
-
-	return (
-		<View style={commonStyles.screen}>
-			<Header
-				title="Data Management"
-				showMenu
-				showPlus
-				onRightIconPress={() =>
-					router.navigate(
-						"/modules/day-book/data-management/create-data-connection"
-					)
-				}
-			/>
-
-      {/*Temporary redirect to profile screen*/}
-      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/profile")} />
-
-      {/* Demo Mode Indicator */}
-      {isDemoMode && (
-        <View style={styles.demoModeIndicator}>
-          <Text style={styles.demoModeText}>
-            Demo Mode - Sign in to sync your data sources
-          </Text>
-        </View>
-      )}
-
+  } else {
+    body = (
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl 
-            refreshing={isRefreshing || loading} 
+          <RefreshControl
+            refreshing={isRefreshing || loading}
             onRefresh={handleRefresh}
             title="Pull to refresh"
           />
@@ -359,7 +232,6 @@ const DataManagement = () => {
             <Text variant="bodyMedium" style={styles.emptyStateMessage}>
               Connect your first data source to start tracking your data.
             </Text>
-            {/* Add Data Source button removed per request */}
           </View>
         )}
 
@@ -375,7 +247,35 @@ const DataManagement = () => {
           </View>
         )}
       </ScrollView>
-    </View>
+    );
+  }
+
+  return (
+    <ResponsiveScreen
+      header={<Header
+        title="Data Management"
+        showMenu
+        showPlus
+        onRightIconPress={() => router.navigate("/modules/day-book/data-management/create-data-connection")}
+      />}
+      center={false}
+      padded={false}
+      scroll={true}
+    >
+      {/*Temporary redirect to dashboard screen*/}
+      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
+
+      {/* Demo Mode Indicator */}
+      {isDemoMode && (
+        <View style={styles.demoModeIndicator}>
+          <Text style={styles.demoModeText}>
+            Demo Mode - Sign in to sync your data sources
+          </Text>
+        </View>
+      )}
+
+      {body}
+    </ResponsiveScreen>
   );
 };
 

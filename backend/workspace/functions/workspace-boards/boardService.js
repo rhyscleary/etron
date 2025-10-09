@@ -40,6 +40,7 @@ async function createBoardInWorkspace(authUserId, workspaceId, payload) {
         name,
         config,
         isDashboard: isDashboard ? isDashboard : false,
+        createdBy: authUserId,
         editedBy: [authUserId],
         createdAt: date,
         updatedAt: date

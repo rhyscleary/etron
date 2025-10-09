@@ -1,21 +1,23 @@
 // Author(s): Rhys Cleary
 
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
-import Header from "../../../../components/layout/Header";
+import Header from "../../../../../components/layout/Header";
 import { useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
-import BasicDialog from "../../../../components/overlays/BasicDialog";
-import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
-import SearchBar from "../../../../components/common/input/SearchBar";
-import ListCard from "../../../../components/cards/listCard";
-import { apiGet, apiPost } from "../../../../utils/api/apiClient";
-import endpoints from "../../../../utils/api/endpoints";
-import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import BasicDialog from "../../../../../components/overlays/BasicDialog";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import SearchBar from "../../../../../components/common/input/SearchBar";
+import ListCard from "../../../../../components/cards/listCard";
+import { apiGet, apiPost } from "../../../../../utils/api/apiClient";
+import endpoints from "../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { Text } from "react-native-paper";
-import { hasPermission } from "../../../../utils/permissions";
+import { hasPermission } from "../../../../../utils/permissions";
+import { FlashList } from "@shopify/flash-list";
+import PlaceholderBoard from "../../../../../components/skeleton/PlaceholderBoard";
 
 const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [modules, setModules] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -47,14 +49,12 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
         if (!id) return;
 
         try {
-            setLoading(true);
-
             const response = await apiGet(
                 endpoints.workspace.modules.getUninstalledModules(id)
             );
             console.log(response);
 
-            setModules(response || []);
+            setModules((response || []).sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error("Error fetching modules:", error);
         } finally {
@@ -122,34 +122,32 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
 		> 
             
             <View style={styles.contentContainer}>
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" />
-                        <Text>Loading Modules...</Text>
-                    </View>
-                ) : (
-                    <FlatList
-                        data={filteredModules}
-                        renderItem={renderModules}
-                        keyExtractor={item => item.key}
+                {/* Search bar and filter */}
+                <SearchBar 
+                    placeholder="Search modules"
+                    onSearch={setSearchQuery}
+                    onFilterChange={setSelectedFilter}
+                    filters={availableFilters}
+                />
+
+                <View style={styles.listContainer}>
+                    <FlashList
+                        data={loading ? Array.from({ length: 5 }) : filteredModules}
+                        renderItem={loading ? () => <PlaceholderBoard size="small" /> : renderModules}
+                        keyExtractor={(item, index) => loading ? `placeholder-${index}` : item.key}
+                        estimatedItemSize={100}
+                        drawDistance={1}
                         ItemSeparatorComponent={() => <View style={{height: 20}} />}
-                        refreshing={loading}
                         onRefresh={() => fetchModules(workspaceId)}
-                        ListEmptyComponent={() => (
-                            <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No Modules Available</Text>
-                            </View>
-                        )}
-                        ListHeaderComponent={
-                            <SearchBar 
-                                placeholder="Search modules"
-                                onSearch={setSearchQuery}
-                                onFilterChange={setSelectedFilter}
-                                filters={availableFilters}
-                            />
+                        ListEmptyComponent={
+                            !loading ? (
+                                <View style={styles.emptyContainer}>
+                                    <Text style={styles.emptyText}>No Modules Available</Text>
+                                </View>
+                            ) : null
                         }
                     />
-                )}
+                </View>
             </View>
             
             <BasicDialog
@@ -171,10 +169,9 @@ const styles = StyleSheet.create({
     contentContainer: {
         flex: 1,
     },
-    loadingContainer: {
+    listContainer: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center"
+        position: "relative",
     },
     emptyContainer: {
         flex: 1,

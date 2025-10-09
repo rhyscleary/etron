@@ -1,11 +1,7 @@
-import React from "react";
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
-import { Slot } from "expo-router";
-import { Divider, Text, useTheme, Appbar } from "react-native-paper";
-import { View } from "react-native";
+import { useTheme, Appbar, Icon } from "react-native-paper";
 import { Drawer } from "expo-router/drawer"
-import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useNavigation, DrawerActions } from "@react-navigation/native";
+import { useNavigationState } from "@react-navigation/native";
 
 //const Drawer = createDrawerNavigator();
 
@@ -14,11 +10,35 @@ const CustomDrawer = (props) => {
 
     return (
         <DrawerContentScrollView {...props}>
-            <Appbar.Action icon="close" onPress={() => navigation.closeDrawer()} />
+            <Appbar.Action icon="arrow-left" onPress={() => navigation.closeDrawer()} />
             <DrawerItemList {...props} />
         </DrawerContentScrollView>
     );
 }
+
+function DrawerButton({ route, name, icon }) {
+    return (
+        <Drawer.Screen
+            name={route}
+            options={{
+                drawerLabel: name,
+                drawerIcon: ({ color, size }) => (
+                    <Icon source={icon} color={color} size={size} />
+                )
+            }}
+        />
+    );
+}
+
+const screens = [
+    { name: "dashboard", label: "Dashboard", icon: "view-dashboard" },
+    { name: "modules/day-book/reports", label: "Reports", icon: "file-chart" },
+    { name: "modules/day-book/data-management", label: "Data Management", icon: "database" },
+    { name: "modules/day-book/metrics", label: "Metrics", icon: "chart-line" },
+    { name: "modules/day-book/notifications", label: "Notifications", icon: "bell" },
+    { name: "collaboration", label: "Collaboration", icon: "account-group" },
+    { name: "settings", label: "Settings", icon: "cog" }
+]
 
 export default function DrawerLayout() {
     const theme = useTheme();
@@ -29,7 +49,6 @@ export default function DrawerLayout() {
             screenOptions={{
                 headerShown: false,
                 drawerType: 'front',
-                drawerHideStatusBarOnOpen: true,
                 drawerStyle: {
                     backgroundColor: '#1D4364',
                 },
@@ -39,33 +58,18 @@ export default function DrawerLayout() {
                 }
             }}
         >
-
-            <Drawer.Screen name="dashboard" />
-
-            <Drawer.Screen 
-                name="collaboration/collaboration"
-                options={{
-                    drawerLabel: "Collaboration",
-                    title: "test"
-                }} 
-            />
-
-            <Drawer.Screen 
-                name="account-settings"
-                options={{
-                    drawerLabel: "Account",
-                
-                }} 
-            />
-
-            <Drawer.Screen 
-                name="settings/settings"
-                options={{
-                    drawerLabel: "Settings",
-
-                }} 
-            />
-
+            {screens.map(({ name, label, icon }) => (
+                <Drawer.Screen
+                    key={name}
+                    name={name}
+                    options={{
+                        drawerLabel: label,
+                        drawerIcon: ({ color, size }) => (
+                            <Icon source={icon} color={color} size={size} />
+                        )
+                    }}
+                />
+            ))}
         </Drawer>
     );
 }

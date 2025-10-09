@@ -59,16 +59,15 @@ const endpoints = {
       getUsers: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users`,
     },
 
-    profiles: {
-      create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/profiles`,
-      update: (workspaceId, profileId) =>
-        `${WORKSPACE_BASE_URL}/${workspaceId}/profiles/${profileId}`,
-      delete: (workspaceId, profileId) =>
-        `${WORKSPACE_BASE_URL}/${workspaceId}/profiles/${profileId}`,
-      getProfile: (workspaceId, profileId) =>
-        `${WORKSPACE_BASE_URL}/${workspaceId}/profiles/${profileId}`,
-      getProfiles: (workspaceId) =>
-        `${WORKSPACE_BASE_URL}/${workspaceId}/profiles`,
+    boards: {
+      create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`,
+      update: (workspaceId, boardId) =>
+        `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+      delete: (workspaceId, boardId) =>
+        `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+      getBoard: (workspaceId, boardId) =>
+        `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+      getBoards: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`,
     },
 
     modules: {

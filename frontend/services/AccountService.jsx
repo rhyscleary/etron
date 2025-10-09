@@ -113,7 +113,7 @@ class AccountService {
             // Handle auth success and account linking
             await this.handleAuthSuccess('Cognito');
             
-            this.navigate("(auth)/profile");
+            this.navigate("(auth)/dashboard");
             return { success: true, result };
         } catch (error) {
             console.log('Error signing in:', error);
@@ -234,14 +234,14 @@ class AccountService {
                     // replace with Google OAuth configuration
                     clientId: 'GOOGLE_CLIENT_ID',
                     redirectUri: 'APP_REDIRECT_URI',
-                    scope: 'openid email profile',
+                    scope: 'openid email dashboard',
                     responseType: 'code'
                 },
                 microsoft: {
                     // replace with Microsoft OAuth configuration
                     clientId: 'MICROSOFT_CLIENT_ID',
                     redirectUri: 'APP_REDIRECT_URI',
-                    scope: 'openid email profile',
+                    scope: 'openid email dashboard',
                     responseType: 'code'
                 }
             };
@@ -288,7 +288,7 @@ class AccountService {
                             // Handle auth success and account linking (will also fetch workspace)
                             await this.handleAuthSuccess(provider);
                             
-                            this.navigate("(auth)/profile");
+                            this.navigate("(auth)/dashboard");
                             resolve({ success: true, user });
                         } catch (error) {
                             console.log('No authenticated user found after social sign-in');
