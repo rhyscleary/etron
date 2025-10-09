@@ -13,7 +13,7 @@ import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { Text } from "react-native-paper";
 import { hasPermission } from "../../../../../utils/permissions";
-import { FlashList } from "@shopify/flash-list";
+//import { FlashList } from "@shopify/flash-list";
 import PlaceholderBoard from "../../../../../components/skeleton/PlaceholderBoard";
 
 const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Marketing']}) => {
