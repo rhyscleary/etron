@@ -25,6 +25,7 @@ import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhot
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import UnsavedChangesDialog from "../../../../../components/overlays/UnsavedChangesDialog";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 global.Buffer = global.Buffer || Buffer
 
@@ -227,9 +228,10 @@ const PersonalDetails = () => {
         router.back();
     }
 
-    return(
-        <View style={commonStyles.screen}>
-            <Header title="Personal Details" showBack onBackPress={handleBackPress}/>
+    return (
+        <ResponsiveScreen
+            header = {<Header title="Personal Details" showBack onBackPress={handleBackPress}/>}
+        >
             { loading ? (
                 <View style={commonStyles.centeredContainer}>
                     <ActivityIndicator size="large" />
@@ -347,7 +349,7 @@ const PersonalDetails = () => {
                 handleLeftAction={handleDiscardChanges}
                 handleRightAction={() => setShowUnsavedDialog(false)}
             />
-        </View> 
+        </ResponsiveScreen> 
     )
 }
 

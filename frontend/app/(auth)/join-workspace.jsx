@@ -135,7 +135,7 @@ const JoinWorkspace = () => {
 
 
             // navigate to the profile
-            router.navigate("/profile");
+            router.navigate("/dashboard");
         } catch (error) {
             setJoining(false);
             console.error("Error joining workspace: ", error);

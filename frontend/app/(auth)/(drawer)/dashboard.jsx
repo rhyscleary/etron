@@ -9,14 +9,14 @@ import { useTheme, Avatar, List, Divider, TextInput, Button, HelperText } from "
 import CustomBottomSheet from "../../../components/BottomSheet";
 
 const Profile = () => {
+    // example sheets
     const theme = useTheme();
-    const [showSheet, setShowSheet] = useState(false); // standard bottom sheet (existing example)
-    const [showCompactSheet, setShowCompactSheet] = useState(false); // compact bottom sheet (existing example)
-    // NEW EXAMPLE SHEETS
+    const [showSheet, setShowSheet] = useState(false); // standard bottom sheet
+    const [showCompactSheet, setShowCompactSheet] = useState(false); // compact bottom sheet
     const [showProfileActionsSheet, setShowProfileActionsSheet] = useState(false); // custom header + search + icons
     const [showQuickIconSheet, setShowQuickIconSheet] = useState(false); // compact style with custom renderItem (icon grid style list)
-    const [showQuickNoteSheet, setShowQuickNoteSheet] = useState(false); // NEW: custom content (no list) example
-    const [showSearchFooterSheet, setShowSearchFooterSheet] = useState(false); // NEW: search footer variant
+    const [showQuickNoteSheet, setShowQuickNoteSheet] = useState(false); // custom content (no list) example
+    const [showSearchFooterSheet, setShowSearchFooterSheet] = useState(false); // search footer variant (does not correctly adjust with keyboard)
 
     // quick note form state
     const [noteTitle, setNoteTitle] = useState("");
@@ -24,29 +24,28 @@ const Profile = () => {
 
     // Example data for new sheets
     const profileActionItems = useMemo(() => ([
-        { icon: 'account-edit', label: 'Account Details', onPress: () => router.navigate('/settings/account/account') },
-        { icon: 'image-edit', label: 'Personal Details', onPress: () => router.navigate('/settings/account/personal-details') },
-        { icon: 'bell-ring', label: 'Notification Settings', onPress: () => router.navigate('/modules/day-book/notifications/notifications') },
-        { icon: 'shield-account', label: 'Password & Security', onPress: () => router.navigate('/settings/account/password-security') },
-        { icon: 'logout-variant', label: 'Sign Out', onPress: () => { /* does nothing */ } },
+    { icon: 'account-edit', label: 'Account Details', onPress: () => router.navigate('settings-account') },
+    { icon: 'image-edit', label: 'Personal Details', onPress: () => router.navigate('settings-account') },
+    { icon: 'bell-ring', label: 'Notification Settings', onPress: () => router.navigate('modules/day-book/notifications') },
+    { icon: 'shield-account', label: 'Password & Security', onPress: () => router.navigate('settings-account') },
+    { icon: 'logout-variant', label: 'Sign Out', onPress: () => { /* does nothing */ } },
     ]), [router]);
 
     const quickIconActions = useMemo(() => ([
-        { icon: 'plus-box', label: 'New Entry', onPress: () => router.navigate('/modules/day-book/data-management/new-entry') },
-        { icon: 'chart-timeline-variant', label: 'View Metrics', onPress: () => router.navigate('/modules/day-book/metrics/metric-management') },
-        { icon: 'file-chart', label: 'Reports', onPress: () => router.navigate('/modules/day-book/reports/report-management') },
-        { icon: 'bell', label: 'Alerts', onPress: () => router.navigate('/modules/day-book/notifications/notifications') },
-        { icon: 'account-multiple-plus', label: 'Invite User', onPress: () => router.navigate('/collaboration') },
+    { icon: 'plus-box', label: 'New Entry', onPress: () => router.navigate('modules/day-book/data-management/new') },
+    { icon: 'chart-timeline-variant', label: 'View Metrics', onPress: () => router.navigate('modules/day-book/metrics') },
+    { icon: 'file-chart', label: 'Reports', onPress: () => router.navigate('modules/day-book/reports') },
+    { icon: 'bell', label: 'Alerts', onPress: () => router.navigate('modules/day-book/notifications') },
+    { icon: 'account-multiple-plus', label: 'Invite User', onPress: () => router.navigate('collaboration') },
     ]), [router]);
 
     const settingOptionButtons = [
-        { icon: "cog", label: "Settings", onPress: () => router.navigate("/settings/settings")},
-        { icon: "database", label: "Data Sources", onPress: () => router.navigate("/modules/day-book/data-management/data-management") },
-        { icon: "chart-line", label: "Metrics", onPress: () => router.navigate("/modules/day-book/metrics/metric-management") },
-        { icon: "bell", label: "Notifications", onPress: () => router.navigate("/modules/day-book/notifications/notifications") },
-        { icon: "account-group", label: "Collaboration", onPress: () => router.navigate("/collaboration") },
-        { icon: "poll", label: "Testing - Example Graph Display", onPress: () => router.navigate("/graphs") },
-        { icon: "file-chart", label: "Reports", onPress:() => router.navigate("/modules/day-book/reports/report-management") },
+    { icon: "cog", label: "Settings", onPress: () => router.navigate("settings")},
+    { icon: "database", label: "Data Sources", onPress: () => router.navigate("modules/day-book/data-management") },
+    { icon: "chart-line", label: "Metrics", onPress: () => router.navigate("modules/day-book/metrics") },
+    { icon: "bell", label: "Notifications", onPress: () => router.navigate("modules/day-book/notifications") },
+    { icon: "account-group", label: "Collaboration", onPress: () => router.navigate("collaboration") },
+    { icon: "file-chart", label: "Reports", onPress:() => router.navigate("modules/day-book/reports") },
         // Testing Bottom Screen
         { icon: "tray-arrow-up", label: "Testing - Example Bottom Sheet", onPress: () => { setShowSheet(true); setShowCompactSheet(false);} }, // standard style
         { icon: "view-compact", label: "Testing - Compact Bottom Sheet", onPress: () => { setShowCompactSheet(true); setShowSheet(false);} }, // compact style
@@ -134,15 +133,17 @@ const Profile = () => {
             <Header title="Dashboard" showMenu />            
             <ScrollView style={{backgroundColor: theme.colors.background}} contentContainerStyle={commonStyles.scrollableContentContainer}>
                 <StackLayout spacing={12}>
-                    {settingOptionButtons.map((item) => (
-                        <DescriptiveButton 
-                            key={item.label}
-                            icon={item.icon}
-                            label={item.label}
-                            description={item.description}
-                            onPress={item.onPress}
-                        />
-                ))}
+                    {settingOptionButtons
+                        .filter((item) => item.label?.startsWith("Testing -"))
+                        .map((item) => (
+                            <DescriptiveButton 
+                                key={item.label}
+                                icon={item.icon}
+                                label={item.label}
+                                description={item.description}
+                                onPress={item.onPress}
+                            />
+                    ))}
                 </StackLayout>
             </ScrollView>
             {showSheet && (

@@ -66,7 +66,7 @@ async function createWorkspace(authUserId, data) {
         const moduleItem = {
             workspaceId,
             moduleId,
-            moduleKey: starter.key,
+            key: starter.key,
             name: starter.name,
             description: starter.description,
             cardColor: starter.cardColor,
@@ -88,9 +88,10 @@ async function createWorkspace(authUserId, data) {
     const boardItem = {
         workspaceId,
         boardId,
-        name: "Dashboard",
+        name: "Default",
         config: {},
         isDashboard: true,
+        createdBy: "System",
         editedBy: [authUserId],
         createdAt: date,
         updatedAt: date

@@ -51,7 +51,7 @@ exports.handler = async (event) => {
                     throw new Error("moduleKey must be a UUID, 'string'");
                 }
 
-                body = await toggleModule(pathParams.workspaceId, pathParams.moduleKey);
+                body = await toggleModule(authUserId, pathParams.workspaceId, pathParams.moduleKey);
                 break;
             }
 

@@ -43,22 +43,18 @@ export default function ResponsiveScreen({
     )
 
     return (
-        <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
-            {header ? (
-                <View style={styles.header}>
-                    {header}
-                </View>
-            ) : null }
+        <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={["left", "right"]}>
+            {header ? (<View style={styles.header}>
+                {header}
+            </View>) : null }
 
             <View style={styles.body}>
                 {Body}
             </View>
 
-            {footer ? (
-                <View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
-                    {footer}
-                </View>
-            ) :  null }
+            {footer ? (<View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
+                {footer}
+            </View>) :  null }
         </SafeAreaView>
     );
 }
@@ -67,7 +63,7 @@ const styles = StyleSheet.create({
     safe: { flex: 1 },
     padded: { paddingHorizontal: 20, gap: 30, paddingTop: 20, paddingBottom: 12 },
     scrollContent: { flexGrow: 1 },
-    content: {flexGrow: 1, width: "100%" },
+    content: { flexGrow: 1, width: "100%" },
     centerGrow: {justifyContent: "center" },
     header: { width: "100%" },
     body: { flex: 1 },

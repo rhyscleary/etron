@@ -99,24 +99,6 @@ const CreateMetric = () => {
         });
     }, [dataSourceData.length, rowLimit]);
 
-
-    /*const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
-    const font = useFont(inter, 12);
-
-    function GraphTooltip({text, xPosition, yPosition}) {  // Creates a small overlay for the graph at the specified position (usually where the user clicks)
-        return (<>
-            <SkiaText
-                color = "grey"
-                font = {font}
-                text = {"test"}
-                x = {xPosition}
-                y = {yPosition - 15}
-            />
-            <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
-        </>)
-    }*/
-
-
     function convertToGraphData(rows) {
         let output = rows.map(row => {
             const newRow = {};
@@ -144,22 +126,6 @@ const CreateMetric = () => {
     const handleContinue = () => {
         setStep((prev) => prev + 1);
     };
-
-    /*async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
-        const workspaceId = await getWorkspaceId();
-        const prunedData = {
-            data: dataSourceData,
-        }
-        const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
-        const result = uploadData({
-            path: S3FilePath,
-            data: JSON.stringify(prunedData),
-            options: {
-                bucket: 'workspaces'
-            }
-        }).result;
-        console.log("Pruned data uploaded successfully.")
-    }*/
 
     async function uploadMetricSettings() {
         console.log("Uploading metric details...");
@@ -204,7 +170,7 @@ const CreateMetric = () => {
         
         console.log("Form completed");
         //router.navigate("/modules/day-book/metrics/metric-management"); 
-        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround?
+        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround? it's a lack of stack and a _layout for metrics. This can be fixed now.
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
@@ -477,7 +443,6 @@ const CreateMetric = () => {
 			padded
             scroll={true}
 		>
-
             <View style={styles.content}>
                 {renderFormStep()}
 
