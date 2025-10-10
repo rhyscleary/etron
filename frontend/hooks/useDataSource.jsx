@@ -8,23 +8,23 @@ import { getAdapterInfo } from "../adapters/day-book/data-sources/DataAdapterFac
 // TODO: this would be cleaner imported from apiClient file.
 const createApiClient = () => ({
   get: async (path, config = {}) => {
-    const data = await apiGet(path, config.params || {});
-    return { data };
+    const response = await apiGet(path, config.params || {});
+    return response.data;
   },
 
   post: async (path, body = {}) => {
-    const data = await apiPost(path, body);
-    return { data };
+    const response = await apiPost(path, body);
+    return response.data;
   },
 
   put: async (path, body = {}) => {
-    const data = await apiPut(path, body);
-    return { data };
+    const response = await apiPut(path, body);
+    return response.data;
   },
 
   delete: async (path) => {
-    const data = await apiDelete(path);
-    return { data };
+    const response = await apiDelete(path);
+    return response.data;
   },
 
   request: async (url, config = {}) => {
@@ -32,23 +32,23 @@ const createApiClient = () => ({
     const data = config.data || {};
     const params = config.params || {};
 
-    let responseData;
+    let response;
     switch (method) {
       case "post":
-        responseData = await apiPost(url, data);
+        response = await apiPost(url, data);
         break;
       case "put":
-        responseData = await apiPut(url, data);
+        response = await apiPut(url, data);
         break;
       case "delete":
-        responseData = await apiDelete(url, params);
+        response = await apiDelete(url, params);
         break;
       default:
-        responseData = await apiGet(url, params);
+        response = await apiGet(url, params);
     }
 
     return {
-      data: responseData,
+      data: response.data,
       status: 200,
       headers: { "content-type": "application/json" },
       responseTime: "200ms",

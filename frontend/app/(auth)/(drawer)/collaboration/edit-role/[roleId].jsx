@@ -6,7 +6,7 @@ import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
 import { Text, TextInput, Checkbox, Button, Portal, Dialog } from "react-native-paper";
 import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
-import { apiGet, apiPut, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
+import { apiGet, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { router, useLocalSearchParams } from "expo-router";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";

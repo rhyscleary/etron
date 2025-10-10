@@ -7,7 +7,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
-import { apiGet, apiPut, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
+import { apiGet, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import TextField from "../../../../../components/common/input/TextField";
@@ -140,7 +140,7 @@ const EditUser = () => {
 				data
 			);
 
-			console.log("User updated:", result);
+			console.log("User updated:", result.data);
 			router.back();
 		} catch (error) {
 			console.error("Update error:", error);

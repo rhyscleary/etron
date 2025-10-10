@@ -28,7 +28,7 @@ async function request(method, path, body = {}, params = {}, extraHeaders = {}) 
     
     try {
         const response = await axios(requestConfig);
-        return response.data;
+        return response;
     } catch (error) {
         if (error.response) {
             throw new Error(`Server error ${error.response.status}: ${JSON.stringify(error.response.data)}`)

@@ -7,7 +7,7 @@ import { commonStyles } from "../../assets/styles/stylesheets/common";
 import { useEffect, useState } from "react";
 import InviteCard from "../../components/cards/inviteCard";
 import BasicButton from "../../components/common/buttons/BasicButton";
-import { apiGet, apiPost, apiPut } from "../../utils/api/apiClient";
+import { apiGet, apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-amplify/auth";
 import formatTTLDate from "../../utils/format/formatTTLDate";

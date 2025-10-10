@@ -105,7 +105,7 @@ const WorkspaceDetails = () => {
                 updateData
             );
 
-            console.log('Workspace details updated:', result);
+            console.log('Workspace details updated:', result.data);
             
             setOriginalData({
                 name,

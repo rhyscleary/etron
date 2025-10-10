@@ -196,7 +196,7 @@ const WorkspaceManagement = () => {
                     transferPayload
                 );
 
-                console.log("Ownership transferred:", result);
+                console.log("Ownership transferred:", result.data);
                 setTransferDialogVisible(false);
             } catch (error) {
                 console.error("Error transfering ownership: ", error);
