@@ -100,7 +100,7 @@ const LocalCSV = () => {
 
             await uploadFile(deviceFilePath, uploadUrl);
 
-            router.navigate('../data-management');
+            router.back();
         } catch (error) {
             console.error("Error finalising CSV upload:", error);
         }

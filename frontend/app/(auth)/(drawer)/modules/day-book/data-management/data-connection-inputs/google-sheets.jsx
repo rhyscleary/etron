@@ -23,7 +23,7 @@ const GoogleSheets = () => {
             demoModeMessage="Using sample Google Sheets data for development"
             enablePersistentConnection={true}
             dataSourceName="My Google Sheets Connection"
-            dataManagementPath="/modules/day-book/data-management/data-management"
+            dataManagementPath="/modules/day-book/data-management"
         />
     );
 };
