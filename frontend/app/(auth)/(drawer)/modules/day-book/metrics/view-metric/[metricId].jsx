@@ -147,7 +147,7 @@ const ViewMetric = () => {
                 { workspaceId }
             )
             console.log("Successfully deleted metric.")
-            router.navigate("/modules/day-book/metrics/metric-management");
+            router.navigate("/modules/day-book/metrics");
         } catch (error) {
             console.error("Error deleting metric:", error);
             Alert.alert("Error", "Failed to delete the metric. Please try again.");
