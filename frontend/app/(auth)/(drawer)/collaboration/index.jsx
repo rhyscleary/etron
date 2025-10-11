@@ -30,24 +30,17 @@ const Collaboration = () => {
 			padded={false}
             scroll={true}
 		>
-
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
-                <StackLayout spacing={12}>
-                    {/*Temporary redirect to profile screen*/}
-                    <Button title="Temporary - Back to Dashboard" onPress={() => router.navigate("/profile")} />
-                    {workspaceOptionButtons.map((item) => (
-                        <DescriptiveButton 
-                            key={item.label}
-                            icon={item.icon}
-                            label={item.label}
-                            description={item.description}
-                            onPress={item.onPress}
-                        />
-                    ))}
-                </StackLayout>
-
-            </ScrollView>
-
+            <StackLayout spacing={12}>
+                {workspaceOptionButtons.map((item) => (
+                    <DescriptiveButton 
+                        key={item.label}
+                        icon={item.icon}
+                        label={item.label}
+                        description={item.description}
+                        onPress={item.onPress}
+                    />
+                ))}
+            </StackLayout>
         </ResponsiveScreen>
     )
 }

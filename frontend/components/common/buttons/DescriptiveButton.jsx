@@ -1,81 +1,76 @@
-// Author(s): Rhys Cleary, Holly Wyatt
-
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { Icon, useTheme } from 'react-native-paper';
 
 const DescriptiveButton = ({
     icon,
+    image,
     label,
     description,
     onPress,
     focused = false,
     boldLabel = true,
     transparentBackground = false,
-    noBorder = false,
+    altText = false,
+    noBorder = true,
+    showChevron = true,
 }) => {
     const theme = useTheme();
 
-    const buttonStyles = {
-        backgroundColor: transparentBackground
-            ? 'transparent'
-            : theme.colors.buttonBackground,
-        borderColor: noBorder
-            ? 'transparent'
-            : transparentBackground
-            ? theme.colors.secondary
-            : theme.colors.outline,
-        borderWidth: noBorder ? 0 : 1,
-    };
+    let backgroundColor = transparentBackground
+        ? 'transparent'
+        : focused
+        ? theme.colors.primary
+        : theme.colors.buttonBackground;
+
+    const borderWidth = noBorder 
+        ? 0 
+        : 1;
+
+    const borderColor = noBorder
+        ? 'transparent'
+        : transparentBackground
+        ? theme.colors.secondary
+        : theme.colors.outline;
+
+    const textColor = altText 
+        ? theme.colors.midOpacityButton 
+        : theme.colors.text;
 
     return (
         <Pressable
             onPress={onPress}
             style={[
                 styles.descriptiveButton,
-                focused
-                    ? { backgroundColor: theme.colors.primary, borderWidth: 0 }
-                    : {
-                          borderColor: theme.colors.outline,
-                          backgroundColor: theme.colors.buttonBackground,
-                      },
+                { backgroundColor, borderColor, borderWidth },
             ]}
         >
             <View style={styles.innerContainer}>
-                {icon ? (
-                    <Icon
-                        source={icon}
-                        size={28}
-                        color={theme.colors.icon}
-                    />
+                {image ? (
+                    <Image source={image} style={styles.imageIcon} />
+                ) : icon ? (
+                    <Icon source={icon} size={28} color={textColor} />
                 ) : null}
 
                 <View style={styles.textContainer}>
                     <Text
                         style={[
                             styles.labelText,
-                            { color: theme.colors.text },
+                            { color: textColor },
                             !boldLabel && { fontWeight: 'normal' },
                         ]}
                     >
                         {label}
                     </Text>
                     {description ? (
-                        <Text
-                            style={[
-                                styles.descriptionText,
-                                { color: theme.colors.text },
-                            ]}
-                        >
+                        <Text style={[styles.descriptionText, { color: textColor }]}>
                             {description}
                         </Text>
                     ) : null}
                 </View>
 
-                <Icon
-                    source="chevron-right"
-                    size={28}
-                    color={theme.colors.themeGrey}
-                />
+                {showChevron && (
+                    <Icon source="chevron-right" size={28} color={theme.colors.themeGrey} />
+                )}
             </View>
         </Pressable>
     );
@@ -84,13 +79,18 @@ const DescriptiveButton = ({
 const styles = StyleSheet.create({
     descriptiveButton: {
         borderRadius: 10,
-        width: '100%',    
+        width: '100%',
     },
     innerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 8,
         paddingHorizontal: 10,
+    },
+    imageIcon: {
+        width: 28,
+        height: 28,
+        resizeMode: 'contain',
     },
     textContainer: {
         flex: 1,

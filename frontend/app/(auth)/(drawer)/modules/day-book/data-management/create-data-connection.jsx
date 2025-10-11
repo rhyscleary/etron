@@ -10,6 +10,7 @@ import { useTheme, Text } from "react-native-paper";
 import { router } from "expo-router";
 import DescriptiveButton from "../../../../../../components/common/buttons/DescriptiveButton";
 import { getAdaptersForUI } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
+import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
 
 const CreateDataConnection = () => {
     const theme = useTheme();
@@ -23,8 +24,14 @@ const CreateDataConnection = () => {
     }));
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="New Connection" showBack />
+        <ResponsiveScreen 
+            header={
+                <Header title="New Connection" showBack />
+            }
+            center={false}
+            padded={false}
+            scroll={false}
+        >
             <ScrollView contentContainerStyle={commonStyles}>
                 <StackLayout spacing={12}>
                     {sourceTypes.map((category, index) => (
@@ -50,7 +57,7 @@ const CreateDataConnection = () => {
                     ))}
                 </StackLayout>
             </ScrollView>
-        </View>
+        </ResponsiveScreen>
     )
 }
 

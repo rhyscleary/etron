@@ -47,8 +47,8 @@ const endpoints = {
             create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`,
             update: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
             delete: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
-            getProfile: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
-            getProfiles: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`
+            getBoard: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+            getBoards: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`
         },
 
         modules: {

@@ -16,11 +16,12 @@ const DarkTheme = {
         //outline: '#577590', // the colour for text input and button outlines
         outline: '#476580', // new outline?
         //buttonBackground: '#2B2B2B', // background for cards and outlined buttons
-        buttonBackgroundAlt: '#2B2B2B',
+        buttonBackgroundAlt: '#2A2A2A',
         buttonBackground: "#2C2C2C",
         background : "rgb(29, 27, 30)",
 
         lowOpacityButton: "rgba(44, 44, 44, 0.3)",
+        midOpacityButton: "rgba(30, 30, 30, 0.7)",
         lowOpacityText: "rgba(247, 247, 247, 1)",
 
         error: '#EF476F', // error messages and dangerous actions

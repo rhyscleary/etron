@@ -1,5 +1,3 @@
-// Author(s): Matthew Parkinson, Noah Bradley
-
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
@@ -12,6 +10,10 @@ import MetricCheckbox from '../../../../../../components/common/buttons/MetricCh
 import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
 import GraphTypes from './graph-types';
 
+import {
+    fetchUserAttributes,
+    getCurrentUser
+} from 'aws-amplify/auth';
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage"
 import endpoints from '../../../../../../utils/api/endpoints';
 import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
@@ -32,10 +34,11 @@ const CreateMetric = () => {
             const workspaceId = await getWorkspaceId();
             const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
-                let dataSourcesFromApi = await apiGet(
+                let dataSourcesFromApiResult = await apiGet(
                     endpoints.modules.day_book.data_sources.getDataSources,
                     { workspaceId }
                 )
+                let dataSourcesFromApi = dataSourcesFromApiResult.data;
                 console.log(dataSourcesFromApi);
                 setDataSourceMappings(dataSourcesFromApi.map(
                     dataSource => ({
@@ -52,7 +55,6 @@ const CreateMetric = () => {
         initialiseDataSourceList();
     }, []);
 
-
     const [dataSourceId, setDataSourceId] = useState();  // Id of data source chosen by user
     const [dataSourceData, setDataSourceData] = useState([]);  // Data from the chosen data source
     const [dataSourceVariableNames, setDataSourceVariableNames] = useState([])
@@ -65,10 +67,11 @@ const CreateMetric = () => {
 
         const workspaceId = await getWorkspaceId();
         try {
-            let result = await apiGet(
+            let response = await apiGet(
                 endpoints.modules.day_book.data_sources.viewData(source),
                 { workspaceId }
             )
+            let result = response.data;
             setDataSourceData(result.data);
             setDataSourceVariableNames(result.schema.map(variable => variable.name));
             setDataSourceDataDownloadStatus("downloaded");
@@ -99,24 +102,6 @@ const CreateMetric = () => {
         });
     }, [dataSourceData.length, rowLimit]);
 
-
-    /*const { chartPressState, chartPressIsActive } = useChartPressState({ x: 0, y: {dependentVariable0: 0}})  // Loads chartPressState and chartPressIsActive based on where the user clicks on the chart
-    const font = useFont(inter, 12);
-
-    function GraphTooltip({text, xPosition, yPosition}) {  // Creates a small overlay for the graph at the specified position (usually where the user clicks)
-        return (<>
-            <SkiaText
-                color = "grey"
-                font = {font}
-                text = {"test"}
-                x = {xPosition}
-                y = {yPosition - 15}
-            />
-            <Circle cx={xPosition} cy={yPosition} r={8} color="white" />
-        </>)
-    }*/
-
-
     function convertToGraphData(rows) {
         let output = rows.map(row => {
             const newRow = {};
@@ -145,22 +130,6 @@ const CreateMetric = () => {
         setStep((prev) => prev + 1);
     };
 
-    /*async function uploadPrunedData () {  //TODO: needs to be updated to use endpoints
-        const workspaceId = await getWorkspaceId();
-        const prunedData = {
-            data: dataSourceData,
-        }
-        const S3FilePath = `workspaces/${workspaceId}/day-book/metrics/${metricId}/metric-pruned-data.json`
-        const result = uploadData({
-            path: S3FilePath,
-            data: JSON.stringify(prunedData),
-            options: {
-                bucket: 'workspaces'
-            }
-        }).result;
-        console.log("Pruned data uploaded successfully.")
-    }*/
-
     async function uploadMetricSettings() {
         console.log("Uploading metric details...");
         if (!metricName) {
@@ -178,7 +147,12 @@ const CreateMetric = () => {
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
                 colours: coloursState,
-                //selectedRows,  // TODO: implement separate function to prune the data when it gets uploaded
+                selectedRows: selectedRows,
+            },
+            user: {
+                userId,
+                firstName,
+                lastName
             }
         }
         let result = await apiPost(
@@ -187,6 +161,26 @@ const CreateMetric = () => {
         );
         console.log("Uploaded metric details via API result:", result);
     }
+
+    const [userId, setUserId] = useState(null);
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+
+    useEffect(() => {
+        async function loadUser() {
+            try {
+                const { userId } = await getCurrentUser();
+                const attributes = await fetchUserAttributes();
+                setUserId(userId);
+                setFirstName(attributes.given_name || "");
+                setLastName(attributes.family_name || "");
+                console.log("Loaded user info:", userId, attributes);
+            } catch (error) {
+                console.error("Error fetching user info:", error);
+            }
+        }
+        loadUser();
+    }, []);
 
     const handleFinish = async () => {
 
@@ -204,7 +198,7 @@ const CreateMetric = () => {
         
         console.log("Form completed");
         //router.navigate("/modules/day-book/metrics/metric-management"); 
-        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround?
+        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround? it's a lack of stack and a _layout for metrics. This can be fixed now.
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
@@ -215,10 +209,16 @@ const CreateMetric = () => {
 
     const [chosenIndependentVariable, setChosenIndependentVariable] = useState([]);
     const [chosenDependentVariables, setChosenDependentVariables] = useState([]);
-    const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
+    const [coloursState, setColoursState] = useState(['#ed1c24','#d11cd5','#5f80c7ff','#57ff0a','#ffde17','#f26522']);
     const [wheelIndex, setWheelIndex] = useState(0);
     const [metricName, setMetricName] = useState('');
     const [selectedRows, setSelectedRows] = useState([]);
+
+    const dependentArray = Array.isArray(chosenDependentVariables)
+        ? chosenDependentVariables
+        : chosenDependentVariables
+            ? [chosenDependentVariables]
+            : [];
 
     const renderFormStep = () => {
         switch (step) {
@@ -263,17 +263,19 @@ const CreateMetric = () => {
                         {["bar", "pie"].includes(selectedMetric) ? (
                             <MetricRadioButton
                                 items={dataSourceVariableNames}
-                                selected={chosenDependentVariables}
+                                selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables[0] : chosenDependentVariables}
                                 onChange={(selection) => {
-                                    setChosenDependentVariables(selection);
+                                    const next = selection ? [selection] : [];
+                                    setChosenDependentVariables(next);
                                 }}
                             />
                         ) : (
                             <MetricCheckbox
                                 items={dataSourceVariableNames}
-                                selected={chosenDependentVariables}
+                                selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables : []}
                                 onChange={(selection) => {
-                                    setChosenDependentVariables(selection);
+                                    const next = Array.isArray(selection) ? selection : selection ? [selection] : [];
+                                    setChosenDependentVariables(next);
                                 }}
                             />
                         )}
@@ -291,10 +293,11 @@ const CreateMetric = () => {
                             
                             <Chip
                                 onPress={() => {
-                                    if (selectedRows.length === dataSourceData.length) {
+                                    const rowIds = dataSourceData.map((row) => row[dataSourceVariableNames[0]]);
+                                    if (selectedRows.length === rowIds.length) {
                                         setSelectedRows([]);
                                     } else {
-                                        setSelectedRows(dataSourceData.map((row) => row[0]));
+                                        setSelectedRows(rowIds);
                                     }
                                 }}
                                 style={{
@@ -316,7 +319,7 @@ const CreateMetric = () => {
 
                         {showChecklist && (
                             <MetricCheckbox
-                                items={dataSourceData.map((row) => row[0])} // use first column (e.g. Name)
+                                items={dataSourceData.map((row) => row[dataSourceVariableNames[0]])}
                                 selected={selectedRows}
                                 onChange={(selection) => setSelectedRows(selection)}
                             />
@@ -411,14 +414,14 @@ const CreateMetric = () => {
                         />
                         
                         {/* Variable selector chips */}
-                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 10 }}>
-                            {chosenDependentVariables.map((variable, index) => (
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", marginVertical: 5 }}>
+                            {dependentArray.map((variable, index) => (
                                 <Chip
                                     key={index}
                                     selected={wheelIndex === index}
                                     onPress={() => setWheelIndex(index)}
                                     style={{ 
-                                        margin: 4,
+                                        marginTop: 4,
                                         backgroundColor: wheelIndex === index ? theme.colors.primary : theme.colors.placeholder,
                                     }}
                                     showSelectedCheck = {false}
@@ -429,7 +432,7 @@ const CreateMetric = () => {
                         </View>
                         
                         {/* Single colour picker for the active variable */}
-                        <View style={{ marginTop: 10, justifyContent: "center", flexDirection: "row" }}>
+                        <View style={{ marginTop: 0, justifyContent: "center", flexDirection: "row" }}>
                             <ColorPicker
                                 color={coloursState[wheelIndex]}
                                 onColorChange={(newColor) => {
@@ -443,7 +446,7 @@ const CreateMetric = () => {
                                 sliderSize={30}
                                 noSnap={true}
                                 gapSize={10}
-                                palette={['#000000','#ed1c24','#d11cd5','#2b5fceff','#57ff0a','#ffde17','#f26522','#888888']}
+                                palette={['#000000','#ed1c24','#d11cd5','#5f80c7ff','#57ff0a','#ffde17','#f26522','#ffffffff']}
                             />
                         </View>
                         
@@ -452,10 +455,16 @@ const CreateMetric = () => {
                             <Card.Content>
                                 <View style={styles.graphCardContainer}>
                                     {graphDef.render({
-                                        data: convertToGraphData(dataSourceData),
+                                        data: convertToGraphData(
+                                            selectedRows.length > 0
+                                                ? dataSourceData.filter(
+                                                    (row) => selectedRows.includes(row[dataSourceVariableNames[0]])
+                                                )
+                                                : dataSourceData
+                                        ),
                                         xKey: chosenIndependentVariable,
-                                        yKeys: chosenDependentVariables,
-                                        colours: coloursState, // dynamic per-variable colours
+                                        yKeys: dependentArray,
+                                        colours: coloursState,
                                     })}
                                 </View>
                             </Card.Content>
@@ -477,7 +486,6 @@ const CreateMetric = () => {
 			padded
             scroll={true}
 		>
-
             <View style={styles.content}>
                 {renderFormStep()}
 
@@ -503,12 +511,13 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     card: {
-        height: 260,
+        height: 250,
+        width: "100%",
         marginTop: 20,
     },
     graphCardContainer: {
-        height: "100%",
         width: "100%",
+        height: "100%",
     },
     container: {
         flex: 1,

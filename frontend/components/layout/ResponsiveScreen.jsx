@@ -11,10 +11,13 @@ export default function ResponsiveScreen({
     padded = true,
     center = true,
     header,
-    footer
+    footer,
+    transparent = false,
 }) {
     const contentStyles = [styles.content, padded && styles.padded, center && styles.centerGrow]
     const theme = useTheme();
+
+    const safeBackground = transparent ? 'transparent' : theme.colors.background;
 
     const Body = scroll ? (
         <KeyboardAwareScrollView
@@ -43,7 +46,8 @@ export default function ResponsiveScreen({
     )
 
     return (
-        <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={["top", "left", "right"]}>
+
+        <SafeAreaView style={[styles.safe, { backgroundColor: safeBackground }]} edges={["left", "right"]}>
             {header ? (
                 <View style={styles.header}>
                     {header}
@@ -54,11 +58,9 @@ export default function ResponsiveScreen({
                 {Body}
             </View>
 
-            {footer ? (
-                <View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
-                    {footer}
-                </View>
-            ) :  null }
+            {footer ? (<View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
+                {footer}
+            </View>) :  null }
         </SafeAreaView>
     );
 }
@@ -67,7 +69,7 @@ const styles = StyleSheet.create({
     safe: { flex: 1 },
     padded: { paddingHorizontal: 20, gap: 30, paddingTop: 20, paddingBottom: 12 },
     scrollContent: { flexGrow: 1 },
-    content: {flexGrow: 1, width: "100%" },
+    content: { flexGrow: 1, width: "100%" },
     centerGrow: {justifyContent: "center" },
     header: { width: "100%" },
     body: { flex: 1 },

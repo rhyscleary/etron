@@ -19,6 +19,7 @@ import {
     fetchUserAttributes
 } from 'aws-amplify/auth';
 import { removeWorkspaceInfo } from '../../../../../storage/workspaceStorage';
+import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
 
 const Accounts = () => {
     const theme = useTheme();
@@ -40,8 +41,8 @@ const Accounts = () => {
                 const userAttributes = await fetchUserAttributes(); 
                 setEmail(currentEmail);
                 setAccounts(linkedAccounts);
+				console.log("linked accounts:", linkedAccounts);
                 setAttributes(userAttributes);
-                console.log(linkedAccounts);
                 console.log("User attributes:", userAttributes); 
             } catch (error) {
                 console.error("Error loading accounts: ", error);
@@ -57,15 +58,16 @@ const Accounts = () => {
     }, []);
 
     const handleSwitchAccount = async (targetEmail) => {
+		console.log("handleSwitchAccount");
         try {
             await signOut();
             router.dismissAll(); //TODO: MAKE SURE THIS REDIRECT WORKS; IT MIGHT CAUSE BUGS AS IS
-            router.replace({
+            router.push({
                 pathname: '/login-signup',
                 params: { email: targetEmail, fromAccounts: 'true' },
             });
-        } catch (err) {
-            console.error("Error switching account:", err);
+        } catch (error) {
+            console.error("Error switching account:", error);
         }
     };
 
@@ -136,55 +138,56 @@ const Accounts = () => {
     } 
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Accounts"
-                showBack
-            />
-
+        <ResponsiveScreen
+			header = {
+				<Header
+					title="Accounts"
+					showBack
+				/>
+			}
+			footer = {
+				<BasicButton label="Sign Out" fullWidth onPress={handleSignOut} />
+			}
+		>
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
-                <View style={{ padding: 16 }}>
-                    {loading ? (
-                      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <ActivityIndicator size="large" />
-                      </View>
-                    ) : (
-                      <>
-                        {accounts.map((linkedAccount, index) => (
-                          <AccountCard
-                            key={index}
-                            account={{
-                              name: getDisplayName(),
-                              email: linkedAccount.email
-                            }}
-                            isActive={linkedAccount.email === email}
-                            onSwitch={handleSwitchAccount}
-                            onRemove={handleRemoveAccount}
-                            totalAccounts={accounts.length}
-                            loading={loading}
-                          />
-                        ))}
-                        
-                        <StackLayout spacing={172}>
-                            <BasicButton
-                                label="Link Another Account"
-                                onPress={() => {
-                                    router.dismissAll();
-                                    router.replace({
-                                        pathname: '/login-signup',
-                                        params: { link: 'true' }
-                                    });
-                                }}
-                                fullWidth
-                                style={{ marginTop: 20 }}
-                            />
-
-                            <BasicButton label="Sign Out" fullWidth onPress={handleSignOut} />
-                        </StackLayout>
-                        
-                      </>
-                    )}
-                </View>
+				{loading ? (
+					<View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+						<ActivityIndicator size="large" />
+					</View>
+				) : (
+					<>
+						{accounts.map((linkedAccount, index) => (
+							<AccountCard
+								key={index}
+								account={{
+									name: getDisplayName(),
+									email: linkedAccount.email
+								}}
+								isActive={linkedAccount.email === email}
+								onPress={() => handleSwitchAccount(linkedAccount.email)}  // Anonymous function used to prevent handleSwitchAccount from running during load
+								onRemove={handleRemoveAccount}
+								totalAccounts={accounts.length}
+								loading={loading}
+								active={linkedAccount.email == attributes.email}
+							/>
+						))}
+						
+						<StackLayout>
+							<BasicButton
+								label="Link Another Account"
+								onPress={() => {
+									router.dismissAll();
+									router.replace({
+										pathname: '/login-signup',
+										params: { link: 'true' }
+									});
+								}}
+								fullWidth
+								style={{ marginTop: 20 }}
+							/>
+						</StackLayout>
+					</>
+				)}
             </ScrollView>
             <BasicDialog
                 visible={dialogVisible}
@@ -195,7 +198,7 @@ const Accounts = () => {
                 rightDanger
                 handleRightAction={confirmRemoveAccount}
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
 

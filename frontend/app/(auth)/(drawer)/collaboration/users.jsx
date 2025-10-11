@@ -12,7 +12,6 @@ import endpoints from "../../../../utils/api/endpoints";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const Users = () => {
-    const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -24,10 +23,10 @@ const Users = () => {
 
     const fetchIdAndUsers = async () => {
         try {
-            const id = await getWorkspaceId();
-            setWorkspaceId(id);
-            const result = await apiGet(endpoints.workspace.users.getUsers(id));
-            setUsers(result);
+            const workspaceId = await getWorkspaceId();
+            const result = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
+            const users = result.data;
+            setUsers(users);
         } catch (error) {
             console.error("Failed to fetch users:", error);
         } finally {
@@ -80,7 +79,7 @@ const Users = () => {
                     title="Users"
                     showBack
                     showPlus
-                    onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { from: "users" } })}
+                    onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "users" } })}
                 />            
             }
 			center={false}

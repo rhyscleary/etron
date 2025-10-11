@@ -7,6 +7,7 @@ import StackLayout from "../../../components/layout/StackLayout";
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 import { useTheme, Avatar, List, Divider, TextInput, Button, HelperText } from "react-native-paper";
 import CustomBottomSheet from "../../../components/BottomSheet";
+import ResponsiveScreen from "../../../components/layout/ResponsiveScreen";
 
 const Profile = () => {
     const theme = useTheme();
@@ -40,13 +41,6 @@ const Profile = () => {
     ]), [router]);
 
     const settingOptionButtons = [
-        { icon: "cog", label: "Settings", onPress: () => router.navigate("/settings/settings")},
-        { icon: "database", label: "Data Sources", onPress: () => router.navigate("/modules/day-book/data-management/data-management") },
-        { icon: "chart-line", label: "Metrics", onPress: () => router.navigate("/modules/day-book/metrics/metric-management") },
-        { icon: "bell", label: "Notifications", onPress: () => router.navigate("/modules/day-book/notifications/notifications") },
-        { icon: "account-group", label: "Collaboration", onPress: () => router.navigate("/collaboration") },
-        { icon: "poll", label: "Testing - Example Graph Display", onPress: () => router.navigate("/graphs") },
-        { icon: "file-chart", label: "Reports", onPress:() => router.navigate("/modules/day-book/reports/report-management") },
         // Testing Bottom Screen
         { icon: "tray-arrow-up", label: "Testing - Example Bottom Sheet", onPress: () => { setShowSheet(true); setShowCompactSheet(false);} }, // standard style
         { icon: "view-compact", label: "Testing - Compact Bottom Sheet", onPress: () => { setShowCompactSheet(true); setShowSheet(false);} }, // compact style
@@ -130,21 +124,25 @@ const Profile = () => {
     );
     
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Dashboard" showMenu />            
-            <ScrollView style={{backgroundColor: theme.colors.background}} contentContainerStyle={commonStyles.scrollableContentContainer}>
-                <StackLayout spacing={12}>
-                    {settingOptionButtons.map((item) => (
-                        <DescriptiveButton 
-                            key={item.label}
-                            icon={item.icon}
-                            label={item.label}
-                            description={item.description}
-                            onPress={item.onPress}
-                        />
-                ))}
-                </StackLayout>
-            </ScrollView>
+        <ResponsiveScreen
+            header={
+                <Header title="Dashboard" showMenu />
+            }
+			center={false}
+			padded={false}
+            scroll={true}
+        >         
+            <StackLayout spacing={12}>
+                {settingOptionButtons.map((item) => (
+                    <DescriptiveButton 
+                        key={item.label}
+                        icon={item.icon}
+                        label={item.label}
+                        description={item.description}
+                        onPress={item.onPress}
+                    />
+            ))}
+            </StackLayout>
             {showSheet && (
                 <CustomBottomSheet
                     variant="standard"
@@ -204,7 +202,7 @@ const Profile = () => {
                 <CustomBottomSheet
                     variant="standard"
                     header={{
-                        title: "Profile",
+                        title: "dashboard",
                         showClose: false,
                         children: profileHeaderChildren,
                     }}
@@ -280,7 +278,7 @@ const Profile = () => {
                     onClose={() => setShowSearchFooterSheet(false)}
                 />
             )}
-        </View>
+        </ResponsiveScreen>
     )
 }
 

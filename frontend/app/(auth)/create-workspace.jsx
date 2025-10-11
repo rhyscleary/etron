@@ -83,7 +83,7 @@ const CreateWorkspace = () => {
             );
 
             // save workspace info to local storage
-            saveWorkspaceInfo(result);
+            saveWorkspaceInfo(result.data);
 
             // update user attribute to be in a workspace
             await handleUpdateUserAttribute('custom:has_workspace', "true");
@@ -93,7 +93,7 @@ const CreateWorkspace = () => {
 
 
             // navigate to the profile
-            router.replace("/profile");
+            router.replace("/dashboard");
         } catch (error) {
             setCreating(false);
             console.error("Error creating workspace: ", error);

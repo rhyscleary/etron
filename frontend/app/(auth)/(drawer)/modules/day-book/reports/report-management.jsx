@@ -50,7 +50,7 @@ const ReportManagement = () => {
             {/* Temporary back button */}
             <Button
                 title="Temporary - Back to Dashboard"
-                onPress={() => router.navigate("/profile")}
+                onPress={() => router.navigate("/dashboard")}
             />
 
             <ScrollView style={{backgroundColor: theme.colors.background}} contentContainerStyle={commonStyles.scrollableContentContainer}>

@@ -28,10 +28,11 @@ const ViewDataSource = () => {
 
             let apiDataSourceInfo;
             try {
-                apiDataSourceInfo = await apiGet(
+                let apiDataSourceInfoResult = await apiGet(
                     endpoints.modules.day_book.data_sources.getDataSource(dataSourceId),
                     { workspaceId }
                 );
+                apiDataSourceInfo = apiDataSourceInfoResult.data;
                 setMethod(apiDataSourceInfo.method);
                 setName(apiDataSourceInfo.name);
                 setSourceType(apiDataSourceInfo.sourceType);
@@ -44,9 +45,10 @@ const ViewDataSource = () => {
             }
 
             try {
-                let apiUserInfo = await apiGet(
+                let apiUserInfoResult = await apiGet(
                     endpoints.workspace.users.getUser(workspaceId, apiDataSourceInfo.createdBy)
                 );
+                let apiUserInfo = apiUserInfoResult.data;
                 setCreator(apiUserInfo.given_name + " " + apiUserInfo.family_name);
             } catch (error) {
                 console.error("Error getting user info:", error);
@@ -111,10 +113,11 @@ const ViewDataSource = () => {
 
     const handleFinalise = async () => {
         const workspaceId = await getWorkspaceId();
-        const uploadUrlApiResponse = await apiGet(
+        const uploadUrlApiResponseResult = await apiGet(
             endpoints.modules.day_book.data_sources.getUploadUrl(dataSourceId),
             { workspaceId }
         )
+        const uploadUrlApiResponse = uploadUrlApiResponseResult.data;
         const uploadUrl = uploadUrlApiResponse.fileUploadUrl;
         await uploadFile(deviceFilePath, uploadUrl);     
 

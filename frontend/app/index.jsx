@@ -23,7 +23,7 @@ function App() {
         if (authStatus === 'authenticated') {
             //if (router.canDismiss()) router.dismissAll();
             console.log("Redirecting to auth root page.");
-            setTarget("/(auth)/profile")
+            setTarget("/(auth)/dashboard")
             //router.replace('/(auth)/profile');
         } else if (authStatus === `configuring`) {
 

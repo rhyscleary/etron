@@ -42,11 +42,14 @@ async function installModule(authUserId, workspaceId, moduleKey) {
     const moduleItem = {
         workspaceId,
         moduleId,
-        moduleKey: selectedModule.key,
+        key: selectedModule.key,
         name: selectedModule.name,
         description: selectedModule.description,
         cardColor: selectedModule.cardColor,
         fontColor: selectedModule.fontColor,
+        keywords: selectedModule.keywords,
+        categories: selectedModule.categories,
+        icon: selectedModule.icon,
         enabled: true,
         installedAt: date,
         updatedAt: date
@@ -113,7 +116,7 @@ async function getAvailableModules(authUserId, workspaceId) {
 
     const availableModules = appModules.filter(
         appModule => !workspaceModules.some(
-            workspaceModule => workspaceModule.moduleKey === appModule.key
+            workspaceModule => workspaceModule.key === appModule.key
         )
     );
 

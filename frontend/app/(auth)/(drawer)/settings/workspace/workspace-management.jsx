@@ -2,28 +2,28 @@
 
 import { ScrollView, StyleSheet, View } from "react-native";
 import { router, useRouter } from "expo-router";
-import StackLayout from "../../../../components/layout/StackLayout";
-import BasicDialog from "../../../../components/overlays/BasicDialog";
+import StackLayout from "../../../../../components/layout/StackLayout";
+import BasicDialog from "../../../../../components/overlays/BasicDialog";
 import { useEffect, useState } from "react";
-import { apiDelete, apiGet, apiPut } from "../../../../utils/api/apiClient";
+import { apiDelete, apiGet, apiPut } from "../../../../../utils/api/apiClient";
 import { useTheme } from "react-native-paper";
-import { verifyPassword } from "../../../../utils/verifyPassword";
-import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-import DescriptiveButton from "../../../../components/common/buttons/DescriptiveButton";
-import BasicButton from "../../../../components/common/buttons/BasicButton";
-import endpoints from "../../../../utils/api/endpoints";
-import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import { verifyPassword } from "../../../../../utils/verifyPassword";
+import Header from "../../../../../components/layout/Header";
+import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
+import DescriptiveButton from "../../../../../components/common/buttons/DescriptiveButton";
+import BasicButton from "../../../../../components/common/buttons/BasicButton";
+import endpoints from "../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuthenticator } from "@aws-amplify/ui-react-native";
 import {
     getCurrentUser,
     signOut
 } from 'aws-amplify/auth';
-import DropDown from "../../../../components/common/input/DropDown";
-import { isOwnerRole } from "../../../../storage/permissionsStorage";
-import { hasPermission } from "../../../../utils/permissions";
-import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
+import DropDown from "../../../../../components/common/input/DropDown";
+import { isOwnerRole } from "../../../../../storage/permissionsStorage";
+import { hasPermission } from "../../../../../utils/permissions";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
@@ -49,19 +49,19 @@ const WorkspaceManagement = () => {
                 permKey: "app.workspace.update_workspace", 
                 label: "Workspace Details", 
                 description: "Update name, location and description", 
-                onPress: () => router.navigate("/settings/workspace-details") 
+                onPress: () => router.navigate("settings/workspace/workspace-details") 
             },
             {
                 permKey: "app.workspace.manage_modules", 
                 label: "Module Management", 
                 description: "Add and remove modules from the workspace", 
-                onPress: () => router.navigate("/settings/module-management") 
+                onPress: () => router.navigate("settings/workspace/module-management") 
             },
             {
                 permKey: "app.workspace.manage_boards",
                 label: "Board Management", 
                 description: "Edit boards within the workspace", 
-                onPress: () => router.navigate("/settings/board-management") 
+                onPress: () => router.navigate("settings/workspace/board-management") 
             },
     ];
 
@@ -95,9 +95,10 @@ const WorkspaceManagement = () => {
                 const currentUser = await getCurrentUser();
                 const currentUserId = currentUser.userId;
 
-                const users = await apiGet(
+                const response = await apiGet(
                     endpoints.workspace.users.getUsers(workspaceId)
                 );
+                const users = response.data;
 
                 // filter out the current user (expected to be the current owner)
                 const filteredList = users.filter(user => user.userId !== currentUserId);
@@ -110,9 +111,10 @@ const WorkspaceManagement = () => {
 
             // fetch workspace roles
             try {
-                const roles = await apiGet(
+                const response = await apiGet(
                     endpoints.workspace.roles.getRoles(workspaceId)
                 );
+                const roles = response.data;
 
                 // filter out the owner role
                 const filteredList = roles.filter(role => !role.owner);
@@ -196,7 +198,7 @@ const WorkspaceManagement = () => {
                     transferPayload
                 );
 
-                console.log("Ownership transferred:", result);
+                console.log("Ownership transferred:", result.data);
                 setTransferDialogVisible(false);
             } catch (error) {
                 console.error("Error transfering ownership: ", error);
