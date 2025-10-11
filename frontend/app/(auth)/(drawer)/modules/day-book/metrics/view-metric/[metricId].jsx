@@ -48,10 +48,11 @@ const ViewMetric = () => {
             console.log("Downloading metric settings...");
             let apiResultMetric;
             try {  // Download metric settings
-                apiResultMetric = await apiGet(
+                const apiResultMetricResult = await apiGet(
                     endpoints.modules.day_book.metrics.getMetric(metricId),
                     { workspaceId }
                 )
+                apiResultMetric = apiResultMetricResult.data;
                 setMetricSettings(apiResultMetric);
             } catch (error) {
                 console.error("Error downloading metric settings:", error);

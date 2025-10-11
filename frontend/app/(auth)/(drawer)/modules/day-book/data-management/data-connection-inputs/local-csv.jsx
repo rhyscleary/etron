@@ -80,7 +80,7 @@ const LocalCSV = () => {
                 endpoints.modules.day_book.data_sources.addLocal,
                 dataSourceDetails
             );
-            return result;
+            return result.data;
         } catch (error) {
             console.error("Error posting via endpoint:", error);
             return null;

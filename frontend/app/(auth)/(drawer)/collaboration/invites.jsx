@@ -25,9 +25,10 @@ const Invites = () => {
         const result = await apiGet(
           endpoints.workspace.invites.getInvitesSent(workspaceId)
         );
+        const invites = result.data;
 
-        console.log("Invites:", result);
-        setInvites(Array.isArray(result) ? result : []);
+        console.log("Invites:", invites);
+        setInvites(Array.isArray(invites) ? invites : []);
       } catch (error) {
         console.error("Failed to fetch invites:", error);
       } finally {

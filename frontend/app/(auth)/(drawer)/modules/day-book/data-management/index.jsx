@@ -40,7 +40,8 @@ const DataManagement = () => {
 					endpoints.modules.day_book.data_sources.getDataSources,
 					{ workspaceId }
 				)
-				setDataSourceMappings(result.map(dataSource => ({
+				let dataSources = result.data;
+				setDataSourceMappings(dataSources.map(dataSource => ({
 					name: dataSource.name,
 					id: dataSource.dataSourceId
 				})));

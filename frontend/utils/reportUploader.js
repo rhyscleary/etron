@@ -2,7 +2,7 @@
 
 import { Alert } from "react-native";
 import RNFS from "react-native-fs";
-import { apiPatch, apiPost, apiPut } from "./api/apiClient";
+import { apiPatch, apiPost } from "./api/apiClient";
 import endpoints from "./api/endpoints";
 import axios from "axios";
 
@@ -66,9 +66,9 @@ export async function uploadUpdatedReport({
             }
         );
 
-        console.log(updateResult);
+        console.log(updateResult.data);
 
-        fileUploadUrl = updateResult.fileUploadUrl;
+        fileUploadUrl = updateResult.data.fileUploadUrl;
 
         if (!fileUploadUrl) {
             console.error("No fileUploadUrl returned from the API");
@@ -121,8 +121,8 @@ export async function createNewReport({
         );
         console.log(createResult);
 
-        fileUploadUrl = createResult.fileUploadUrl;
-        newReportId = createResult.draftId || createResult.templateId;
+        fileUploadUrl = createResult.data.fileUploadUrl;
+        newReportId = createResult.data.draftId || createResult.data.templateId;
 
         if (!fileUploadUrl || !newReportId) {
             console.error("Invalid create response");

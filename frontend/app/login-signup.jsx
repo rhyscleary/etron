@@ -132,7 +132,7 @@ function LoginSignup() {
                                         endpoints.workspace.core.getByUserId(user.userId)
                                     );
 
-                                    if (!workspace || !workspace.workspaceId) {
+                                    if (!workspace.data || !workspace.data.workspaceId) {
                                         // clear attribute and redirect to choose workspace
                                         await setHasWorkspaceAttribute(false);
                                         router.dismissAll();
@@ -141,7 +141,7 @@ function LoginSignup() {
                                     }
 
                                     // save locally and go to profile screen
-                                    await saveWorkspaceInfo(workspace);
+                                    await saveWorkspaceInfo(workspace.data);
                                     router.dismissAll();
                                     router.replace("(auth)/dashboard");
                                 } catch (error) {
@@ -268,7 +268,7 @@ function LoginSignup() {
                             endpoints.workspace.core.getByUserId(user.userId)
                         );
 
-                        if (!workspace || !workspace.workspaceId) {
+                        if (!workspace.data || !workspace.data.workspaceId) {
                             // clear attribute and redirect to choose workspace
                             await setHasWorkspaceAttribute(false);
                             router.dismissAll();
@@ -277,7 +277,7 @@ function LoginSignup() {
                         }
 
                         // save locally and go to profile screen
-                        await saveWorkspaceInfo(workspace);
+                        await saveWorkspaceInfo(workspace.data);
                         router.dismissAll();
                         router.replace("(auth)/dashboard");
                     } catch (error) {

@@ -36,9 +36,11 @@ const WorkspaceDetails = () => {
             try {
                 const workspaceId = await getWorkspaceId();
 
-                const workspace = await apiGet(
+                const result = await apiGet(
                     endpoints.workspace.core.getWorkspace(workspaceId)
                 );
+
+                const workspace = result.data;
 
                 if (workspace) {
                     // set values for workspace details
@@ -105,7 +107,7 @@ const WorkspaceDetails = () => {
                 updateData
             );
 
-            console.log('Workspace details updated:', result);
+            console.log('Workspace details updated:', result.data);
             
             setOriginalData({
                 name,

@@ -50,13 +50,15 @@ const EditReport = () => {
           { workspaceId }
         );
 
-        if (!response) return;
+        const draft = response.data;
 
-        setReportId(response.draftId);
-        setFileName(response.name || "Report");
+        if (!draft) return;
 
-        if (response.fileUrl) {
-          const fileResponse = await fetch(response.fileUrl);
+        setReportId(draft.draftId);
+        setFileName(draft.name || "Report");
+
+        if (draft.fileUrl) {
+          const fileResponse = await fetch(draft.fileUrl);
           const fileText = await fileResponse.text();
           setEditorContent(fileText || "");
         }

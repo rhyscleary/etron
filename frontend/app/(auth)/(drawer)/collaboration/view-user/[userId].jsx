@@ -49,7 +49,8 @@ const ViewUser = () => {
 			setWorkspaceId(workspaceIdTemp);
 
 			try {
-				const user = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
+				const result = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
+                const user = result.data;
 				setFirstName(user.given_name);
 				setLastName(user.family_name);
                 setName(user.given_name + " " + user.family_name);
@@ -65,8 +66,9 @@ const ViewUser = () => {
 			
 			try {
 				console.log("workspaceId:", workspaceIdTemp);
-				const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
-				console.log("fetchedRoles:", fetchedRoles);
+				const rolesResult = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
+                const roles = rolesResult.data;
+				console.log("fetchedRoles:", roles);
 				
 			} catch (error) {
 				console.error("Error fetching roles:", error);

@@ -18,7 +18,7 @@ import { getCurrentUser } from "aws-amplify/auth";
 const AMOUNT_PLACEHOLDERS = 5;
 
 const BoardManagement = () => {
-    const theme = useTheme();
+    /*const theme = useTheme();
     const [loading, setLoading] = useState(true);
     const [boards, setBoards] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
@@ -68,14 +68,13 @@ const BoardManagement = () => {
                 endpoints.workspace.boards.getBoards(id)
             );
 
-            const sanitized = Array.isArray(response) ? response.filter(Boolean) : [];
+            const boards = response.data;
+            const sanitized = Array.isArray(boards) ? boards.filter(Boolean) : [];
             setBoards(sanitized);
 
-            
+            console.log(boards);
 
-            console.log(response);
-
-            setBoards(Array.isArray(response) ? response.filter(Boolean) : []);
+            setBoards(Array.isArray(boards) ? boards.filter(Boolean) : []);
         } catch (error) {
             console.error("Error fetching boards:", error);
         } finally {
@@ -169,9 +168,9 @@ const BoardManagement = () => {
                     />
                 )}
             </View>
-
+*/
             {/* Dialog to create a new board */}
-            <BasicDialog
+           /* <BasicDialog
                 visible={createDialogVisible}
                 title="New Board"
                 showInput
@@ -199,7 +198,8 @@ const BoardManagement = () => {
 
         </ResponsiveScreen>
     )
-};
+*/
+}
 
 const styles = StyleSheet.create({
     contentContainer: {

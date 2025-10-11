@@ -34,10 +34,11 @@ const CreateMetric = () => {
             const workspaceId = await getWorkspaceId();
             const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
-                let dataSourcesFromApi = await apiGet(
+                let dataSourcesFromApiResult = await apiGet(
                     endpoints.modules.day_book.data_sources.getDataSources,
                     { workspaceId }
                 )
+                let dataSourcesFromApi = dataSourcesFromApiResult.data;
                 console.log(dataSourcesFromApi);
                 setDataSourceMappings(dataSourcesFromApi.map(
                     dataSource => ({
@@ -66,10 +67,11 @@ const CreateMetric = () => {
 
         const workspaceId = await getWorkspaceId();
         try {
-            let result = await apiGet(
+            let response = await apiGet(
                 endpoints.modules.day_book.data_sources.viewData(source),
                 { workspaceId }
             )
+            let result = response.data;
             setDataSourceData(result.data);
             setDataSourceVariableNames(result.schema.map(variable => variable.name));
             setDataSourceDataDownloadStatus("downloaded");
