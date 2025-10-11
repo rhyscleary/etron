@@ -34,9 +34,9 @@ const JoinWorkspace = () => {
                     endpoints.user.invites.getUserInvites,
                     { email }
                 );
-                console.log(inviteResult);
-                if (inviteResult && inviteResult.length > 0) {
-                    const processedInvites = await Promise.all(inviteResult.map(async invite => {
+                console.log(inviteResult.data);
+                if (inviteResult.data && inviteResult.data.length > 0) {
+                    const processedInvites = await Promise.all(inviteResult.data.map(async invite => {
                         const expireAt = formatTTLDate(invite.expireAt);
                         console.log(invite.workspaceId);
                         const workspace = await apiGet(
@@ -46,8 +46,8 @@ const JoinWorkspace = () => {
                         return {
                             ...invite,
                             expireAt,
-                            workspaceName: workspace.name,
-                            workspaceDescription: workspace.description
+                            workspaceName: workspace.data.name,
+                            workspaceDescription: workspace.data.description
                         };
                     }));
 
@@ -125,12 +125,12 @@ const JoinWorkspace = () => {
             )
 
             // save workspace info to local storage
-            saveWorkspaceInfo(workspace);
+            saveWorkspaceInfo(workspace.data);
 
             // update user attribute to be in a workspace
             await handleUpdateUserAttribute('custom:has_workspace', "true");
 
-            console.log('Join response:', workspace);
+            console.log('Join response:', workspace.data);
             setJoining(false);
 
 

@@ -66,13 +66,13 @@ export default function AuthLayout() {
                 return false;
             }
             
-            if (workspace?.workspaceId) {
-                console.log("WorkspaceId received from server:", workspace.workspaceId);
+            if (workspace.data?.workspaceId) {
+                console.log("WorkspaceId received from server:", workspace.data.workspaceId);
 
                 // Save user's role details
                 try {
-                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspace.workspaceId));
-                    await saveRole(userRole);
+                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspace.data.workspaceId));
+                    await saveRole(userRole.data);
                 } catch (error) {
                     console.error("Error saving user's role details into local storage:", error);
                 }      
@@ -118,7 +118,7 @@ export default function AuthLayout() {
         const userAttributes = await fetchUserAttributes();
         try {
             const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
-            await saveUserInfo(userInfo);  // Saves into local storage
+            await saveUserInfo(userInfo.data);  // Saves into local storage
         } catch (error) {
             console.error("Error saving user info into storage:", error);
         }

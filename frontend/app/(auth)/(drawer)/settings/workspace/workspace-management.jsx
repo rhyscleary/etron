@@ -95,9 +95,10 @@ const WorkspaceManagement = () => {
                 const currentUser = await getCurrentUser();
                 const currentUserId = currentUser.userId;
 
-                const users = await apiGet(
+                const response = await apiGet(
                     endpoints.workspace.users.getUsers(workspaceId)
                 );
+                const users = response.data;
 
                 // filter out the current user (expected to be the current owner)
                 const filteredList = users.filter(user => user.userId !== currentUserId);
@@ -110,9 +111,10 @@ const WorkspaceManagement = () => {
 
             // fetch workspace roles
             try {
-                const roles = await apiGet(
+                const response = await apiGet(
                     endpoints.workspace.roles.getRoles(workspaceId)
                 );
+                const roles = response.data;
 
                 // filter out the owner role
                 const filteredList = roles.filter(role => !role.owner);

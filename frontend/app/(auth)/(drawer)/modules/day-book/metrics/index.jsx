@@ -29,10 +29,11 @@ const MetricManagement = () => {
             const workspaceId = await getWorkspaceId();
 
             try {
-                const metricData = await apiGet(
+                const metricDataResult = await apiGet(
                     endpoints.modules.day_book.metrics.getMetrics,
                     { workspaceId }
                 );
+                const metricData = metricDataResult.data;
                 console.log(metricData);
                 setMetrics(metricData);
             } catch (error) {

@@ -121,8 +121,8 @@ export async function createNewReport({
         );
         console.log(createResult);
 
-        fileUploadUrl = createResult.fileUploadUrl;
-        newReportId = createResult.draftId || createResult.templateId;
+        fileUploadUrl = createResult.data.fileUploadUrl;
+        newReportId = createResult.data.draftId || createResult.data.templateId;
 
         if (!fileUploadUrl || !newReportId) {
             console.error("Invalid create response");

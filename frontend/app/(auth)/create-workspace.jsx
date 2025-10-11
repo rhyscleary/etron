@@ -83,7 +83,7 @@ const CreateWorkspace = () => {
             );
 
             // save workspace info to local storage
-            saveWorkspaceInfo(result);
+            saveWorkspaceInfo(result.data);
 
             // update user attribute to be in a workspace
             await handleUpdateUserAttribute('custom:has_workspace', "true");

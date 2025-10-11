@@ -33,9 +33,10 @@ const Reports = () => {
     if (!workspaceId) return;
     try {
       setLoading(true);
-      const result = await apiGet(
+      const draftsResult = await apiGet(
         endpoints.modules.day_book.reports.drafts.getDrafts(workspaceId)
       );
+      const result = draftsResult.data;
       setReports(Array.isArray(result) ? result : []);
     } catch (error) {
       console.error("Error fetching reports:", error);

@@ -25,7 +25,8 @@ const Users = () => {
         try {
             const workspaceId = await getWorkspaceId();
             const result = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
-            setUsers(result);
+            const users = result.data;
+            setUsers(users);
         } catch (error) {
             console.error("Failed to fetch users:", error);
         } finally {

@@ -28,10 +28,12 @@ const EditRole = () => {
         setWorkspaceId(id);
 
         if (id && roleId) {
-          const [defaultPerms, roleDetails] = await Promise.all([
+          const [defaultPermsResult, roleDetailsResult] = await Promise.all([
             apiGet(endpoints.workspace.core.getDefaultPermissions),
             apiGet(endpoints.workspace.roles.getRole(id, roleId)),
           ]);
+          const defaultPerms = defaultPermsResult.data;
+          const roleDetails = roleDetailsResult.data;
 
           const enabledKeys = new Set(roleDetails.permissions.map((p) => p.key));
           const mergedPermissions = defaultPerms.map((perm) => ({

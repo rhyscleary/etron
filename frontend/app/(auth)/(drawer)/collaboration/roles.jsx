@@ -26,11 +26,12 @@ const Roles = () => {
 
                 if (id) {
                     const result = await apiGet(endpoints.workspace.roles.getRoles(id));
+                    const roles = result.data;
                     //console.log("Fetched roles:", result);
-                    console.log(result[0]?.permissions[0]);
+                    console.log(roles[0]?.permissions[0]);
 
                     // Ensure this matches your actual API shape
-                    setRoles(Array.isArray(result) ? result : []);
+                    setRoles(Array.isArray(roles) ? roles : []);
                     setLoading(false);
                 }
             } catch (error) {

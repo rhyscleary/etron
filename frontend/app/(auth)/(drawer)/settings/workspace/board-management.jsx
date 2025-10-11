@@ -68,14 +68,13 @@ const BoardManagement = () => {
                 endpoints.workspace.boards.getBoards(id)
             );
 
-            const sanitized = Array.isArray(response) ? response.filter(Boolean) : [];
+            const boards = response.data;
+            const sanitized = Array.isArray(boards) ? boards.filter(Boolean) : [];
             setBoards(sanitized);
 
-            
+            console.log(boards);
 
-            console.log(response);
-
-            setBoards(Array.isArray(response) ? response.filter(Boolean) : []);
+            setBoards(Array.isArray(boards) ? boards.filter(Boolean) : []);
         } catch (error) {
             console.error("Error fetching boards:", error);
         } finally {

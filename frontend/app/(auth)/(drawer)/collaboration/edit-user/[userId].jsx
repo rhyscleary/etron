@@ -55,7 +55,8 @@ const EditUser = () => {
 			}
 			
 			try {
-				const fetchedRoles = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
+				const fetchedRolesResult = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
+				const fetchedRoles = fetchedRolesResult.data;
 				setRoles(fetchedRoles || []);
 			} catch (error) {
 				console.error("Error fetching roles:", error);
