@@ -35,11 +35,12 @@ const Templates = () => {
 
     setLoading(true);
     try {
-      const data = await apiGet(
+      const response = await apiGet(
         endpoints.modules.day_book.reports.templates.getTemplates,
         { workspaceId }
       );
-      setTemplates(Array.isArray(data) ? data : []);
+      const templates = response.data;
+      setTemplates(Array.isArray(templates) ? templates : []);
     } catch (error) {
       Alert.alert("Error", "Failed to load templates.");
     } finally {
