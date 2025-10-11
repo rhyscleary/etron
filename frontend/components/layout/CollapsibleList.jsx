@@ -38,7 +38,7 @@ const CollapsibleList = ({ items = [], canCloseFormAccordion = true }) => {
                 left={(props) => (
                     <List.Icon
                     {...props}
-                    icon={icon || 'chevron-up'}
+                    icon={icon}
                     color={isDisabled ? theme.colors.onSurfaceDisabled : props.color}
                     />
                 )}

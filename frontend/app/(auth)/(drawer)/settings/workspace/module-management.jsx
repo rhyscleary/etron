@@ -208,7 +208,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                         ListEmptyComponent={
                             !loading ? (
                                 <View style={styles.emptyContainer}>
-                                    <Text style={styles.emptyText}>No Modules Installed</Text>
+                                    <Text style={styles.emptyText}>No Modules Installed.</Text>
                                 </View>
                             ) : null
                         }

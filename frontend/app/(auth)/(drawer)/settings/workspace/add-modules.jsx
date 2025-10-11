@@ -146,7 +146,7 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
                         ListEmptyComponent={
                             !loading ? (
                                 <View style={styles.emptyContainer}>
-                                    <Text style={styles.emptyText}>No Modules Available</Text>
+                                    <Text style={styles.emptyText}>No Modules Available.</Text>
                                 </View>
                             ) : null
                         }
