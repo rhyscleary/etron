@@ -70,7 +70,6 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                 endpoints.workspace.modules.getInstalledModules(id)
             );
 
-            console.log(response);
             const installedModules = response.data;
 
             setModules((installedModules || []).sort((a, b) => a.name.localeCompare(b.name)));
