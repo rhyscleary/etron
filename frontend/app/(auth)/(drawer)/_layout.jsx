@@ -26,7 +26,7 @@ const boardOptions = [
     { name: "dashboard", label: "Dashboard", icon: "view-dashboard" },
 ]
 
-const DrawerButton = ({route, options}) => {
+const DrawerButton = ({route, options, navigation}) => {
     const { name, key } = route;
     const label = options.drawerLabel ?? name;
     const icon = options.drawerIcon;
@@ -95,14 +95,14 @@ const CustomDrawer = (props) => {
                     </View>
                 ) : (
                     displayedRoutes.map((route) => (
-                        <DrawerButton route={route} options={descriptors[route.key].options} />
+                        <DrawerButton route={route} options={descriptors[route.key].options} navigation={navigation} />
                     ))
                 )}
             </DrawerContentScrollView>
             <View style={styles.bottomSection}>
                 <View style={styles.divider} />
                 {generalRoutes.map((route) => (
-                    <DrawerButton route={route} options={descriptors[route.key].options} />
+                    <DrawerButton route={route} options={descriptors[route.key].options} navigation={navigation} />
                 ))}
             </View>
         </View>
