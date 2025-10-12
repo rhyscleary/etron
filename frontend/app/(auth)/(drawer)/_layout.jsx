@@ -7,8 +7,6 @@ import { View, StyleSheet } from "react-native";
 import { Drawer } from "expo-router/drawer"
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 
-//const Drawer = createDrawerNavigator();
-
 const generalOptions = [
     { name: "settings-account", label: "Account", icon: "account" },
     { name: "collaboration", label: "Collaboration", icon: "account-group" },
@@ -95,14 +93,14 @@ const CustomDrawer = (props) => {
                     </View>
                 ) : (
                     displayedRoutes.map((route) => (
-                        <DrawerButton route={route} options={descriptors[route.key].options} navigation={navigation} />
+                        <DrawerButton key={route.key} route={route} options={descriptors[route.key].options} navigation={navigation} />
                     ))
                 )}
             </DrawerContentScrollView>
             <View style={styles.bottomSection}>
                 <View style={styles.divider} />
                 {generalRoutes.map((route) => (
-                    <DrawerButton route={route} options={descriptors[route.key].options} navigation={navigation} />
+                    <DrawerButton key={route.key} route={route} options={descriptors[route.key].options} navigation={navigation} />
                 ))}
             </View>
         </View>
