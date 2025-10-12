@@ -84,7 +84,7 @@ const Users = () => {
             }
 			center={false}
 			padded={false}
-            scroll={true}
+            scroll={false}
 		>
 
             {/* Search Box */}
