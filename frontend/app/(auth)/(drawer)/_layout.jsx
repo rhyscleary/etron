@@ -1,5 +1,7 @@
+// Author(s): Noah Bradley
+
 import { useState } from "react";
-import { DrawerContentScrollView, DrawerItemList, DrawerItem } from "@react-navigation/drawer";
+import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useTheme, Appbar, Icon } from "react-native-paper";
 import { View, StyleSheet } from "react-native";
 import { Drawer } from "expo-router/drawer"
@@ -20,25 +22,9 @@ const dayBookOptions = [
     { name: "modules/day-book/notifications", label: "Notifications", icon: "bell" },
 ]
 
-const boardsOptions = [
+const boardOptions = [
     { name: "dashboard", label: "Dashboard", icon: "view-dashboard" },
 ]
-
-const drawerButton = (route) => {
-    const { name, key } = route;
-    const options = descriptors[key].options;
-    const label = options.drawerLabel ?? name;
-    const icon = options.drawerIcon;
-
-    return (
-        <DrawerItem
-            key={key}
-            label={label}
-            icon={icon}
-            onPress={() => navigation.navigate(name)}
-        />
-    );
-}
 
 const DrawerButton = ({route, options}) => {
     const { name, key } = route;
@@ -64,7 +50,7 @@ const CustomDrawer = (props) => {
     state.routes.map((route) => {
         if (generalOptions.some(page => page.name == route.name)) generalRoutes.push(route);
         else if (dayBookOptions.some(page => page.name == route.name)) dayBookRoutes.push(route);
-        else if (boardsOptions.some(page => page.name == route.name)) boardRoutes.push(route);
+        else if (boardOptions.some(page => page.name == route.name)) boardRoutes.push(route);
     })
 
     let displayedRoutes;
@@ -144,16 +130,18 @@ export default function DrawerLayout() {
                 }
             }}
         >
-            <Drawer.Screen
-                name={"dashboard"}
-                options={{
-                    drawerLabel: "Dashboard",
-                    drawerIcon: ({ color, size }) => (
-                        <Icon source={"view-dashboard"} color={color} size={size} />
-                    ),
-                    drawerItemStyle: { display: drawerState == "boards" ? "flex" : "none"}  // App will always show the options for these pages in (drawer), so always render it but make its display "none"
-                }}
-            />
+            {boardOptions.map(({ name, label, icon }) =>
+                <Drawer.Screen
+                    key={name}
+                    name={name}
+                    options={{
+                        drawerLabel: label,
+                        drawerIcon: ({ color, size }) => (
+                            <Icon source={icon} color={color} size={size} />
+                        ),
+                    }}
+                />
+            )}
 
             {dayBookOptions.map(({ name, label, icon }) => (
                 <Drawer.Screen
@@ -164,7 +152,6 @@ export default function DrawerLayout() {
                         drawerIcon: ({ color, size }) => (
                             <Icon source={icon} color={color} size={size} />
                         ),
-                        drawerItemStyle: { display: drawerState == "day-book" ? "flex" : "none"}
                     }}
                 />
             ))}
