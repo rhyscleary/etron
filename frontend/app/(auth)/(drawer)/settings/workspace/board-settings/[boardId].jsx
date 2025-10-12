@@ -1,21 +1,16 @@
 // Author(s): Rhys Cleary
 
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from "react-native";
-import Header from "../../../../../components/layout/Header";
+import Header from "../../../../../../components/layout/Header";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import BasicDialog from "../../../../../components/overlays/BasicDialog";
-import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
-import SearchBar from "../../../../../components/common/input/SearchBar";
-import ListCard from "../../../../../components/cards/listCard";
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../../../../utils/api/apiClient";
+import BasicDialog from "../../../../../../components/overlays/BasicDialog";
+import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
-import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
+import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import { List, Text, useTheme } from "react-native-paper";
-import { hasPermission } from "../../../../../utils/permissions";
-import CustomBottomSheet from "../../../../../components/BottomSheet/bottom-sheet";
-import { FlashList } from "@shopify/flash-list";
-import PlaceholderBoard from "../../../../../components/skeleton/PlaceholderBoard";
+import { hasPermission } from "../../../../../../utils/permissions";
 import ErrorRetry from "../../../../../../components/common/errors/ErrorRetry";
 import StackLayout from "../../../../../../components/layout/StackLayout";
 import TextField from "../../../../../../components/common/input/TextField";
@@ -132,13 +127,15 @@ const BoardSettings = ({ mode = "view" }) => {
     
     return (
         <ResponsiveScreen
-            header={<Header title="Modules" showBack showPlus onRightIconPress={() => router.navigate("/settings/workspace/add-modules")} />}
+            header={<Header title={mode === "view" ? "View Board" : "Edit Board"} showBack showEdit />}
             padded
             scroll
         >
             <StackLayout spacing={24}>
                 <TextField
-                    
+                    value={boardName}
+                    placeholder="Name"
+                    isDisabled={mode === "edit"}
                 />
             </StackLayout>
             

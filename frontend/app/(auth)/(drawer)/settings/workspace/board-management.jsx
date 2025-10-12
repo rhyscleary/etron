@@ -201,6 +201,7 @@ const BoardManagement = () => {
                 )}
                 onPress={() => {
                     // navigate to board settings
+                    router.navigate(`settings/workspace/board-settings/${item.boardId}`)
                 }}
                 style={styles.listItem}
             />
