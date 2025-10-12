@@ -59,7 +59,7 @@ const CollapsibleList = ({ items = [], canCloseFormAccordion = true }) => {
                     opacity: isDisabled ? 0.4 : 1,
                 }}
                 >
-                {content}
+                  {content}
                 </List.Accordion>
           </View>
         );

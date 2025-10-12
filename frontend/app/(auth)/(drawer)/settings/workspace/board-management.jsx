@@ -17,6 +17,7 @@ import CollapsibleList from "../../../../../components/layout/CollapsibleList";
 import Divider from "../../../../../components/layout/Divider";
 import PlaceholderListItem from "../../../../../components/skeleton/PlaceholderListItem";
 import defaultThumbnail from "../../../../../assets/images/defaultThumbnail.jpeg";
+import ErrorRetry from "../../../../../components/common/errors/ErrorRetry";
 
 const AMOUNT_PLACEHOLDERS = 5;
 
@@ -33,6 +34,7 @@ const BoardManagement = () => {
     const [error, setError] = useState(false);
     const [usersMap, setUsersMap] = useState({});
     const [usersLoading, setUsersLoading] = useState(true);
+    const [failedImages, setFailedImages] = useState({});
 
     useEffect(() => {
         const init = async () => {
@@ -88,6 +90,7 @@ const BoardManagement = () => {
             const response = await apiGet(
                 endpoints.workspace.boards.getBoards(id)
             );
+            console.log(response.data)
 
             if (response.status !== 200) {
                 setError(true);
@@ -172,6 +175,7 @@ const BoardManagement = () => {
 
     const renderBoardItem = ({item}) => {
         const isYou = item.createdBy === currentUserId;
+        const hasError = failedImages[item.boardId];
         
         return (
             <List.Item
@@ -187,11 +191,12 @@ const BoardManagement = () => {
                 right={() => (
                     <Image
                         source={
-                            item.thumbnailUrl
-                                ? { uri: item.thumbnailUrl }  
-                                : require("../../../../../assets/images/defaultThumbnail.jpeg") 
+                            !item.thumbnailUrl || hasError
+                                ? defaultThumbnail  
+                                : { uri: item.thumbnailUrl } 
                         }
-                        style={{ width: 40, height: 40 }}
+                        style={{ width: 38, height: 38 }}
+                        onError={() => setFailedImages((prev) => ({ ...prev, [item.boardId]: true }))}
                     />
                 )}
                 onPress={() => {
@@ -250,19 +255,14 @@ const BoardManagement = () => {
                     <>
                         {/* If an error has occurred display chip to retry */}
                         {error ? (
-                            <View style={[styles.emptyContainer, { justifyContent: 'flex-start', paddingTop: 100}]}>
-                                <Text style={styles.emptyText}>An error occurred loading boards.</Text>
-                                <Chip
-                                    mode="outlined"
-                                    onPress={() => {
-                                        setLoading(true);
-                                        fetchBoards(workspaceId);
-                                    }}
-                                    style={{ marginTop: 8 }}
-                                >
-                                    Retry
-                                </Chip>
-                            </View>
+                            <ErrorRetry
+                                message="An error occurred loading boards."
+                                onRetry={async () => {
+                                    setLoading(true);
+                                    await fetchBoards(workspaceId);
+                                    setLoading(false);
+                                }}
+                            />
                         ) : !hasYou && !hasOthers ? (
                             <View style={styles.emptyContainer}>
                                 <Text style={styles.emptyText}>No boards created.</Text>
@@ -284,6 +284,7 @@ const BoardManagement = () => {
                                                             item?.boardId?.toString() ?? index.toString()
                                                         }
                                                         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+                                                        ListFooterComponent={<View style={{ height: 40 }} />}
                                                     />
                                                 ),
                                             },
@@ -312,6 +313,7 @@ const BoardManagement = () => {
                                                             item?.boardId?.toString() ?? index.toString()
                                                         }
                                                         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+                                                        ListFooterComponent={<View style={{ height: 40 }} />}
                                                     />
                                                 ), 
                                             },
