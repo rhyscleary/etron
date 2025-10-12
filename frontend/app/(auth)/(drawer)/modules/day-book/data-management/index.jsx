@@ -231,7 +231,7 @@ const DataManagement = () => {
 			/>}
 			center={false}
 			padded={false}
-			scroll={true}
+			scroll={false}
 		>
 			{body}
 		</ResponsiveScreen>
