@@ -71,7 +71,7 @@ const Invites = () => {
       }
 			center={false}
 			padded={false}
-      scroll={true}
+      scroll={false}
 		>
 
       {loading ? (

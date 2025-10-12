@@ -73,7 +73,7 @@ const Reports = () => {
   return (
     <ResponsiveScreen
       header={<Header title="Reports" showMenu />}
-      scroll={true} padded={false} center={false}
+      scroll={false} padded={false} center={false}
     >
       {/* Temporary test button */}
       <View style={{ margin: 12 }}>

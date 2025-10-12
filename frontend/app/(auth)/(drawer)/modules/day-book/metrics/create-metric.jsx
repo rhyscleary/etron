@@ -197,8 +197,7 @@ const CreateMetric = () => {
         }  
         
         console.log("Form completed");
-        //router.navigate("/modules/day-book/metrics/metric-management"); 
-        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround? it's a lack of stack and a _layout for metrics. This can be fixed now.
+        router.navigate("/modules/day-book/metrics"); 
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);

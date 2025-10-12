@@ -101,7 +101,7 @@ const LocalCSV = () => {
 
             await uploadFile(deviceFilePath, uploadUrl);
 
-            router.back();
+            router.navigate("modules/day-book/data-management");
         } catch (error) {
             console.error("Error finalising CSV upload:", error);
         }

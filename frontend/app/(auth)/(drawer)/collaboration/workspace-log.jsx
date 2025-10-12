@@ -40,7 +40,7 @@ const WorkspaceLog = () => {
             header={<Header title="Workspace Log" showBack />}
             center={false}
             padded
-            scroll={true}
+            scroll={false}
         >
 
             {/* Search Bar */}

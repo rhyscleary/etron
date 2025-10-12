@@ -125,7 +125,6 @@ export default function AuthLayout() {
     }
 
     useEffect(() => {
-
         const loadLayout = async () => {
             console.log("(AuthLayout) Auth status:", authStatus);
 
@@ -135,14 +134,14 @@ export default function AuthLayout() {
 
                 if (!workspaceExists && !personalDetailsExists) {
                     await unloadProfilePhoto();
-                    console.log("User authenticated but no workspace or personal details found. Redirecting..");
+                    console.log("User authenticated but no workspace or personal details found. Redirecting to personalise account page...");
                     router.replace("/(auth)/personalise-account");
                 } else if (!workspaceExists) {
-                    console.log("User authenticated but no workspace found. Redirecting..");
+                    console.log("User authenticated but no workspace found. Redirecting to workspace choice page...");
                     router.replace("/(auth)/workspace-choice");
                 } else {
                     saveUserInfoIntoStorage();
-                    console.log("Showing authenticated profile page.");
+                    console.log("User authenticated, has workspace, and has personal details. Redirecting to workspace dashboard...");
                     router.replace("/(auth)/dashboard")
                 }
 

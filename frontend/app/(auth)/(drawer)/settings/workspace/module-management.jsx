@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Header from "../../../../../components/layout/Header";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { router, useFocusEffect } from "expo-router";
