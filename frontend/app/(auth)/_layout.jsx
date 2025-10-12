@@ -125,7 +125,6 @@ export default function AuthLayout() {
     }
 
     useEffect(() => {
-
         const loadLayout = async () => {
             console.log("(AuthLayout) Auth status:", authStatus);
 
