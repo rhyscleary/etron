@@ -29,7 +29,7 @@ export const auth = defineAuth({
           name: 'MicrosoftEntraID',
           clientId: secret('MICROSOFT_ENTRA_ID_CLIENT_ID'),
           clientSecret: secret('MICROSOFT_ENTRA_ID_CLIENT_SECRET'),
-          issuerUrl: 'https://login.microsoftonline.com/bacabe25-4b37-4686-b4ff-eb5fe4a61be4/wsfed',
+          issuerUrl: 'https://login.microsoftonline.com/bacabe25-4b37-4686-b4ff-eb5fe4a61be4/oauth2/v2.0',
 
           scopes: ['openid', 'email', 'profile', 'offline_access'],
           attributeMapping: {
