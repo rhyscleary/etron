@@ -37,7 +37,7 @@ const InviteUser = () => {
     const fetchRoles = async () => {
       try {
         const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
-        const fetchedRoles = result;
+        const fetchedRoles = result.data;
 
         // filter out the owner role
         const filtered = (fetchedRoles || []).filter(role => !role.owner);

@@ -1,11 +1,10 @@
 // Author(s): Matthew Parkinson
 
-import React, { useState, useEffect } from 'react';
-import { Redirect, useRouter, router, Link } from "expo-router";
+import React from 'react';
 import { View, Image, ImageBackground, StyleSheet } from 'react-native';
-import { PaperProvider, Text } from 'react-native-paper';
-import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
+import { router } from "expo-router";
+import BasicButton from '../components/common/buttons/BasicButton';
 import ResponsiveScreen from '../components/layout/ResponsiveScreen';
 
 const Landing = () => {
@@ -17,48 +16,79 @@ const Landing = () => {
 			style={styles.background}
 			resizeMode='cover'
 		>	
-			<ResponsiveScreen>
-				<Image style={{ width:"100%", height:200, resizeMode: 'contain' }}
-					source={require('../assets/images/Logo.png')}>
-				</Image>
-				<Image style={{ width:"100%", height:200, resizeMode: 'contain' }}
-					source={require('../assets/images/LandingTextForeground.png')}>
-				</Image>
-				<View style={{ padding: 20, gap: 40 }}>
-					<BasicButton
-						label='Login'
-						onPress={() => router.navigate('/login-signup?isSignUp=false')}
-						fullWidth
-					/>
-					<BasicButton
-						label='Sign Up'
-						onPress={() => router.navigate('/login-signup?isSignUp=true')}
-						fullWidth
-					/>
+			<ResponsiveScreen transparent>
+				<View style={styles.container}>
+					
+					{/* --- Top Logo Section --- */}
+					<View style={styles.header}>
+						<Image
+							source={require('../assets/images/Logo.png')}
+							style={styles.logo}
+						/>
+					</View>
+
+					{/* --- Center Foreground & Buttons --- */}
+					<View style={styles.centerSection}>
+						<Image
+							source={require('../assets/images/LandingTextForeground.png')}
+							style={styles.foregroundImage}
+						/>
+
+						<View style={styles.buttonContainer}>
+							<BasicButton
+								label='Login'
+								onPress={() => router.navigate('/login-signup?isSignUp=false')}
+								fullWidth
+							/>
+							<BasicButton
+								label='Sign Up'
+								onPress={() => router.navigate('/login-signup?isSignUp=true')}
+								fullWidth
+							/>
+						</View>
+					</View>
 				</View>
 			</ResponsiveScreen>
 		</ImageBackground>
 	);
-}
+};
 
 const styles = StyleSheet.create({
 	background: {
 		flex: 1,
 	},
-	content: {
+	container: {
 		flex: 1,
-		padding: 5,
-		gap: 30,
-		justifyContent: 'center',
+		padding: 20,
 	},
+	header: {
+		width: '100%',
+		alignItems: 'center',
+		marginTop: 40,
+	},
+	logo: {
+		width: '100%',
+		height: 100,
+		resizeMode: 'contain',
+	},
+
+	// This section takes remaining space and centers content
+	centerSection: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 30,
+	},
+
 	foregroundImage: {
-		width: 380,
-		height: 280,
+		width: 320,
+		height: 220,
 		resizeMode: 'contain',
 	},
 	buttonContainer: {
-		padding: 20,
-		gap: 30,
+		width: '100%',
+		gap: 20,
+		marginTop: 40,
 	},
 });
 

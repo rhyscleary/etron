@@ -53,8 +53,9 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
                 endpoints.workspace.modules.getUninstalledModules(id)
             );
             console.log(response);
+            const modules = response.data;
 
-            setModules((response || []).sort((a, b) => a.name.localeCompare(b.name)));
+            setModules((modules || []).sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error("Error fetching modules:", error);
         } finally {

@@ -70,9 +70,9 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                 endpoints.workspace.modules.getInstalledModules(id)
             );
 
-            console.log(response);
+            const installedModules = response.data;
 
-            setModules((response || []).sort((a, b) => a.name.localeCompare(b.name)));
+            setModules((installedModules || []).sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error("Error fetching modules:", error);
         } finally {

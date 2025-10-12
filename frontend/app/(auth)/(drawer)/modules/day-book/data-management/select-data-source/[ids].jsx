@@ -19,6 +19,7 @@ import {
 import useDataSources from "../../../../../../../hooks/useDataSource";
 import apiClient from "../../../../../../../utils/api/apiClient";
 import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
+import ResponsiveScreen from "../../../../../../../components/layout/ResponsiveScreen";
 
 const SelectDataSource = () => {
   const authService = { getCurrentUser, fetchAuthSession, signOut };
@@ -106,45 +107,45 @@ const SelectDataSource = () => {
       : existingSource?.type;
 
   return (
-    <View style={commonStyles.screen}>
-      <Header title={ids ? "Edit Connection" : "New Connection"} showBack />
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text variant="titleMedium" style={styles.title}>
-          {ids ? "Edit Data Source" : "Choose a Data Source"}
-        </Text>
+    <ResponsiveScreen>
+        <Header title={ids ? "Edit Connection" : "New Connection"} showBack />
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text variant="titleMedium" style={styles.title}>
+            {ids ? "Edit Data Source" : "Choose a Data Source"}
+          </Text>
 
-        {ids ? (
-          existingSource ? (
-            <Card style={styles.card}>
-              <Card.Title
-                title={
-                  typeof existingSource.name === "string"
-                    ? existingSource.name
-                    : JSON.stringify(existingSource.name)
-                }
-                subtitle={subtitleText}
-              />
-              <View style={{ padding: 16 }}>
-                <Text>Type: {String(existingSource.type)}</Text>
-                <Text>Status: {String(existingSource.status)}</Text>
-                <Text>Last Sync: {String(existingSource.lastSync)}</Text>
-              </View>
-            </Card>
-          ) : null
-        ) : (
-          adapters.map(({ type, info }) => (
-            <Pressable key={type} onPress={() => handleSelect(type)}>
+          {ids ? (
+            existingSource ? (
               <Card style={styles.card}>
                 <Card.Title
-                  title={info?.name || type}
-                  subtitle={info?.description || "No description"}
+                  title={
+                    typeof existingSource.name === "string"
+                      ? existingSource.name
+                      : JSON.stringify(existingSource.name)
+                  }
+                  subtitle={subtitleText}
                 />
+                <View style={{ padding: 16 }}>
+                  <Text>Type: {String(existingSource.type)}</Text>
+                  <Text>Status: {String(existingSource.status)}</Text>
+                  <Text>Last Sync: {String(existingSource.lastSync)}</Text>
+                </View>
               </Card>
-            </Pressable>
-          ))
-        )}
-      </ScrollView>
-    </View>
+            ) : null
+          ) : (
+            adapters.map(({ type, info }) => (
+              <Pressable key={type} onPress={() => handleSelect(type)}>
+                <Card style={styles.card}>
+                  <Card.Title
+                    title={info?.name || type}
+                    subtitle={info?.description || "No description"}
+                  />
+                </Card>
+              </Pressable>
+            ))
+          )}
+        </ScrollView>
+</ResponsiveScreen>
   );
 };
 
