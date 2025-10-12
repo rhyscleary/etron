@@ -2,21 +2,13 @@
 
 // DataManagement.js
 import { useState, useEffect } from "react";
-import { RefreshControl, Button } from "react-native";
+import { RefreshControl } from "react-native";
 import { Pressable, ScrollView, View, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { Card } from "react-native-paper";
-import {
-	Text,
-	ActivityIndicator,
-} from "react-native-paper";
-import { Link, router } from "expo-router";
+import { Text, ActivityIndicator } from "react-native-paper";
+import { router } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
-
-import {
-	getAdapterInfo,
-	getCategoryDisplayName,
-} from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
+import { getAdapterInfo, getCategoryDisplayName, } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 import useDataSources from "../../../../../../hooks/useDataSource";
 
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
@@ -203,7 +195,7 @@ const DataManagement = () => {
 					dataSourceMappings.map((dataSource) => { return (
 						<TouchableOpacity 
 							key = {dataSource.id}
-							onPress={() => {router.navigate(`./view-data-source/${dataSource.id}`)}}
+							onPress={() => {router.navigate(`modules/day-book/data-management/view-data-source/${dataSource.id}`)}}
 						>
 							<Card>
 								{<Text>
@@ -239,7 +231,7 @@ const DataManagement = () => {
 			/>}
 			center={false}
 			padded={false}
-			scroll={true}
+			scroll={false}
 		>
 			{body}
 		</ResponsiveScreen>
