@@ -1,75 +1,13 @@
+// Author(s): Noah Bradley
+
 import { useState } from "react";
-import { DrawerContentScrollView, DrawerItemList } from "@react-navigation/drawer";
+import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useTheme, Appbar, Icon } from "react-native-paper";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Drawer } from "expo-router/drawer"
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 
 //const Drawer = createDrawerNavigator();
-
-const CustomDrawer = (props) => {
-    const { navigation, drawerState, setDrawerState } = props;
-
-    return (
-        <DrawerContentScrollView {...props}>
-            <Appbar.Action
-                icon={drawerState == "default"
-                    ? "menu-open"
-                    : "arrow-left-thin"
-                }
-                onPress={() => {
-                    drawerState == "default"
-                    ? navigation.closeDrawer()
-                    : setDrawerState("default")
-                }}
-            />
-            {drawerState == "default" ? (
-                <View>
-                    <DescriptiveButton
-                        label="Boards"
-                        icon="view-dashboard"
-                        onPress={() => setDrawerState("boards")}
-                        transparentBackground
-                        altText
-                        showChevron={false}
-                    />
-                    <DescriptiveButton
-                        label="Day Book"
-                        icon="calendar"
-                        onPress={() => setDrawerState("day-book")}
-                        transparentBackground
-                        altText
-                        showChevron={false}
-                    />
-                </View>
-            ) : (
-                <DescriptiveButton
-                    label="Back"
-                    icon="arrow-left"
-                    onPress={() => setDrawerState("default")}
-                    transparentBackground
-                    altText
-                    showChevron={false}
-                />
-            )}            
-            <DrawerItemList {...props} />
-        </DrawerContentScrollView>
-    );
-}
-
-function DrawerButton({ route, name, icon }) {
-    return (
-        <Drawer.Screen
-            name={route}
-            options={{
-                drawerLabel: name,
-                drawerIcon: ({ color, size }) => (
-                    <Icon source={icon} color={color} size={size} />
-                )
-            }}
-        />
-    );
-}
 
 const generalOptions = [
     { name: "settings-account", label: "Account", icon: "account" },
@@ -83,6 +21,93 @@ const dayBookOptions = [
     { name: "modules/day-book/metrics", label: "Metrics", icon: "chart-line" },
     { name: "modules/day-book/notifications", label: "Notifications", icon: "bell" },
 ]
+
+const boardOptions = [
+    { name: "dashboard", label: "Dashboard", icon: "view-dashboard" },
+]
+
+const DrawerButton = ({route, options}) => {
+    const { name, key } = route;
+    const label = options.drawerLabel ?? name;
+    const icon = options.drawerIcon;
+
+    return (
+        <DrawerItem
+            key={key}
+            label={label}
+            icon={icon}
+            onPress={() => navigation.navigate(name)}
+        />
+    );
+}
+
+const CustomDrawer = (props) => {
+    const { navigation, drawerState, setDrawerState, state, descriptors } = props;
+
+    let generalRoutes = [];
+    let dayBookRoutes = [];
+    let boardRoutes = [];
+    state.routes.map((route) => {
+        if (generalOptions.some(page => page.name == route.name)) generalRoutes.push(route);
+        else if (dayBookOptions.some(page => page.name == route.name)) dayBookRoutes.push(route);
+        else if (boardOptions.some(page => page.name == route.name)) boardRoutes.push(route);
+    })
+
+    let displayedRoutes;
+    switch (String(drawerState)) {
+        case "day-book":
+            displayedRoutes = dayBookRoutes;
+            break;
+        case "boards":
+            displayedRoutes = boardRoutes;
+            break;
+        default:
+            displayedRoutes = []
+    }
+
+    return (
+        <View style={{ flex: 1 }}>
+            <DrawerContentScrollView {...props} contentContainerStyle={{ flexGrow: 1 }}>
+                {drawerState == "default" ? (
+                    <Appbar.Action icon={"menu-open"} onPress={() => {navigation.closeDrawer()}} />
+                ) : (
+                    <Appbar.Action icon={"arrow-left-thin"} onPress={() => {setDrawerState("default")}} />
+                )}
+                {drawerState == "default" ? (
+                    <View>
+                        <DescriptiveButton
+                            label="Boards"
+                            icon="view-dashboard"
+                            onPress={() => setDrawerState("boards")}
+                            transparentBackground
+                            altText
+                            showChevron={false}
+                        />
+                        <View style={styles.divider} />
+                        <DescriptiveButton
+                            label="Day Book"
+                            icon="calendar"
+                            onPress={() => setDrawerState("day-book")}
+                            transparentBackground
+                            altText
+                            showChevron={false}
+                        />
+                    </View>
+                ) : (
+                    displayedRoutes.map((route) => (
+                        <DrawerButton route={route} options={descriptors[route.key].options} />
+                    ))
+                )}
+            </DrawerContentScrollView>
+            <View style={styles.bottomSection}>
+                <View style={styles.divider} />
+                {generalRoutes.map((route) => (
+                    <DrawerButton route={route} options={descriptors[route.key].options} />
+                ))}
+            </View>
+        </View>
+    );
+}
 
 export default function DrawerLayout() {
     const theme = useTheme();
@@ -105,16 +130,18 @@ export default function DrawerLayout() {
                 }
             }}
         >
-            <Drawer.Screen
-                name={"dashboard"}
-                options={{
-                    drawerLabel: "Dashboard",
-                    drawerIcon: ({ color, size }) => (
-                        <Icon source={"view-dashboard"} color={color} size={size} />
-                    ),
-                    drawerItemStyle: { display: drawerState == "boards" ? "flex" : "none"}
-                }}
-            />
+            {boardOptions.map(({ name, label, icon }) =>
+                <Drawer.Screen
+                    key={name}
+                    name={name}
+                    options={{
+                        drawerLabel: label,
+                        drawerIcon: ({ color, size }) => (
+                            <Icon source={icon} color={color} size={size} />
+                        ),
+                    }}
+                />
+            )}
 
             {dayBookOptions.map(({ name, label, icon }) => (
                 <Drawer.Screen
@@ -125,7 +152,6 @@ export default function DrawerLayout() {
                         drawerIcon: ({ color, size }) => (
                             <Icon source={icon} color={color} size={size} />
                         ),
-                        drawerItemStyle: { display: drawerState == "day-book" ? "flex" : "none"}
                     }}
                 />
             ))}
@@ -145,3 +171,15 @@ export default function DrawerLayout() {
         </Drawer>
     );
 }
+
+const styles = StyleSheet.create({
+    bottomSection: {
+        paddingBottom: 30,
+    },
+    divider: {
+        alignSelf: 'center',
+        width: '90%',
+        borderTopWidth: 1,
+        borderTopColor: '#FFFFFF'
+    },
+});

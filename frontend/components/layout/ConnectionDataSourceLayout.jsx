@@ -46,7 +46,7 @@ const ConnectionDataSourceLayout = ({
   demoModeMessage,
   enablePersistentConnection = false,
   dataSourceName,
-  dataManagementPath = "/modules/day-book/data-management/data-management",
+  dataManagementPath = "/modules/day-book/data-management",
   getNavigationParams,
   getAdapterFilterOptions,
 }) => {
