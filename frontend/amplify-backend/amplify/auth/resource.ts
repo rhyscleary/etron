@@ -23,6 +23,24 @@ export const auth = defineAuth({
           familyName: 'family_name',
         }
       },
+
+      oidc: [
+        {
+          name: 'MicrosoftEntraID',
+          clientId: secret('MICROSOFT_ENTRA_ID_CLIENT_ID'),
+          clientSecret: secret('MICROSOFT_ENTRA_ID_CLIENT_SECRET'),
+          issuerUrl: 'https://login.microsoftonline.com/bacabe25-4b37-4686-b4ff-eb5fe4a61be4/wsfed',
+
+          scopes: ['openid', 'email', 'profile', 'offline_access'],
+          attributeMapping: {
+            email: 'email',
+            emailVerified: 'email_verified',
+            givenName: 'given_name',
+            familyName: 'family_name',
+          }
+        }
+      ],
+
       callbackUrls: ["myapp://callback"],
       logoutUrls: ["myapp://signout/"],
     }
