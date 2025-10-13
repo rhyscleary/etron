@@ -470,7 +470,7 @@ Resources:
       Timeout: 30
       Environment:
         Variables:
-          STATE_MACHINE_ARN: !GetAtt DataSourcePollingStateMachine
+          STATE_MACHINE_ARN: !GetAtt DataSourcePollingStateMachine.Arn
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
@@ -499,14 +499,12 @@ Resources:
                 - s3:GetBucketLocation
                 - s3:HeadObject
               Resource: "*"
-            
 
       Events:
         PollSchedule:
           Type: Schedule
           Properties:
             Schedule: rate(15 minutes)
-            Name: DataSourcePollSchedule
 
   DataSourcePollFunction:
     Type: AWS::Serverless::Function
