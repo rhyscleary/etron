@@ -215,7 +215,6 @@ function LoginSignup() {
         setLoading(true);
         setMessage('');
         try {
-
             try {
                 const currentUser = await safeGetCurrentUser();
                 if (currentUser) {
@@ -288,12 +287,11 @@ function LoginSignup() {
             }
         } catch (error) {
             if (error.message.includes("Incorrect username or password")) {
-                console.log("Incorrect username or password.");
+                setMessage(`Incorrect username or password.`);
                 await signOut();
                 return;
             } else {
                 console.error("Sign in error:", error);
-                setMessage(`Error: ${error.message}`);
                 await signOut();
             }
         } finally {
@@ -492,7 +490,7 @@ function LoginSignup() {
                 <BasicButton
                     label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
                     onPress={isSignUpBool ? handleSignUp : handleSignIn}
-                    disabled={(isLinking && !signedOutForLinking) || loading}
+                    disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || (isSignUpBool && !confirmPassword)}
                 />
             </View>
 
