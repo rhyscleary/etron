@@ -1,5 +1,5 @@
 {
-  "name": "data-source-poller",
+  "name": "data-source-poller-initialiser",
   "version": "1.0.0",
   "description": "The backend for eTRON's data source poll function",
   "author": "InSync",

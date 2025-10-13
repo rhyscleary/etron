@@ -1,4 +1,4 @@
-import { SFNClient, StartExecutionCommand } from "@aws-sdk/client-sfn";
+const { SFNClient, StartExecutionCommand } = require("@aws-sdk/client-sfn");
 const dataSourceRepo = require("@etron/day-book-shared/repositories/dataSourceRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 
