@@ -57,11 +57,15 @@ export default function AuthLayout() {
                 );
             } catch (error) {
                 if (error.message.includes("Workspace not found")) {
-                    console.log("No workspace yet, resetting attribute.");
+                    console.log("No workspace yet, resetting attribute...");
                     await removeWorkspaceInfo();
                     await setHasWorkspaceAttribute(false);
                     return false;
-                }                
+                } else if (error.message.includes("No user found")) {
+                    console.log("No user found, rerouting to landing page...")
+                    router.replace("/landing.jsx");
+                    return false;
+                }
                 console.error("Unexpected error fetching workspace:", error);
                 return false;
             }
