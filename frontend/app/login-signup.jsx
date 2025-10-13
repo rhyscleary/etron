@@ -287,9 +287,15 @@ function LoginSignup() {
                 }
             }
         } catch (error) {
-            console.error("Sign in error:", error);
-            setMessage(`Error: ${error.message}`);
-            await signOut();
+            if (error.message.includes("Incorrect username or password")) {
+                console.log("Incorrect username or password.");
+                await signOut();
+                return;
+            } else {
+                console.error("Sign in error:", error);
+                setMessage(`Error: ${error.message}`);
+                await signOut();
+            }
         } finally {
             setLoading(false);
         }
