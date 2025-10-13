@@ -119,7 +119,11 @@ async function getUsersInWorkspace(authUserId, workspaceId) {
 }
 
 async function removeUserFromWorkspace(authUserId, workspaceId, userId) {
-    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_USERS);
+    let isAuthorised;
+    console.log("authUserId:", authUserId);
+    console.log("userId:", userId);
+    if (authUserId == userId) isAuthorised = true;
+    else isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_USERS);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");

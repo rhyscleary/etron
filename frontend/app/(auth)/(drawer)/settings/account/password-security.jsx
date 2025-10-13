@@ -7,13 +7,15 @@ import { useTheme, Text } from "react-native-paper";
 import StackLayout from '../../../../../components/layout/StackLayout';
 import DescriptiveButton from '../../../../../components/common/buttons/DescriptiveButton';
 import { router } from 'expo-router';
+import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
 
 const PasswordSecurity = () => {
     const theme = useTheme();
 
     return(
-        <View style={commonStyles.screen}>
-            <Header title="Password and Security" showBack></Header>
+        <ResponsiveScreen
+            header={<Header title="Password and Security" showBack></Header>}
+        >
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer} >
                 <StackLayout spacing={20}>
                     <StackLayout spacing={4}>
@@ -28,7 +30,7 @@ const PasswordSecurity = () => {
                     />
                 </StackLayout>
             </ScrollView>
-        </View>
+        </ResponsiveScreen>
     )
 }
 
