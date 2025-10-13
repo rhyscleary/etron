@@ -1,0 +1,138 @@
+// Author(s): Matthew Page
+
+import { Alert } from "react-native";
+import RNFS from "react-native-fs";
+import { apiPost } from "./api/apiClient";
+import endpoints from "./api/endpoints";
+import axios from "axios";
+
+// MIME type lookup table for different export file types.
+
+const MIME_TYPES = {
+    pdf: "application/pdf",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    odt: "application/vnd.oasis.opendocument.text",
+    rtf: "application/rtf",
+};
+
+// Generates a simple placeholder file content depending on file type.
+function getPlaceholderContent(fileType) {
+    switch (fileType) {
+        case "docx":
+            return "PK\u0003\u0004..."; // minimal DOCX ZIP signature (placeholder)
+        case "odt":
+            return "PK\u0003\u0004..."; // minimal ODT ZIP signature
+        case "rtf":
+            return "{\\rtf1\\ansi\\deff0\n{\\fonttbl{\\f0 Courier;}}\n\\f0\\fs20 Export File\n}";
+        case "pdf":
+        default:
+            return "%PDF-1.4\n%..."; // minimal PDF header
+    }
+}
+
+// Uploads a file to an S3 pre-signed URL.
+async function uploadExportToS3(filePath, fileUploadUrl, fileType) {
+    try {
+        console.log("=== EXPORT UPLOADER START ===");
+        console.log("File Path:", filePath);
+        console.log("Upload URL:", fileUploadUrl ? "[RECEIVED]" : "[MISSING]");
+        console.log("File Type:", fileType);
+
+        const fileData = await RNFS.readFile(filePath, "utf8");
+        const mimeType = MIME_TYPES[fileType] || "application/octet-stream";
+
+        const response = await axios.put(fileUploadUrl, fileData, {
+            headers: { "Content-Type": mimeType },
+        });
+
+        if (response.status >= 200 && response.status < 300) {
+            console.log("File uploaded successfully to S3.");
+            console.log("=== EXPORT UPLOADER END ===");
+            return true;
+        } else {
+            console.log("Upload failed with status:", response.status);
+            console.log("=== EXPORT UPLOADER END ===");
+            return false;
+        }
+    } catch (error) {
+        console.log("Export upload error:", error.message);
+        Alert.alert("Upload Error", "Failed to upload export file to S3.");
+        console.log("=== EXPORT UPLOADER END ===");
+        return false;
+    }
+}
+
+// Creates a new export file (pdf, docx, odt, rtf) writes it locally, retrieves an upload URL, and uploads to S3.
+
+export async function createNewExport({
+    workspaceId,
+    exportName,
+    draftId,
+    fileType = "pdf",
+    fileContent = null,
+}) {
+    console.log("=== CREATE NEW EXPORT START ===");
+
+    if (!workspaceId || !draftId) {
+        console.log("Error: Missing workspaceId or draftId.");
+        Alert.alert("Error", "Missing workspaceId or draftId.");
+        console.log("=== CREATE NEW EXPORT END ===");
+        return;
+    }
+
+    const trimmedFileName = exportName?.trim() || "Untitled Export";
+    const extension = fileType.toLowerCase();
+    const filePath = `${RNFS.CachesDirectoryPath}/${trimmedFileName}.${extension}`;
+    const contentToWrite = fileContent || getPlaceholderContent(extension);
+
+    try {
+        await RNFS.writeFile(filePath, contentToWrite, "utf8");
+        console.log(`Local ${extension.toUpperCase()} export file written at: ${filePath}`);
+    } catch (error) {
+        console.log("File write error:", error.message);
+        Alert.alert("Error", "Could not save export file locally.");
+        console.log("=== CREATE NEW EXPORT END ===");
+        return;
+    }
+
+    let fileUploadUrl, newExportId;
+    try {
+        console.log("Requesting new export creation from server...");
+        const createResult = await apiPost(
+            endpoints.modules.day_book.reports.exports.createExport,
+            {
+                workspaceId,
+                name: trimmedFileName,
+                draftId,
+                fileType: extension,
+            }
+        );
+
+        fileUploadUrl = createResult.data?.fileUploadUrl;
+        newExportId = createResult.data?.exportId;
+
+        if (!fileUploadUrl || !newExportId) {
+            console.log("Invalid server response: Missing fileUploadUrl or exportId.");
+            console.log("=== CREATE NEW EXPORT END ===");
+            return;
+        }
+
+        console.log("Server returned valid export creation data.");
+    } catch (error) {
+        console.log("Export creation request error:", error.message);
+        Alert.alert("Error", "Could not create export on the server.");
+        console.log("=== CREATE NEW EXPORT END ===");
+        return;
+    }
+
+    const uploaded = await uploadExportToS3(filePath, fileUploadUrl, extension);
+
+    if (uploaded) {
+        console.log(`Export ${newExportId} (${extension.toUpperCase()}) uploaded successfully.`);
+    } else {
+        console.log("Export upload failed.");
+    }
+
+    console.log("=== CREATE NEW EXPORT END ===");
+    return uploaded ? newExportId : null;
+}
