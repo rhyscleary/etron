@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview, viewData, viewDataForMetric, getLocalDataSourceUploadUrl } = require("./dataSourceService");
+const { deleteDataSourceInWorkspace, getDataSourcesInWorkspace, getDataSourceInWorkspace, updateDataSourceInWorkspace, testConnection, createLocalDataSource, createRemoteDataSource, getRemotePreview, viewData, viewDataForMetric, getLocalDataSourceUploadUrl, updatePartitionedData } = require("./dataSourceService");
 
 exports.handler = async (event) => {
     let statusCode = 200;
@@ -66,6 +66,23 @@ exports.handler = async (event) => {
                 }
 
                 body = await updateDataSourceInWorkspace(authUserId, pathParams.dataSourceId, requestJSON);
+                break;
+            }
+
+            // UPDATE DATA SOURCE DATA
+            case "PUT /day-book/data-sources/{dataSourceId}/update-data": {
+                if (!requestJSON.workspaceId) {
+                    throw new Error("Please specify a workspaceId");
+                }
+                if (!pathParams.dataSourceId) {
+                    throw new Error("Missing required path parameters");
+                }
+
+                if (typeof pathParams.dataSourceId !== "string") {
+                    throw new Error("dataSourceId must be a UUID, 'string'");
+                }
+
+                body = await updatePartitionedData(authUserId, pathParams.dataSourceId, requestJSON);
                 break;
             }
 

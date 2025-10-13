@@ -15,6 +15,7 @@ const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { runQuery } = require("@etron/data-sources-shared/utils/athenaService");
 const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { savePartitionedData } = require("../../data-sources-shared/repositories/dataBucketRepository");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -545,6 +546,58 @@ async function viewDataForMetric(authUserId, workspaceId, dataSourceId, metricId
     };
 }
 
+// update the data in the parquet files (by parition (timestamp))
+async function updatePartitionedData(authUserId, dataSourceId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DATASOURCES);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
+    const { workspaceId, updates, partitionField } = payload;
+
+    await validateWorkspaceId(workspaceId);
+
+    if (!updates || updates.length == 0) {
+        throw new Error("No updates provided");
+    }
+
+    try {
+        // group by partition
+        const partitionsMap = {};
+        updates.forEach(update => {
+            if (!update[partitionField]) {
+                throw new Error(`Each updates row must have a partition field`);
+            }
+            const partitionValue = update[partitionField];
+            if (!partitionsMap[partitionValue]) partitionsMap[partitionValue] = [];
+            partitionsMap[partitionValue].push(update);
+        });
+
+        // process each partition
+        for (const partitionValue of Object.keys(partitionsMap)) {
+            const partitionData = partitionsMap[partitionValue];
+
+            // validate and cast data to schema
+            const schema = generateSchema(partitionData);
+            const castedData = castDataToSchema(partitionData, schema);
+
+            // convert to parquet
+            const parquetBuffer = await toParquet(castedData, schema);
+
+            // save the data back into s3
+            await savePartitionedData(workspaceId, dataSourceId, parquetBuffer, partitionValue);
+        }
+
+        // refresh athena
+        await runQuery(`MSCK REPAIR TABLE "ds_${dataSourceId}"`);
+
+        return {message: "Data sources data successfully updated"};
+    } catch (error) {
+        console.error(`Failed to update partitioned data source:`, error);
+    }
+}
+
 module.exports = {
     createRemoteDataSource,
     createLocalDataSource,
@@ -557,5 +610,6 @@ module.exports = {
     viewData,
     viewDataForMetric,
     getLocalDataSourceUploadUrl,
-    getAvailableSpreadsheets
+    getAvailableSpreadsheets,
+    updatePartitionedData
 };
