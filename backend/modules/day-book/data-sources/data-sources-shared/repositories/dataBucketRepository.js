@@ -41,6 +41,32 @@ async function saveStoredData(workspaceId, dataSourceId, data) {
     }
 }
 
+// save data for a partition to S3
+async function savePartitionedData(workspaceId, dataSourceId, data, partitionValue) {
+    if (!partitionValue) throw new Error("partitionValue is required");
+
+    // you can customize folder structure if needed
+    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${partitionValue}.parquet`;
+
+    try {
+        let body = data;
+        if (data && typeof data.pipe === "function") {
+            body = await streamToBuffer(data);
+        }
+
+        await s3Client.send(
+            new PutObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+                Body: body,
+                ContentType: "application/octet-stream"
+            })
+        );
+    } catch (error) {
+        handleS3Error(error, `Error saving partitioned data to ${bucketName}`);
+    }
+}
+
 async function doesObjectExist(bucket, key) {
     try {
         await s3Client.send(
@@ -243,5 +269,6 @@ module.exports = {
     getStoredData,
     getDataSchema,
     saveSchema,
-    appendToStoredData
+    appendToStoredData,
+    savePartitionedData
 };

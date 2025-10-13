@@ -20,7 +20,8 @@ TARGET_FOLDERS = [
     "modules/day-book/reports/functions/reports-exports",
     "modules/day-book/reports/functions/reports-templates",
     "modules/day-book/data-sources/functions/data-source-core",
-    "modules/day-book/data-sources/functions/data-source-poller",
+    "modules/day-book/data-sources/functions/polling/data-source-poller",
+    "modules/day-book/data-sources/functions/polling/data-source-poller-initialiser",
     "modules/day-book/data-sources/functions/data-source-upload-processor"
 ]
 

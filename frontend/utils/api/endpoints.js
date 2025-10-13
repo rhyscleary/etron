@@ -86,6 +86,7 @@ const endpoints = {
                 viewDataForMetric: (dataSourceId, metricId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
                 getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`,
                 getAvailableSheets: `${DATASOURCES_BASE_URL}/available-sheets`,
+                updateData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/update-data`,
                 
                 // google sheets specific endpoints
                 integrations: {
