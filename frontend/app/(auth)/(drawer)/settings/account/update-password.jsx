@@ -40,11 +40,7 @@ const UpdatePassword = () => {
             });
             return { success: true };
         } catch (error) {
-            console.error("Error updating password:", error);
-            
-            // handle the error based on its type
             let errorMessage = "There was an error updating your password";
-            
             switch (error.name) {
                 case 'NotAuthorizedException':
                     errorMessage = "Current password is incorrect";
@@ -60,6 +56,7 @@ const UpdatePassword = () => {
                     break;
                 default:
                     errorMessage = error.message || "There was an error updating your password";
+                    console.error("Error updating password:", error);
             }
             
             return { success: false, error: errorMessage };
