@@ -44,7 +44,6 @@ export const commonStyles = StyleSheet.create({
   inlineButtonContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginVertical: 30,
     gap: 32,
   },
   listItemText: {

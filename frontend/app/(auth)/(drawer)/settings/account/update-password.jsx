@@ -10,6 +10,7 @@ import TextField from "../../../../../components/common/input/TextField";
 import BasicButton from "../../../../../components/common/buttons/BasicButton";
 
 import { updatePassword } from 'aws-amplify/auth';
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 
 const UpdatePassword = () => {
     const theme = useTheme();
@@ -118,81 +119,85 @@ const UpdatePassword = () => {
     }
     
     return(
-        <View style={commonStyles.screen}>
-            <Header title="Update Password" showBack></Header>
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer} >
-                <StackLayout spacing={20}>
-                    <StackLayout spacing={4}>
-                        <Text style={commonStyles.listItemText}>Password</Text>
-                        <Text style={commonStyles.captionText}>Your password must be at least 8 characters and should include a capital letter, number, and symbol. You cannot use a password you have used previously</Text>
-                    </StackLayout>
-                    
-                    <TextField 
-                        value={currentPassword}
-                        placeholder="Enter current password"
-                        secureTextEntry={true}
-                        textContentType="password"
-                        onChangeText={(text) => {
-                            setCurrentPassword(text);
-                            if (passwordError) {
-                                setPasswordError(false);
-                                setErrorDetails("");
-                            }
-                        }}
-                    />
-                    
-                    <TextField 
-                        value={newPassword}
-                        secureTextEntry={true}
-                        textContentType="newPassword"
-                        placeholder="Enter new password"
-                        onChangeText={(text) => {
-                            setNewPassword(text);
-                            if (passwordError) {
-                                setPasswordError(false);
-                                setErrorDetails("");
-                            }
-                        }}
-                    />
-                    
-                    <TextField 
-                        value={confirmPassword}
-                        secureTextEntry={true}
-                        placeholder="Confirm new password"
-                        textContentType="newPassword"
-                        onChangeText={(text) => {
-                            setConfirmPassword(text);
-                            if (passwordError) {
-                                setPasswordError(false);
-                                setErrorDetails("");
-                            }
-                        }}
-                    />
-                    
-                    {notMatching && (
-                        <Text style={{color: theme.colors.error}}>Passwords do not match</Text>
-                    )}
-                    
-                    {passwordError && errorDetails && (
-                        <Text style={{color: theme.colors.error}}>{errorDetails}</Text>
-                    )}
+        <ResponsiveScreen
+            header={<Header title="Update Password" showBack></Header>}
+            center={false}
+        >
+            <View>
+                <Text>Your password must include:</Text>
+                <Text>{'\u2022'} At least 8 characters</Text>
+                <Text>{'\u2022'} A capital letter</Text>
+                <Text>{'\u2022'} A number</Text>
+                <Text>{'\u2022'} A symbol</Text>
+                <Text>
+                    You cannot reuse a previous password.
+                </Text>
+            </View>
 
-                    {message && (
-                        <Text style={{color: theme.colors.primary, textAlign: 'center'}}>
-                            {message}
-                        </Text>
-                    )}
-                    
-                    <View style={commonStyles.inlineButtonContainer}>
-                        <BasicButton 
-                            label={updating ? "Updating..." : "Update"} 
-                            onPress={handleUpdate}
-                            disabled={updating || notMatching}
-                        />
-                    </View>
-                </StackLayout>
-            </ScrollView>
-        </View>
+            <TextField 
+                value={currentPassword}
+                placeholder="Enter current password"
+                secureTextEntry={true}
+                textContentType="password"
+                onChangeText={(text) => {
+                    setCurrentPassword(text);
+                    if (passwordError) {
+                        setPasswordError(false);
+                        setErrorDetails("");
+                    }
+                }}
+            />
+            
+            <TextField 
+                value={newPassword}
+                secureTextEntry={true}
+                textContentType="newPassword"
+                placeholder="Enter new password"
+                onChangeText={(text) => {
+                    setNewPassword(text);
+                    if (passwordError) {
+                        setPasswordError(false);
+                        setErrorDetails("");
+                    }
+                }}
+            />
+            
+            <TextField 
+                value={confirmPassword}
+                secureTextEntry={true}
+                placeholder="Confirm new password"
+                textContentType="newPassword"
+                onChangeText={(text) => {
+                    setConfirmPassword(text);
+                    if (passwordError) {
+                        setPasswordError(false);
+                        setErrorDetails("");
+                    }
+                }}
+            />
+            
+            {notMatching && (
+                <Text style={{color: theme.colors.error}}>Passwords do not match</Text>
+            )}
+            
+            {passwordError && errorDetails && (
+                <Text style={{color: theme.colors.error}}>{errorDetails}</Text>
+            )}
+
+            {message ? (
+                <Text style={{color: theme.colors.primary, textAlign: 'center'}}>
+                    {message}
+                </Text>
+            ) : null}
+            
+            <View style={commonStyles.inlineButtonContainer}>
+                <BasicButton 
+                    label={updating ? "Updating..." : "Update"} 
+                    onPress={handleUpdate}
+                    disabled={updating || notMatching || !currentPassword || newPassword.length < 8 || confirmPassword.length < 8}
+                />
+            </View>
+        </ResponsiveScreen>
     )
 }
 
