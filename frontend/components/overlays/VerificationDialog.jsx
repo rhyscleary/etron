@@ -2,7 +2,7 @@
 
 import { Dialog, Portal, Text, useTheme } from "react-native-paper";
 import BasicButton from "../common/buttons/BasicButton";
-import { StyleSheet, TouchableOpacity, View, Button } from "react-native";
+import { StyleSheet, TouchableOpacity, View, Button, TouchableWithoutFeedback, Keyboard } from "react-native";
 import TextField from "../common/input/TextField";
 
 
@@ -27,25 +27,27 @@ const VerificationDialog = ({
             >
                 <Dialog.Title style={styles.title}>Verify Email</Dialog.Title>
 
-                <Dialog.Content>
-                    <Text style={styles.message}>Please enter the verification code that has been emailed to you.</Text>
-                    <View style={styles.inputContainer}>
-                        <TextField
-                            placeholder="Code"
-                            value={code}
-                            onChangeText={setCode}
-                            keyboardType="numeric"
-                            error={!!error}
-                            contentStyle={{ textAlign: "center" }}
-                        />
-                    </View>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <Dialog.Content>
+                        <Text style={styles.message}>Please enter the verification code that has been emailed to you.</Text>
+                        <View style={styles.inputContainer}>
+                            <TextField
+                                placeholder="Code"
+                                value={code}
+                                onChangeText={setCode}
+                                keyboardType="numeric"
+                                error={!!error}
+                                contentStyle={{ textAlign: "center" }}
+                            />
+                        </View>
 
-                    {error ? (
-                        <Text style={{color: theme.colors.error, marginTop: 10, textAlign: "center"}}>
-                            {error}
-                        </Text>
-                    ) : null}
-                </Dialog.Content>
+                        {error ? (
+                            <Text style={{color: theme.colors.error, marginTop: 10, textAlign: "center"}}>
+                                {error}
+                            </Text>
+                        ) : null}
+                    </Dialog.Content>
+                </TouchableWithoutFeedback>
 
                 <Dialog.Actions style={styles.actions}>
                     <View style={{gap: 10, flexDirection: "row", justifyContent: "space-between"}}>
