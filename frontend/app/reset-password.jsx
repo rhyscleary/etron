@@ -55,7 +55,7 @@ const ResetPassword = () => {
 		// try sending code
 		try {
 			const result = await resetPassword({username});
-			console.log("Code sent");
+			console.log("Code sent to", username);
 
 			if (result) {
 				setShowCodeSentDialog(true);
