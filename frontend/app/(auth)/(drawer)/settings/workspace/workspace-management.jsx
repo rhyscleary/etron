@@ -153,8 +153,7 @@ const WorkspaceManagement = () => {
                 console.log('Workspace deleted:', result);
                 setDeleteDialogVisible(false);
             
-                // sign out the user
-                await signOut();
+                router.navigate("/workspace-choice");
 
             } catch (error) {
                 console.error("Error deleting workspace: ", error);
