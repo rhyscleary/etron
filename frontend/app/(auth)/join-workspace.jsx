@@ -164,6 +164,7 @@ const JoinWorkspace = () => {
                 backIcon="logout"
                 onBackPress={handleBackSignOut}
             />}
+            scroll={false}
         >
             <View style={styles.contentContainer}>
                 {loading ? (
