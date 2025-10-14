@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { View } from "react-native";
+import { View, TouchableOpacity } from "react-native";
 import Header from "../../components/layout/Header";
 import { commonStyles } from "../../assets/styles/stylesheets/common";
 import { useRouter } from "expo-router";
@@ -12,7 +12,8 @@ import { Text, useTheme } from "react-native-paper";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
-import { updateUserAttribute } from "aws-amplify/auth";
+import { updateUserAttribute, signOut } from "aws-amplify/auth";
+import ResponsiveScreen from "../../components/layout/ResponsiveScreen";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -101,49 +102,59 @@ const CreateWorkspace = () => {
     }
 
     function navigateToJoinWorkspace() {
-        router.navigate("/(auth)/join-workspace");
+        router.replace("/(auth)/join-workspace");
+    }
+
+    async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
     }
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Create Workspace" />
-
+        <ResponsiveScreen
+            header={<Header
+                title="Create Workspace"
+                showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+            />}
+        >
             <View>
-                <StackLayout spacing={30}> 
-                    <View>
-                        <TextField 
-                            label="Name" 
-                            value={name} 
-                            placeholder="Name" 
-                            onChangeText={(text) => {
-                                setName(text);
-                                if (text.trim()) {
-                                    setErrors((prev) => ({...prev, name: false}))
-                                }
-                            }} 
-                        />
-                        {errors.name && (
-                            <Text style={{color: theme.colors.error}}>Please enter a name.</Text>
-                        )}
-                    </View>
-                    <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
-                    <TextField label="Description (Optional)" value={description} placeholder="Description" onChangeText={setDescription} />
-                </StackLayout>
-
-                <View style={commonStyles.inlineButtonContainer}>
-                    <BasicButton 
-                        label={creating ? "Creating..." : "Create"} 
-                        onPress={handleCreate}
-                        disabled={creating} 
-                    />
-                </View>
+                <TextField 
+                    label="Name" 
+                    value={name} 
+                    placeholder="Name" 
+                    onChangeText={(text) => {
+                        setName(text);
+                        if (text.trim()) {
+                            setErrors((prev) => ({...prev, name: false}))
+                        }
+                    }} 
+                />
+                {errors.name && (
+                    <Text style={{color: theme.colors.error}}>Please enter a name.</Text>
+                )}
             </View>
-
-            <BasicButton
-                label={"Join Workspace"}
-                onPress={(navigateToJoinWorkspace)}
-            />
-        </View>
+            <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
+            <TextField label="Description (Optional)" value={description} placeholder="Description" onChangeText={setDescription} />
+                
+            <View style={commonStyles.inlineButtonContainer}>
+                <BasicButton 
+                    label={creating ? "Creating..." : "Create"} 
+                    onPress={handleCreate}
+                    disabled={creating || !name} 
+                />
+                <BasicButton
+                    label={"Join Workspace"}
+                    onPress={(navigateToJoinWorkspace)}
+                    altBackground
+                />
+            </View>
+        </ResponsiveScreen>
     )
 }
 

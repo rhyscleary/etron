@@ -2,8 +2,9 @@
 
 import { Dialog, Portal, Text, useTheme } from "react-native-paper";
 import BasicButton from "../common/buttons/BasicButton";
-import { StyleSheet, TouchableOpacity, View, Button, TouchableWithoutFeedback, Keyboard } from "react-native";
+import { StyleSheet, TouchableOpacity, View, Button, TouchableWithoutFeedback, Keyboard, Pressable } from "react-native";
 import TextField from "../common/input/TextField";
+import { useEffect } from "react";
 
 
 const VerificationDialog = ({
@@ -18,71 +19,76 @@ const VerificationDialog = ({
 }) => {
     const theme = useTheme();
 
+    useEffect(() => {
+        if (visible) Keyboard.dismiss();
+    }, [visible]);
+
     return (
         <Portal>
+            
             <Dialog 
                 visible={visible} 
                 style={[styles.dialog, {backgroundColor: theme.colors.surface}]}
                 //theme={{colors: {backdrop: `rgba(0,0,0,0.4)`}}}
             >
-                <Dialog.Title style={styles.title}>Verify Email</Dialog.Title>
+                <Pressable onPressIn={Keyboard.dismiss} android_disableSound>
+                    <Dialog.Title style={styles.title}>Verify Email</Dialog.Title>
 
-                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                    <Dialog.Content>
-                        <Text style={styles.message}>Please enter the verification code that has been emailed to you.</Text>
-                        <View style={styles.inputContainer}>
-                            <TextField
-                                placeholder="Code"
-                                value={code}
-                                onChangeText={setCode}
-                                keyboardType="numeric"
-                                error={!!error}
-                                contentStyle={{ textAlign: "center" }}
+                        <Dialog.Content>
+                            <Text style={styles.message}>Please enter the verification code that has been emailed to you.</Text>
+                            <View style={styles.inputContainer}>
+                                <TextField
+                                    placeholder="Code"
+                                    value={code}
+                                    onChangeText={setCode}
+                                    keyboardType="numeric"
+                                    error={!!error}
+                                    contentStyle={{ textAlign: "center" }}
+                                />
+                            </View>
+
+                            {error ? (
+                                <Text style={{color: theme.colors.error, marginTop: 10, textAlign: "center"}}>
+                                    {error}
+                                </Text>
+                            ) : null}
+                        </Dialog.Content>
+                    
+
+                    <Dialog.Actions style={styles.actions}>
+                        <View style={{gap: 10, flexDirection: "row", justifyContent: "space-between"}}>
+                            <BasicButton 
+                                label="Do this later" 
+                                onPress={onLater}
+                            />
+                            <BasicButton 
+                                label="Confirm" 
+                                onPress={onConfirm}
+                                disabled={code.length === 0}
                             />
                         </View>
+                    </Dialog.Actions>
 
-                        {error ? (
-                            <Text style={{color: theme.colors.error, marginTop: 10, textAlign: "center"}}>
-                                {error}
-                            </Text>
-                        ) : null}
-                    </Dialog.Content>
-                </TouchableWithoutFeedback>
-
-                <Dialog.Actions style={styles.actions}>
-                    <View style={{gap: 10, flexDirection: "row", justifyContent: "space-between"}}>
-                        <BasicButton 
-                            label="Do this later" 
-                            onPress={onLater}
-                        />
-                        <BasicButton 
-                            label="Confirm" 
-                            onPress={onConfirm}
-                        />
-                    </View>
-                </Dialog.Actions>
-
-                <View style={styles.resendContainer}>
-                    <TouchableOpacity 
-                        onPress={onResend}
-                        disabled={resendCooldown > 0}
-                    >
-                        <Text
-                            style={[
-                                styles.resendText,
-                                resendCooldown > 0 && { color: theme.colors.error}
-                            ]}
+                    <View style={styles.resendContainer}>
+                        <TouchableOpacity 
+                            onPress={onResend}
+                            disabled={resendCooldown > 0}
                         >
-                            {resendCooldown > 0
-                                ? `Resend code in ${resendCooldown}s`
-                                : <BasicButton label="Resend code"/>
-                            }
-                        </Text>
-                        
-                    </TouchableOpacity>
-                </View>
-                
-                
+                            <Text
+                                style={[
+                                    styles.resendText,
+                                    resendCooldown > 0 && { color: theme.colors.error}
+                                ]}
+                            >
+                                {resendCooldown > 0
+                                    ? `Resend code in ${resendCooldown}s`
+                                    : <BasicButton label="Resend code"/>
+                                }
+                            </Text>
+                            
+                        </TouchableOpacity>
+                    </View>
+                </Pressable>
             </Dialog>
         </Portal>
     );
