@@ -10,9 +10,10 @@ import { router } from 'expo-router';
 import StackLayout from '../../components/layout/StackLayout';
 import AvatarButton from '../../components/common/buttons/AvatarButton';
 import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, getPhotoFromDevice, saveProfilePhoto } from '../../utils/profilePhoto';
-import { fetchUserAttributes, updateUserAttribute } from 'aws-amplify/auth';
+import { fetchUserAttributes, signOut, updateUserAttribute } from 'aws-amplify/auth';
 import DecisionDialog from '../../components/overlays/DecisionDialog';
 import ResponsiveScreen from '../../components/layout/ResponsiveScreen';
+import Header from '../../components/layout/Header';
 
 //import * as ImagePicker from 'expo-image-picker';
 
@@ -165,70 +166,74 @@ const PersonaliseAccount = () => {
 
 	const theme = useTheme();
 
+	async function handleSignOut() {
+		await signOut();
+	}
+
 	return (
 		<ResponsiveScreen
-			header={<Text style={{ fontSize: 24, textAlign: 'center' }}>
-				Account Personalisation
-			</Text>}
+			header={<Header title="Account Personalisation"/>}
 		>
-			<StackLayout spacing={30}>
-				<View style={{ alignItems: "center"}}>
-					<AvatarButton 
-						type={profilePicture ? "image" : "default"}
-						imageSource={profilePicture ? {uri: profilePicture} : undefined}
-						firstName={firstName}
-						lastName={lastName}
-						badgeType={profilePicture ? "edit" : "plus"}
-						onPress={handleChoosePhoto}
-					/>
-					{profilePicture && (
-						<BasicButton label="Remove Photo" onPress={handleRemovePhoto} />
-					)}
-				</View>
-
-				<TextField
-					label="First Name"
-					placeholder="First Name"
-					value={firstName}
-					onChangeText={setFirstName}
+			<View style={{ alignItems: "center"}}>
+				<AvatarButton 
+					type={profilePicture ? "image" : "default"}
+					imageSource={profilePicture ? {uri: profilePicture} : undefined}
+					firstName={firstName}
+					lastName={lastName}
+					badgeType={profilePicture ? "edit" : "plus"}
+					onPress={handleChoosePhoto}
 				/>
-
-				{errors.firstName && (
-					<Text style={{ color: theme.colors.error }}>Please enter your first name</Text>
+				{profilePicture && (
+					<BasicButton label="Remove Photo" onPress={handleRemovePhoto} />
 				)}
+			</View>
 
-				<TextField
-						label="Last Name"
-						placeholder="Last Name"
-						value={lastName}
-						onChangeText={setLastName}
-				/>
+			<TextField
+				label="First Name"
+				placeholder="First Name"
+				value={firstName}
+				onChangeText={setFirstName}
+			/>
 
-				{errors.lastName && (
-						<Text style={{ color: theme.colors.error }}>Please enter your last name</Text>
-				)}
+			{errors.firstName && (
+				<Text style={{ color: theme.colors.error }}>Please enter your first name</Text>
+			)}
 
-				<TextField
-						label="Phone Number (Optional)"
-						placeholder="Phone Number"
-						value={phoneNumber}
-						maxLength={10}
-						keyboardType="numeric"
-						textContentType="telephoneNumber"
-						onChangeText={(text) => {
-							setPhoneNumber(text);
-							if (text.length >= 9 && text.length <= 10) {
-								setErrors((prev) => ({ ...prev, phoneNumber: false }));
-							}
-						}}
-				/>
+			<TextField
+					label="Last Name"
+					placeholder="Last Name"
+					value={lastName}
+					onChangeText={setLastName}
+			/>
 
-				{errors.phoneNumber && (
-					<Text style={{ color: theme.colors.error }}>Phone number must be 9-10 digits</Text>
-				)}
-			</StackLayout>
+			{errors.lastName && (
+					<Text style={{ color: theme.colors.error }}>Please enter your last name</Text>
+			)}
+
+			<TextField
+					label="Phone Number (Optional)"
+					placeholder="Phone Number"
+					value={phoneNumber}
+					maxLength={10}
+					keyboardType="numeric"
+					textContentType="telephoneNumber"
+					onChangeText={(text) => {
+						setPhoneNumber(text);
+						if (text.length >= 9 && text.length <= 10) {
+							setErrors((prev) => ({ ...prev, phoneNumber: false }));
+						}
+					}}
+			/>
+
+			{errors.phoneNumber && (
+				<Text style={{ color: theme.colors.error }}>Phone number must be 9-10 digits</Text>
+			)}
 
 			<View style={{ alignItems: 'flex-end' }}>
+				<BasicButton
+					label="Sign out"
+					onPress={()=> { handleSignOut() }}
+				/>
 				<BasicButton
 					label={saving ? "Saving..." : "Continue"}
 					onPress={handleContinue}
