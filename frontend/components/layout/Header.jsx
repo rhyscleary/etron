@@ -24,7 +24,8 @@ const Header = ({
     onRightIconPress,
     onEllipsisPress,
     customBackAction,
-    onBackPress
+    onBackPress,
+    backIcon
 }) => {
     const router = useRouter();
     const theme = useTheme();
@@ -40,13 +41,12 @@ const Header = ({
         >
             {
                 showBack ? (
-                    <Appbar.BackAction onPress={customBackAction || (() => {
-                        if (onBackPress) {
-                            onBackPress();
-                        } else {
+                    <Appbar.Action
+                        icon={backIcon || "arrow-left"}
+                        onPress={async() => {
+                            if (onBackPress) return await onBackPress();
                             router.back();
-                        }
-                    })} 
+                        }} 
                     />
                 ) : showMenu ? (
                     <Appbar.Action icon="menu" onPress={() => navigation.openDrawer()} />

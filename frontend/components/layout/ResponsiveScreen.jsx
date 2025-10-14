@@ -46,7 +46,6 @@ export default function ResponsiveScreen({
     )
 
     return (
-
         <SafeAreaView style={[styles.safe, { backgroundColor: safeBackground }]} edges={["left", "right"]}>
             {header ? (
                 <View style={styles.header}>

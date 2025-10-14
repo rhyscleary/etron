@@ -12,7 +12,7 @@ import { Text, useTheme } from "react-native-paper";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
-import { updateUserAttribute } from "aws-amplify/auth";
+import { updateUserAttribute, signOut } from "aws-amplify/auth";
 import ResponsiveScreen from "../../components/layout/ResponsiveScreen";
 
 const CreateWorkspace = () => {
@@ -102,12 +102,26 @@ const CreateWorkspace = () => {
     }
 
     function navigateToJoinWorkspace() {
-        router.navigate("/(auth)/join-workspace");
+        router.replace("/(auth)/join-workspace");
+    }
+
+    async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
     }
 
     return (
         <ResponsiveScreen
-            header={<Header title="Create Workspace" />}
+            header={<Header
+                title="Create Workspace"
+                showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+            />}
         >
             <View>
                 <TextField 
@@ -128,7 +142,6 @@ const CreateWorkspace = () => {
             <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
             <TextField label="Description (Optional)" value={description} placeholder="Description" onChangeText={setDescription} />
                 
-
             <View style={commonStyles.inlineButtonContainer}>
                 <BasicButton 
                     label={creating ? "Creating..." : "Create"} 
@@ -141,8 +154,6 @@ const CreateWorkspace = () => {
                     altBackground
                 />
             </View>
-
-            
         </ResponsiveScreen>
     )
 }

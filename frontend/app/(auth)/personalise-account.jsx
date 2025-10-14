@@ -166,13 +166,23 @@ const PersonaliseAccount = () => {
 
 	const theme = useTheme();
 
-	async function handleSignOut() {
-		await signOut();
-	}
+	async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    }
 
 	return (
 		<ResponsiveScreen
-			header={<Header title="Account Personalisation"/>}
+			header={<Header
+				title="Account Personalisation"
+				showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+			/>}
 		>
 			<View style={{ alignItems: "center"}}>
 				<AvatarButton 
@@ -230,10 +240,6 @@ const PersonaliseAccount = () => {
 			)}
 
 			<View style={{ alignItems: 'flex-end' }}>
-				<BasicButton
-					label="Sign out"
-					onPress={()=> { handleSignOut() }}
-				/>
 				<BasicButton
 					label={saving ? "Saving..." : "Continue"}
 					onPress={handleContinue}

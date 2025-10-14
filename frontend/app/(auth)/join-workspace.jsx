@@ -147,9 +147,23 @@ const JoinWorkspace = () => {
         router.navigate("/(auth)/create-workspace");
     }
 
+    async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    }
+
     return (
         <ResponsiveScreen
-            header={<Header title="Join Workspace" />}
+            header={<Header
+                title="Join Workspace"
+                showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+            />}
         >
             <View style={styles.contentContainer}>
                 {loading ? (
