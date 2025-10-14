@@ -67,6 +67,40 @@ async function savePartitionedData(workspaceId, dataSourceId, data, partitionVal
     }
 }
 
+// load data from a partition from S3
+async function loadPartitionedData(workspaceId, dataSourceId, partitionValue) {
+    if (!partitionValue) throw new Error("partitionValue is required");
+
+    // you can customize folder structure if needed
+    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${partitionValue}.parquet`;
+
+    try {
+        // load schema for data source
+        const schema = await getDataSchema(workspaceId, dataSourceId);
+        if (!schema) {
+            throw new Error(`Schema not found for dataSourceId ${dataSourceId}`);
+        }
+        const response = await s3Client.send(
+            new GetObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+            }),
+        );
+
+        const buffer = await streamToBuffer(response.Body);
+
+        // convert parquet buffer to JSON
+        const jsonData = await fromParquet(buffer, schema);
+
+        return jsonData;
+    } catch (error) {
+        if (error.name === "NoSuchKey") {
+            return [];
+        }
+        handleS3Error(error, `Error saving partitioned data to ${bucketName}`);
+    }
+}
+
 async function doesObjectExist(bucket, key) {
     try {
         await s3Client.send(
@@ -270,5 +304,6 @@ module.exports = {
     getDataSchema,
     saveSchema,
     appendToStoredData,
-    savePartitionedData
+    savePartitionedData,
+    loadPartitionedData
 };

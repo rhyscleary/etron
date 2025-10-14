@@ -6,7 +6,7 @@ const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const metricRepo = require("@etron/day-book-shared/repositories/metricRepository")
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("@etron/data-sources-shared/adapters/adapterFactory");
-const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema, savePartitionedData, loadPartitionedData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
@@ -15,7 +15,6 @@ const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { runQuery } = require("@etron/data-sources-shared/utils/athenaService");
 const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 const { hasPermission } = require("@etron/shared/utils/permissions");
-const { savePartitionedData } = require("../../data-sources-shared/repositories/dataBucketRepository");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -548,13 +547,13 @@ async function viewDataForMetric(authUserId, workspaceId, dataSourceId, metricId
 
 // update the data in the parquet files (by parition (timestamp))
 async function updatePartitionedData(authUserId, dataSourceId, payload) {
+    const { workspaceId, updates, partitionField } = payload;
+
     const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_DATASOURCES);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
-
-    const { workspaceId, updates, partitionField } = payload;
 
     await validateWorkspaceId(workspaceId);
 
@@ -576,11 +575,30 @@ async function updatePartitionedData(authUserId, dataSourceId, payload) {
 
         // process each partition
         for (const partitionValue of Object.keys(partitionsMap)) {
-            const partitionData = partitionsMap[partitionValue];
+            const partitionUpdates = partitionsMap[partitionValue];
+
+            // load the existing data
+            const existingData = await loadPartitionedData(workspaceId, dataSourceId, partitionValue);
+
+            // merge the data
+            const mergedMap = new Map();
+
+            existingData.forEach(row => {
+                if (row.rowId) mergedMap.set(row.rowId.trim().toLowerCase(), row);
+            });
+
+            // apply updates
+            partitionUpdates.forEach(update => {
+                if (!update.rowId) update.rowId = uuidv4(); // assigns rowId if missing
+                const key = update.rowId.trim().toLowerCase();
+                mergedMap.set(key, update); // replaces the existing row if it has the same rowId
+            });
+
+            const mergedData = Array.from(mergedMap.values());
 
             // validate and cast data to schema
-            const schema = generateSchema(partitionData);
-            const castedData = castDataToSchema(partitionData, schema);
+            const schema = generateSchema(mergedData);
+            const castedData = castDataToSchema(mergedData, schema);
 
             // convert to parquet
             const parquetBuffer = await toParquet(castedData, schema);
