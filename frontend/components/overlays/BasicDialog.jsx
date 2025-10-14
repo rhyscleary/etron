@@ -21,6 +21,7 @@ const BasicDialog = ({
     handleLeftAction = () => {},
     rightActionLabel = "Confirm",
     rightDanger = false,
+    rightDisabled = false,
     handleRightAction = () => {},
     inputError = false,
     inputErrorMessage = "",
@@ -58,7 +59,7 @@ const BasicDialog = ({
 
                 <Dialog.Actions style={styles.actions}>
                     <BasicButton label={leftActionLabel} danger={leftDanger} onPress={(handleLeftAction)}/>
-                    <BasicButton label={rightActionLabel} danger={rightDanger} onPress={handleRightAction}/>
+                    <BasicButton label={rightActionLabel} danger={rightDanger} disabled={rightDisabled}onPress={handleRightAction}/>
                 </Dialog.Actions>
             </Dialog>
         </Portal>
