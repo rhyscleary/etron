@@ -6,7 +6,7 @@ const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const metricRepo = require("@etron/day-book-shared/repositories/metricRepository")
 const {v4 : uuidv4} = require('uuid');
 const adapterFactory = require("@etron/data-sources-shared/adapters/adapterFactory");
-const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema, savePartitionedData, loadPartitionedData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { saveStoredData, removeAllStoredData, getUploadUrl, getStoredData, getDataSchema, saveSchema, savePartitionedData, loadPartitionedData, removeAllMetricData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
 const { validateFormat } = require("@etron/data-sources-shared/utils/validateFormat");
 const { translateData } = require("@etron/data-sources-shared/utils/translateData");
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
@@ -15,6 +15,7 @@ const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { runQuery } = require("@etron/data-sources-shared/utils/athenaService");
 const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -95,6 +96,22 @@ async function createRemoteDataSource(authUserId, payload) {
 
     // store the secrets in parameter storage
     await dataSourceSecretsRepo.saveSecrets(workspaceId, dataSourceId, secrets);
+
+    // try triggering the polling lambda
+    const client = new LambdaClient();
+    try {
+        const command = new InvokeCommand({
+            FunctionName: process.env.POLLING_LAMBDA_NAME,
+            InvocationType: "Event",
+            Payload: Buffer.from(JSON.stringify({
+                workspaceId,
+                dataSource: dataSourceItem
+            })),
+        });
+        await client.send(command);
+    } catch (error) {
+        console.error("Failed to trigger the polling lambda");
+    }
 
     return {
         ...dataSourceItem,
@@ -327,9 +344,20 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     // remove data from bucket
     await removeAllStoredData(workspaceId, dataSourceId);
 
+    // remove all metrics associated with the data source
+    if (dataSource.metrics && dataSource.metrics.length > 0) {
+        await Promise.all(
+            dataSource.metrics.map(async (metricId) => {
+                // remove data from S3
+                await removeAllMetricData(workspaceId, metricId);
+                // remove metric from repo
+                await metricRepo.removeMetric(workspaceId, metricId);
+            })
+        );
+    }
+
     // remove data source from repo and secrets
     await dataSourceRepo.removeDataSource(workspaceId, dataSourceId);
-
     await dataSourceSecretsRepo.removeSecrets(workspaceId, dataSourceId);
 
     return {message: "Data source successfully deleted"};
@@ -560,25 +588,31 @@ async function updatePartitionedData(authUserId, dataSourceId, payload) {
     if (!updates || updates.length == 0) {
         throw new Error("No updates provided");
     }
+    console.log("Updates provided.");
 
     try {
         // group by partition
         const partitionsMap = {};
-        updates.forEach(update => {
-            if (!update[partitionField]) {
-                throw new Error(`Each updates row must have a partition field`);
-            }
-            const partitionValue = update[partitionField];
+
+        for (const update of updates) {
+            const timestamp = update[partitionField];
+            if (!timestamp) throw new Error(`Each update row must have a timestamp`);
+
+            // extract date from timestamp
+            const partitionValue = new Date(timestamp).toISOString().split("T")[0];
+
             if (!partitionsMap[partitionValue]) partitionsMap[partitionValue] = [];
             partitionsMap[partitionValue].push(update);
-        });
+        }
 
         // process each partition
         for (const partitionValue of Object.keys(partitionsMap)) {
             const partitionUpdates = partitionsMap[partitionValue];
 
             // load the existing data
+            console.log("Before loading paritition");
             const existingData = await loadPartitionedData(workspaceId, dataSourceId, partitionValue);
+            console.log("Existing Data:", existingData);
 
             // merge the data
             const mergedMap = new Map();
@@ -595,10 +629,18 @@ async function updatePartitionedData(authUserId, dataSourceId, payload) {
             });
 
             const mergedData = Array.from(mergedMap.values());
+            console.log("New data:", mergedData);
+
+            // remove duplicates in the case there are duplicates (with the same rowId)
+            const uniqueMap = new Map();
+            for (const row of mergedData) {
+                uniqueMap.set(row.rowId.trim().toLowerCase(), row);
+            }
+            const dedupedData = Array.from(uniqueMap.values());
 
             // validate and cast data to schema
-            const schema = generateSchema(mergedData);
-            const castedData = castDataToSchema(mergedData, schema);
+            const schema = generateSchema(dedupedData);
+            const castedData = castDataToSchema(dedupedData, schema);
 
             // convert to parquet
             const parquetBuffer = await toParquet(castedData, schema);
@@ -606,9 +648,6 @@ async function updatePartitionedData(authUserId, dataSourceId, payload) {
             // save the data back into s3
             await savePartitionedData(workspaceId, dataSourceId, parquetBuffer, partitionValue);
         }
-
-        // refresh athena
-        await runQuery(`MSCK REPAIR TABLE "ds_${dataSourceId}"`);
 
         return {message: "Data sources data successfully updated"};
     } catch (error) {

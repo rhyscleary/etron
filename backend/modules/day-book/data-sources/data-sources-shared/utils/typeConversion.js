@@ -67,7 +67,16 @@ async function toParquet(data, schema) {
                     castedRow[name] = Boolean(value);
                     break;
                 case "timestamp":
-                    castedRow[name] = new Date(value);
+                    // Handle bigint timestamps or strings
+                    if (typeof value === 'bigint') {
+                        value = Number(value);
+                    } else if (typeof value === 'string' && /^\d+$/.test(value)) {
+                        value = Number(value);
+                    } else if (value instanceof Date) {
+                        value = value.getTime();
+                    }
+
+                    castedRow[name] = new Date(Number(value));
                     break;
                 case "string":
                 default:
@@ -108,6 +117,7 @@ async function fromParquet(buffer, schema) {
                     casted[column.name] = Boolean(val);
                     break;
                 case "timestamp":
+                    if (typeof val === 'bigint') val = Number(val);
                     casted[column.name] = new Date(val);
                     break;
                 case "string":
@@ -115,7 +125,7 @@ async function fromParquet(buffer, schema) {
                     casted[column.name] = String(val);
             }
         }
-        records.push(record);
+        records.push(casted);
     }
 
     await reader.close();

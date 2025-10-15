@@ -52,25 +52,60 @@ function generateSchema(data) {
     const schema = {};
     for (const row of sampleData) {
         for (const [column, value] of Object.entries(row)) {
-            if (!schema[column]) {
-                schema[column] = deduceType(value);
-            } else {
-                // fallback to string
-                const deducedType = deduceType(value);
-                if (schema[column] !== deducedType) {
-                    schema[column] = "string";
-                }
+            if (value == null || value === "") continue;
 
+            const deducedType = deduceType(value, column);
+
+            if (!schema[column]) {
+                schema[column] = deduceType;
+            } else if (schema[column] !== deducedType) {
+                // fallback to string
+                schema[column] = "string";
             }
         }
+    }
+
+    for (const key of Object.keys(schema)) {
+        if (!schema[key]) schema[key] = "string";
     }
 
     return Object.entries(schema).map(([name, type]) => ({ name, type }));
 }
 
 function deduceType(value, columnName = "") {
+    if (value == null) return "string";
 
     if (typeof value === "number") {
+        return Number.isInteger(value) ? "bigint" : "double";
+    }
+
+    if (typeof value === "boolean") {
+        return "boolean";
+    }
+
+    if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed === "") return "string";
+
+        // check for ISO timestamps
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(trimmed)) {
+            return "timestamp";
+        }
+
+        // check for numeric
+        if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+            if (trimmed.includes(".")) {
+                return isMoneyField(columnName) ? "decimal(18,2)" : "double";
+            }
+            return "bigint";
+        }
+
+        return "string";
+    }
+
+    return "string";
+
+    /*if (typeof value === "number") {
         return Number.isInteger(value) ? "bigint" : "double";
     } else if (typeof value === "boolean") {
         return "boolean";
@@ -92,7 +127,7 @@ function deduceType(value, columnName = "") {
             return "timestamp";
         }
     }
-    return "string";
+    return "string";*/
 }
 
 function isMoneyField(columnName) {

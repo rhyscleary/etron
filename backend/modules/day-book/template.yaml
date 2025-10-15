@@ -43,6 +43,9 @@ Resources:
     Properties:
       CodeUri: ./data-sources/functions/data-source-core
       Handler: dataSourceHandler.handler
+      Environment:
+        Variables:
+          POLLING_LAMBDA_NAME: !Ref DataSourcePollFunction
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
@@ -53,6 +56,10 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: WorkspaceUsers
         - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !GetAtt DataSourcePollFunction.Arn
             - Effect: Allow
               Action:
                 - ssm:GetParameter

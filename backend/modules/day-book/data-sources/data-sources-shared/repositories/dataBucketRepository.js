@@ -185,6 +185,33 @@ async function removeAllStoredData(workspaceId, dataSourceId) {
     }
 }
 
+// remove metric data from store
+async function removeAllMetricData(workspaceId, metricId) {
+    const prefix = `workspaces/${workspaceId}/day-book/metrics/${metricId}/`;
+    try {
+        const objectList = await s3Client.send(
+            new ListObjectsV2Command({
+                Bucket: bucketName,
+                Prefix: prefix
+            }),
+        );
+
+        if (!objectList.Contents || objectList.Contents.length === 0) {
+            return;
+        }
+
+        const deleteParams = {
+            Bucket: bucketName,
+            Delete: { Objects: objectList.Contents.map(object => ({ Key: object.Key })) }
+        };
+
+        await s3Client.send(new DeleteObjectsCommand(deleteParams));
+
+    } catch (error) {
+        handleS3Error(error, `Error removing stored data from ${bucketName}`);
+    }
+}
+
 async function getStoredData(key) {
     try {
         const response = await s3Client.send(
@@ -305,5 +332,6 @@ module.exports = {
     saveSchema,
     appendToStoredData,
     savePartitionedData,
-    loadPartitionedData
+    loadPartitionedData,
+    removeAllMetricData
 };
