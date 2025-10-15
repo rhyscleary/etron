@@ -6,8 +6,7 @@ import { apiPost } from "./api/apiClient";
 import endpoints from "./api/endpoints";
 import axios from "axios";
 
-// MIME type lookup table for different export file types.
-
+// MIME type lookup table for different export file types
 const MIME_TYPES = {
     pdf: "application/pdf",
     docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -15,33 +14,37 @@ const MIME_TYPES = {
     rtf: "application/rtf",
 };
 
-// Generates a simple placeholder file content depending on file type.
+// Generates simple placeholder content depending on file type
 function getPlaceholderContent(fileType) {
     switch (fileType) {
         case "docx":
-            return "PK\u0003\u0004..."; // minimal DOCX ZIP signature (placeholder)
+            return "PK\u0003\u0004"; // minimal DOCX ZIP signature (placeholder)
         case "odt":
-            return "PK\u0003\u0004..."; // minimal ODT ZIP signature
+            return "PK\u0003\u0004"; // minimal ODT ZIP signature
         case "rtf":
             return "{\\rtf1\\ansi\\deff0\n{\\fonttbl{\\f0 Courier;}}\n\\f0\\fs20 Export File\n}";
         case "pdf":
         default:
-            return "%PDF-1.4\n%..."; // minimal PDF header
+            return "%PDF-1.4\n%EOF"; // minimal valid PDF header/footer
     }
 }
 
-// Uploads a file to an S3 pre-signed URL.
+// Uploads a file to an S3 pre-signed URL
 async function uploadExportToS3(filePath, fileUploadUrl, fileType) {
-    try {
-        console.log("=== EXPORT UPLOADER START ===");
-        console.log("File Path:", filePath);
-        console.log("Upload URL:", fileUploadUrl ? "[RECEIVED]" : "[MISSING]");
-        console.log("File Type:", fileType);
+    console.log("=== EXPORT UPLOADER START ===");
+    console.log("File Path:", filePath);
+    console.log("Upload URL:", fileUploadUrl ? "[RECEIVED]" : "[MISSING]");
+    console.log("File Type:", fileType);
 
-        const fileData = await RNFS.readFile(filePath, "utf8");
+    try {
+        // Read file as binary buffer instead of utf8 (avoids encoding issues)
+        const fileData = await RNFS.readFile(filePath, "base64");
         const mimeType = MIME_TYPES[fileType] || "application/octet-stream";
 
-        const response = await axios.put(fileUploadUrl, fileData, {
+        // Convert base64 string to raw binary buffer
+        const binaryData = Buffer.from(fileData, "base64");
+
+        const response = await axios.put(fileUploadUrl, binaryData, {
             headers: { "Content-Type": mimeType },
         });
 
@@ -62,9 +65,8 @@ async function uploadExportToS3(filePath, fileUploadUrl, fileType) {
     }
 }
 
-// Creates a new export file (pdf, docx, odt, rtf) writes it locally, retrieves an upload URL, and uploads to S3.
-
-export async function createNewExport({
+// Creates a new export file (pdf, docx, odt, rtf), writes locally, requests upload URL, and uploads to S3
+export async function uploadExportFile({
     workspaceId,
     exportName,
     draftId,
@@ -86,6 +88,7 @@ export async function createNewExport({
     const contentToWrite = fileContent || getPlaceholderContent(extension);
 
     try {
+        // Write placeholder or provided content to file
         await RNFS.writeFile(filePath, contentToWrite, "utf8");
         console.log(`Local ${extension.toUpperCase()} export file written at: ${filePath}`);
     } catch (error) {

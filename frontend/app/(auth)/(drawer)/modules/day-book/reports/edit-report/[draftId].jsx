@@ -7,15 +7,14 @@ import RNHTMLtoPDF from "react-native-html-to-pdf";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
-import { Portal, Dialog, Button } from "react-native-paper";
+import { Portal, Dialog, Button, useTheme } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
 import { createNewTemplate, uploadUpdatedTemplate } from "../../../../../../../utils/templateUploader";
-import { useTheme } from "react-native-paper";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { uploadExportFile } from "../../../../../../../utils/exportUploader";
 import CustomBottomSheet from "../../../../../../../components/BottomSheet/bottom-sheet";
 
 const EditReport = () => {
@@ -60,7 +59,6 @@ const EditReport = () => {
         );
 
         const draft = response.data;
-
         if (!draft) return;
 
         setReportId(draft.draftId);
@@ -132,7 +130,6 @@ const EditReport = () => {
     </html>
   `, []);
 
-  // Read-only HTML
   const readOnlyHtml = useMemo(() => `
     <!DOCTYPE html>
     <html>
@@ -145,11 +142,9 @@ const EditReport = () => {
   const sendInitToWebView = (html) => {
     if (!webViewRef.current) return;
     try {
-      webViewRef.current.postMessage(JSON.stringify({ type: 'init', html: html || '' }));
+      webViewRef.current.postMessage(JSON.stringify({ type: "init", html: html || "" }));
       initSentRef.current = true;
-    } catch (err) {
-      // ignore
-    }
+    } catch {}
   };
 
   useEffect(() => {
@@ -162,21 +157,43 @@ const EditReport = () => {
     if (isEditing && !initSentRef.current) sendInitToWebView(editorContent);
   };
 
-  // Export PDF
-  const exportAsPDF = async (customFileName) => {
+  // ✅ Generate and upload PDF
+  const exportAsPDF = async (customFileName, upload = false) => {
     try {
-      const file = await RNHTMLtoPDF.convert({
+      console.log(`[ExportUploader] Generating PDF for export...`);
+      const pdf = await RNHTMLtoPDF.convert({
         html: editorContent || "<p>No content</p>",
         fileName: "temp_report",
         base64: false,
       });
-      const destPath = `${Platform.OS === "android" ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath}/${customFileName}.pdf`;
-      if (await RNFS.exists(destPath)) await RNFS.unlink(destPath);
-      await RNFS.moveFile(file.filePath, destPath);
-      Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
+
+      console.log(`[ExportUploader] PDF generated: ${pdf.filePath}`);  
+
+      if (upload) {
+        console.log(`[ExportUploader] Uploading PDF to server...`);
+        const success = await uploadExportFile({
+          workspaceId,
+          draftId,
+          filePath: pdf.filePath,
+          fileName: `${customFileName}.pdf`,
+        });
+
+        if (success) {
+          console.log(`[ExportUploader] Export uploaded successfully.`);
+          Alert.alert("Success", "Export uploaded successfully.");
+        } else {
+          console.error(`[ExportUploader] Upload failed.`);
+          Alert.alert("Error", "Failed to upload export.");
+        }
+      } else {
+        const destPath = `${Platform.OS === "android" ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath}/${customFileName}.pdf`;
+        if (await RNFS.exists(destPath)) await RNFS.unlink(destPath);
+        await RNFS.moveFile(pdf.filePath, destPath);
+        Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
+      }
     } catch (err) {
-      console.error("PDF export failed:", err);
-      Alert.alert("Error", "Could not export PDF.");
+      console.error(`[ExportUploader] Export failed:`, err);
+      Alert.alert("Error", "Export failed.");
     }
   };
 
@@ -226,18 +243,6 @@ const EditReport = () => {
     }
   };
 
-  const onHeaderEditPress = () => {
-    if (isEditing) {
-      handleSaveReport();
-    } else {
-      setIsEditing(true);
-    }
-  };
-
-  const onHeaderEllipsisPress = () => {
-    setSheetVisible(true);
-  };
-
   return (
     <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
       <Header
@@ -245,9 +250,9 @@ const EditReport = () => {
         showBack
         showEdit={!isEditing}
         showCheck={isEditing}
-        showEllipsis={true}
-        onRightIconPress={onHeaderEditPress}
-        onEllipsisPress={onHeaderEllipsisPress}
+        showEllipsis
+        onRightIconPress={() => (isEditing ? handleSaveReport() : setIsEditing(true))}
+        onEllipsisPress={() => setSheetVisible(true)}
       />
 
       <WebView
@@ -258,14 +263,19 @@ const EditReport = () => {
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
-        onMessage={(event) => {
-          if (!isEditing) return;
-          setEditorContent(event.nativeEvent.data);
-        }}
+        onMessage={(e) => isEditing && setEditorContent(e.nativeEvent.data)}
         onLoadEnd={handleWebViewLoadEnd}
       />
 
-      {/* Export dialog */}
+      {/* ✅ Test button for upload */}
+      <TouchableOpacity
+        style={styles.testButton}
+        onPress={() => exportAsPDF(fileName, true)}
+      >
+        <Text style={{ color: "#fff" }}>Test Upload Export</Text>
+      </TouchableOpacity>
+
+      {/* Dialogs */}
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>Export PDF</Dialog.Title>
@@ -278,10 +288,7 @@ const EditReport = () => {
             <Button onPress={handleExport}>Export</Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal>
 
-      {/* Save as Template dialog */}
-      <Portal>
         <Dialog visible={templateDialogVisible} onDismiss={() => setTemplateDialogVisible(false)}>
           <Dialog.Title>Save as Template</Dialog.Title>
           <Dialog.Content>
@@ -295,66 +302,27 @@ const EditReport = () => {
         </Dialog>
       </Portal>
 
-      {/* Overlay for bottom sheet dismiss */}
       {sheetVisible && (
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={() => setSheetVisible(false)}
-        />
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setSheetVisible(false)} />
       )}
 
-{/* Bottom sheet (always mounted, visibility controlled by prop) */}
-            {/* Ellipsis-triggered Quick Actions Bottom Sheet */}
-            {sheetVisible && (
-                <CustomBottomSheet
-                    variant="standard"
-                    header={{
-                        showClose: false,
-                        solidBackground: true,
-                    }}
-                    search={{
-                        enabled: false, // no search needed for this sheet
-                    }}
-                    footer={{
-                        variant: "minimal",
-                        placement: "right",
-                    }}
-                    onChange={(index) => {
-                        if (index === -1) setSheetVisible(false);
-                    }}
-                    onClose={() => setSheetVisible(false)}
-                    data={[
-                        {
-                            label: "Export as PDF",
-                            onPress: () => {
-                                setSheetVisible(false);
-                                setDialogVisible(true);
-                            },
-                        },
-                        {
-                            label: "Save Report",
-                            onPress: () => {
-                                setSheetVisible(false);
-                                handleSaveReport();
-                            },
-                        },
-                        {
-                            label: "Save as Template",
-                            onPress: () => {
-                                setSheetVisible(false);
-                                handleSaveAsTemplate();
-                            },
-                        },
-                    ]}
-                    keyExtractor={(item) => item.label}
-                    itemTitleExtractor={(item) => item.label}
-                    onItemPress={(item) => {
-                        setSheetVisible(false);
-                        if (typeof item.onPress === "function") item.onPress();
-                    }}
-                />
-            )}
+      {sheetVisible && (
+        <CustomBottomSheet
+          variant="standard"
+          header={{ showClose: false, solidBackground: true }}
+          footer={{ variant: "minimal", placement: "right" }}
+          onClose={() => setSheetVisible(false)}
+          data={[
+            { label: "Export as PDF", onPress: () => { setDialogVisible(true); setSheetVisible(false); } },
+            { label: "Save Report", onPress: () => { handleSaveReport(); setSheetVisible(false); } },
+            { label: "Save as Template", onPress: () => { handleSaveAsTemplate(); setSheetVisible(false); } },
+          ]}
+          itemTitleExtractor={(item) => item.label}
+          onItemPress={(item) => {
+            if (typeof item.onPress === "function") item.onPress();
+          }}
+        />
+      )}
     </View>
   );
 };
@@ -368,26 +336,17 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 5,
   },
-  sheetContent: {
-    flexDirection: "column",
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
-  sheetButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
-  },
-  sheetText: { marginLeft: 12, fontSize: 16, color: "#333" },
   overlay: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: "rgba(0,0,0,0.3)",
+  },
+  testButton: {
+    backgroundColor: "#007AFF",
+    padding: 12,
+    alignItems: "center",
+    margin: 12,
+    borderRadius: 8,
   },
 });
 
