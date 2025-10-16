@@ -104,30 +104,6 @@ function deduceType(value, columnName = "") {
     }
 
     return "string";
-
-    /*if (typeof value === "number") {
-        return Number.isInteger(value) ? "bigint" : "double";
-    } else if (typeof value === "boolean") {
-        return "boolean";
-    } else if (typeof value === "string") {
-        const trimmed = value.trim();
-        // numeric strings
-        if (!isNaN(trimmed) && trimmed !== "") {
-            if (trimmed.includes(".")) {
-                if (isMoneyField(columnName)) {
-                    return "decimal(18,2)";
-                }
-                return "double";
-            }
-            return "bigint";
-        }
-    
-        // strings that look like timestamps
-        if (!isNaN(Date.parse(value))) {
-            return "timestamp";
-        }
-    }
-    return "string";*/
 }
 
 function isMoneyField(columnName) {
