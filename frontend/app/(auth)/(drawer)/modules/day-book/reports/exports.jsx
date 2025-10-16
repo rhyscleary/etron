@@ -1,11 +1,10 @@
 // Author(s): Matthew Page
 
 import { useEffect, useState, useCallback } from "react";
-import { View, FlatList, Pressable, Text as RNText, Button, Alert } from "react-native";
+import { View, FlatList, Pressable, Text as RNText, Button, Alert, Linking } from "react-native";
 import Header from "../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
 import SearchBar from "../../../../../../components/common/input/SearchBar";
-import { router } from "expo-router";
 import { useTheme, Text } from "react-native-paper";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
@@ -41,7 +40,6 @@ const Exports = () => {
       const url = `${endpoints.modules.day_book.reports.exports.getExports}?workspaceId=${encodeURIComponent(workspaceId)}`;
       const response = await apiGet(url);
 
-      // Some APIs return { data: [...] }, some just return [...]
       const exportsData = Array.isArray(response)
         ? response
         : Array.isArray(response.data)
@@ -57,7 +55,6 @@ const Exports = () => {
       setLoading(false);
     }
   }, [workspaceId]);
-
 
   useEffect(() => {
     fetchExports();
@@ -77,13 +74,37 @@ const Exports = () => {
     }
   };
 
-  const handleSearch = (query) => {
-    // optional: implement search filtering
+  // Handle PDF download
+  const handleOpenExport = async (item) => {
+    try {
+      console.log("[Exports] Requesting signed download URL for:", item.exportId);
+
+      // Call the backend endpoint to get a signed URL
+      const endpoint = endpoints.modules.day_book.reports.exports.getExportDownloadUrl(item.exportId);
+      const response = await apiGet(endpoint);
+
+      const signedUrl =
+        response?.url ||
+        response?.data?.url ||
+        response?.downloadUrl ||
+        response?.data?.downloadUrl;
+
+      if (!signedUrl) {
+        console.error("[Exports] No signed URL returned by server:", response);
+        Alert.alert("Error", "No download link available for this export.");
+        return;
+      }
+
+      console.log("[Exports] Opening signed URL:", signedUrl);
+      await Linking.openURL(signedUrl);
+    } catch (error) {
+      console.error("[Exports] Error opening export:", error);
+      Alert.alert("Error", "Could not open export file.");
+    }
   };
 
-  const handleFilterChange = (filter) => {
-    // optional: implement filtering
-  };
+  const handleSearch = (query) => {};
+  const handleFilterChange = (filter) => {};
 
   return (
     <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
@@ -105,9 +126,7 @@ const Exports = () => {
         contentContainerStyle={{ paddingVertical: 16 }}
         renderItem={({ item }) => (
           <Pressable
-            onPress={() =>
-              router.push(`/modules/day-book/reports/view-export/${item.exportId}`)
-            }
+            onPress={() => handleOpenExport(item)}
             style={{
               borderWidth: 1,
               borderColor: "#ccc",
