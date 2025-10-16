@@ -1,7 +1,7 @@
 {
-  "name": "workspace-modules",
+  "name": "workspace-remover",
   "version": "1.0.0",
-  "description": "The backend for eTRON's module workspace function",
+  "description": "The backend for eTRON's workspace deletion function",
   "author": "InSync",
   "dependencies": {
     "axios": ">=1.6.0",
@@ -10,7 +10,7 @@
     "@etron/day-book-shared": "file:../../../modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz"
   },
   "scripts": {},
-  "main": "moduleHandler.js",
+  "main": "removerHandler.js",
   "keywords": [],
   "license": "ISC"
 }

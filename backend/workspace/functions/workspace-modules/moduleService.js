@@ -3,6 +3,7 @@
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const {v4 : uuidv4} = require('uuid');
 const { getAppModules } = require("@etron/shared/repositories/appConfigBucketRepository");
+const { deleteFolder } = require("@etron/shared/repositories/workspaceBucketRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { hasPermission } = require("@etron/shared/utils/permissions");
 
@@ -90,11 +91,23 @@ async function uninstallModule(authUserId, workspaceId, moduleKey) {
 
     await validateWorkspaceId(workspaceId);
 
-    const [module] = await workspaceRepo.getModuleByKey(workspaceId, moduleKey);
+    const module = await workspaceRepo.getModuleByKey(workspaceId, moduleKey);
 
     if (!module) {
         throw new Error("Module not found");
     }
+
+    const normalisedKey = moduleKey.replace(/_/g, "-");
+
+    // import the cleanup function for the module
+    try {
+        const { cleanupModule } = require(`@etron/${normalisedKey}-shared/cleanup/cleanupModule`);
+        await cleanupModule(workspaceId);
+    } catch (error) {
+        console.error(`No cleanup logic found for module: ${normalisedKey}`, error.message)
+    }
+    // remove the data from S3
+    await deleteFolder(`workspaces/${workspaceId}/${normalisedKey}/`);
 
     await workspaceRepo.removeModule(workspaceId, module.moduleId);
 

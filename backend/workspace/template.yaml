@@ -8,6 +8,9 @@ Parameters:
     Type: String
   WorkspaceBucketName:
     Type: String
+  AthenaDatabaseName:
+    Type: String
+    Default: etron_day_book_db
     
 Globals:
   Function:
@@ -19,6 +22,7 @@ Globals:
       Variables:
         APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
+        ATHENA_DATABASE: !Ref AthenaDatabaseName
 
 Resources:
 
@@ -96,13 +100,6 @@ Resources:
           Properties:
             Path: /workspace/{workspaceId}/transfer
             Method: put
-            RestApiId: !Ref eTRONApi
-
-        DeleteWorkspace:
-          Type: Api 
-          Properties:
-            Path: /workspace/{workspaceId}
-            Method: delete
             RestApiId: !Ref eTRONApi
 
         GetDefaultPermissions:
@@ -377,6 +374,70 @@ Resources:
             Method: get
             RestApiId: !Ref eTRONApi
 
+  # Workspace Deletion Lambda 
+  WorkspaceRemovalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-remover
+      Handler: removerHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+              - s3:GetBucketLocation
+              - s3:HeadObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - athena:StartQueryExecution
+              - athena:GetQueryExecution
+              - athena:GetQueryResults
+              - athena:GetWorkGroup
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - glue:GetDatabase
+              - glue:GetDatabases
+              - glue:GetTable
+              - glue:GetTables
+              - glue:CreateTable
+              - glue:UpdateTable
+              - glue:DeleteTable
+            Resource:
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        DeleteWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
+
   # Module Lambda 
   WorkspaceModulesFunction:
     Type: AWS::Serverless::Function
@@ -390,6 +451,12 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
+            TableName: Reports
         - Statement:
           - Effect: Allow
             Action:
@@ -397,7 +464,29 @@ Resources:
               - s3:PutObject
               - s3:ListBucket
               - s3:DeleteObject
+              - s3:GetBucketLocation
+              - s3:HeadObject
             Resource: "*"
+          - Effect: Allow
+            Action:
+              - athena:StartQueryExecution
+              - athena:GetQueryExecution
+              - athena:GetQueryResults
+              - athena:GetWorkGroup
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - glue:GetDatabase
+              - glue:GetDatabases
+              - glue:GetTable
+              - glue:GetTables
+              - glue:CreateTable
+              - glue:UpdateTable
+              - glue:DeleteTable
+            Resource:
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
           - Effect: Allow
             Action:
               - cognito-idp:ListUsers

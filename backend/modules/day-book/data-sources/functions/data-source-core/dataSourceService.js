@@ -345,7 +345,7 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     await removeAllStoredData(workspaceId, dataSourceId);
 
     // remove all metrics associated with the data source
-    if (dataSource.metrics && dataSource.metrics.length > 0) {
+    /*if (dataSource.metrics && dataSource.metrics.length > 0) {
         await Promise.all(
             dataSource.metrics.map(async (metricId) => {
                 // remove data from S3
@@ -354,7 +354,7 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
                 await metricRepo.removeMetric(workspaceId, metricId);
             })
         );
-    }
+    }*/
 
     // remove data source from repo and secrets
     await dataSourceRepo.removeDataSource(workspaceId, dataSourceId);
