@@ -71,32 +71,33 @@ export async function uploadExportFile({
     exportName,
     draftId,
     fileType = "pdf",
-    fileContent = null,
+    filePath,
 }) {
     console.log("=== CREATE NEW EXPORT START ===");
 
-    if (!workspaceId || !draftId) {
+    if (!workspaceId || !draftId || !filePath) {
         console.log("Error: Missing workspaceId or draftId.");
         Alert.alert("Error", "Missing workspaceId or draftId.");
         console.log("=== CREATE NEW EXPORT END ===");
         return;
     }
 
-    const trimmedFileName = exportName?.trim() || "Untitled Export";
+    /*const trimmedFileName = exportName?.trim() || "Untitled Export";
     const extension = fileType.toLowerCase();
     const filePath = `${RNFS.CachesDirectoryPath}/${trimmedFileName}.${extension}`;
     const contentToWrite = fileContent || getPlaceholderContent(extension);
+    const encoding = fileContent ? "base64" : "ascii";
 
     try {
         // Write placeholder or provided content to file
-        await RNFS.writeFile(filePath, contentToWrite, "utf8");
+        await RNFS.writeFile(filePath, contentToWrite, encoding);
         console.log(`Local ${extension.toUpperCase()} export file written at: ${filePath}`);
     } catch (error) {
         console.log("File write error:", error.message);
         Alert.alert("Error", "Could not save export file locally.");
         console.log("=== CREATE NEW EXPORT END ===");
         return;
-    }
+    }*/
 
     let fileUploadUrl, newExportId;
     try {
@@ -105,9 +106,9 @@ export async function uploadExportFile({
             endpoints.modules.day_book.reports.exports.addExport,
             {
                 workspaceId,
-                name: trimmedFileName,
+                name: exportName,
                 draftId,
-                fileType: extension,
+                fileType,
             }
         );
 
@@ -128,14 +129,35 @@ export async function uploadExportFile({
         return;
     }
 
-    const uploaded = await uploadExportToS3(filePath, fileUploadUrl, extension);
+    /*const uploaded = await uploadExportToS3(filePath, fileUploadUrl, extension);
 
     if (uploaded) {
         console.log(`Export ${newExportId} (${extension.toUpperCase()}) uploaded successfully.`);
     } else {
         console.log("Export upload failed.");
+    }*/
+
+    try {
+        const fileData = await RNFS.readFile(filePath, "base64");
+        const mimeType = "application/pdf";
+
+        const binaryData = Buffer.from(fileData, "base64");
+        const response = await axios.put(fileUploadUrl, binaryData, {
+            headers: { "Content-Type": mimeType },
+        });
+
+        if (response.status >= 200 && response.status < 300) {
+            console.log(`Export ${newExportId} uploaded successfully.`);
+            return newExportId;
+        } else {
+            console.error("Upload failed:", response.status);
+            return null;
+        }
+    } catch (err) {
+        console.error("Error uploading PDF:", err);
+        return null;
     }
 
-    console.log("=== CREATE NEW EXPORT END ===");
-    return uploaded ? newExportId : null;
+    //console.log("=== CREATE NEW EXPORT END ===");
+    //return uploaded ? newExportId : null;
 }

@@ -175,7 +175,8 @@ const EditReport = () => {
           workspaceId,
           draftId,
           filePath: pdf.filePath,
-          fileName: `${customFileName}.pdf`,
+          exportName: customFileName,
+          fileType: "pdf"
         });
 
         if (success) {

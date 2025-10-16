@@ -9,6 +9,9 @@ import { useTheme, Text } from "react-native-paper";
 import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
+import * as FileSystem from 'expo-file-system';
+import { openFileAsync } from 'expo-file-viewer';
+import * as WebBrowser from 'expo-web-browser';
 
 const Exports = () => {
   const [exportsList, setExportsList] = useState([]);
@@ -81,13 +84,14 @@ const Exports = () => {
 
       // Call the backend endpoint to get a signed URL
       const endpoint = endpoints.modules.day_book.reports.exports.getExportDownloadUrl(item.exportId);
-      const response = await apiGet(endpoint);
+      const response = await apiGet(endpoint, {workspaceId});
 
       const signedUrl =
-        response?.url ||
+        response?.data?.fileUrl ||
         response?.data?.url ||
-        response?.downloadUrl ||
         response?.data?.downloadUrl;
+      console.log("Signed URL from server:", signedUrl);
+
 
       if (!signedUrl) {
         console.error("[Exports] No signed URL returned by server:", response);
@@ -95,8 +99,14 @@ const Exports = () => {
         return;
       }
 
+      // Download the PDF file locally
+      const fileUri = FileSystem.cacheDirectory + `${item.name}.pdf`;
+      const { uri } = await FileSystem.downloadAsync(signedUrl, fileUri);
+      console.log("[Exports] File saved to:", uri);
+
       console.log("[Exports] Opening signed URL:", signedUrl);
-      await Linking.openURL(signedUrl);
+      await WebBrowser.openBrowserAsync(signedUrl);
+      //await Linking.openURL(uri);
     } catch (error) {
       console.error("[Exports] Error opening export:", error);
       Alert.alert("Error", "Could not open export file.");
