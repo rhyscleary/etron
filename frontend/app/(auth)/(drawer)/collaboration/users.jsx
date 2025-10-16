@@ -20,10 +20,10 @@ const Users = () => {
     const [allUsers, setAllUsers] = useState([]);
 
     useEffect(() => {
-        initialiseDetails();
+        initialiseUsersAndRoles();
     }, []);
 
-    const initialiseDetails = async () => {
+    const initialiseUsersAndRoles = async () => {
         const workspaceId = await getWorkspaceId();
 
         let users = [];
