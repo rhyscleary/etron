@@ -17,13 +17,13 @@ import { updateUserAttribute } from "aws-amplify/auth";
 import { getUserType } from "../../../../../storage/userStorage";
 import StackLayout from "../../../../../components/layout/StackLayout";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import formatDateTime from "../../../../../utils/format/formatISODate";
 
 const ViewUser = () => {
 	const { userId } = useLocalSearchParams();
 	const router = useRouter();
 	const theme = useTheme();
 
-	const [workspaceId, setWorkspaceId] = useState(null);
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
     const [name, setName] = useState("");
@@ -31,40 +31,42 @@ const ViewUser = () => {
 	const [roleName, setRoleName] = useState("");
     const [joinDate, setJoinDate] = useState("");
 	const [profilePicture, setProfilePicture] = useState(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadUserData();
-    }, []);
 
-    const loadUserData = async () => {
-        
-    }
 	useEffect(() => {
-		const initialise = async () => {
+		const initialiseUser = async () => {
 			const userType = await getUserType();
 			console.log("userType:", userType);
-			const workspaceIdTemp = await getWorkspaceId();
-            console.log(workspaceIdTemp);
-			setWorkspaceId(workspaceIdTemp);
+			const workspaceId = await getWorkspaceId();
 
+            let user = {};
 			try {
-				const result = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
-                const user = result.data;
-				setFirstName(user.given_name);
-				setLastName(user.family_name);
-                setName(user.given_name + " " + user.family_name);
-                setEmail(user.email);
-				//setSelectedRole(user.roleId || "");
-
-                setRoleName();
-                setJoinDate();
+				const result = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
+                user = result.data;
 			} catch (error) {
 				console.error("Error fetching user:", error);
 				return;
-			}
+            }
+            
+            let roleName;
+            try {
+                const result = await apiGet(endpoints.workspace.roles.getRole(workspaceId, user.roleId));
+                roleName = result.data.name;
+            } catch (error) {
+                console.error("Error fetching role details:", error);
+                return;
+            }
+
+            setFirstName(user.given_name);
+            setLastName(user.family_name);
+            setName(user.given_name + " " + user.family_name);
+            setEmail(user.email);
+            setRoleName(roleName);
+            setJoinDate(formatDateTime(user.joinedAt));
 			
-			try {
+            setLoading(false);
+			/*try {
 				console.log("workspaceId:", workspaceIdTemp);
 				const rolesResult = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
                 const roles = rolesResult.data;
@@ -73,9 +75,9 @@ const ViewUser = () => {
 			} catch (error) {
 				console.error("Error fetching roles:", error);
 				return;
-			}
+			}*/
 		};
-		initialise();
+		initialiseUser();
 	}, []);	
 
 
@@ -99,62 +101,45 @@ const ViewUser = () => {
                     <ActivityIndicator size="large" />
                 </View>
             ) : (
-                <View>
-                    <StackLayout spacing={34}>
-                        <View style={{ alignItems: "center"}}>
-                            <AvatarButton
-                                type={profilePicture ? "image" : "text"}
-                                imageSource={profilePicture ? {uri: profilePicture} : undefined}
-                                firstName={firstName}
-                                lastName={lastName}
-                                badgeType={profilePicture ? "remove" : "plus"}
-                                //onPress={handleChoosePhoto}
-                            />
-			            </View>
+                <StackLayout spacing={34}>
+                    <View style={{ alignItems: "center"}}>
+                        <AvatarButton
+                            type={profilePicture ? "image" : "text"}
+                            imageSource={profilePicture ? {uri: profilePicture} : undefined}
+                            firstName={firstName}
+                            lastName={lastName}
+                            badgeType={profilePicture ? "remove" : "plus"}
+                            //onPress={handleChoosePhoto}
+                        />
+                    </View>
 
-                        <StackLayout spacing={24}>
-                            <TextField
-                                value={name}
-                                placeholder="Name"
-                                isDisabled={true}
-                            />
+                    <StackLayout spacing={24}>
+                        <TextField
+                            value={name}
+                            placeholder="Name"
+                            isDisabled={true}
+                        />
 
-                            <TextField
-                                value={email}
-                                placeholder="Email"
-                                isDisabled={true}
-                            />
+                        <TextField
+                            value={email}
+                            placeholder="Email"
+                            isDisabled={true}
+                        />
 
-                            <TextField
-                                value={roleName}
-                                placeholder="Role"
-                                isDisabled={true}
-                            />
-
-                            <TextField
-                                value={"Joined: " + joinDate}
-                                placeholder="Join Date"
-                                isDisabled={true}
-                            />
-
-                            <Divider bold={true} style={{height: 2}}/> 
-                        </StackLayout>
-
-                        
-                        <TextInput
-                            label="Select Role"
+                        <TextField
                             value={roleName}
-                            mode="outlined"
-                            editable={false}
-                            right={<TextInput.Icon icon="menu-down" />}
-                            style={{ marginTop: 8 }}
+                            placeholder="Role"
+                            isDisabled={true}
+                        />
+
+                        <TextField
+                            value={"Joined: " + joinDate}
+                            placeholder="Join Date"
+                            isDisabled={true}
                         />
                     </StackLayout>
-                </View>
+                </StackLayout>
             )}
-
-            
-
 		</ResponsiveScreen>
 	);
 };

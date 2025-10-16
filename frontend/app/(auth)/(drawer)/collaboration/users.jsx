@@ -13,26 +13,58 @@ import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const Users = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [users, setUsers] = useState([]);
+    const [allRoles, setAllRoles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedRoles, setSelectedRoles] = useState([]);
+    const [groupedUsers, setGroupedUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
 
     useEffect(() => {
-        fetchIdAndUsers();
+        initialiseUsersAndRoles();
     }, []);
 
-    const fetchIdAndUsers = async () => {
+    const initialiseUsersAndRoles = async () => {
+        const workspaceId = await getWorkspaceId();
+
+        let users = [];
         try {
-            const workspaceId = await getWorkspaceId();
             const result = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
-            const users = result.data;
-            setUsers(users);
+            users = result.data;
+            setAllUsers(users);
         } catch (error) {
             console.error("Failed to fetch users:", error);
-        } finally {
-            setLoading(false);
         }
+
+        let roles = []
+        try {
+            const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+            roles = result.data
+            setAllRoles(roles);
+        } catch (error) {
+            console.error("Failed to fetch workspace roles:", error);
+        }
+
+        setLoading(false);
+
+        sortUsers(users, roles);
     };
+
+    function sortUsers(users = allUsers, roles = allRoles) {
+        const filteredUsers = users.filter(user => {
+            const matchesSearch = (user.name || user.email || '')
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase());
+
+            const matchesRole = selectedRoles.length === 0 || selectedRoles.some(role => role.roleId === user.roleId);
+            return matchesSearch && matchesRole;
+        });
+
+        const rolesForSort = selectedRoles.length > 0 ? selectedRoles : roles;
+        const sortedUsers = rolesForSort.map(role => {
+            return { title: role.name, data: filteredUsers.filter(user => user.roleId === role.roleId) };
+        });
+        setGroupedUsers(sortedUsers)
+    }
 
     const handleSearchChange = (query) => {
         setSearchQuery(query);
@@ -46,31 +78,9 @@ const Users = () => {
         );
     };
 
-    const roleFilters = {
-        owner: "Owner",
-        manager: "Manager",
-        employee: "Employee"
-    };
-
-    const availableRoles = ["owner", "manager", "employee"];
-
-    // Apply search + filter logic
-    const filteredUsers = users.filter(user => {
-        const matchesSearch = (user.name || user.email || '')
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase());
-
-        const matchesRole = selectedRoles.length === 0 || selectedRoles.includes(user.type);
-
-        return matchesSearch && matchesRole;
-    });
-
-    const uniqueRoles = [...new Set(filteredUsers.map(user => user.type))];
-
-    const groupedUsers = uniqueRoles.map(role => {
-        const data = filteredUsers.filter(user => user.type === role);
-        return { title: roleFilters[role] || role, data };
-    });
+    useEffect(() => {
+        sortUsers();
+    }, [selectedRoles, searchQuery])
 
     return (
 		<ResponsiveScreen
@@ -98,15 +108,15 @@ const Users = () => {
 
             {/* Role Filters */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-                {availableRoles.map(role => (
+                {allRoles.map(role => (
                     <Chip
-                        key={role}
+                        key={role.roleId}
                         mode="outlined"
                         selected={selectedRoles.includes(role)}
                         onPress={() => handleToggleRole(role)}
                         style={{ marginRight: 8, marginBottom: 8 }}
                     >
-                        {roleFilters[role]}
+                        {role.name}
                     </Chip>
                 ))}
             </View>
@@ -114,7 +124,7 @@ const Users = () => {
             {/* Sectioned User List */}
             <SectionList
                 sections={groupedUsers}
-                keyExtractor={(item) => item.userId || item.id}
+                keyExtractor={(item) => item.userId}
                 renderSectionHeader={({ section: { title } }) => (
                     <Text style={{ marginTop: 16, fontWeight: 'bold' }}>{title}</Text>
                 )}
@@ -127,7 +137,7 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => router.navigate(`/collaboration/view-user/${item.userId || item.id}`)}
+                        onPress={() => router.navigate(`/collaboration/view-user/${item.userId}`)}
                     >
                         <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
                     </TouchableRipple>

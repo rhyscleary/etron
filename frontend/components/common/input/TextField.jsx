@@ -17,7 +17,10 @@ const TextField = ({
     onBlur,
     autoCapitalize = 'none',
     contentStyle,
-    isDisabled = false
+    isDisabled = false,
+    customRightButton = false,
+    rightButtonIcon,
+    rightButtonPress
 }) => {
     const theme = useTheme();
     const [hidePassword, setHidePassword] = useState(secureTextEntry);
@@ -79,12 +82,19 @@ const TextField = ({
                 contentStyle={contentStyle}
                 secureTextEntry={isPassword ? hidePassword : false}
                 right={
-                    isPassword ? (
+                    customRightButton ? (
                         <TextInput.Icon
-                            icon={hidePassword ? "eye-off" : "eye"}
-                            onPress={() => setHidePassword(!hidePassword)}
+                            icon={rightButtonIcon}
+                            onPress={rightButtonPress}
                         />
-                    ) : null
+                    ) : (
+                        isPassword ? (
+                            <TextInput.Icon
+                                icon={hidePassword ? "eye-off" : "eye"}
+                                onPress={() => setHidePassword(!hidePassword)}
+                            />
+                        ) : null
+                    )
                 }
             />
             {typeof error === "string" && (
