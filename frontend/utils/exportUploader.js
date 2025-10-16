@@ -102,7 +102,7 @@ export async function uploadExportFile({
     try {
         console.log("Requesting new export creation from server...");
         const createResult = await apiPost(
-            endpoints.modules.day_book.reports.exports.createExport,
+            endpoints.modules.day_book.reports.exports.addExport,
             {
                 workspaceId,
                 name: trimmedFileName,

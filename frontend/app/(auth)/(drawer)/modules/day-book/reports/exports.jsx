@@ -36,17 +36,28 @@ const Exports = () => {
 
     setLoading(true);
     try {
-      const data = await apiGet(
-        endpoints.modules.day_book.reports.exports.getExports,
-        { workspaceId }
-      );
-      setExportsList(Array.isArray(data) ? data : []);
+      console.log("[Exports] Fetching exports for workspace:", workspaceId);
+
+      const url = `${endpoints.modules.day_book.reports.exports.getExports}?workspaceId=${encodeURIComponent(workspaceId)}`;
+      const response = await apiGet(url);
+
+      // Some APIs return { data: [...] }, some just return [...]
+      const exportsData = Array.isArray(response)
+        ? response
+        : Array.isArray(response.data)
+        ? response.data
+        : response.data?.exports || [];
+
+      console.log("[Exports] Received", exportsData.length, "exports");
+      setExportsList(exportsData);
     } catch (error) {
+      console.error("[Exports] Failed to load exports:", error);
       Alert.alert("Error", "Failed to load exports.");
     } finally {
       setLoading(false);
     }
   }, [workspaceId]);
+
 
   useEffect(() => {
     fetchExports();
@@ -58,7 +69,7 @@ const Exports = () => {
 
     const payload = { workspaceId, name: "Test Export " + Date.now() };
     try {
-      await apiPost(endpoints.modules.day_book.reports.exports.createExport, payload);
+      await apiPost(endpoints.modules.day_book.reports.exports.addExport, payload);
       Alert.alert("Success", "Export created successfully!");
       fetchExports();
     } catch (error) {
