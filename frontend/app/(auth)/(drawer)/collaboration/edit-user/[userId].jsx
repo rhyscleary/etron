@@ -1,8 +1,8 @@
 // Author(s): Matthew Page
 
 import { useState, useEffect } from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
-import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme } from "react-native-paper";
+import { View, Keyboard } from "react-native";
+import { Text, Dialog, Portal, Button, useTheme, Snackbar } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
@@ -13,15 +13,14 @@ import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import TextField from "../../../../../components/common/input/TextField";
 import BasicButton from "../../../../../components/common/buttons/BasicButton";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
-import { saveProfilePhoto } from "../../../../../utils/profilePhoto";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import DropDown from "../../../../../components/common/input/DropDown";
-
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
 	const router = useRouter();
 	const theme = useTheme();
+	const [snack, setSnack] = useState({ visible: false, text: ""})
 
 	const [workspaceId, setWorkspaceId] = useState(null);
 	const [roles, setRoles] = useState([]);
@@ -86,6 +85,7 @@ const EditUser = () => {
 	}, []);
 
 	const handleUpdate = async () => {
+		Keyboard.dismiss();
 		const newErrors = {
 			firstName: !firstName.trim(),
 			lastName: !lastName.trim(),
@@ -98,16 +98,18 @@ const EditUser = () => {
 
 			let userDetailsPayload = {};
 			let userWorkspaceDetailsPayload = {};
-
 			if (isFirstAltered) userDetailsPayload.given_name = firstName.trim();
 			if (isLastAltered) userDetailsPayload.family_name = lastName.trim(); 
 			if (isRoleAltered) userWorkspaceDetailsPayload.roleId = selectedRole;
+
+			let didUpdate = false;
 
 			console.log("payload:", userDetailsPayload);
 			if (Object.keys(userDetailsPayload).length > 0) {
 				console.log("attempting api personal details...");
 				await apiPut(endpoints.user.core.updateUser(userId, workspaceId), userDetailsPayload);
 				console.log("Successful.");
+				didUpdate = true;
 				if (isFirstAltered) setInitialFirstName(userDetailsPayload.given_name);
 				if (isLastAltered) setInitialLastName(userDetailsPayload.family_name);
 			};
@@ -116,8 +118,11 @@ const EditUser = () => {
 				console.log("Attempting to update role...");
 				await apiPatch(endpoints.workspace.users.update(workspaceId, userId), userWorkspaceDetailsPayload);
 				console.log("Successful.");
+				didUpdate = true;
 				if (isRoleAltered) setInitialRoleId(userWorkspaceDetailsPayload.roleId);
 			}
+
+			if (didUpdate) { setSnack({ visible: true, text: "Changes saved" })};
 		} catch (error) {
 			console.error("Error updating user:", error);
 		} finally {
@@ -228,6 +233,15 @@ const EditUser = () => {
 					</Dialog.Actions>
 				</Dialog>
 			</Portal>
+
+			<Snackbar
+				visible={snack.visible}
+				onDismiss={() => setSnack(s => ({ ...s, visible: false }))}
+				duration={2500}
+				style={{ marginBottom: 8 }}
+			>
+				{snack.text}
+			</Snackbar>
 		</ResponsiveScreen>
 	);
 };
