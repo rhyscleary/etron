@@ -33,7 +33,6 @@ const ViewUser = () => {
 	const [profilePicture, setProfilePicture] = useState(null);
     const [loading, setLoading] = useState(true);
 
-
 	useEffect(() => {
 		const initialiseUser = async () => {
 			const userType = await getUserType();

@@ -104,25 +104,24 @@ const EditUser = () => {
 			if (isRoleAltered) userWorkspaceDetailsPayload.roleId = selectedRole;
 
 			console.log("payload:", userDetailsPayload);
-			if (Object.keys(userDetailsPayload).length === 0 && Object.keys(userWorkspaceDetailsPayload).length === 0) {
-				setSaving(false);
-				return; 
+			if (Object.keys(userDetailsPayload).length > 0) {
+				console.log("attempting api personal details...");
+				await apiPut(endpoints.user.core.updateUser(userId, workspaceId), userDetailsPayload);
+				console.log("Successful.");
+				setInitialDetails({
+					firstName: userDetailsPayload.given_name,
+					lastName: userDetailsPayload.family_name,
+				})
+			};
+
+			if (Object.keys(userWorkspaceDetailsPayload).length > 0) {
+				console.log("Attempting to update role...");
+				await apiPatch(endpoints.workspace.users.update(workspaceId, userId), userWorkspaceDetailsPayload);
+				console.log("Successful.");
+				setInitialDetails({
+					roleId: userWorkspaceDetailsPayload.roleId
+				})
 			}
-
-			console.log("attempting api personal details...");
-			await apiPut(endpoints.user.core.updateUser(userId, workspaceId), userDetailsPayload);
-			console.log("Successful.");
-			setInitialDetails({
-				firstName: userDetailsPayload.given_name,
-				lastName: userDetailsPayload.family_name,
-			})
-
-			console.log("Attempting to update role...");
-			await apiPatch(endpoints.workspace.users.update(workspaceId, userId), userWorkspaceDetailsPayload);
-			console.log("Successful.");
-			setInitialDetails({
-				roleId: userWorkspaceDetailsPayload.roleId
-			})
 		} catch (error) {
 			console.error("Error updating user:", error);
 		} finally {
