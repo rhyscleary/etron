@@ -55,10 +55,7 @@ const validateRequired = (value, fieldName) => {
 // api validation
 export const validateApiForm = (formData, returnErrors = false) => {
   const errors = {};
-  
-  const nameError = validateRequired(formData.name, "API name");
-  if (nameError) errors.name = nameError;
-  
+  // name optional, generated from url if left blank
   const urlError = validateUrl(formData.url);
   if (urlError) errors.url = urlError;
   
@@ -163,6 +160,17 @@ export const buildApiConnectionData = (formData) => ({
   name: formData.name?.trim(),
   url: formData.url?.trim(),
   headers: formData.headers?.trim(),
+  // New fields to support typed auth selection
+  authType: formData.authType || undefined,
+  // For apiKey
+  apiKey: formData.authType === 'apiKey' ? formData.apiKey?.trim() : undefined,
+  apiKeyHeader: formData.authType === 'apiKey' ? formData.apiKeyHeader?.trim() : undefined,
+  // For bearer/jwt
+  token: (formData.authType === 'bearer' || formData.authType === 'jwt') ? formData.token?.trim() : undefined,
+  // For basic
+  username: formData.authType === 'basic' ? formData.username?.trim() : undefined,
+  password: formData.authType === 'basic' ? formData.password?.trim() : undefined,
+  // Legacy freeform authentication string (optional)
   authentication: formData.authentication?.trim()
 });
 
@@ -173,7 +181,9 @@ export const buildFtpConnectionData = (formData) => ({
   username: formData.username?.trim(),
   password: formData.password?.trim(),
   keyFile: formData.keyFile?.trim(),
-  directory: formData.directory?.trim() || '/'
+  // Keep legacy 'directory' for UI, but include 'filePath' as required by backend
+  directory: formData.directory?.trim() || '/',
+  filePath: (formData.filePath || formData.directory)?.trim() || '/'
 });
 
 export const buildMySqlConnectionData = (formData) => ({

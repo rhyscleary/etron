@@ -1,4 +1,4 @@
-// Author(s): Holly Wyatt
+// authors: holly wyatt, noah bradley
 
 import React, { useEffect, useState } from "react";
 import {
@@ -8,8 +8,8 @@ import {
   Pressable,
   ActivityIndicator,
 } from "react-native";
-import { Text, Card } from "react-native-paper";
-import { useLocalSearchParams, router } from "expo-router";
+import { Text, Card, DataTable, useTheme, Button } from "react-native-paper";
+import { useLocalSearchParams, router, Link } from "expo-router";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import {
@@ -17,25 +17,30 @@ import {
   getAdapterInfo,
 } from "../../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 import useDataSources from "../../../../../../../hooks/useDataSource";
-import apiClient from "../../../../../../../utils/api/apiClient";
-import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
 import ResponsiveScreen from "../../../../../../../components/layout/ResponsiveScreen";
 
 const SelectDataSource = () => {
-  const authService = { getCurrentUser, fetchAuthSession, signOut };
+  const theme = useTheme();
   const { ids } = useLocalSearchParams();
-
-  const { getDataSource, loading: dataSourcesLoading } = useDataSources(
-    apiClient,
-    authService
-  );
+  const { getDataSource, fetchDataSource, dataSourceService } = useDataSources();
+  const lastFetchedIdRef = React.useRef(null);
+  const sourceId = Array.isArray(ids) ? ids[0] : ids;
 
   const [existingSource, setExistingSource] = useState(null);
   const [adapters, setAdapters] = useState([]);
   const [loadingAdapters, setLoadingAdapters] = useState(true);
   const [loadingSource, setLoadingSource] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
+  const [showAllRows, setShowAllRows] = useState(false);
 
-  // Load available adapter types
+  // compute edit href target once we have an id
+  const navId = existingSource?.id || existingSource?._id || existingSource?.dataSourceId || sourceId;
+  const editHref = navId
+    ? `/modules/day-book/data-management/update-data-source/${encodeURIComponent(String(navId))}`
+    : null;
+
+  // load available adapter types
   useEffect(() => {
     const loadAdapters = async () => {
       try {
@@ -55,16 +60,18 @@ const SelectDataSource = () => {
     loadAdapters();
   }, []);
 
-  // Load the source we're editing (if any)
+  // load the source we're editing (if any)
   useEffect(() => {
-    if (!ids) return;
+    if (!sourceId) return;
+    if (lastFetchedIdRef.current === sourceId) return; // guard against repeated fetches
 
     const fetchExisting = async () => {
       setLoadingSource(true);
       try {
-        console.log("Loading existing data source for id:", ids);
-        const source = await getDataSource(ids); // <-- await here
+        console.log("[SelectDataSource] Loading existing data source for id:", sourceId);
+        const source = await getDataSource(sourceId);
         setExistingSource(source);
+        lastFetchedIdRef.current = sourceId;
       } catch (err) {
         console.error("Could not load data source:", err);
       } finally {
@@ -73,7 +80,7 @@ const SelectDataSource = () => {
     };
 
     fetchExisting();
-  }, [ids, getDataSource]);
+  }, [sourceId, getDataSource]);
 
   const handleSelect = (adapterType) => {
     router.navigate(
@@ -81,7 +88,38 @@ const SelectDataSource = () => {
     );
   };
 
-  if (loadingAdapters || dataSourcesLoading || loadingSource) {
+  const handleViewData = async () => {
+    if (!existingSource) return;
+    const effectiveId = existingSource?.id || existingSource?.dataSourceId || existingSource?._id;
+    if (!effectiveId) {
+      console.error('[SelectDataSource] No valid id found on existingSource');
+      setPreviewData({ error: 'Missing data source id' });
+      return;
+    }
+    setPreviewLoading(true);
+    setPreviewData(null);
+    try {
+      console.log('[SelectDataSource] Loading preview via viewData endpoint', { id: effectiveId, type: existingSource.type });
+      const res = await dataSourceService.viewData(effectiveId);
+      const data = Array.isArray(res?.data) ? res.data : [];
+      const headers = Array.isArray(res?.headers) ? res.headers : (data.length ? Object.keys(data[0]) : []);
+      setPreviewData({ data, headers });
+      console.log('[SelectDataSource] Preview (from viewData):', { rows: data.length, cols: headers.length });
+    } catch (err) {
+      console.error('[SelectDataSource] Preview via viewData failed:', err?.message || err);
+      setPreviewData({ error: err?.message || String(err) });
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // keep the old handler as a fallback if needed
+  const handleEditSource = () => {
+    if (!editHref) return;
+    router.push(editHref);
+  };
+
+  if (loadingAdapters || loadingSource) {
     return (
       <View style={[commonStyles.screen, styles.center]}>
         <ActivityIndicator size="large" />
@@ -89,12 +127,12 @@ const SelectDataSource = () => {
     );
   }
 
-  if (ids && !existingSource) {
+  if (sourceId && !existingSource) {
     return (
       <View style={commonStyles.screen}>
         <Header title="Edit Connection" showBack />
         <View style={styles.center}>
-          <Text>No data source found for id "{ids}"</Text>
+          <Text>No data source found for id "{String(sourceId)}"</Text>
         </View>
       </View>
     );
@@ -106,16 +144,20 @@ const SelectDataSource = () => {
       ? adapterInfo.description
       : existingSource?.type;
 
+  const createdAtValue = existingSource?.createdAt || existingSource?.lastSync || null;
+  const createdAtText = createdAtValue ? (() => { try { return new Date(createdAtValue).toLocaleString(); } catch { return String(createdAtValue); } })() : null;
+
   return (
     <ResponsiveScreen>
-        <Header title={ids ? "Edit Connection" : "New Connection"} showBack />
-        <ScrollView contentContainerStyle={styles.container}>
-          <Text variant="titleMedium" style={styles.title}>
-            {ids ? "Edit Data Source" : "Choose a Data Source"}
-          </Text>
+      <Header title={sourceId ? (existingSource?.name || "Data Source") : "New Connection"} showBack />
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text variant="titleMedium" style={styles.title}>
+          {sourceId ? (createdAtText ? `Created: ${createdAtText}` : "Created: Unknown") : "Choose a Data Source"}
+        </Text>
 
-          {ids ? (
-            existingSource ? (
+        {sourceId ? (
+          existingSource ? (
+            <>
               <Card style={styles.card}>
                 <Card.Title
                   title={
@@ -129,23 +171,127 @@ const SelectDataSource = () => {
                   <Text>Type: {String(existingSource.type)}</Text>
                   <Text>Status: {String(existingSource.status)}</Text>
                   <Text>Last Sync: {String(existingSource.lastSync)}</Text>
+                  <View style={{ marginTop: 12 }}>
+                    <View style={{ flexDirection: 'row' }}>
+                      <Button onPress={handleViewData} mode="contained" disabled={previewLoading} style={{ marginRight: 8 }}>
+                        {previewLoading ? 'Loading...' : 'View Data'}
+                      </Button>
+                      {editHref ? (
+                        <Link href={editHref} asChild>
+                          <Button mode="outlined">Edit Data Source</Button>
+                        </Link>
+                      ) : (
+                        <Button mode="outlined" disabled>
+                          Edit Data Source
+                        </Button>
+                      )}
+                    </View>
+                  </View>
                 </View>
               </Card>
-            ) : null
-          ) : (
-            adapters.map(({ type, info }) => (
-              <Pressable key={type} onPress={() => handleSelect(type)}>
-                <Card style={styles.card}>
-                  <Card.Title
-                    title={info?.name || type}
-                    subtitle={info?.description || "No description"}
-                  />
+
+              {previewData ? (
+                <Card style={{ margin: 16 }}>
+                  <Card.Title title="Preview" />
+                  <View style={{ padding: 12 }}>
+                    {previewData.error ? (
+                      <Text>Error: {previewData.error}</Text>
+                    ) : (
+                      (() => {
+                        const allRows = Array.isArray(previewData.data) ? previewData.data : [];
+                        // build headers: prefer provided headers, else union of keys from first 50 rows, else ['value'] for primitives
+                        const inferHeaders = () => {
+                          if (Array.isArray(previewData.headers) && previewData.headers.length) return previewData.headers;
+                          const sample = allRows.slice(0, 50);
+                          const isObjectRows = sample.some((r) => r && typeof r === 'object' && !Array.isArray(r));
+                          if (!isObjectRows) return ['value'];
+                          const set = new Set();
+                          sample.forEach((r) => { if (r && typeof r === 'object') Object.keys(r).forEach((k) => set.add(k)); });
+                          return Array.from(set);
+                        };
+                        const headers = inferHeaders();
+                        const toDisplayRows = allRows.slice(0, showAllRows ? 25 : 10);
+                        const formatVal = (v) => {
+                          if (v == null) return '';
+                          const isDateLike = (s) => typeof s === 'string' && /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s);
+                          if (typeof v === 'string') {
+                            if (isDateLike(v)) { try { return new Date(v).toLocaleString(); } catch { return v; } }
+                            return v.length > 200 ? v.slice(0, 200) + '…' : v;
+                          }
+                          if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+                          // objects/arrays
+                          try {
+                            const s = JSON.stringify(v);
+                            return s.length > 200 ? s.slice(0, 200) + '…' : s;
+                          } catch {
+                            return String(v);
+                          }
+                        };
+                        const normalizeRow = (row) => {
+                          if (row && typeof row === 'object' && !Array.isArray(row)) return row;
+                          return { value: row };
+                        };
+                        const totalRows = allRows.length;
+                        const totalCols = headers.length;
+                        return (
+                          <View>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, justifyContent: 'space-between' }}>
+                              <Text variant="labelLarge">
+                                Rows: {totalRows} • Columns: {totalCols} • Showing first {showAllRows ? 25 : 10}
+                              </Text>
+                              {totalRows > 10 && (
+                                <Button mode="text" onPress={() => setShowAllRows((v) => !v)}>
+                                  {showAllRows ? 'Show 10' : 'Show 25'}
+                                </Button>
+                              )}
+                            </View>
+                            <ScrollView horizontal>
+                              <DataTable>
+                                <DataTable.Header>
+                                  {headers.map((h) => (
+                                    <DataTable.Title key={h} style={{ minWidth: 140 }}>
+                                      <Text style={{ fontWeight: '700' }}>{h}</Text>
+                                    </DataTable.Title>
+                                  ))}
+                                </DataTable.Header>
+                                {toDisplayRows.map((row, idx) => {
+                                  const obj = normalizeRow(row);
+                                  const zebra = idx % 2 === 1;
+                                  return (
+                                    <DataTable.Row key={idx} style={zebra ? { backgroundColor: theme.colors.primary } : null}>
+                                      {headers.map((h) => (
+                                        <DataTable.Cell key={h} style={{ minWidth: 140 }}>
+                                          <Text style={zebra ? { color: '#000' } : null}>{formatVal(obj[h])}</Text>
+                                        </DataTable.Cell>
+                                      ))}
+                                    </DataTable.Row>
+                                  );
+                                })}
+                              </DataTable>
+                            </ScrollView>
+                          </View>
+                        );
+                      })()
+                    )}
+                  </View>
                 </Card>
-              </Pressable>
-            ))
-          )}
-        </ScrollView>
-</ResponsiveScreen>
+              ) : null}
+            </>
+          ) : null
+        ) : (
+          adapters.map(({ type, info }) => (
+            <Pressable key={type} onPress={() => handleSelect(type)}>
+              <Card style={styles.card}>
+                <Card.Title
+                  title={info?.name || type}
+                  subtitle={info?.description || "No description"}
+                />
+              </Card>
+            </Pressable>
+          ))
+        )}
+      </ScrollView>
+    </ResponsiveScreen>
   );
 };
 

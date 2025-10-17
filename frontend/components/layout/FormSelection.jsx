@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import StackLayout from "../layout/StackLayout";
 import TextField from "../common/input/TextField";
 import { commonStyles } from "../../assets/styles/stylesheets/common";
@@ -183,14 +183,96 @@ const ApiFormSection = ({
           </Text>
         </StackLayout>
 
-        <TextField
-          label="Authentication"
-          placeholder="Bearer token, API key, etc."
-          value={formData.authentication || ""}
-          onChangeText={(value) => updateField("authentication", value)}
-          disabled={isConnected}
-          secureTextEntry
-        />
+        {/* Authentication selection */}
+        <View style={{ marginTop: 4 }}>
+          <Text style={[commonStyles.captionText, { color: theme.colors.onSurfaceVariant, marginBottom: 8 }]}>Authentication (optional)</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {[
+              { key: 'none', label: 'None' },
+              { key: 'apiKey', label: 'API Key' },
+              { key: 'bearer', label: 'Bearer' },
+              { key: 'jwt', label: 'JWT Bearer' },
+              { key: 'basic', label: 'Basic' },
+            ].map(opt => {
+              const selected = (formData.authType || 'none') === opt.key;
+              return (
+                <Pressable
+                  key={opt.key}
+                  onPress={() => !isConnected && updateField('authType', opt.key)}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: selected ? theme.colors.primary : theme.colors.outline,
+                    backgroundColor: selected ? theme.colors.primaryContainer : 'transparent',
+                    marginRight: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <Text style={{ color: selected ? theme.colors.onPrimaryContainer : theme.colors.onSurface }}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Authentication details based on selection */}
+        {formData.authType === 'apiKey' && (
+          <StackLayout spacing={12}>
+            <TextField
+              label="API Key"
+              placeholder="your-api-key"
+              value={formData.apiKey || ""}
+              onChangeText={(v) => updateField('apiKey', v)}
+              disabled={isConnected}
+              secureTextEntry
+            />
+            <TextField
+              label="Header Name (optional)"
+              placeholder="e.g. X-API-Key"
+              value={formData.apiKeyHeader || ""}
+              onChangeText={(v) => updateField('apiKeyHeader', v)}
+              disabled={isConnected}
+            />
+          </StackLayout>
+        )}
+
+        {(formData.authType === 'bearer' || formData.authType === 'jwt') && (
+          <StackLayout spacing={12}>
+            <TextField
+              label={formData.authType === 'jwt' ? 'JWT Token' : 'Bearer Token'}
+              placeholder="your-token"
+              value={formData.token || ""}
+              onChangeText={(v) => updateField('token', v)}
+              disabled={isConnected}
+              secureTextEntry
+            />
+          </StackLayout>
+        )}
+
+        {formData.authType === 'basic' && (
+          <StackLayout spacing={12}>
+            <TextField
+              label="Username"
+              placeholder="Enter username"
+              value={formData.username || ""}
+              onChangeText={(v) => updateField('username', v)}
+              disabled={isConnected}
+              autoCapitalize="none"
+            />
+            <TextField
+              label="Password"
+              placeholder="Enter password"
+              value={formData.password || ""}
+              onChangeText={(v) => updateField('password', v)}
+              disabled={isConnected}
+              secureTextEntry
+            />
+          </StackLayout>
+        )}
       </StackLayout>
     </View>
   );

@@ -12,7 +12,10 @@ import { apiGet } from "../../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../../utils/api/endpoints";
 
 const ViewDataSource = () => {
-    const { dataSourceId } = useLocalSearchParams();
+    // Be flexible with the param name coming from the route/navigation
+    const params = useLocalSearchParams();
+    const pickFirst = (v) => Array.isArray(v) ? v[0] : v;
+    const sourceId = pickFirst(params?.dataSourceId ?? params?.sourceId ?? params?.id);
 
     const [loadingDataSourceInfo, setLoadingDataSourceInfo] = useState(true);
     const [creator, setCreator] = useState();
@@ -24,12 +27,17 @@ const ViewDataSource = () => {
 
     useEffect(() => {
         async function getDataSourceInfo() {
+            if (!sourceId) {
+                // No source id present; stop loading and show an inline error state
+                setLoadingDataSourceInfo(false);
+                return;
+            }
             const workspaceId = await getWorkspaceId();
 
             let apiDataSourceInfo;
             try {
                 let apiDataSourceInfoResult = await apiGet(
-                    endpoints.modules.day_book.data_sources.getDataSource(dataSourceId),
+                    endpoints.modules.day_book.data_sources.getDataSource(sourceId),
                     { workspaceId }
                 );
                 apiDataSourceInfo = apiDataSourceInfoResult.data;
@@ -55,7 +63,7 @@ const ViewDataSource = () => {
             }
         }
         getDataSourceInfo();
-    }, []);
+    }, [sourceId]);
 
     const [deviceFilePath, setDeviceFilePath] = useState(null);
     const userSelectDocument = async () => {
@@ -112,9 +120,10 @@ const ViewDataSource = () => {
     }
 
     const handleFinalise = async () => {
+        if (!sourceId) return;
         const workspaceId = await getWorkspaceId();
         const uploadUrlApiResponseResult = await apiGet(
-            endpoints.modules.day_book.data_sources.getUploadUrl(dataSourceId),
+            endpoints.modules.day_book.data_sources.getUploadUrl(sourceId),
             { workspaceId }
         )
         const uploadUrlApiResponse = uploadUrlApiResponseResult.data;
@@ -129,7 +138,9 @@ const ViewDataSource = () => {
             <Header title={name ? `${name}` : "Loading"} showBack showEdit />
             {loadingDataSourceInfo ?
                 <ActivityIndicator />
-            : (<>
+            : (!sourceId ? (
+                <Text>Unable to load data source: missing source id.</Text>
+            ) : (<>
                 <Text>Name: {name}</Text>
                 <Text>Source type: {sourceType}</Text>
                 <Text>Method: {method}</Text>
@@ -149,7 +160,7 @@ const ViewDataSource = () => {
                         <Button onPress={handleFinalise} title="Upload data" disabled={isUploadingData} />
                     </View>
                 )}
-            </>)}
+            </>))}
         </View>
     )
 }
