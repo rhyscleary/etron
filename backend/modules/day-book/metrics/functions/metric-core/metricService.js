@@ -91,7 +91,11 @@ async function updateMetricInWorkspace(authUserId, metricId, payload) {
 
     const updatedMetric = metricRepo.updateMetric(workspaceId, metricId, metricItem);
 
+    // update data source to active
+    await metricRepo.updateMetricDataSourceStatus(workspaceId, metricId, true);
+
     const thumbnailUrl = await getDownloadUrl(metric.thumbnailKey);
+
 
     return {
         ...updatedMetric,

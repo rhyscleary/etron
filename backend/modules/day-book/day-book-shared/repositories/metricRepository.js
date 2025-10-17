@@ -69,6 +69,39 @@ async function updateMetric(workspaceId, metricId, metricItem) {
     return result;
 }
 
+// update metric data source status
+async function updateMetricDataSourceStatus(workspaceId, metricId, isActive) {
+    const updateFields = [];
+    const expressionAttributeValues = {};
+    const expressionAttributeNames = {};
+
+    // update the activeDataSource flag
+    updateFields.push("#activeDataSource = :activeDataSource");
+    expressionAttributeValues[":activeDataSource"] = isActive;
+    expressionAttributeNames["#activeDataSource"] = "activeDataSource";
+
+    // update the updatedAt timestamp
+    updateFields.push("#updatedAt = :updatedAt");
+    expressionAttributeValues[":updatedAt"] = new Date().toISOString();
+    expressionAttributeNames["#updatedAt"] = "updatedAt";
+
+    const result = await dynamoDB.send(
+        new UpdateCommand( {
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                metricId: metricId
+            },
+            UpdateExpression: "SET " + updateFields.join(", "),
+            ExpressionAttributeValues: expressionAttributeValues,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ReturnValues: "ALL_NEW"
+        })
+    );
+
+    return result;
+}
+
 // remove metric
 async function removeMetric(workspaceId, metricId) {
     await dynamoDB.send(
@@ -148,6 +181,7 @@ async function getMetricsByWorkspaceId(workspaceId) {
 module.exports = {
     addMetric,
     updateMetric,
+    updateMetricDataSourceStatus,
     removeMetric,
     getMetricById,
     getMetricVariableNames,
