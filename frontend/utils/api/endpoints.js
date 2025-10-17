@@ -18,8 +18,7 @@ const endpoints = {
 		update: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
 		getWorkspace: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
 		getByUserId: (userId) => `${WORKSPACE_BASE_URL}/users/${userId}`,
-		transfer: (workspaceId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/transfer`,
+		transfer: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/transfer`,
 		delete: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}`,
 		getDefaultPermissions: `${WORKSPACE_BASE_URL}/permissions`,
 		},
@@ -27,60 +26,42 @@ const endpoints = {
 		invites: {
 		create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/invites`,
 		cancelAllInvites: (email) => `${WORKSPACE_BASE_URL}/invites/${email}`,
-		cancelInvite: (workspaceId, inviteId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/invites/${inviteId}`,
-		getInvite: (workspaceId, inviteId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/invites/${inviteId}`,
-		getInvitesSent: (workspaceId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/invites`,
+		cancelInvite: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/invites/${inviteId}`,
+		getInvite: (workspaceId, inviteId) => `${WORKSPACE_BASE_URL}/${workspaceId}/invites/${inviteId}`,
+		getInvitesSent: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/invites`,
 		},
 
 		roles: {
 		create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles`,
-		update: (workspaceId, roleId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
-		delete: (workspaceId, roleId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
-		getRole: (workspaceId, roleId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
-		getRoleOfUser: (workspaceId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/roleOfUser`,
+		update: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
+		delete: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
+		getRole: (workspaceId, roleId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles/${roleId}`,
+		getRoleOfUser: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roleOfUser`,
 		getRoles: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/roles`,
 		},
 
 		users: {
 		add: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users`,
-		update: (workspaceId, userId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
-		remove: (workspaceId, userId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
-		getUser: (workspaceId, userId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
+		update: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
+		remove: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
+		getUser: (workspaceId, userId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users/${userId}`,
 		getUsers: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/users`,
 		},
 
 		boards: {
 		create: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`,
-		update: (workspaceId, boardId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
-		delete: (workspaceId, boardId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
-		getBoard: (workspaceId, boardId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+		update: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+		delete: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
+		getBoard: (workspaceId, boardId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards/${boardId}`,
 		getBoards: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/boards`,
 		},
 
 		modules: {
-		install: (workspaceId, moduleKey) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}`,
-		uninstall: (workspaceId, moduleKey) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}`,
-		toggle: (workspaceId, moduleKey) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}/toggle`,
-		getInstalledModules: (workspaceId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/modules/installed`,
-		getUninstalledModules: (workspaceId) =>
-			`${WORKSPACE_BASE_URL}/${workspaceId}/modules/uninstalled`,
+		install: (workspaceId, moduleKey) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}`,
+		uninstall: (workspaceId, moduleKey) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}`,
+		toggle: (workspaceId, moduleKey) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/${moduleKey}/toggle`,
+		getInstalledModules: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/installed`,
+		getUninstalledModules: (workspaceId) => `${WORKSPACE_BASE_URL}/${workspaceId}/modules/uninstalled`,
 		},
 	},
 
@@ -141,20 +122,16 @@ const endpoints = {
 			},
 			templates: {
 				createTemplate: `${REPORTS_BASE_URL}/templates`,
-				updateTemplate: (templateId) =>
-					`${REPORTS_BASE_URL}/templates/${templateId}`,
-				getTemplate: (templateId) =>
-					`${REPORTS_BASE_URL}/templates/${templateId}`,
+				updateTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
+				getTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
 				getTemplates: `${REPORTS_BASE_URL}/templates`,
-				deleteTemplate: (templateId) =>
-					`${REPORTS_BASE_URL}/templates/${templateId}`,
+				deleteTemplate: (templateId) => `${REPORTS_BASE_URL}/templates/${templateId}`,
 			},
 			exports: {
 				addExport: `${REPORTS_BASE_URL}/exports`,
 				getExport: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}`,
 				getExports: `${REPORTS_BASE_URL}/exports`,
-				getExportDownloadUrl: (exportId) =>
-					`${REPORTS_BASE_URL}/exports/${exportId}/download`,
+				getExportDownloadUrl: (exportId) => `${REPORTS_BASE_URL}/exports/${exportId}/download`,
 			},
 		},
     },
