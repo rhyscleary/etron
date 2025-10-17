@@ -139,7 +139,10 @@ const Users = () => {
                         }}
                         onPress={() => router.navigate(`/collaboration/view-user/${item.userId}`)}
                     >
-                        <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
+                        <>
+                            <Text style={commonStyles.listItemText}>{item.given_name + " " + item.family_name}</Text>
+                            <Text style={commonStyles.captionText}>{item.email}</Text>
+                        </>
                     </TouchableRipple>
                 )}
                 ListEmptyComponent={
