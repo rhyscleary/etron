@@ -66,7 +66,7 @@ export default function AuthLayout() {
                     router.replace("/landing.jsx");
                     return false;
                 }
-                console.error("Unexpected error fetching workspace:", error);
+                console.error("Error fetching workspace:", error);
                 return false;
             }
             

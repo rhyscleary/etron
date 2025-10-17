@@ -13,11 +13,10 @@ import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import TextField from "../../../../../components/common/input/TextField";
 import BasicButton from "../../../../../components/common/buttons/BasicButton";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
-import { updateUserAttribute } from "aws-amplify/auth";
-import { getUserType } from "../../../../../storage/userStorage";
 import { saveProfilePhoto } from "../../../../../utils/profilePhoto";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import DropDown from "../../../../../components/common/input/DropDown";
+
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -25,16 +24,26 @@ const EditUser = () => {
 	const theme = useTheme();
 
 	const [workspaceId, setWorkspaceId] = useState(null);
+	const [roles, setRoles] = useState([]);
+
+	const [initialDetails, setInitialDetails] = useState({ firstName: "", lastName: ""})
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
-	const [roles, setRoles] = useState([]);
+
 	const [selectedRole, setSelectedRole] = useState("");
+	const [saving, setSaving] = useState(false);
+
+	const isFirstAltered = (firstName || "").trim() !== (initialDetails.firstName || "").trim();
+	const isLastAltered = (lastName || "").trim() !== (initialDetails.lastName || "").trim();
+	const isRoleAltered = selectedRole !== initialDetails.roleId;
+	const isAltered = isFirstAltered || isLastAltered || isRoleAltered;
+
 	const [roleDialogVisible, setRoleDialogVisible] = useState(false);
 	const [removeDialogVisible, setRemoveDialogVisible] = useState(false);
 	const [profilePicture, setProfilePicture] = useState(null);
 	const [errors, setErrors] = useState({
-				firstName: false,
-				lastName: false,
+		firstName: false,
+		lastName: false,
 	});
 
 	useEffect(() => {
@@ -42,82 +51,37 @@ const EditUser = () => {
 			const workspaceIdTemp = await getWorkspaceId();
 			setWorkspaceId(workspaceIdTemp);
 
+			let user;
 			try {
-				const user = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
-				setFirstName(user.given_name);
-				setLastName(user.family_name);
-				setSelectedRole(user.roleId || "");
+				const result = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
+				user = result.data;
 			} catch (error) {
 				console.error("Error fetching user:", error);
 				return;
 			}
 			
+			let fetchedRoles;
 			try {
-				const fetchedRolesResult = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
-				const fetchedRoles = fetchedRolesResult.data;
-				setRoles(fetchedRoles || []);
+				const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
+				fetchedRoles = result.data;
 			} catch (error) {
 				console.error("Error fetching roles:", error);
 				return;
 			}
+
+			setFirstName(user.given_name);
+			setLastName(user.family_name);
+			setSelectedRole(user.roleId);
+			setInitialDetails({
+				firstName: user.given_name,
+				lastName: user.family_name,
+				roleId: user.roleId,
+			})
+
+			setRoles(fetchedRoles || []);
 		};
 		initialise();
 	}, []);
-
-	// updates user details
-	async function handleUpdateUserAttribute(attributeKey, value) {
-		try {
-			const output = await updateUserAttribute({
-				userAttribute: {
-					attributeKey,
-					value
-				}
-			});
-
-			const { nextStep } = output;
-
-			switch (nextStep.updateAttributeStep) {
-				case 'CONFIRM_ATTRIBUTE_WITH_CODE':
-					const codeDeliveryDetails = nextStep.codeDeliveryDetails;
-					console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
-					return { needsConfirmation: true };
-				case 'DONE':
-					const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-					console.log(`${fieldName} updated successfully`);
-					return { needsConfirmation: false };
-				default:
-					console.log(`${attributeKey.replace('_', ' ')} update completed`);
-					return { needsConfirmation: false };
-			}
-		} catch (error) {
-			console.error("Error updating user attribute:", error);
-			const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-			setMessage(`Error updating ${fieldName}: ${error.message}`);
-			return { needsConfirmation: false, error: true };
-		}
-	}
-
-	async function handleSaveUserAttributes() {
-		try {
-			if (firstName?.trim()) {
-				await handleUpdateUserAttribute('given_name', firstName.trim());
-			};
-
-			if (lastName?.trim()) {
-				await handleUpdateUserAttribute('family_name', lastName.trim());
-			};
-
-			if (!profilePicture) {
-				const removed = await saveProfilePhoto();
-				if (removed) {
-					await handleUpdateUserAttribute('picture', "");
-				}
-			}
-
-		} catch (error) {
-			console.error("Error updating Cognito attributes:", error);
-		}
-	}	
 
 	const handleUpdate = async () => {
 		const newErrors = {
@@ -125,35 +89,42 @@ const EditUser = () => {
 			lastName: !lastName.trim(),
 		};
 		setErrors(newErrors);
+		if (Object.values(newErrors).some(Boolean)) return;
 
 		try {
-			const userData = {
-				given_name: firstName.trim(),
-				family_name: lastName.trim()
-			};
+			setSaving(true);
 
-			const userResponse = await apiPut(
-				endpoints.user.core.updateUser(userId, workspaceId),
-				userData
-			);
+			let userDetailsPayload = {};
+			let userWorkspaceDetailsPayload = {};
 
-			console.log("User updated:", userResponse.data);
+			if (isFirstAltered) userDetailsPayload.given_name = firstName.trim();
+			if (isLastAltered) userDetailsPayload.family_name = lastName.trim(); 
+			if (isRoleAltered) userWorkspaceDetailsPayload.roleId = selectedRole;
 
-			console.log("Selected role:", selectedRole)
-			const workspaceUserData = {
-				roleId: selectedRole
+			console.log("payload:", userDetailsPayload);
+			if (Object.keys(userDetailsPayload).length === 0 && Object.keys(userWorkspaceDetailsPayload).length === 0) {
+				setSaving(false);
+				return; 
 			}
 
-			const workspaceUserResponse = await apiPatch(
-				endpoints.workspace.users.update(workspaceId, userId),
-				workspaceUserData
-			);
+			console.log("attempting api personal details...");
+			await apiPut(endpoints.user.core.updateUser(userId, workspaceId), userDetailsPayload);
+			console.log("Successful.");
+			setInitialDetails({
+				firstName: userDetailsPayload.given_name,
+				lastName: userDetailsPayload.family_name,
+			})
 
-			console.log("Workspace User updated:", workspaceUserResponse.data);
-
-			router.back();
+			console.log("Attempting to update role...");
+			await apiPatch(endpoints.workspace.users.update(workspaceId, userId), userWorkspaceDetailsPayload);
+			console.log("Successful.");
+			setInitialDetails({
+				roleId: userWorkspaceDetailsPayload.roleId
+			})
 		} catch (error) {
-			console.error("Update error:", error);
+			console.error("Error updating user:", error);
+		} finally {
+			setSaving(false);
 		}
 	};
 
@@ -172,7 +143,7 @@ const EditUser = () => {
 
 	return (
 		<ResponsiveScreen
-			header={<Header title="Edit User" showBack showCheck onRightIconPress={handleUpdate} />}
+			header={<Header title="Edit User" showBack showCheck={isAltered && !saving} onRightIconPress={handleUpdate} />}
 			center={false}
 			padded
             scroll={false}
@@ -195,8 +166,10 @@ const EditUser = () => {
 			<TextField
 				label="First Name"
 				value={firstName}
-				placeholder="First Name"
 				onChangeText={setFirstName}
+				customRightButton={isFirstAltered}
+				rightButtonIcon="backup-restore"
+				rightButtonPress={() => setFirstName(initialDetails.firstName)}
 			/>
 
 			{errors.firstName && (
@@ -206,23 +179,26 @@ const EditUser = () => {
 			<TextField
 				label="Last Name"
 				value={lastName}
-				placeholder="Last Name"
 				onChangeText={setLastName}
+				customRightButton={isLastAltered}
+				rightButtonIcon="backup-restore"
+				rightButtonPress={() => setLastName(initialDetails.lastName)}
 			/>
 
 			{errors.lastName && (
 				<Text style={{ color: theme.colors.error }}>Please enter a valid last name</Text>
 			)}
 
-			<DropDown 
-				title="Select Role"
-				items={roles.map(role => ({
-					label: `${role.name}`,
-					value: role.roleId
-				}))}
-				showRouterButton={false}
+			<DropDown
+				label="Select Role"
+				items={roles
+					.filter(role => role.name !== "Owner")
+					.map(role => ({ label: role.name, value: role.roleId }))
+				}
+				value={selectedRole}
 				onSelect={(roleId) => setSelectedRole(roleId)}
-            />
+				showRouterButton={false}
+			/>
 
 			{/* Remove User Button */}
 			<BasicButton 
@@ -231,36 +207,6 @@ const EditUser = () => {
 				fullWidth={true}
 				onPress={() => setRemoveDialogVisible(true)}
 			/>
-
-			{/* Role Selection Dialog */}
-			<Portal>
-				<Dialog visible={roleDialogVisible} onDismiss={() => setRoleDialogVisible(false)}>
-					<Dialog.Title>Select a Role</Dialog.Title>
-					<Dialog.ScrollArea>
-						<ScrollView style={{ paddingHorizontal: 16 }}>
-							{roles.map((role) => (
-								<TouchableOpacity
-									key={role.roleId}
-									onPress={() => {
-										setSelectedRole(role.roleId);
-										setRoleDialogVisible(false);
-									}}
-									style={{
-										paddingVertical: 12,
-										borderBottomWidth: 1,
-										borderBottomColor: "#eee",
-									}}
-								>
-									<Text>{role.name}</Text>
-								</TouchableOpacity>
-							))}
-						</ScrollView>
-					</Dialog.ScrollArea>
-					<Dialog.Actions>
-						<Button onPress={() => setRoleDialogVisible(false)}>Cancel</Button>
-					</Dialog.Actions>
-				</Dialog>
-			</Portal>
 
 			{/* Remove Confirmation Dialog */}
 			<Portal>
