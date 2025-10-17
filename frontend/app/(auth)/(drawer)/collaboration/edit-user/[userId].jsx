@@ -7,7 +7,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
-import { apiGet, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
+import { apiGet, apiDelete, apiPatch, apiPut } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import TextField from "../../../../../components/common/input/TextField";
@@ -17,6 +17,7 @@ import { updateUserAttribute } from "aws-amplify/auth";
 import { getUserType } from "../../../../../storage/userStorage";
 import { saveProfilePhoto } from "../../../../../utils/profilePhoto";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import DropDown from "../../../../../components/common/input/DropDown";
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -26,7 +27,6 @@ const EditUser = () => {
 	const [workspaceId, setWorkspaceId] = useState(null);
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
-	const [userType, setUserType] = useState("employee");
 	const [roles, setRoles] = useState([]);
 	const [selectedRole, setSelectedRole] = useState("");
 	const [roleDialogVisible, setRoleDialogVisible] = useState(false);
@@ -39,13 +39,11 @@ const EditUser = () => {
 
 	useEffect(() => {
 		const initialise = async () => {
-			const userType = await getUserType();
 			const workspaceIdTemp = await getWorkspaceId();
 			setWorkspaceId(workspaceIdTemp);
 
 			try {
 				const user = await apiGet(endpoints.workspace.users.getUser(workspaceIdTemp, userId));
-				setUserType(user.type || "employee");
 				setFirstName(user.given_name);
 				setLastName(user.family_name);
 				setSelectedRole(user.roleId || "");
@@ -129,19 +127,30 @@ const EditUser = () => {
 		setErrors(newErrors);
 
 		try {
-			const data = {
+			const userData = {
 				given_name: firstName.trim(),
-				family_name: lastName.trim(),
-				type: userType,
-				roleId: selectedRole
+				family_name: lastName.trim()
 			};
 
-			const result = await apiPatch(
-				endpoints.workspace.users.update(workspaceId, userId),
-				data
+			const userResponse = await apiPut(
+				endpoints.user.core.updateUser(userId, workspaceId),
+				userData
 			);
 
-			console.log("User updated:", result.data);
+			console.log("User updated:", userResponse.data);
+
+			console.log("Selected role:", selectedRole)
+			const workspaceUserData = {
+				roleId: selectedRole
+			}
+
+			const workspaceUserResponse = await apiPatch(
+				endpoints.workspace.users.update(workspaceId, userId),
+				workspaceUserData
+			);
+
+			console.log("Workspace User updated:", workspaceUserResponse.data);
+
 			router.back();
 		} catch (error) {
 			console.error("Update error:", error);
@@ -205,22 +214,15 @@ const EditUser = () => {
 				<Text style={{ color: theme.colors.error }}>Please enter a valid last name</Text>
 			)}
 
-			<Text style={{ marginBottom: 4 }}>User Type</Text>
-			<RadioButton.Group onValueChange={setUserType} value={userType}>
-				<RadioButton.Item label="Manager" value="manager" />
-				<RadioButton.Item label="Employee" value="employee" />
-			</RadioButton.Group>
-
-			<TouchableOpacity onPress={() => setRoleDialogVisible(true)}>
-				<TextInput
-					label="Select Role"
-					value={selectedRole}
-					mode="outlined"
-					editable={false}
-					right={<TextInput.Icon icon="menu-down" />}
-					style={{ marginTop: 8 }}
-				/>
-			</TouchableOpacity>
+			<DropDown 
+				title="Select Role"
+				items={roles.map(role => ({
+					label: `${role.name}`,
+					value: role.roleId
+				}))}
+				showRouterButton={false}
+				onSelect={(roleId) => setSelectedRole(roleId)}
+            />
 
 			{/* Remove User Button */}
 			<BasicButton 
@@ -240,7 +242,7 @@ const EditUser = () => {
 								<TouchableOpacity
 									key={role.roleId}
 									onPress={() => {
-										setSelectedRole(role.name);
+										setSelectedRole(role.roleId);
 										setRoleDialogVisible(false);
 									}}
 									style={{
