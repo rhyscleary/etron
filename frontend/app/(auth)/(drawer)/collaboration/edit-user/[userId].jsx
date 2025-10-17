@@ -26,9 +26,10 @@ const EditUser = () => {
 	const [workspaceId, setWorkspaceId] = useState(null);
 	const [roles, setRoles] = useState([]);
 
-	const [initialDetails, setInitialDetails] = useState({ firstName: "", lastName: ""})
+	const [initialDetails, setInitialDetails] = useState({ firstName: "", lastName: "", roleId: ""})
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
+	const [isOwner, setIsOwner] = useState(false);
 
 	const [selectedRole, setSelectedRole] = useState("");
 	const [saving, setSaving] = useState(false);
@@ -77,6 +78,7 @@ const EditUser = () => {
 				lastName: user.family_name,
 				roleId: user.roleId,
 			})
+			setIsOwner(user.roleId == fetchedRoles.find(role => role.name == "Owner").roleId);
 
 			setRoles(fetchedRoles || []);
 		};
@@ -189,7 +191,17 @@ const EditUser = () => {
 				<Text style={{ color: theme.colors.error }}>Please enter a valid last name</Text>
 			)}
 
-			<DropDown
+			{isOwner ? (
+				<View pointerEvents="none" style={{ opacity: 0.6 }}>
+					<DropDown
+						label="Select Role"
+						items={roles.map(role => ({ label: role.name, value: role.roleId }))}
+						value={selectedRole}
+						onSelect={() => {}}
+						showRouterButton={false}
+					/>
+				</View>
+			) : ( <DropDown
 				label="Select Role"
 				items={roles
 					.filter(role => role.name !== "Owner")
@@ -198,7 +210,7 @@ const EditUser = () => {
 				value={selectedRole}
 				onSelect={(roleId) => setSelectedRole(roleId)}
 				showRouterButton={false}
-			/>
+			/>)}
 
 			{/* Remove User Button */}
 			<BasicButton 
