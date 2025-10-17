@@ -1,6 +1,6 @@
 // Author(s): Noah Bradley
 
-import { View, ScrollView, StyleSheet, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { Card } from "react-native-paper";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
@@ -65,12 +65,13 @@ const ViewMetric = () => {
         return (
             <ResponsiveScreen
                 header={
-                    <Header title="Loading..." showBack />
+                    <Header title="View Metric" showBack />
                 }
                 center={false}
                 padded={false}
                 scroll={false}
             >
+                <ActivityIndicator size="large" />
             </ResponsiveScreen>
         );
     }
