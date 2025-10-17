@@ -95,26 +95,33 @@ const endpoints = {
     },
   },
 
-  modules: {
-    day_book: {
-      data_sources: {
-        addRemote: `${DATASOURCES_BASE_URL}/remote`,
-        addLocal: `${DATASOURCES_BASE_URL}/local`,
-        update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
-        getDataSource: (dataSourceId) =>
-          `${DATASOURCES_BASE_URL}/${dataSourceId}`,
-        getDataSources: `${DATASOURCES_BASE_URL}`,
-        removeDataSource: (dataSourceId) =>
-          `${DATASOURCES_BASE_URL}/${dataSourceId}`,
-        testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
-        remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
-        viewData: (dataSourceId) =>
-          `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
-        viewDataForMetric: (dataSourceId, metricId) =>
-          `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
-        getUploadUrl: (dataSourceId) =>
-          `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`,
-      },
+    modules: {
+        day_book: {
+            data_sources: {
+                addRemote: `${DATASOURCES_BASE_URL}/remote`,
+                addLocal: `${DATASOURCES_BASE_URL}/local`,
+                update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+                getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+                getDataSources: `${DATASOURCES_BASE_URL}`,
+                removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+                testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
+                remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
+                viewData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
+                viewDataForMetric: (dataSourceId, metricId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
+                getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`,
+                getAvailableSheets: `${DATASOURCES_BASE_URL}/available-sheets`,
+                updateData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/update-data`,
+                
+                // google sheets specific endpoints
+                integrations: {
+                    getUserTokens: `${DATASOURCES_BASE_URL}/integrations/user-tokens`,
+
+                    google: {
+                        linkGoogle: `${DATASOURCES_BASE_URL}/integrations/google/link`
+                    },
+
+                }
+            },
 
       metrics: {
         add: `${METRICS_BASE_URL}`,

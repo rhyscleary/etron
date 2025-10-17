@@ -1,24 +1,27 @@
 // Author(s): Rhys Cleary
 
-import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import { FlatList, Image, StyleSheet, View } from "react-native";
 import Header from "../../../../../components/layout/Header";
-import { useEffect, useMemo, useState } from "react";
-import { router } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
 import BasicDialog from "../../../../../components/overlays/BasicDialog";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import SearchBar from "../../../../../components/common/input/SearchBar";
-import ListCard from "../../../../../components/cards/listCard";
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "../../../../../utils/api/apiClient";
+import { apiGet, apiPost } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
-import { List, Text, useTheme } from "react-native-paper";
+import { Avatar, Chip, List, Text } from "react-native-paper";
 import { hasPermission } from "../../../../../utils/permissions";
 import { getCurrentUser } from "aws-amplify/auth";
+import CollapsibleList from "../../../../../components/layout/CollapsibleList";
+import Divider from "../../../../../components/layout/Divider";
+import PlaceholderListItem from "../../../../../components/skeleton/PlaceholderListItem";
+import defaultThumbnail from "../../../../../assets/images/defaultThumbnail.jpeg";
+import ErrorRetry from "../../../../../components/common/errors/ErrorRetry";
 
 const AMOUNT_PLACEHOLDERS = 5;
 
 const BoardManagement = () => {
-    const theme = useTheme();
     const [loading, setLoading] = useState(true);
     const [boards, setBoards] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
@@ -27,8 +30,11 @@ const BoardManagement = () => {
     const [boardName, setBoardName] = useState("");
     const [inputError, setInputError] = useState(false);
     const [inputErrorMessage, setInputErrorMessage] = useState("");
-    const [creatorNameCache, setCreatorNameCache] = useState({});
     const [currentUserId, setCurrentUserId] = useState(null);
+    const [error, setError] = useState(false);
+    const [usersMap, setUsersMap] = useState({});
+    const [usersLoading, setUsersLoading] = useState(true);
+    const [failedImages, setFailedImages] = useState({});
 
     useEffect(() => {
         const init = async () => {
@@ -52,47 +58,94 @@ const BoardManagement = () => {
             }
 
             if (id) {
-                await fetchBoards(id);
+                setLoading(true);
+                setUsersLoading(true);
+                await Promise.all([fetchBoards(id), fetchWorkspaceUsers(id)]);
+                setLoading(false);
+                setUsersLoading(false);
             }
         };
         init();
     }, []);
 
+    useFocusEffect(
+        useCallback(() => {
+            const refetchBoards = async () => {
+                if (workspaceId) {
+                    setLoading(true);
+                    await Promise.all([fetchBoards(workspaceId), fetchWorkspaceUsers(workspaceId)]);
+                    setLoading(false);
+                }
+            };
+
+            refetchBoards();
+        }, [workspaceId])
+    );
+
     const fetchBoards = useCallback(async (id) => {
         if (!id) return;
+        setError(false);
 
         try {
-            setLoading(true);
-
             const response = await apiGet(
                 endpoints.workspace.boards.getBoards(id)
             );
+            console.log(response.data)
 
-            const sanitized = Array.isArray(response) ? response.filter(Boolean) : [];
-            setBoards(sanitized);
+            if (response.status !== 200) {
+                setError(true);
+                return;
+            }
 
-            
-
-            console.log(response);
-
-            setBoards(Array.isArray(response) ? response.filter(Boolean) : []);
+            const boards = response.data || [];
+            setBoards(Array.isArray(boards) ? boards.filter(Boolean) : []);
         } catch (error) {
             console.error("Error fetching boards:", error);
-        } finally {
-            setLoading(false);
+            setError(true);
         }
-    }, [currentUserId, creatorNameCache]);
+    }, []);
+
+    const fetchWorkspaceUsers = async (workspaceId) => {
+        try {
+            const response = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
+      
+            if (response.status === 200 && Array.isArray(response.data)) {
+                const map = {};
+                response.data.forEach(user => {
+                    map[user.userId] = { 
+                        name: user.given_name + " " + user.family_name, 
+                        avatarUrl: user.avatarUrl 
+                    };
+                });
+                setUsersMap(map);
+            }
+        } catch (error) {
+            console.error("Failed to fetch users:", error);
+        }
+    }
+    
+    const boardsWithUserInfo = useMemo(() => {
+        return boards.map(b => ({
+            ...b,
+            createdByName: b.createdBy === currentUserId ? "You" : usersMap[b.createdBy]?.name || "System",
+            createdByAvatarUrl: usersMap[b.createdBy]?.picture,
+            thumbnailUrl: b.thumbnailUrl || null,
+        }))
+    }, [boards, usersMap, currentUserId]);
 
     const filteredBoards = useMemo(() => {
-        return (boards || []).filter((board) => {
-            if (!board) return false;
-            const query = searchQuery.toLowerCase();
-            return (
-                board.name.toLowerCase().includes(query)
-                
-            );
-        });
-    }, [searchQuery, boards]);
+        const query = searchQuery.toLowerCase();
+        return (boardsWithUserInfo || []).filter((board) =>
+            board?.name?.toLowerCase().includes(query)
+        );
+    }, [boardsWithUserInfo, searchQuery]);
+
+    const usersBoards = filteredBoards.filter(b => b.createdBy === currentUserId);
+    const othersBoards = filteredBoards.filter(b => b.createdBy !== currentUserId);
+    
+    const hasYou = usersBoards.length > 0;
+    const hasOthers = othersBoards.length > 0;
+
 
     const handleBoardCreation = async () => {
         if (!boardName.trim()) {
@@ -119,18 +172,48 @@ const BoardManagement = () => {
         }
     };
 
-    const renderBoardItem = ({item}) => (
-        <List.Item
-            title={item.name}
-            description={item.description}
-            left={(props) => <List.Icon {...props} icon="view-dashboard-outline" />}
-            right={(props) => <List.Icon {...props} icon="dots-vertical" />}
-            onPress={() => {
-                // navigate to board settings
-            }}
-            style={styles.listItem}
-        />
-    );
+
+    const renderBoardItem = ({item}) => {
+        const isYou = item.createdBy === currentUserId;
+        const hasError = failedImages[item.boardId];
+        
+        return (
+            <List.Item
+                title={item.name}
+                description={`Created by ${item.createdByName}`}
+                left={() => 
+                    !isYou ? ( 
+                        item.createdByAvatarUrl 
+                            ? <Avatar.Image size={32} source={{ uri: item.createdByAvatarUrl }} />
+                            : <Avatar.Icon size={32} icon="account-circle" />
+                    ) : null
+                }
+                right={() => (
+                    <Image
+                        source={
+                            !item.thumbnailUrl || hasError
+                                ? defaultThumbnail  
+                                : { uri: item.thumbnailUrl } 
+                        }
+                        style={{ width: 38, height: 38 }}
+                        onError={() => setFailedImages((prev) => ({ ...prev, [item.boardId]: true }))}
+                    />
+                )}
+                onPress={() => {
+                    // navigate to board settings
+                    router.navigate(`settings/workspace/board-settings/${item.boardId}`)
+                }}
+                style={styles.listItem}
+            />
+        );
+    };
+
+    const renderPlaceholderList = () =>
+        Array.from({ length: AMOUNT_PLACEHOLDERS }).map((_, index) => (
+            <PlaceholderListItem key={index} />
+        ));
+
+    const isLoading = loading || usersLoading;
     
     return (
         <ResponsiveScreen
@@ -139,34 +222,108 @@ const BoardManagement = () => {
             padded={false}
             scroll={false}
         >
-
             <SearchBar 
                 placeholder="Search boards"
                 onSearch={setSearchQuery}
             />
 
             <View style={styles.contentContainer}>
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" />
-                        <Text>Loading Boards...</Text>
-                    </View>
+                {isLoading ? (
+                    <>
+                        <CollapsibleList
+                            items={[
+                                {
+                                    key: "loadingUsersBoards",
+                                    title: "Created by You",
+                                    defaultExpanded: true,
+                                    content: renderPlaceholderList(),
+                                },
+                            ]}
+                        />
+                        <Divider thickness={0.5} style={{ marginVertical: 20 }} />
+                        <CollapsibleList
+                            items={[
+                                {
+                                    key: "loadingOthersBoards",
+                                    title: "Created by Others",
+                                    defaultExpanded: false,
+                                    content: renderPlaceholderList(),
+                                }
+                            ]}
+                        />
+                    </>
                 ) : (
-                    <FlatList
-                        data={filteredBoards}
-                        renderItem={renderBoardItem}
-                        keyExtractor={(item, index) => 
-                            item?.boardId?.toString() ?? item?.id?.toString() ?? index.toString()
-                        }
-                        refreshing={loading}
-                        onRefresh={() => fetchBoards(workspaceId)}
-                        ItemSeparatorComponent={() => <View style={{height: 10}} />}
-                        ListEmptyComponent={() => (
+                    <>
+                        {/* If an error has occurred display chip to retry */}
+                        {error ? (
+                            <ErrorRetry
+                                message="An error occurred loading boards."
+                                onRetry={async () => {
+                                    setLoading(true);
+                                    await fetchBoards(workspaceId);
+                                    setLoading(false);
+                                }}
+                            />
+                        ) : !hasYou && !hasOthers ? (
                             <View style={styles.emptyContainer}>
-                                <Text style={styles.emptyText}>No Boards Created</Text>
+                                <Text style={styles.emptyText}>No boards created.</Text>
                             </View>
+                        ) : (
+                            <>
+                                {hasYou && (
+                                    <CollapsibleList
+                                        items={[
+                                            {
+                                                key: "usersBoards",
+                                                title: "Created by You",
+                                                defaultExpanded: true,
+                                                content: (
+                                                    <FlatList
+                                                        data={usersBoards}
+                                                        renderItem={renderBoardItem}
+                                                        keyExtractor={(item, index) =>
+                                                            item?.boardId?.toString() ?? index.toString()
+                                                        }
+                                                        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+                                                        ListFooterComponent={<View style={{ height: 40 }} />}
+                                                    />
+                                                ),
+                                            },
+                                        ]}
+                                    />
+                                )}
+
+                                {/* Divider between lists */}
+                                {hasYou && hasOthers && (
+                                    <Divider thickness={0.5} style={{ marginVertical: 20 }} />
+                                )}
+                                
+                                {/* Created by Others */}
+                                {hasOthers && (
+                                    <CollapsibleList
+                                        items={[
+                                            {
+                                                key: "othersBoards",
+                                                title: "Created by Others",
+                                                defaultExpanded: false,
+                                                content: (
+                                                    <FlatList
+                                                        data={othersBoards}
+                                                        renderItem={renderBoardItem}
+                                                        keyExtractor={(item, index) =>
+                                                            item?.boardId?.toString() ?? index.toString()
+                                                        }
+                                                        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+                                                        ListFooterComponent={<View style={{ height: 40 }} />}
+                                                    />
+                                                ), 
+                                            },
+                                        ]}
+                                    />
+                                )}
+                            </>
                         )}
-                    />
+                    </>
                 )}
             </View>
 
@@ -194,12 +351,12 @@ const BoardManagement = () => {
                 }}
                 rightActionLabel="Create"
                 handleRightAction={handleBoardCreation}
-            >
-            </BasicDialog>
+            />
 
         </ResponsiveScreen>
     )
-};
+
+}
 
 const styles = StyleSheet.create({
     contentContainer: {

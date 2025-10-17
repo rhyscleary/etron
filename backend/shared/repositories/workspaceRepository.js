@@ -7,8 +7,9 @@ const {
     GetCommand, 
     DeleteCommand, 
     UpdateCommand,
-    QueryCommand ,
-    ScanCommand
+    QueryCommand,
+    ScanCommand,
+    BatchWriteCommand
 } = require("@aws-sdk/lib-dynamodb");
 
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -424,6 +425,29 @@ async function updateWorkspace(workspaceId, data) {
     };
 }
 
+// remove all the workspace data
+async function removeAllWorkspaceData(workspaceId) {
+    const { Items } = await dynamoDB.send(new QueryCommand({
+        TableName: tableName,
+        KeyConditionExpression: "workspaceId = :workspaceId",
+        ExpressionAttributeValues: { ":workspaceId": workspaceId }
+    }));
+
+    if (!Items || Items.length === 0) return;
+
+    // batch delete the items
+    const deleteRequests = Items.map(item => ({
+        DeleteRequest: { Key: { workspaceId, sk: item.sk } }
+    }));
+
+    for (let i = 0; i < deleteRequests.length; i += 25) {
+        const batch = deleteRequests.slice(i, i + 25);
+        await dynamoDB.send(new BatchWriteCommand({
+            RequestItems: { [tableName]: batch }
+        }));
+  }
+}
+
 // MODULES
 
 // add module to workspace
@@ -557,6 +581,7 @@ module.exports = {
     getWorkspaceByOwnerId,
     getAllWorkspaces,
     updateWorkspace,
+    removeAllWorkspaceData,
     addModule,
     updateModule,
     removeModule,

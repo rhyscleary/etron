@@ -6,7 +6,8 @@ const {
     GetCommand, 
     DeleteCommand, 
     UpdateCommand,
-    QueryCommand 
+    QueryCommand,
+    BatchWriteCommand 
 } = require("@aws-sdk/lib-dynamodb");
 
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -68,6 +69,39 @@ async function updateMetric(workspaceId, metricId, metricItem) {
     return result;
 }
 
+// update metric data source status
+async function updateMetricDataSourceStatus(workspaceId, metricId, isActive) {
+    const updateFields = [];
+    const expressionAttributeValues = {};
+    const expressionAttributeNames = {};
+
+    // update the activeDataSource flag
+    updateFields.push("#activeDataSource = :activeDataSource");
+    expressionAttributeValues[":activeDataSource"] = isActive;
+    expressionAttributeNames["#activeDataSource"] = "activeDataSource";
+
+    // update the updatedAt timestamp
+    updateFields.push("#updatedAt = :updatedAt");
+    expressionAttributeValues[":updatedAt"] = new Date().toISOString();
+    expressionAttributeNames["#updatedAt"] = "updatedAt";
+
+    const result = await dynamoDB.send(
+        new UpdateCommand( {
+            TableName: tableName,
+            Key: {
+                workspaceId: workspaceId,
+                metricId: metricId
+            },
+            UpdateExpression: "SET " + updateFields.join(", "),
+            ExpressionAttributeValues: expressionAttributeValues,
+            ExpressionAttributeNames: expressionAttributeNames,
+            ReturnValues: "ALL_NEW"
+        })
+    );
+
+    return result;
+}
+
 // remove metric
 async function removeMetric(workspaceId, metricId) {
     await dynamoDB.send(
@@ -79,6 +113,29 @@ async function removeMetric(workspaceId, metricId) {
             },
         })
     );
+}
+
+// remove all the metrics
+async function removeAllMetrics(workspaceId) {
+    const { Items } = await dynamoDB.send(new QueryCommand({
+        TableName: tableName,
+        KeyConditionExpression: "workspaceId = :workspaceId",
+        ExpressionAttributeValues: { ":workspaceId": workspaceId }
+    }));
+
+    if (!Items || Items.length === 0) return;
+
+    // batch delete the items
+    const deleteRequests = Items.map(item => ({
+        DeleteRequest: { Key: { workspaceId, metricId: item.metricId } }
+    }));
+
+    for (let i = 0; i < deleteRequests.length; i += 25) {
+        const batch = deleteRequests.slice(i, i + 25);
+        await dynamoDB.send(new BatchWriteCommand({
+            RequestItems: { [tableName]: batch }
+        }));
+  }
 }
 
 // get metric by id
@@ -124,8 +181,10 @@ async function getMetricsByWorkspaceId(workspaceId) {
 module.exports = {
     addMetric,
     updateMetric,
+    updateMetricDataSourceStatus,
     removeMetric,
     getMetricById,
     getMetricVariableNames,
-    getMetricsByWorkspaceId
+    getMetricsByWorkspaceId,
+    removeAllMetrics
 }

@@ -2,12 +2,11 @@
 
 import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
 import Divider from "../../../../../../components/layout/Divider.jsx";
-import { View, Button, ActivityIndicator, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Button, ActivityIndicator, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Platform } from "react-native";
 import Header from "../../../../../../components/layout/Header.jsx";
-import { commonStyles } from "../../../../../../assets/styles/stylesheets/common.js";
 import { useRouter } from "expo-router";
 import { Text, useTheme, Card } from "react-native-paper";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage.jsx";
 import GraphTypes from "./graph-types.jsx";
 import endpoints from "../../../../../../utils/api/endpoints.js";
@@ -23,37 +22,39 @@ const MetricManagement = () => {
     const [metricsOther, setMetricsOther] = useState([]);
     const [loadingMetrics, setLoadingMetrics] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        async function getWorkspaceMetrics() {
-            const workspaceId = await getWorkspaceId();
+    const getWorkspaceMetrics = useCallback(async () => {
+        const workspaceId = await getWorkspaceId();
 
-            try {
-                const metricData = await apiGet(
-                    endpoints.modules.day_book.metrics.getMetrics,
-                    { workspaceId }
-                );
-                console.log(metricData);
-                setMetrics(metricData);
-            } catch (error) {
-                console.error("Error getting workspace metrics:", error);
-            } finally {
-                setLoadingMetrics(false);
-            }
+        let metricData;
+        try {
+            const metricDataResult = await apiGet(
+                endpoints.modules.day_book.metrics.getMetrics,
+                { workspaceId }
+            );
+            metricData = metricDataResult.data;
+        } catch (error) {
+            console.error("Error getting workspace metrics:", error);
+            return;
         }
-        getWorkspaceMetrics();
+
+        const { userId } = await getCurrentUser();
+        setMetricsUser(metricData.filter(metric => metric.createdBy == userId))
+        setMetricsOther(metricData.filter(metric => metric.createdBy != userId))
+
+        setLoadingMetrics(false);
+        setRefreshing(false);
     }, []);
 
     useEffect(() => {
-        async function sortMetrics() {
-            const { userId } = await getCurrentUser();
-            setMetricsUser(metrics.filter(metric => metric.createdBy == userId))
-            setMetricsOther(metrics.filter(metric => metric.createdBy != userId))
-        }
-        sortMetrics();
-    }, [metrics])
+        getWorkspaceMetrics();
+    }, [])
 
-    const [color, setColor] = useState('#ff0000');
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        getWorkspaceMetrics();
+    }, [getWorkspaceMetrics]);
 
     return (
         <ResponsiveScreen
@@ -65,14 +66,19 @@ const MetricManagement = () => {
             scroll={false}
         >
             <View style={{ flex: 1 }}>
-                {/* Search bar */}
                 <SearchBar 
                     placeholder="Search boards"
                     onSearch={setSearchQuery}
                 />
 
-                <ScrollView>
-
+                <ScrollView
+                    style = {{ flex: 1 }}
+                    refreshControl = {<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                    contentContainerStyle= {{ flexGrow: 1 }}
+                    bounces = {true}
+                    alwaysBounceVertical = {true}
+                    overScrollMode = "always"
+                >
                     <View style={{ paddingHorizontal: 20, gap: 30 }}>
                         <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
                             Created by you
@@ -98,7 +104,7 @@ const metricCardList = (loadingMetrics, metrics) => {
     const theme = useTheme();
     const router = useRouter();
     return (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
             {!loadingMetrics &&
                 metrics.map((metric) => {
                     const previewImage = GraphTypes[metric.config.type]?.previewImage;
@@ -107,10 +113,10 @@ const metricCardList = (loadingMetrics, metrics) => {
                         <TouchableOpacity
                             key={metric.metricId}
                             style={{
-                                width: "45%"
+                                width: "48%"
                             }}
                             onPress={() =>
-                                router.navigate(`./view-metric/${metric.metricId}`)
+                                router.navigate(`/modules/day-book/metrics/view-metric/${metric.metricId}`)
                             }
                         >
                             <Card

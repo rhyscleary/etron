@@ -11,10 +11,22 @@ export default function ResponsiveScreen({
     padded = true,
     center = true,
     header,
-    footer
+    footer,
+    transparent = false,
+    tapToDismissKeyboard = true,
 }) {
     const contentStyles = [styles.content, padded && styles.padded, center && styles.centerGrow]
     const theme = useTheme();
+
+    const safeBackground = transparent ? 'transparent' : theme.colors.background;
+
+    const Inner = tapToDismissKeyboard ? (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={contentStyles}>{children}</View>
+        </TouchableWithoutFeedback>
+    ) : (
+        <View style={contentStyles}>{children}</View>
+    )
 
     const Body = scroll ? (
         <KeyboardAwareScrollView
@@ -27,9 +39,7 @@ export default function ResponsiveScreen({
             enableAutomaticScroll
             extraHeight={Platform.OS === "android" ? 80 : 0}
         >
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-                <View style={contentStyles}>{children}</View>
-            </TouchableWithoutFeedback>
+            {Inner}
         </KeyboardAwareScrollView>
     ) : (
         <KeyboardAvoidingView
@@ -43,10 +53,12 @@ export default function ResponsiveScreen({
     )
 
     return (
-        <SafeAreaView style={[styles.safe, { backgroundColor: theme.colors.background }]} edges={["left", "right"]}>
-            {header ? (<View style={styles.header}>
-                {header}
-            </View>) : null }
+        <SafeAreaView style={[styles.safe, { backgroundColor: safeBackground }]} edges={["left", "right"]}>
+            {header ? (
+                <View style={styles.header}>
+                    {header}
+                </View>
+            ) : null }
 
             <View style={styles.body}>
                 {Body}

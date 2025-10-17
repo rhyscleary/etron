@@ -25,8 +25,8 @@ const CreateRole = () => {
 
                 if (id) {
                     const result = await apiGet(endpoints.workspace.core.getDefaultPermissions);
-                    const initialPermissions = Array.isArray(result)
-                        ? result.map((p) => ({ ...p }))
+                    const initialPermissions = Array.isArray(result.data)
+                        ? result.data.map((p) => ({ ...p }))
                         : [];
                     setPermissions(initialPermissions);
                 }
@@ -62,7 +62,7 @@ const CreateRole = () => {
                 data
             );
 
-            console.log("Created role:", result);
+            console.log("Created role:", result.data);
             router.navigate("/collaboration/roles"); // ✅ Redirect to the role list
         } catch (error) {
             console.error("Failed to create role:", error);

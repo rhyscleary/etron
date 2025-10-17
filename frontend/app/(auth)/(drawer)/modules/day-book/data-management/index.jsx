@@ -2,21 +2,13 @@
 
 // DataManagement.js
 import { useState, useEffect, useRef, useCallback } from "react";
-import { RefreshControl, Button } from "react-native";
+import { RefreshControl } from "react-native";
 import { Pressable, ScrollView, View, StyleSheet, Alert, TouchableOpacity } from "react-native";
 import { Card } from "react-native-paper";
-import {
-	Text,
-	ActivityIndicator,
-} from "react-native-paper";
-import { Link, router, useFocusEffect } from "expo-router";
+import { Text, ActivityIndicator } from "react-native-paper";
+import { router, useFocusEffect } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { commonStyles } from "../../../../../../assets/styles/stylesheets/common";
-
-import {
-	getAdapterInfo,
-	getCategoryDisplayName,
-} from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
+import { getAdapterInfo, getCategoryDisplayName, } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 import { useApp } from "../../../../../../contexts/AppContext";
 
 import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";

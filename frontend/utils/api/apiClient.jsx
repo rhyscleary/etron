@@ -27,7 +27,7 @@ async function request(method, path, body = {}, params = {}, config = {}) {
     }
     try {
         const response = await axios(requestConfig);
-        return response.data;
+        return response;
     } catch (error) {
         if (error.response) {
             throw new Error(

@@ -12,6 +12,7 @@ import inter from "../../../../../../../assets/styles/fonts/Inter_18pt-Regular.t
 import BasicButton from "../../../../../../../components/common/buttons/BasicButton";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { apiGet, apiDelete } from "../../../../../../../utils/api/apiClient";
+import ResponsiveScreen from "../../../../../../../components/layout/ResponsiveScreen";
 
 /*
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
@@ -47,10 +48,11 @@ const ViewMetric = () => {
             console.log("Downloading metric settings...");
             let apiResultMetric;
             try {  // Download metric settings
-                apiResultMetric = await apiGet(
+                const apiResultMetricResult = await apiGet(
                     endpoints.modules.day_book.metrics.getMetric(metricId),
                     { workspaceId }
                 )
+                apiResultMetric = apiResultMetricResult.data;
                 setMetricSettings(apiResultMetric);
             } catch (error) {
                 console.error("Error downloading metric settings:", error);
@@ -79,31 +81,49 @@ const ViewMetric = () => {
     }, [metricId]);
 
     function convertToGraphData(rows) {
-        let output = rows.map(row => {
+        const { independentVariable, dependentVariables } = metricSettings.config;
+        return rows.map(row => {
             const newRow = {};
-            for (const [key, value] of Object.entries(row)) {
-                const valueAsNumber = Number(value);
-                newRow[key] = !isNaN(valueAsNumber) ? valueAsNumber : value  // If the value can be turned into a number, do so
+            // Always include X key
+            newRow[independentVariable] = Number(row[independentVariable]) || row[independentVariable];
+
+            // Only include selected Y keys
+            for (const key of dependentVariables) {
+                const valueAsNumber = Number(row[key]);
+                newRow[key] = !isNaN(valueAsNumber) ? valueAsNumber : row[key];
             }
+
             return newRow;
-        })
-        return output;
+        });
     }
+
 
     if (metricDownloadStatus !== "downloaded") {
         return (
-            <View style={commonStyles.screen}>
-                <Header title="Loading..." showBack />
-            </View>
+            <ResponsiveScreen
+                header={
+                    <Header title="Loading..." showBack />
+                }
+                center={false}
+                padded={false}
+                scroll={false}
+            >
+            </ResponsiveScreen>
         );
     }
 
     const graphDef = GraphTypes[metricSettings.config.type];
     if (!graphDef) {
         return (
-            <View style={commonStyles.screen}>
-                <Header title="Unknown Graph Type" showBack />
-            </View>
+            <ResponsiveScreen
+                header={
+                    <Header title="Unknown Graph Type" showBack />
+                }
+                center={false}
+                padded={false}
+                scroll={false}
+            >
+            </ResponsiveScreen>
         );
     }
 
@@ -128,34 +148,47 @@ const ViewMetric = () => {
                 { workspaceId }
             )
             console.log("Successfully deleted metric.")
-            router.navigate("/modules/day-book/metrics/metric-management");
+            router.navigate("/modules/day-book/metrics");
         } catch (error) {
             console.error("Error deleting metric:", error);
             Alert.alert("Error", "Failed to delete the metric. Please try again.");
         }
     }
 
+    let filteredData = convertToGraphData(metricData);
+
+    if (metricSettings.config.selectedRows && metricSettings.config.selectedRows.length > 0) {
+        filteredData = filteredData.filter(
+            row => metricSettings.config.selectedRows.includes(row[metricSettings.config.independentVariable])
+        );
+    }
+
     if (metricDownloadStatus == "downloaded") {
         return (
-            <View style={styles.container}>
-                <Header
-                    title={`${metricSettings.name}`}
-                    showBack
-                    showEdit
-                    onRightIconPress={() =>
-                        router.navigate("/modules/day-book/metrics/edit-metric")
-                    }
-                />
-
+            <ResponsiveScreen
+                header={
+                    <Header
+                        title={`${metricSettings.name}`}
+                        showBack
+                        showEdit
+                        onRightIconPress={() =>
+                            router.navigate("/modules/day-book/metrics/edit-metric")
+                        }
+                    />
+                }
+                center={false}
+                padded={false}
+                scroll={false}
+            >
                 <ScrollView style={commonStyles.screen}>
                     <Card style={[styles.card]}>
                         <Card.Content>
                             <View style={styles.graphCardContainer}>
                                 {graphDef.render({
-                                    data: convertToGraphData(metricData),
+                                    data: filteredData,
                                     xKey: metricSettings.config.independentVariable,
                                     yKeys: metricSettings.config.dependentVariables,
-                                    colours: coloursState,
+                                    colours: metricSettings.config.colours || coloursState,
                                 })}
                             </View>
                         </Card.Content>
@@ -168,7 +201,7 @@ const ViewMetric = () => {
                     style={styles.button}
                     danger
                 />
-            </View>
+            </ResponsiveScreen>
         );
     }
 };

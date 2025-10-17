@@ -47,14 +47,36 @@ export default function AuthLayout() {
         }
 
         if (hasWorkspaceAttribute === "true") {
-            const workspaceId = await getWorkspaceId();
-            if (workspaceId) {
-                console.log("WorkspaceId received from local storage:", workspaceId);
+            const userAttributes = await fetchUserAttributes();
+            const userId = userAttributes.sub;
+
+            let workspace;
+            try {
+                workspace = await apiGet(
+                    endpoints.workspace.core.getByUserId(userId)
+                );
+            } catch (error) {
+                if (error.message.includes("Workspace not found")) {
+                    console.log("No workspace yet, resetting attribute...");
+                    await removeWorkspaceInfo();
+                    await setHasWorkspaceAttribute(false);
+                    return false;
+                } else if (error.message.includes("No user found")) {
+                    console.log("No user found, rerouting to landing page...")
+                    router.replace("/landing.jsx");
+                    return false;
+                }
+                console.error("Error fetching workspace:", error);
+                return false;
+            }
+            
+            if (workspace.data?.workspaceId) {
+                console.log("WorkspaceId received from server:", workspace.data.workspaceId);
 
                 // Save user's role details
                 try {
-                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
-                    await saveRole(userRole);
+                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspace.data.workspaceId));
+                    await saveRole(userRole.data);
                 } catch (error) {
                     console.error("Error saving user's role details into local storage:", error);
                 }      
@@ -99,7 +121,14 @@ export default function AuthLayout() {
     }
 
     const saveUserInfoIntoStorage = async() => {
-        
+        const workspaceId = await getWorkspaceId();
+        const userAttributes = await fetchUserAttributes();
+        try {
+            const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
+            await saveUserInfo(userInfo.data);  // Saves into local storage
+        } catch (error) {
+            console.error("Error saving user info into storage:", error);
+        }
     }
 
     useEffect(() => {
@@ -115,13 +144,15 @@ export default function AuthLayout() {
                 saveUserInfoIntoStorage();
 
                 if (!workspaceExists && !personalDetailsExists) {
-                    console.log("User authenticated but no workspace or personal details found. Redirecting..");
+                    await unloadProfilePhoto();
+                    console.log("User authenticated but no workspace or personal details found. Redirecting to personalise account page...");
                     router.replace("/(auth)/personalise-account");
                 } else if (!workspaceExists) {
-                    console.log("User authenticated but no workspace found. Redirecting..");
+                    console.log("User authenticated but no workspace found. Redirecting to workspace choice page...");
                     router.replace("/(auth)/workspace-choice");
                 } else {
-                    console.log("Showing authenticated profile page.");
+                    saveUserInfoIntoStorage();
+                    console.log("User authenticated, has workspace, and has personal details. Redirecting to workspace dashboard...");
                     router.replace("/(auth)/dashboard")
                 }
 

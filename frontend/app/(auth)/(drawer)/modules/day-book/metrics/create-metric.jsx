@@ -34,10 +34,11 @@ const CreateMetric = () => {
             const workspaceId = await getWorkspaceId();
             const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
-                let dataSourcesFromApi = await apiGet(
+                let dataSourcesFromApiResult = await apiGet(
                     endpoints.modules.day_book.data_sources.getDataSources,
                     { workspaceId }
                 )
+                let dataSourcesFromApi = dataSourcesFromApiResult.data;
                 console.log(dataSourcesFromApi);
                 setDataSourceMappings(dataSourcesFromApi.map(
                     dataSource => ({
@@ -66,10 +67,11 @@ const CreateMetric = () => {
 
         const workspaceId = await getWorkspaceId();
         try {
-            let result = await apiGet(
+            let response = await apiGet(
                 endpoints.modules.day_book.data_sources.viewData(source),
                 { workspaceId }
             )
+            let result = response.data;
             setDataSourceData(result.data);
             setDataSourceVariableNames(result.schema.map(variable => variable.name));
             setDataSourceDataDownloadStatus("downloaded");
@@ -145,7 +147,7 @@ const CreateMetric = () => {
                 independentVariable: chosenIndependentVariable,
                 dependentVariables: chosenDependentVariables,
                 colours: coloursState,
-                //selectedRows,  // TODO: implement separate function to prune the data when it gets uploaded
+                selectedRows: selectedRows,
             },
             user: {
                 userId,
@@ -195,8 +197,7 @@ const CreateMetric = () => {
         }  
         
         console.log("Form completed");
-        //router.navigate("/modules/day-book/metrics/metric-management"); 
-        router.back(); //TODO: Figure out why .navigate() isn't doing this? Why do we need this workaround? it's a lack of stack and a _layout for metrics. This can be fixed now.
+        router.navigate("/modules/day-book/metrics"); 
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);

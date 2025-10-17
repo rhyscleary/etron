@@ -279,8 +279,9 @@ const ConnectionPage = ({
   // Navigation
   const navigateToDataManagement = (connectionData) => {
     const originalConnection = connectionData.originalConnection || connectionData;
-    router.push({
-      pathname: "/modules/day-book/data-management/data-management",
+    
+    router.navigate({
+      pathname: "/modules/day-book/data-management",
       params: {
         type: connectionType,
         connectionId: originalConnection.id,

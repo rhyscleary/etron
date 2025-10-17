@@ -7,12 +7,13 @@ import { commonStyles } from "../../assets/styles/stylesheets/common";
 import { useEffect, useState } from "react";
 import InviteCard from "../../components/cards/inviteCard";
 import BasicButton from "../../components/common/buttons/BasicButton";
-import { apiGet, apiPost, apiPut } from "../../utils/api/apiClient";
+import { apiGet, apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-amplify/auth";
 import formatTTLDate from "../../utils/format/formatTTLDate";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
 import { router } from "expo-router";
+import ResponsiveScreen from "../../components/layout/ResponsiveScreen";
 
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
@@ -34,9 +35,9 @@ const JoinWorkspace = () => {
                     endpoints.user.invites.getUserInvites,
                     { email }
                 );
-                console.log(inviteResult);
-                if (inviteResult && inviteResult.length > 0) {
-                    const processedInvites = await Promise.all(inviteResult.map(async invite => {
+                console.log(inviteResult.data);
+                if (inviteResult.data && inviteResult.data.length > 0) {
+                    const processedInvites = await Promise.all(inviteResult.data.map(async invite => {
                         const expireAt = formatTTLDate(invite.expireAt);
                         console.log(invite.workspaceId);
                         const workspace = await apiGet(
@@ -46,8 +47,8 @@ const JoinWorkspace = () => {
                         return {
                             ...invite,
                             expireAt,
-                            workspaceName: workspace.name,
-                            workspaceDescription: workspace.description
+                            workspaceName: workspace.data.name,
+                            workspaceDescription: workspace.data.description
                         };
                     }));
 
@@ -125,12 +126,12 @@ const JoinWorkspace = () => {
             )
 
             // save workspace info to local storage
-            saveWorkspaceInfo(workspace);
+            saveWorkspaceInfo(workspace.data);
 
             // update user attribute to be in a workspace
             await handleUpdateUserAttribute('custom:has_workspace', "true");
 
-            console.log('Join response:', workspace);
+            console.log('Join response:', workspace.data);
             setJoining(false);
 
 
@@ -146,14 +147,25 @@ const JoinWorkspace = () => {
         router.navigate("/(auth)/create-workspace");
     }
 
+    async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    }
+
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Join Workspace" />
-
-            <Text style={{ fontSize: 16, marginBottom: 12 }}>
-              You have the following options:
-            </Text>
-
+        <ResponsiveScreen
+            header={<Header
+                title="Join Workspace"
+                showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+            />}
+            scroll={false}
+        >
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
@@ -165,8 +177,11 @@ const JoinWorkspace = () => {
                         <Text style={{ fontSize: 16, textAlign: "center"}}>
                             You currently have no pending invites.
                         </Text>
+                        <Text style={{ fontSize: 16, textAlign: "center"}}>
+                            Ask your workplace to invite you.
+                        </Text>
                     </View>
-                ): (
+                ) : (
                     <FlatList
                         data={invites}
                         renderItem={renderInvites}
@@ -188,8 +203,9 @@ const JoinWorkspace = () => {
             <BasicButton
                 label={"Create Workspace"}
                 onPress={navigateToCreateWorkspace}
+                altBackground={(!loading && invites.length == 0) ? false : true}
             />
-        </View>
+        </ResponsiveScreen>
     )
 
 }
@@ -206,7 +222,8 @@ const styles = StyleSheet.create({
     noInvitesContainer: {
         flex: 1,
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
+        gap: 20
     }
 })
 

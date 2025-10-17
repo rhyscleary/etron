@@ -32,7 +32,7 @@ const AccountCard = ({
                         <BasicButton
                             label="Switch to"
                             onPress={onPress}
-                            disabled={!active || loading}
+                            disabled={active || loading}
                         />
                     </View>
                 </StackLayout>

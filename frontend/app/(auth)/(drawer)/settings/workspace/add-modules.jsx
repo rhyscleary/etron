@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Header from "../../../../../components/layout/Header";
 import { useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
@@ -53,8 +53,9 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
                 endpoints.workspace.modules.getUninstalledModules(id)
             );
             console.log(response);
+            const modules = response.data;
 
-            setModules((response || []).sort((a, b) => a.name.localeCompare(b.name)));
+            setModules((modules || []).sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error("Error fetching modules:", error);
         } finally {
@@ -145,7 +146,7 @@ const AddModules = ({ availableFilters = ['All', 'Financial', 'Employees', 'Mark
                         ListEmptyComponent={
                             !loading ? (
                                 <View style={styles.emptyContainer}>
-                                    <Text style={styles.emptyText}>No Modules Available</Text>
+                                    <Text style={styles.emptyText}>No Modules Available.</Text>
                                 </View>
                             ) : null
                         }

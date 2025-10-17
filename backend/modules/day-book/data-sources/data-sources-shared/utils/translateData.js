@@ -1,4 +1,5 @@
 const { parse } = require("csv-parse/sync");
+const { v4: uuidv4 } = require('uuid');
 
 // normalize data into an array of objects
 function translateData(rawData) {
@@ -41,9 +42,13 @@ function translateData(rawData) {
             throw new Error("Unsupported data type received");
         }
 
-        // add a timestamp to each row
+        // add a timestamp and id to each row
         const timestamp = new Date().toISOString();
-        rows = rows.map((row) => ({ ...row, timestamp }));
+        rows = rows.map((row) => ({
+            ...row, 
+            timestamp,
+            rowId: uuidv4(), 
+        }));
 
         return rows;
     } catch (error) {

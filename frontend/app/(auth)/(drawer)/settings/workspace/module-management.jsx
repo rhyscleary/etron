@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Header from "../../../../../components/layout/Header";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { router, useFocusEffect } from "expo-router";
@@ -70,9 +70,9 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                 endpoints.workspace.modules.getInstalledModules(id)
             );
 
-            console.log(response);
+            const installedModules = response.data;
 
-            setModules((response || []).sort((a, b) => a.name.localeCompare(b.name)));
+            setModules((installedModules || []).sort((a, b) => a.name.localeCompare(b.name)));
         } catch (error) {
             console.error("Error fetching modules:", error);
         } finally {
@@ -208,7 +208,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                         ListEmptyComponent={
                             !loading ? (
                                 <View style={styles.emptyContainer}>
-                                    <Text style={styles.emptyText}>No Modules Installed</Text>
+                                    <Text style={styles.emptyText}>No Modules Installed.</Text>
                                 </View>
                             ) : null
                         }

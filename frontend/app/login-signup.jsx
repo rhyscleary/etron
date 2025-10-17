@@ -96,7 +96,106 @@ function LoginSignup() {
 
     // Setup deep link handling
     useEffect(() => {
-        const subscription = accountService.setupDeepLinkListener();
+        const handleDeepLink = async (objectUrl) => {
+            console.log('Deep link received:', objectUrl);
+
+            let url = objectUrl.url || objectUrl;
+            if (!url) return;
+            
+            // check if the URL is a valid social sign-in callback
+            if (url && (url.includes('myapp://callback'))) {
+                try {
+                    // wait to ensure the sign-in process completes
+                    setTimeout(async () => {
+                        try {
+                            const user = await getCurrentUser();
+                            console.log('Social sign-in successful:', user);
+                            // navigate to profile page (or consider back to accounts page again)
+
+                            const userAttributes = await fetchUserAttributes();
+                            const hasGivenName = userAttributes["given_name"];
+                            const hasFamilyName = userAttributes["family_name"];
+                            let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
+
+                            // if the attribute doesn't exist set it to false
+                            if (hasWorkspaceAttribute == null) {
+                                await setHasWorkspaceAttribute(false);
+                                hasWorkspaceAttribute = "false";
+                            }
+
+                            const hasWorkspace = hasWorkspaceAttribute === "true";
+
+                            if (!hasWorkspace) {
+                                if (!hasGivenName || !hasFamilyName) {
+                                    router.dismissAll();
+                                    router.replace("(auth)/personalise-account");
+                                    return;
+                                } else {
+                                    router.dismissAll();
+                                    router.replace("(auth)/workspace-choice");
+                                    return;
+                                }
+                            } else {
+                                // fetch the workspace
+                                try {
+                                    const workspace = await apiGet(
+                                        endpoints.workspace.core.getByUserId(user.userId)
+                                    );
+
+                                    if (!workspace.data || !workspace.data.workspaceId) {
+                                        // clear attribute and redirect to choose workspace
+                                        await setHasWorkspaceAttribute(false);
+                                        router.dismissAll();
+                                        router.replace("(auth)/workspace-choice");
+                                        return;
+                                    }
+
+                                    // save locally and go to profile screen
+                                    await saveWorkspaceInfo(workspace.data);
+                                    router.dismissAll();
+                                    router.replace("(auth)/authenticated-loading");
+                                } catch (error) {
+                                    console.error("Error fetching workspace:", error);
+                                    setMessage("Unable to locate workspace. Please try again."); 
+                                }
+                            }
+
+                            router.dismissAll();
+                            router.replace("(auth)/authenticated-loading");
+
+                        } catch (error) {
+                            console.error('No authenticated user found after social sign-in');
+                            setMessage("Social sign-in was cancelled or failed");
+                        }
+                    }, 1000);
+                } catch (error) {
+                    console.error('Error handling social sign-in callback:', error);
+                    setMessage("Error completing social sign-in");
+                    await signOut();
+                }
+            }
+
+            // check if the URL is a valid social sign-out
+            if (url && (url.includes('myapp://signout/'))) {
+                router.dismissAll();
+                try {
+                    // navigate to landing with signout()
+                    await signOut();
+                    setMessage("Signed out successfully!");
+
+                } catch (error) {
+                    console.error('Error handling social sign-out:', error);
+                    setMessage("Social sign-out was cancelled or failed");
+                }
+            }
+        };
+
+        // listen for deep links
+        const subscription = Linking.addEventListener('url', handleDeepLink);
+
+        // check if the app was opened with a deep link
+        Linking.getInitialURL().then(handleDeepLink);
+
         return () => subscription?.remove();
     }, []);
 
@@ -125,17 +224,89 @@ function LoginSignup() {
     const handleSignIn = async () => {
         setLoading(true);
         setMessage('');
-        
-        const result = await accountService.signInWithEmail(email, password);
-        
-        if (result.success && isLinking) {
-            // If we're linking and sign in was successful, navigate back to accounts
-            setTimeout(() => {
-                router.push('/(auth)/(drawer)/settings/account/accounts');
-            }, 1000);
+        try {
+            try {
+                const currentUser = await safeGetCurrentUser();
+                if (currentUser) {
+                    console.log("User is already signed in. Signing out before continuing..");
+                    await signOut();
+                }
+            } catch (error) {
+                console.error("Error retrieving signed in user:", error);
+            }
+
+            const { isSignedIn, nextStep } = await signIn({ username: email, password });
+            
+            // check if not fully signed up
+            if (!isSignedIn && nextStep.signInStep === "CONFIRM_SIGN_UP") {
+                setShowVerificationModal(true);
+                setResendCooldown(60);
+                return;
+            }
+
+            if (isSignedIn) {
+                const user = await getCurrentUser();
+                const userAttributes = await fetchUserAttributes();
+                
+                const hasGivenName = userAttributes["given_name"];
+                const hasFamilyName = userAttributes["family_name"];
+                let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
+
+                // If the attribute doesn't exist, set it to false
+                if (hasWorkspaceAttribute == null) {
+                    await setHasWorkspaceAttribute(false);
+                    hasWorkspaceAttribute = "false";
+                }
+
+                const hasWorkspace = hasWorkspaceAttribute === "true";
+
+                if (!hasWorkspace) {
+                    if (!hasGivenName || !hasFamilyName) {
+                        router.dismissAll();
+                        router.replace("(auth)/personalise-account");
+                        return;
+                    } else {
+                        router.dismissAll();
+                        router.replace("(auth)/workspace-choice");
+                        return;
+                    }
+                } else {
+                    // fetch the workspace
+                    try {
+                        const workspace = await apiGet(
+                            endpoints.workspace.core.getByUserId(user.userId)
+                        );
+
+                        if (!workspace.data || !workspace.data.workspaceId) {
+                            // clear attribute and redirect to choose workspace
+                            await setHasWorkspaceAttribute(false);
+                            router.dismissAll();
+                            router.replace("(auth)/workspace-choice");
+                            return;
+                        }
+
+                        // save locally and go to profile screen
+                        await saveWorkspaceInfo(workspace.data);
+                        router.dismissAll();
+                        router.replace("(auth)/authenticated-loading");
+                    } catch (error) {
+                        console.error("Error fetching workspace:", error);
+                        setMessage("Unable to locate workspace. Please try again."); 
+                    }
+                }
+            }
+        } catch (error) {
+            if (error.message.includes("Incorrect username or password")) {
+                setMessage(`Incorrect username or password.`);
+                await signOut();
+                return;
+            } else {
+                console.error("Sign in error:", error);
+                await signOut();
+            }
+        } finally {
+            setLoading(false);
         }
-        
-        setLoading(false);
     };
 
     const handleSignUp = async () => {
@@ -286,13 +457,22 @@ function LoginSignup() {
                     )}
                 </View>
 
-                <View style={{ alignItems: 'flex-end' }}>
-                    <BasicButton
-                        label={getButtonLabel()}
-                        onPress={isSignUpBool ? handleSignUp : handleSignIn}
-                        disabled={(!signedOutForLinking && isLinking) || loading}
-                    />
-                </View>
+            <View style={{alignItems: 'flex-end' }}>
+                <BasicButton
+                    label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
+                    onPress={isSignUpBool ? handleSignUp : handleSignIn}
+                    disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || (isSignUpBool && !confirmPassword)}
+                />
+            </View>
+
+            {message && (
+                <Text style={{
+                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
+                    textAlign: 'center'
+                }}>
+                    {message}
+                </Text>
+            )}
 
             <Text style={{ fontSize: 20, textAlign: 'center' }}>
                 OR

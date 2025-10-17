@@ -95,9 +95,10 @@ const WorkspaceManagement = () => {
                 const currentUser = await getCurrentUser();
                 const currentUserId = currentUser.userId;
 
-                const users = await apiGet(
+                const response = await apiGet(
                     endpoints.workspace.users.getUsers(workspaceId)
                 );
+                const users = response.data;
 
                 // filter out the current user (expected to be the current owner)
                 const filteredList = users.filter(user => user.userId !== currentUserId);
@@ -110,9 +111,10 @@ const WorkspaceManagement = () => {
 
             // fetch workspace roles
             try {
-                const roles = await apiGet(
+                const response = await apiGet(
                     endpoints.workspace.roles.getRoles(workspaceId)
                 );
+                const roles = response.data;
 
                 // filter out the owner role
                 const filteredList = roles.filter(role => !role.owner);
@@ -151,8 +153,7 @@ const WorkspaceManagement = () => {
                 console.log('Workspace deleted:', result);
                 setDeleteDialogVisible(false);
             
-                // sign out the user
-                await signOut();
+                router.navigate("/workspace-choice");
 
             } catch (error) {
                 console.error("Error deleting workspace: ", error);
@@ -196,7 +197,7 @@ const WorkspaceManagement = () => {
                     transferPayload
                 );
 
-                console.log("Ownership transferred:", result);
+                console.log("Ownership transferred:", result.data);
                 setTransferDialogVisible(false);
             } catch (error) {
                 console.error("Error transfering ownership: ", error);
@@ -264,13 +265,14 @@ const WorkspaceManagement = () => {
                 }}
                 rightActionLabel="Delete"
                 rightDanger
+                rightDisabled={!password}
                 handleRightAction={handleConfirmDeletion}
             />
 
             <BasicDialog
                 visible={transferDialogVisible}
                 title="Transfer Ownership"
-                message="Select a user to transfer ownership of this workspace. Once transferred this cannot be undone."
+                message="Select a user to transfer ownership of this workspace. Once transferred, this cannot be undone."
                 showInput
                 inputLabel="Password"
                 inputPlaceholder="Enter your password"
@@ -292,6 +294,7 @@ const WorkspaceManagement = () => {
                 }}
                 rightActionLabel="Transfer"
                 rightDanger
+                rightDisabled={!selectedUser || !selectedRole || !password}
                 handleRightAction={handleConfirmTransfer}
             >
                 <DropDown 

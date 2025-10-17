@@ -80,7 +80,7 @@ const LocalCSV = () => {
                 endpoints.modules.day_book.data_sources.addLocal,
                 dataSourceDetails
             );
-            return result;
+            return result.data;
         } catch (error) {
             console.error("Error posting via endpoint:", error);
             return null;
@@ -101,7 +101,7 @@ const LocalCSV = () => {
 
             await uploadFile(deviceFilePath, uploadUrl);
 
-            router.navigate('../data-management');
+            router.navigate("modules/day-book/data-management");
         } catch (error) {
             console.error("Error finalising CSV upload:", error);
         }
