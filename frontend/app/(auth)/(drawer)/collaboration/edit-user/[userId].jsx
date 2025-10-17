@@ -26,7 +26,9 @@ const EditUser = () => {
 	const [workspaceId, setWorkspaceId] = useState(null);
 	const [roles, setRoles] = useState([]);
 
-	const [initialDetails, setInitialDetails] = useState({ firstName: "", lastName: "", roleId: ""})
+	const [initialFirstName, setInitialFirstName] = useState("");
+	const [initialLastName, setInitialLastName] = useState("");
+	const [initialRoleId, setInitialRoleId] = useState("");
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
 	const [isOwner, setIsOwner] = useState(false);
@@ -34,9 +36,9 @@ const EditUser = () => {
 	const [selectedRole, setSelectedRole] = useState("");
 	const [saving, setSaving] = useState(false);
 
-	const isFirstAltered = (firstName || "").trim() !== (initialDetails.firstName || "").trim();
-	const isLastAltered = (lastName || "").trim() !== (initialDetails.lastName || "").trim();
-	const isRoleAltered = selectedRole !== initialDetails.roleId;
+	const isFirstAltered = (firstName || "").trim() !== (initialFirstName || "").trim();
+	const isLastAltered = (lastName || "").trim() !== (initialLastName || "").trim();
+	const isRoleAltered = selectedRole !== initialRoleId;
 	const isAltered = isFirstAltered || isLastAltered || isRoleAltered;
 
 	const [roleDialogVisible, setRoleDialogVisible] = useState(false);
@@ -73,11 +75,9 @@ const EditUser = () => {
 			setFirstName(user.given_name);
 			setLastName(user.family_name);
 			setSelectedRole(user.roleId);
-			setInitialDetails({
-				firstName: user.given_name,
-				lastName: user.family_name,
-				roleId: user.roleId,
-			})
+			setInitialFirstName(user.given_name);
+			setInitialLastName(user.family_name);
+			setInitialRoleId(user.roleId);
 			setIsOwner(user.roleId == fetchedRoles.find(role => role.name == "Owner").roleId);
 
 			setRoles(fetchedRoles || []);
@@ -108,19 +108,15 @@ const EditUser = () => {
 				console.log("attempting api personal details...");
 				await apiPut(endpoints.user.core.updateUser(userId, workspaceId), userDetailsPayload);
 				console.log("Successful.");
-				setInitialDetails({
-					firstName: userDetailsPayload.given_name,
-					lastName: userDetailsPayload.family_name,
-				})
+				if (isFirstAltered) setInitialFirstName(userDetailsPayload.given_name);
+				if (isLastAltered) setInitialLastName(userDetailsPayload.family_name);
 			};
 
 			if (Object.keys(userWorkspaceDetailsPayload).length > 0) {
 				console.log("Attempting to update role...");
 				await apiPatch(endpoints.workspace.users.update(workspaceId, userId), userWorkspaceDetailsPayload);
 				console.log("Successful.");
-				setInitialDetails({
-					roleId: userWorkspaceDetailsPayload.roleId
-				})
+				if (isRoleAltered) setInitialRoleId(userWorkspaceDetailsPayload.roleId);
 			}
 		} catch (error) {
 			console.error("Error updating user:", error);
@@ -170,7 +166,7 @@ const EditUser = () => {
 				onChangeText={setFirstName}
 				customRightButton={isFirstAltered}
 				rightButtonIcon="backup-restore"
-				rightButtonPress={() => setFirstName(initialDetails.firstName)}
+				rightButtonPress={() => setFirstName(initialFirstName)}
 			/>
 
 			{errors.firstName && (
@@ -183,7 +179,7 @@ const EditUser = () => {
 				onChangeText={setLastName}
 				customRightButton={isLastAltered}
 				rightButtonIcon="backup-restore"
-				rightButtonPress={() => setLastName(initialDetails.lastName)}
+				rightButtonPress={() => setLastName(initialLastName)}
 			/>
 
 			{errors.lastName && (
