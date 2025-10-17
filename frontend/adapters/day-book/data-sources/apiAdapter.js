@@ -1,122 +1,6 @@
 import { delay, validateSourceId, formatDate } from "./baseAdapter";
 
-// mock data for demo
-const createMockData = () => ({
-  connections: [
-    {
-      id: "api_1642105600000",
-      name: "JSONPlaceholder API",
-      url: "https://jsonplaceholder.typicode.com",
-      status: "active",
-      createdAt: "2024-01-15T10:30:00Z",
-      lastTested: "2024-01-15T10:30:00Z",
-      headers: '{"Content-Type": "application/json"}',
-      authentication: "",
-      testResult: {
-        status: "connected",
-        responseTime: "245ms",
-        statusCode: 200,
-        contentType: "application/json",
-      },
-    },
-    {
-      id: "api_1642109200000",
-      name: "Weather API",
-      url: "https://api.openweathermap.org/data/2.5",
-      status: "active",
-      createdAt: "2024-01-16T11:30:00Z",
-      lastTested: "2024-01-16T11:30:00Z",
-      headers: '{"Accept": "application/json"}',
-      authentication: '{"type": "query", "key": "appid", "value": "demo_key"}',
-      testResult: {
-        status: "connected",
-        responseTime: "180ms",
-        statusCode: 200,
-        contentType: "application/json",
-      },
-    },
-  ],
-  sampleData: {
-    api_1642105600000: {
-      name: "JSONPlaceholder API",
-      endpoints: [
-        {
-          path: "/posts",
-          method: "GET",
-          data: [
-            {
-              id: 1,
-              title: "Sample Post 1",
-              body: "Sample content 1",
-              userId: 1,
-            },
-            {
-              id: 2,
-              title: "Sample Post 2",
-              body: "Sample content 2",
-              userId: 1,
-            },
-            {
-              id: 3,
-              title: "Sample Post 3",
-              body: "Sample content 3",
-              userId: 2,
-            },
-          ],
-        },
-        {
-          path: "/users",
-          method: "GET",
-          data: [
-            {
-              id: 1,
-              name: "John Doe",
-              email: "john@example.com",
-              username: "johndoe",
-            },
-            {
-              id: 2,
-              name: "Jane Smith",
-              email: "jane@example.com",
-              username: "janesmith",
-            },
-          ],
-        },
-      ],
-    },
-    api_1642109200000: {
-      name: "Weather API",
-      endpoints: [
-        {
-          path: "/weather",
-          method: "GET",
-          data: [
-            {
-              city: "London",
-              temperature: 15,
-              humidity: 65,
-              description: "Cloudy",
-            },
-            {
-              city: "New York",
-              temperature: 22,
-              humidity: 45,
-              description: "Sunny",
-            },
-            {
-              city: "Tokyo",
-              temperature: 18,
-              humidity: 70,
-              description: "Rainy",
-            },
-          ],
-        },
-      ],
-    },
-  },
-});
-
-// Helper functions
+// utility functions for parsing and handling API connection data
 const parseHeaders = (headersString) => {
   if (!headersString?.trim()) return {};
   try {
@@ -137,6 +21,23 @@ const parseAuthentication = (authString) => {
   }
 };
 
+// Encode basic auth credentials safely across environments (web/RN/node)
+const encodeBase64 = (str) => {
+  try {
+    if (typeof btoa === "function") return btoa(str);
+  } catch {}
+  try {
+    // Buffer is available in many RN/node setups
+    // eslint-disable-next-line no-undef
+    if (typeof Buffer !== "undefined")
+      return Buffer.from(str, "utf-8").toString("base64");
+  } catch {}
+  console.warn(
+    "Base64 encoding fallback in use; credentials may not be encoded correctly."
+  );
+  return str;
+};
+
 const applyAuthentication = (config, auth) => {
   if (!auth) return config;
 
@@ -148,7 +49,8 @@ const applyAuthentication = (config, auth) => {
       };
       break;
     case "basic":
-      const credentials = btoa(`${auth.username}:${auth.password}`);
+      // CHANGED: avoid raw btoa; use robust encoder
+      const credentials = encodeBase64(`${auth.username}:${auth.password}`);
       config.headers = {
         ...config.headers,
         Authorization: `Basic ${credentials}`,
@@ -171,93 +73,117 @@ const applyAuthentication = (config, auth) => {
   return config;
 };
 
+// Fix URL building so base paths are preserved and query params are merged correctly.
 const buildApiUrl = (baseUrl, endpoint, params = {}) => {
-  const url = new URL(
-    endpoint.startsWith("/") ? endpoint : `/${endpoint}`,
-    baseUrl
-  );
-  Object.entries(params).forEach(([key, value]) => {
-    url.searchParams.append(key, value);
+  // CHANGED: do not use new URL with a leading slash which resets the path.
+  const [basePath, baseQuery] = String(baseUrl).split("?");
+  const trimmedBase = basePath.replace(/\/+$/, ""); // remove trailing slashes
+  const ep =
+    endpoint && endpoint !== "/" ? String(endpoint).replace(/^\/+/, "") : "";
+  const urlWithoutQuery = ep ? `${trimmedBase}/${ep}` : trimmedBase;
+
+  const search = new URLSearchParams(baseQuery || "");
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) search.append(key, value);
   });
-  return url.toString();
+  const qs = search.toString();
+  return qs ? `${urlWithoutQuery}?${qs}` : urlWithoutQuery;
 };
 
-export const createCustomApiAdapter = (options = {}) => {
-  const isDemoMode =
-    options.demoMode ||
-    options.fallbackToDemo ||
-    (typeof __DEV__ !== "undefined" ? __DEV__ : false);
-  const mockData = createMockData();
+// Produce a concise, actionable error message for failed HTTP calls
+const summarizeRequestError = (error, reqUrl) => {
+  const status =
+    error?.response?.status ?? error?.statusCode ?? error?.status ?? null;
+  const headers = error?.response?.headers || {};
+  const contentType = headers["content-type"] || headers["Content-Type"] || "";
+  const data = error?.response?.data;
+  const body =
+    typeof data === "string"
+      ? data
+      : data
+      ? (() => {
+          try {
+            return JSON.stringify(data);
+          } catch {
+            return String(data);
+          }
+        })()
+      : "";
+  const isHtml =
+    /text\/html/i.test(contentType) || /<!DOCTYPE html>/i.test(body || "");
+  const ngrokOffline = /ERR_NGROK_3200|endpoint .* is offline/i.test(
+    body || ""
+  );
+  let hint = "";
+  if (isHtml && ngrokOffline) hint = "ngrok endpoint appears offline";
+  else if (isHtml) hint = "server returned an HTML error page";
+
+  const preview = isHtml
+    ? hint
+    : (body || "")
+        .replace(/\s+/g, " ")
+        .slice(0, 200)
+        .trim();
+
+  const statusPart = status ? `Server error ${status}` : "Request failed";
+  const urlPart = reqUrl ? ` (${reqUrl})` : "";
+  return [statusPart, preview ? `- ${preview}` : "", urlPart].join(" ").trim();
+};
+
+export const createCustomApiAdapter = (
+  authService,
+  apiClient,
+  options = {}
+) => {
+  // Production-only mode
+  const isDemoMode = false;
+  console.log("[CustomApiAdapter] initialized in production mode");
+
+  // initialize state
   let connections = [];
   let currentConnection = null;
   let isConnected = false;
 
-  const connectDemo = async (connectionData) => {
-    await delay(1000);
+  // listen for demo configuration changes
+  let configUnsubscribe = null;
 
-    // find or create a demo connection
-    const demoConnection = mockData.connections.find(
-      (conn) =>
-        conn.url === connectionData.url || conn.name === connectionData.name
-    ) || {
-      id: `api_${Date.now()}`,
-      name: connectionData.name,
-      url: connectionData.url,
-      status: "active",
-      createdAt: new Date().toISOString(),
-      lastTested: new Date().toISOString(),
-      headers: connectionData.headers || "{}",
-      authentication: connectionData.authentication || "",
-      testResult: {
-        status: "connected",
-        responseTime: "245ms",
-        statusCode: 200,
-        contentType: "application/json",
-      },
-    };
+  // simulate network delays based on config
+  const simulateDelay = async () => {};
 
-    currentConnection = demoConnection;
-    connections = [
-      demoConnection,
-      ...mockData.connections.filter((c) => c.id !== demoConnection.id),
-    ];
-    isConnected = true;
+  // simulate errors based on config
+  const maybeSimulateError = () => {};
 
-    return {
-      connected: true,
-      connection: currentConnection,
-      isDemoMode: true,
-    };
-  };
+  // Demo connect removed
 
   const connect = async (connectionData) => {
-    if (isDemoMode) {
-      return connectDemo(connectionData);
-    }
-
+    console.log("[CustomApiAdapter] connect called");
     try {
-      if (!connectionData || !connectionData.url || !connectionData.name) {
-        throw new Error("Connection data with URL and name is required");
+      // Support both legacy ({ url, headers, authentication }) and new shape ({ endpoint, authType, secrets })
+      const endpoint = connectionData?.url || connectionData?.endpoint;
+      if (!connectionData || !endpoint || !connectionData.name) {
+        throw new Error("Connection data with endpoint and name is required");
       }
 
-      const testResult = await testConnection(
-        connectionData.url,
-        connectionData.headers,
-        connectionData.authentication
-      );
+      const testResult = await testConnection({
+        endpoint,
+        authType: connectionData?.authType,
+        secrets: connectionData?.secrets,
+      });
 
-      if (testResult.status !== "connected") {
+      // CHANGED: accept both success and connected
+      if (!["success", "connected"].includes(testResult.status)) {
         throw new Error("Connection test failed");
       }
 
-      // mock response
+      // In real implementation, this would call the actual API
       const newConnection = {
         id: `api_${Date.now()}`,
         name: connectionData.name,
-        url: connectionData.url,
+        url: endpoint,
         status: "active",
         createdAt: new Date().toISOString(),
         lastTested: new Date().toISOString(),
+        // Keep legacy fields for runtime fetches; when using new shape these may be empty and that's ok
         headers: connectionData.headers || "{}",
         authentication: connectionData.authentication || "",
         testResult,
@@ -267,22 +193,31 @@ export const createCustomApiAdapter = (options = {}) => {
       connections = [newConnection, ...connections];
       isConnected = true;
 
+      console.log(`Real API connection established: ${newConnection.name}`);
+
       return {
         connected: true,
         connection: currentConnection,
       };
     } catch (error) {
-      console.log("Custom API connection failed, falling back to demo mode");
-      options.demoMode = true;
-      return connectDemo(connectionData);
+      throw error;
     }
   };
 
   const disconnect = async () => {
     try {
+      await simulateDelay("disconnect");
+
+      const wasConnected = isConnected;
+      const connectionName = currentConnection?.name;
+
       currentConnection = null;
       connections = [];
       isConnected = false;
+
+      if (wasConnected) {
+        console.log(`Disconnected from API: ${connectionName}`);
+      }
 
       return { connected: true };
     } catch (error) {
@@ -290,84 +225,133 @@ export const createCustomApiAdapter = (options = {}) => {
     }
   };
 
-  // Connection testing - this stays in the adapter as it's connection-specific logic
-  const testConnection = async (url, headers = "", authentication = "") => {
-    if (isDemoMode) {
-      await delay(2000);
-      const isconnected = Math.random() > 0.2; // fake connected rate
-
-      if (isconnected) {
-        return {
-          status: "connected",
-          responseTime: `${Math.floor(Math.random() * 300 + 100)}ms`,
-          statusCode: 200,
-          contentType: "application/json",
-          sampleData: {
-            message: "API connection connectedful",
-            timestamp: new Date().toISOString(),
-            endpoints: ["/data", "/users", "/status"],
-          },
-        };
-      } else {
-        throw new Error("Connection failed: Unable to reach the API endpoint");
-      }
-    }
-
+  // tests API connections with a real HTTP request
+  const testConnection = async (
+    // Support new signature: testConnection({ endpoint, authType, secrets })
+    configOrUrl,
+    headers = "",
+    authentication = ""
+  ) => {
+    // Normalize args
+    const isObject = configOrUrl && typeof configOrUrl === "object";
+    const endpoint = isObject ? configOrUrl.endpoint : configOrUrl;
+    const authType = isObject ? configOrUrl.authType : undefined;
+    const secrets = isObject ? configOrUrl.secrets : undefined;
+    console.log("[CustomApiAdapter] testConnection called", {
+      endpoint,
+      authType,
+    });
     try {
-      const parsedHeaders = parseHeaders(headers);
-      const auth = parseAuthentication(authentication);
-
-      let config = {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...parsedHeaders,
-        },
-        timeout: 10000,
+      // Build headers from either legacy strings or new auth shape
+      let requestHeaders = {
+        Accept: "application/json",
       };
+      if (!isObject) {
+        const parsedHeaders = parseHeaders(headers);
+        const auth = parseAuthentication(authentication);
+        const hdrConfig = applyAuthentication(
+          { headers: { ...requestHeaders, ...parsedHeaders } },
+          auth
+        );
+        requestHeaders = hdrConfig.headers || {
+          ...requestHeaders,
+          ...parsedHeaders,
+        };
+      } else if (authType && secrets) {
+        // Simple heuristics: common API key header name is 'x-api-key'
+        if (String(authType).toLowerCase() === "apikey" && secrets.apiKey) {
+          requestHeaders = {
+            ...requestHeaders,
+            "x-api-key": String(secrets.apiKey),
+          };
+        } else if (
+          String(authType).toLowerCase() === "bearer" &&
+          secrets.token
+        ) {
+          requestHeaders = {
+            ...requestHeaders,
+            Authorization: `Bearer ${secrets.token}`,
+          };
+        } else if (
+          String(authType).toLowerCase() === "basic" &&
+          (secrets.username || secrets.password)
+        ) {
+          const credentials = encodeBase64(
+            `${secrets.username || ""}:${secrets.password || ""}`
+          );
+          requestHeaders = {
+            ...requestHeaders,
+            Authorization: `Basic ${credentials}`,
+          };
+        }
+      }
 
-      config = applyAuthentication(config, auth);
+      const requestUrl = buildApiUrl(endpoint, "", {});
+      const start = Date.now();
+      const response = await apiClient.get(requestUrl, {
+        headers: requestHeaders,
+        timeout: 10000,
+        params: {},
+      });
+      const durationMs = Date.now() - start;
 
-      // mock response
-      await delay(2000);
+      const statusCode = response?.status ?? response?.statusCode ?? 200;
+      const contentType =
+        response?.headers?.["content-type"] ||
+        response?.headers?.["Content-Type"] ||
+        "";
+      const sampleData = response?.data ?? { message: "OK" };
+
+      if (statusCode >= 400) {
+        throw new Error(summarizeRequestError({ response }, requestUrl));
+      }
+
       return {
-        status: "connected",
-        responseTime: "245ms",
-        statusCode: 200,
-        contentType: "application/json",
-        sampleData: {
-          message: "API connection connectedful",
-          timestamp: new Date().toISOString(),
-        },
+        status: "success",
+        responseTime: `${durationMs}ms`,
+        statusCode,
+        contentType,
+        sampleData,
       };
     } catch (error) {
-      throw new Error(`Connection test failed: ${error.message}`);
+      const concise = summarizeRequestError(error, endpoint);
+      throw new Error(`Connection test failed: ${concise}`);
     }
   };
 
-  // Data source discovery - returns available endpoints/data sources
+  // discovers available API endpoints and returns them as data sources
   const getDataSources = async () => {
+    console.log("[CustomApiAdapter] getDataSources called", {
+      isConnected,
+      isDemoMode,
+    });
     if (!isConnected) {
       throw new Error("Not connected to any API");
     }
 
-    if (isDemoMode) {
-      await delay(800);
-      const mockConnection = mockData.sampleData[currentConnection.id];
-      if (mockConnection?.endpoints) {
-        return mockConnection.endpoints.map((endpoint) => ({
-          id: `${currentConnection.id}_${endpoint.path.replace("/", "")}`,
-          name: `${endpoint.method} ${endpoint.path}`,
-          path: endpoint.path,
-          method: endpoint.method,
+    // Optionally map provided options.endpoints into data sources if present
+    if (options?.endpoints && currentConnection) {
+      const entries = [];
+      Object.entries(options.endpoints).forEach(([key, value]) => {
+        if (!value) return;
+        // value may be an object with path/method or a string path
+        const path = typeof value === "string" ? value : value.path || "/";
+        const method =
+          typeof value === "string" ? "GET" : value.method || "GET";
+        entries.push({
+          id: `${currentConnection.id}_${key}`,
+          name: `${currentConnection.name} - ${key}`,
+          path,
+          method,
           type: "endpoint",
           lastModified: currentConnection.lastTested,
-          url: `${currentConnection.url}${endpoint.path}`,
-        }));
-      }
+          url: currentConnection.url,
+        });
+      });
+      if (entries.length) return entries;
     }
 
-    // TODO: let user select endpoints
+    // Real implementation would discover actual endpoints
     return [
       {
         id: `${currentConnection.id}_default`,
@@ -381,75 +365,122 @@ export const createCustomApiAdapter = (options = {}) => {
     ];
   };
 
-  // Raw data fetching method for DataSourceService to use
+  // fetches raw data from API endpoints with real HTTP calls
   const fetchRawData = async (endpoint = "/", method = "GET", params = {}) => {
+    console.log("[CustomApiAdapter] fetchRawData called", {
+      endpoint,
+      method,
+      isDemoMode,
+    });
     if (!isConnected) {
-      throw new Error("Not connected to any API");
-    }
-
-    if (isDemoMode) {
-      await delay(800);
-
-      const endpointName = endpoint.replace("/", "");
-      const mockConnection = mockData.sampleData[currentConnection.id];
-
-      if (mockConnection) {
-        const mockEndpoint = mockConnection.endpoints.find(
-          (ep) => ep.path.replace("/", "") === endpointName
-        );
-
-        if (mockEndpoint) {
-          return {
-            data: mockEndpoint.data,
-            statusCode: 200,
-            headers: { "content-type": "application/json" },
-            responseTime: 245,
-          };
-        }
-      }
-
-      return {
-        data: [
-          { id: 1, name: "Item 1", value: 100 },
-          { id: 2, name: "Item 2", value: 200 },
-          { id: 3, name: "Item 3", value: 300 },
-        ],
-        statusCode: 200,
-        headers: { "content-type": "application/json" },
-        responseTime: 245,
-      };
+      // Allow direct calls when an absolute endpoint is provided
+      const absolute =
+        typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
+      if (!absolute) throw new Error("Not connected to any API");
     }
 
     try {
-      const parsedHeaders = parseHeaders(currentConnection.headers);
-      const auth = parseAuthentication(currentConnection.authentication);
+      const parsedHeaders = parseHeaders(currentConnection?.headers);
+      const auth = parseAuthentication(currentConnection?.authentication);
 
-      let config = {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          ...parsedHeaders,
-        },
-        timeout: 30000,
+      const baseHeaders = {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        ...parsedHeaders,
       };
 
-      config = applyAuthentication(config, auth);
+      const hdrConfig = applyAuthentication({ headers: baseHeaders }, auth);
+      const headers = hdrConfig.headers || baseHeaders;
 
-      if (method === "GET" && Object.keys(params).length > 0) {
-        config.params = params;
-      } else if (["POST", "PUT", "PATCH"].includes(method)) {
-        config.data = params;
+      const upper = String(method).toUpperCase();
+      const isGet = upper === "GET";
+      // If no base url (not connected) and endpoint is absolute, use it directly
+      const base = currentConnection?.url;
+      const absolute =
+        typeof endpoint === "string" && /^https?:\/\//i.test(endpoint);
+      const url = base
+        ? buildApiUrl(base, endpoint, isGet ? params : {})
+        : absolute
+        ? buildApiUrl(endpoint, "", isGet ? params : {})
+        : buildApiUrl(endpoint, "", isGet ? params : {});
+
+      if (isGet) {
+        const start = Date.now();
+        const res = await apiClient.get(url, {
+          headers,
+          timeout: 30000,
+          params: {},
+        });
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
       }
 
-      const url = buildApiUrl(currentConnection.url, endpoint, config.params);
+      if (upper === "POST" && typeof apiClient.post === "function") {
+        const start = Date.now();
+        const res = await apiClient.post(url, params, {
+          headers,
+          timeout: 30000,
+        });
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
+      }
+      if (upper === "PUT" && typeof apiClient.put === "function") {
+        const start = Date.now();
+        const res = await apiClient.put(url, params, {
+          headers,
+          timeout: 30000,
+        });
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
+      }
+      if (upper === "PATCH" && typeof apiClient.patch === "function") {
+        const start = Date.now();
+        const res = await apiClient.patch(url, params, {
+          headers,
+          timeout: 30000,
+        });
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
+      }
+      if (upper === "DELETE" && typeof apiClient.delete === "function") {
+        const start = Date.now();
+        const res = await apiClient.delete(url, {
+          headers,
+          timeout: 30000,
+          params: {},
+        });
+        const durationMs = Date.now() - start;
+        return {
+          data: res?.data,
+          statusCode: res?.status,
+          headers: res?.headers,
+          responseTime: `${durationMs}ms`,
+        };
+      }
 
-      // Fallback to demo data for now
-      return fetchRawData(endpoint, method, params);
+      throw new Error(`HTTP method not supported by apiClient: ${upper}`);
     } catch (error) {
-      console.log("Real API call failed, falling back to demo data");
-      const demoOptions = { ...options, demoMode: true };
-      const demoAdapter = createCustomApiAdapter(demoOptions);
-      return demoAdapter.fetchRawData(endpoint, method, params);
+      throw error;
     }
   };
 
@@ -458,10 +489,13 @@ export const createCustomApiAdapter = (options = {}) => {
     connection: currentConnection,
     provider: "Custom API",
     dataSourceCount: connections.length,
-    isDemoMode: isDemoMode || options.demoMode,
+    isDemoMode: false,
+    demoConfig: null,
   });
 
   const switchConnection = async (connectionId) => {
+    await simulateDelay("connect");
+
     const connection = connections.find((c) => c.id === connectionId);
     if (!connection) {
       throw new Error("Connection not found");
@@ -470,41 +504,17 @@ export const createCustomApiAdapter = (options = {}) => {
     currentConnection = connection;
     isConnected = true;
 
+    console.log(`Switched to connection: ${connection.name}`);
     return { connected: true, connection };
   };
 
   const updateConnection = async (connectionId, updates) => {
-    if (isDemoMode) {
-      await delay(500);
-      const connectionIndex = connections.findIndex(
-        (c) => c.id === connectionId
-      );
-      if (connectionIndex !== -1) {
-        connections[connectionIndex] = {
-          ...connections[connectionIndex],
-          ...updates,
-        };
-        if (currentConnection && currentConnection.id === connectionId) {
-          currentConnection = connections[connectionIndex];
-        }
-      }
-      return { connected: true };
-    }
-
+    // Real implementation would update via API
     return { connected: true };
   };
 
   const deleteConnection = async (connectionId) => {
-    if (isDemoMode) {
-      await delay(500);
-      connections = connections.filter((c) => c.id !== connectionId);
-      if (currentConnection && currentConnection.id === connectionId) {
-        currentConnection = null;
-        isConnected = false;
-      }
-      return { connected: true };
-    }
-
+    // Real implementation would delete via API
     return { connected: true };
   };
 
@@ -513,11 +523,32 @@ export const createCustomApiAdapter = (options = {}) => {
     return dataSources.filter(
       (source) =>
         source.name.toLowerCase().includes(query.toLowerCase()) ||
-        source.path.toLowerCase().includes(query.toLowerCase())
+        source.path.toLowerCase().includes(query.toLowerCase()) ||
+        source.type.toLowerCase().includes(query.toLowerCase())
     );
   };
 
+  // returns current demo mode status and configuration for UI display
+  const getDemoStatus = () => ({
+    isDemoActive: false,
+    config: null,
+    showIndicators: false,
+    connectionCount: connections.length,
+  });
+
+  // cleans up resources and event listeners when adapter is destroyed
+  const destroy = () => {
+    if (configUnsubscribe) {
+      configUnsubscribe();
+    }
+    currentConnection = null;
+    connections = [];
+    isConnected = false;
+    console.log("Custom API Adapter destroyed");
+  };
+
   return {
+    // primary methods for managing API connections
     connect,
     disconnect,
     testConnection,
@@ -527,16 +558,23 @@ export const createCustomApiAdapter = (options = {}) => {
     updateConnection,
     deleteConnection,
 
+    // methods for discovering and fetching data from API endpoints
     getDataSources,
     filterDataSources,
-
     fetchRawData,
 
+    // helper functions for parsing and building API requests
     parseHeaders,
     parseAuthentication,
     applyAuthentication,
     buildApiUrl,
-
     formatDate,
+
+    // methods for managing demo mode behavior and status
+    getDemoStatus,
+    simulateDelay,
+
+    // resource cleanup method
+    destroy,
   };
 };

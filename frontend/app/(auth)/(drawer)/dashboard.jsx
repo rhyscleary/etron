@@ -13,7 +13,7 @@ const Profile = () => {
     const theme = useTheme();
     const [showSheet, setShowSheet] = useState(false); // standard bottom sheet (existing example)
     const [showCompactSheet, setShowCompactSheet] = useState(false); // compact bottom sheet (existing example)
-    // NEW EXAMPLE SHEETS
+    // new example sheets
     const [showProfileActionsSheet, setShowProfileActionsSheet] = useState(false); // custom header + search + icons
     const [showQuickIconSheet, setShowQuickIconSheet] = useState(false); // compact style with custom renderItem (icon grid style list)
     const [showQuickNoteSheet, setShowQuickNoteSheet] = useState(false); // NEW: custom content (no list) example
@@ -23,7 +23,7 @@ const Profile = () => {
     const [noteTitle, setNoteTitle] = useState("");
     const [noteBody, setNoteBody] = useState("");
 
-    // Example data for new sheets
+    // example data for new sheets
     const profileActionItems = useMemo(() => ([
         { icon: 'account-edit', label: 'Account Details', onPress: () => router.navigate('/settings/account/account') },
         { icon: 'image-edit', label: 'Personal Details', onPress: () => router.navigate('/settings/account/personal-details') },
@@ -41,7 +41,7 @@ const Profile = () => {
     ]), [router]);
 
     const settingOptionButtons = [
-        // Testing Bottom Screen
+    // testing bottom sheet
         { icon: "tray-arrow-up", label: "Testing - Example Bottom Sheet", onPress: () => { setShowSheet(true); setShowCompactSheet(false);} }, // standard style
         { icon: "view-compact", label: "Testing - Compact Bottom Sheet", onPress: () => { setShowCompactSheet(true); setShowSheet(false);} }, // compact style
         { icon: "account-box", label: "Testing - Profile Actions Sheet", onPress: () => { setShowProfileActionsSheet(true); } },
@@ -128,9 +128,10 @@ const Profile = () => {
             header={
                 <Header title="Dashboard" showMenu />
             }
-			center={false}
-			padded={false}
-            scroll={true}
+		center={false}
+		padded={false}
+        // prevent nesting virtualizedlists inside a scrollview to avoid the warning
+		scroll={false}
         >         
             <StackLayout spacing={12}>
                 {settingOptionButtons.map((item) => (

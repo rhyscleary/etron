@@ -1,7 +1,5 @@
-// TODO: this file can be extended to update the data sources after being notified by the backend (after processing webhook)
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { apiGet, apiPost, apiPut, apiDelete } from "../utils/api/apiClient";
-import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
+
+import React, { useMemo } from "react";
 import DataSourceService from "../services/DataSourceService";
 import { getAdapterInfo } from "../adapters/day-book/data-sources/DataAdapterFactory";
 
@@ -444,44 +442,32 @@ const useDataSources = () => {
   const isDemoModeActive = useCallback(() => {
     return service.isDemoModeActive();
   }, [service]);
+}
+
+import apiClient from "../utils/api/apiClient";
+
+// Singleton service instance
+const dataSourceService = new DataSourceService(apiClient);
+
+export default function useDataSource() {
+  // Memoize bound methods so their identities are stable across renders
+  const getConnectedDataSources = useMemo(() => dataSourceService.getConnectedDataSources.bind(dataSourceService), []);
+  const connectDataSource = useMemo(() => dataSourceService.connectDataSource.bind(dataSourceService), []);
+  const updateDataSource = useMemo(() => dataSourceService.updateDataSource.bind(dataSourceService), []);
+  const disconnectDataSource = useMemo(() => dataSourceService.disconnectDataSource.bind(dataSourceService), []);
+  const getDataSource = useMemo(() => dataSourceService.getDataSource.bind(dataSourceService), []);
+  const fetchDataFromSource = useMemo(() => dataSourceService.fetchDataFromSource.bind(dataSourceService), []);
+  // Alias expected by some screens
+  const fetchDataSource = fetchDataFromSource;
 
   return {
-    dataSources,
-    loading,
-    error,
-    stats,
-
-    // Data source operations
-    loadDataSources,
+    getConnectedDataSources,
     connectDataSource,
-    disconnectDataSource,
     updateDataSource,
-    testConnection,
-    syncDataSource,
+    disconnectDataSource,
     getDataSource,
-    refresh,
-
-    // Provider operations (separate from data sources)
-    connectProvider,
-    disconnectProvider,
-    isProviderConnected,
-    getProviderConnection,
-
-    // Helper functions
-    getSourcesByStatus,
-    getSourcesByType,
-    getSourcesByCategory,
-    isDemoModeActive,
-    getAdapterFilterOptions,
-
-    // Computed values
-    connectedSources: dataSources.filter((s) => s.status === "connected"),
-    errorSources: dataSources.filter((s) => s.status === "error"),
-    totalSources: dataSources.length,
-
-    // Debug helper
-    debugState,
-  };
-};
-
-export default useDataSources;
+    fetchDataFromSource,
+    fetchDataSource,
+    dataSourceService,
+  }
+}

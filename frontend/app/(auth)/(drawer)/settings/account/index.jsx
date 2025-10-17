@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { apiDelete } from '../../../../../utils/api/apiClient';
 import BasicDialog from '../../../../../components/overlays/BasicDialog';
 import { useTheme } from "react-native-paper";
-import { useVerification } from '../../../../../components/layout/VerificationContext';
+import { useVerification } from '../../../../../contexts/VerificationContext';
 import { verifyPassword } from '../../../../../utils/verifyPassword';
 import endpoints from '../../../../../utils/api/endpoints';
 
