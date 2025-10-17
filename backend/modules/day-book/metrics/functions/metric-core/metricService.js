@@ -33,6 +33,7 @@ async function createMetricInWorkspace(authUserId, payload) {
         workspaceId: workspaceId,
         metricId: metricId,
         dataSourceId: dataSourceId,
+        activeDataSource: true,
         name: name,
         config: config,
         createdAt: date,

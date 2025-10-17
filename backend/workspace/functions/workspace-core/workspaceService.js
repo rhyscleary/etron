@@ -2,9 +2,8 @@
 
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
-const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
 const appConfigRepo = require("@etron/shared/repositories/appConfigBucketRepository");
-const { getUserById, updateUser } = require("@etron/shared/utils/auth");
+const { getUserById } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
 const { hasPermission } = require("@etron/shared/utils/permissions");
 
@@ -318,7 +317,6 @@ async function getWorkspacePermissions() {
 module.exports = {
     createWorkspace,
     updateWorkspace,
-    deleteWorkspace,
     getWorkspaceByWorkspaceId,
     getWorkspaceByUserId,
     transferWorkspaceOwnership,
