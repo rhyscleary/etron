@@ -356,6 +356,16 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
         );
     }*/
 
+    // set metrics associated with the data source to not active
+    if (dataSource.metrics && dataSource.metrics.length > 0) {
+        await Promise.all(
+            dataSource.metrics.map(async (metricId) => {
+                // update data source status for metric
+                await metricRepo.updateMetricDataSourceStatus(workspaceId, metricId, false);
+            })
+        );
+    }
+
     // remove data source from repo and secrets
     await dataSourceRepo.removeDataSource(workspaceId, dataSourceId);
     await dataSourceSecretsRepo.removeSecrets(workspaceId, dataSourceId);
