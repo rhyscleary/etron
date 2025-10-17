@@ -15,7 +15,7 @@ import BasicButton from "../../../../../components/common/buttons/BasicButton";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { saveProfilePhoto } from "../../../../../utils/profilePhoto";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
-import Dropdown from "../../../../../components/common/input/DropDown"
+import DropDown from "../../../../../components/common/input/DropDown";
 
 
 const EditUser = () => {
@@ -29,11 +29,12 @@ const EditUser = () => {
 	const [initialDetails, setInitialDetails] = useState({ firstName: "", lastName: ""})
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
+
 	const [selectedRole, setSelectedRole] = useState("");
 	const [saving, setSaving] = useState(false);
 
-	const isFirstAltered = firstName.trim() !== initialDetails.firstName.trim();
-	const isLastAltered = lastName.trim() !== initialDetails.lastName.trim();
+	const isFirstAltered = (firstName || "").trim() !== (initialDetails.firstName || "").trim();
+	const isLastAltered = (lastName || "").trim() !== (initialDetails.lastName || "").trim();
 	const isRoleAltered = selectedRole !== initialDetails.roleId;
 	const isAltered = isFirstAltered || isLastAltered || isRoleAltered;
 
@@ -93,31 +94,32 @@ const EditUser = () => {
 		try {
 			setSaving(true);
 
-			let payload = {};
+			let userDetailsPayload = {};
+			let userWorkspaceDetailsPayload = {};
 
-			if (isFirstAltered) payload.given_name = firstName.trim();
-			if (isLastAltered) payload.family_name = lastName.trim(); 
-			if (isRoleAltered) payload.roleId = selectedRole;
+			if (isFirstAltered) userDetailsPayload.given_name = firstName.trim();
+			if (isLastAltered) userDetailsPayload.family_name = lastName.trim(); 
+			if (isRoleAltered) userWorkspaceDetailsPayload.roleId = selectedRole;
 
-			console.log("payload:", payload);
-			if (Object.keys(payload).length === 0) {
+			console.log("payload:", userDetailsPayload);
+			if (Object.keys(userDetailsPayload).length === 0 && Object.keys(userWorkspaceDetailsPayload).length === 0) {
 				setSaving(false);
 				return; 
 			}
 
 			console.log("attempting api personal details...");
-			await apiPut(endpoints.user.core.updateUser(workspaceId, userId), payload);
+			await apiPut(endpoints.user.core.updateUser(userId, workspaceId), userDetailsPayload);
 			console.log("Successful.");
 			setInitialDetails({
-				firstName: payload.given_name,
-				lastName: payload.family_name,
+				firstName: userDetailsPayload.given_name,
+				lastName: userDetailsPayload.family_name,
 			})
 
-			console.log("Attempting to update role...")
-			await apiPatch(endpoints.workspace.users.update(workspaceId, userId), payload);
+			console.log("Attempting to update role...");
+			await apiPatch(endpoints.workspace.users.update(workspaceId, userId), userWorkspaceDetailsPayload);
 			console.log("Successful.");
 			setInitialDetails({
-				roleId: payload.roleId
+				roleId: userWorkspaceDetailsPayload.roleId
 			})
 		} catch (error) {
 			console.error("Error updating user:", error);
@@ -187,14 +189,18 @@ const EditUser = () => {
 				<Text style={{ color: theme.colors.error }}>Please enter a valid last name</Text>
 			)}
 
-			<Dropdown
+			<DropDown
 				label="Select Role"
-				items={roles.map(role => ({ label: role.name, value: role.roleId }))}
+				items={roles
+					.filter(role => role.name !== "Owner")
+					.map(role => ({ label: role.name, value: role.roleId }))
+				}
 				value={selectedRole}
-				onSelect={setSelectedRole}
+				onSelect={(roleId) => setSelectedRole(roleId)}
 				showRouterButton={false}
 			/>
 
+			{/* Remove User Button */}
 			<BasicButton 
 				label="Remove User"
 				danger={true}

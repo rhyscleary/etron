@@ -94,7 +94,7 @@ async function updateUserInWorkspace(authUserId, workspaceId, userId, payload) {
     }
 
     const updatedUserItem = {
-        roleId
+        roleId 
     };
 
     return workspaceUsersRepo.updateUser(workspaceId, userId, updatedUserItem);
