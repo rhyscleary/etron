@@ -10,7 +10,7 @@ const { translateData } = require("@etron/data-sources-shared/utils/translateDat
 const { toParquet } = require("@etron/data-sources-shared/utils/typeConversion");
 const { generateSchema } = require("@etron/data-sources-shared/utils/schema");
 const { saveSchemaAndUpdateTable } = require("@etron/data-sources-shared/utils/schema");
-const { appendToStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
+const { appendToStoredData, replaceStoredData } = require("@etron/data-sources-shared/repositories/dataBucketRepository");
 const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 
 async function pollDataSource(workspace, dataSource) {
