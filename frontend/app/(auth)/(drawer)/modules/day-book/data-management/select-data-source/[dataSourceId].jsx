@@ -215,33 +215,23 @@ const SelectDataSource = () => {
 					<ActivityIndicator size="large" />
 				</View>
 			) : (<>
-				<Text variant="titleMedium" style={styles.title}>
-					{`Created: ${formatDateTime(createdAtValue)}`}
-				</Text>
 				<Card style={styles.card}>
 					<Card.Title
 						title={dataSource.name}
 						//subtitle={subtitleText}
 					/>
 					<View style={{ padding: 16 }}>
-						<Text>Type: {String(dataSource.sourceType)}</Text>
-						<Text>Status: {String(dataSource.status)}</Text>
-						<Text>Last Update: {String(formatDateTime(dataSource.lastUpdate))}</Text>
-						<View style={{ marginTop: 12 }}>
-							<View style={{ flexDirection: 'row' }}>
-								<Button onPress={handleViewData} mode="contained" disabled={previewLoading} style={{ marginRight: 8 }}>
-									{previewLoading ? 'Loading...' : 'View Data'}
-								</Button>
-								{editHref ? (
-									<Link href={editHref} asChild>
-										<Button mode="outlined">Edit Data Source</Button>
-									</Link>
-								) : (
-									<Button mode="outlined" disabled>
-										Edit Data Source
-									</Button>
-								)}
-							</View>
+						<Text>Type: {dataSource.sourceType}</Text>
+						<Text>Status: {dataSource.status}</Text>
+						<Text>Last Update: {formatDateTime(dataSource.lastUpdate)}</Text>
+						<Text>Created: {formatDateTime(createdAtValue)}</Text>
+						<View style={{ flexDirection: 'row', marginTop: 12 }}>
+							<Button onPress={handleViewData} mode="contained" disabled={previewLoading} style={{ marginRight: 8 }}>
+								{previewLoading ? 'Loading...' : 'View Data'}
+							</Button>
+							<Link href={editHref} asChild>
+								<Button mode="outlined">Edit Data Source</Button>
+							</Link>
 						</View>
 					</View>
 				</Card>
