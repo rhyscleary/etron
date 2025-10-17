@@ -4,35 +4,37 @@ import { Pressable, View, SectionList, Text as RNText, ActivityIndicator, StyleS
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
-import { Text, TextInput, TouchableRipple, Chip } from "react-native-paper";
+import { Text, TextInput, TouchableRipple, Chip, ProgressBar } from "react-native-paper";
 import { useEffect, useState, useCallback } from "react";
 import { apiGet } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 import { useFocusEffect } from "@react-navigation/native";
+import { RefreshControl } from "react-native";
 
 const Users = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [allRoles, setAllRoles] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(true);
     const [selectedRoles, setSelectedRoles] = useState([]);
     const [groupedUsers, setGroupedUsers] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
 
     useEffect(() => {
+        setLoading(true);
         loadUsersAndRoles();
     }, []);
 
     useFocusEffect(
         useCallback(() => {
+            setRefreshing(true);
             loadUsersAndRoles();
         }, [loadUsersAndRoles])
     );
 
     const loadUsersAndRoles = useCallback(async () => {
-        setLoading(true);
-        
         const workspaceId = await getWorkspaceId();
 
         let users = [];
@@ -53,9 +55,10 @@ const Users = () => {
             console.error("Failed to fetch workspace roles:", error);
         }
 
-        setLoading(false);
-
         sortUsers(users, roles);
+
+        setRefreshing(false);
+        setLoading(false);
     });
 
     function sortUsers(users = allUsers, roles = allRoles) {
@@ -104,6 +107,7 @@ const Users = () => {
 			center={false}
 			padded={false}
             scroll={false}
+            tapToDismissKeyboard={false}
 		>
 
             {/* Search Box */}
@@ -134,6 +138,11 @@ const Users = () => {
             <SectionList
                 sections={groupedUsers}
                 keyExtractor={(item) => item.userId}
+                keyboardDismissMode="on-drag"
+                keyboardShouldPersistTaps="handled"
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={loadUsersAndRoles} />
+                }
                 renderSectionHeader={({ section: { title } }) => (
                     <Text style={{ marginTop: 16, fontWeight: 'bold' }}>{title}</Text>
                 )}
