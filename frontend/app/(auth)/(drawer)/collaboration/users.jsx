@@ -5,11 +5,12 @@ import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
 import { Text, TextInput, TouchableRipple, Chip } from "react-native-paper";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { apiGet } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
+import { useFocusEffect } from "@react-navigation/native";
 
 const Users = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -20,10 +21,18 @@ const Users = () => {
     const [allUsers, setAllUsers] = useState([]);
 
     useEffect(() => {
-        initialiseUsersAndRoles();
+        loadUsersAndRoles();
     }, []);
 
-    const initialiseUsersAndRoles = async () => {
+    useFocusEffect(
+        useCallback(() => {
+            loadUsersAndRoles();
+        }, [loadUsersAndRoles])
+    );
+
+    const loadUsersAndRoles = useCallback(async () => {
+        setLoading(true);
+        
         const workspaceId = await getWorkspaceId();
 
         let users = [];
@@ -47,7 +56,7 @@ const Users = () => {
         setLoading(false);
 
         sortUsers(users, roles);
-    };
+    });
 
     function sortUsers(users = allUsers, roles = allRoles) {
         const filteredUsers = users.filter(user => {
