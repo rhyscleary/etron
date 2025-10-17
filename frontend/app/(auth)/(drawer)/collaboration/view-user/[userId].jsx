@@ -1,23 +1,24 @@
 // Author(s): Rhys Cleary
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme, Divider } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
-import { apiGet, apiPut, apiDelete, apiPatch } from "../../../../../utils/api/apiClient";
+import { apiGet } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import TextField from "../../../../../components/common/input/TextField";
-import BasicButton from "../../../../../components/common/buttons/BasicButton";
 import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
 import { updateUserAttribute } from "aws-amplify/auth";
 import { getUserType } from "../../../../../storage/userStorage";
 import StackLayout from "../../../../../components/layout/StackLayout";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import formatDateTime from "../../../../../utils/format/formatISODate";
+import { useFocusEffect } from "@react-navigation/native";
+
 
 const ViewUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -34,50 +35,48 @@ const ViewUser = () => {
     const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		const initialiseUser = async () => {
-			const userType = await getUserType();
-			console.log("userType:", userType);
-			const workspaceId = await getWorkspaceId();
-
-            let user = {};
-			try {
-				const result = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
-                user = result.data;
-			} catch (error) {
-				console.error("Error fetching user:", error);
-				return;
-            }
-            
-            let roleName;
-            try {
-                const result = await apiGet(endpoints.workspace.roles.getRole(workspaceId, user.roleId));
-                roleName = result.data.name;
-            } catch (error) {
-                console.error("Error fetching role details:", error);
-                return;
-            }
-
-            setFirstName(user.given_name);
-            setLastName(user.family_name);
-            setName(user.given_name + " " + user.family_name);
-            setEmail(user.email);
-            setRoleName(roleName);
-            setJoinDate(formatDateTime(user.joinedAt));
-			
-            setLoading(false);
-			/*try {
-				console.log("workspaceId:", workspaceIdTemp);
-				const rolesResult = await apiGet(endpoints.workspace.roles.getRoles(workspaceIdTemp));
-                const roles = rolesResult.data;
-				console.log("fetchedRoles:", roles);
-				
-			} catch (error) {
-				console.error("Error fetching roles:", error);
-				return;
-			}*/
-		};
-		initialiseUser();
+		loadUser();
 	}, []);	
+
+    useFocusEffect(
+        useCallback(() => {
+            loadUser();
+        }, [loadUser])
+    );
+
+    const loadUser = useCallback(async () => {
+        setLoading(true);
+        const userType = await getUserType();
+        console.log("userType:", userType);
+        const workspaceId = await getWorkspaceId();
+
+        let user = {};
+        try {
+            const result = await apiGet(endpoints.workspace.users.getUser(workspaceId, userId));
+            user = result.data;
+        } catch (error) {
+            console.error("Error fetching user:", error);
+            return;
+        }
+        
+        let roleName;
+        try {
+            const result = await apiGet(endpoints.workspace.roles.getRole(workspaceId, user.roleId));
+            roleName = result.data.name;
+        } catch (error) {
+            console.error("Error fetching role details:", error);
+            return;
+        }
+
+        setFirstName(user.given_name);
+        setLastName(user.family_name);
+        setName(user.given_name + " " + user.family_name);
+        setEmail(user.email);
+        setRoleName(roleName);
+        setJoinDate(formatDateTime(user.joinedAt));
+        
+        setLoading(false);
+    });
 
 
 	return (
