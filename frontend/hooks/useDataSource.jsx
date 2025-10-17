@@ -442,6 +442,8 @@ const useDataSources = () => {
   const isDemoModeActive = useCallback(() => {
     return service.isDemoModeActive();
   }, [service]);
+}
+
 import apiClient from "../utils/api/apiClient";
 
 // Singleton service instance
@@ -467,5 +469,5 @@ export default function useDataSource() {
     fetchDataFromSource,
     fetchDataSource,
     dataSourceService,
-  };
+  }
 }
