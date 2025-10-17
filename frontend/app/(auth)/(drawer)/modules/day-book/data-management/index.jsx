@@ -195,7 +195,7 @@ const DataManagement = () => {
 					dataSourceMappings.map((dataSource) => { return (
 						<TouchableOpacity 
 							key = {dataSource.id}
-							onPress={() => {router.navigate(`modules/day-book/data-management/view-data-source/${dataSource.id}`)}}
+							onPress={() => {router.navigate(`modules/day-book/data-management/select-data-source/${dataSource.id}`)}}
 						>
 							<Card>
 								{<Text>

@@ -10,6 +10,8 @@ import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import * as DocumentPicker from 'expo-document-picker'
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../../../../components/layout/ResponsiveScreen";
+import formatDateTime from "../../../../../../../utils/format/formatISODate";
 
 const ViewDataSource = () => {
     const { dataSourceId } = useLocalSearchParams();
@@ -125,17 +127,19 @@ const ViewDataSource = () => {
     }
 
     return (
-        <View style={commonStyles.screen}>
-            <Header title={name ? `${name}` : "Loading"} showBack showEdit />
-            {loadingDataSourceInfo ?
+        <ResponsiveScreen
+            header={<Header title={"View Data Source"} showBack showEdit />}
+            center={false}
+        >
+            {loadingDataSourceInfo ? (
                 <ActivityIndicator />
-            : (<>
+            ) : (<>
                 <Text>Name: {name}</Text>
                 <Text>Source type: {sourceType}</Text>
                 <Text>Method: {method}</Text>
                 <Text>Creator: {creator}</Text>
-                <Text>Time created: {timeCreated}</Text>
-                <Text>Last update: {lastUpdate}</Text>
+                <Text>Time created: {formatDateTime(timeCreated)}</Text>
+                <Text>Last update: {formatDateTime(lastUpdate)}</Text>
 
                 <Button onPress={userSelectDocument} title="Pick a CSV File" disabled={isUploadingData} />{/* TODO: This is mostly a duplicate from local-csv.jsx, components to import into both would be better */}
                 {dataDetailsStatus == "none" && (
@@ -150,7 +154,7 @@ const ViewDataSource = () => {
                     </View>
                 )}
             </>)}
-        </View>
+        </ResponsiveScreen>
     )
 }
 
