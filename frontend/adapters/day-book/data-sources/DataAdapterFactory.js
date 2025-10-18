@@ -2,6 +2,20 @@
 export function getAdaptersForUI() {
   return [
     {
+      heading: "Local Files",
+      category: "local-files",
+      adapters: [
+        {
+          label: "Upload CSV",
+          icon: "file",
+          type: "local-csv",
+          description: "Upload a local csv file",
+          route:
+            "/modules/day-book/data-management/data-connection-inputs/local-csv",
+        },
+      ],
+    },
+    {
       heading: "Spreadsheets",
       category: "cloud-storage",
       adapters: [
@@ -12,7 +26,7 @@ export function getAdaptersForUI() {
           description: "Connect to Google Sheets via Google Drive API",
           iconColor: "#0F9D58",
           route:
-            "/modules/day-book/data-management/data-connection-inputs/google-sheets",
+            "/modules/day-book/data-management/data-connection-inputs/google",
         },
         {
           label: "Microsoft Excel",
@@ -110,6 +124,8 @@ const typeToCategory = {
 
 export function getCategoryDisplayName(category) {
   switch (category) {
+    case "local-files":
+      return "Local Files";
     case "cloud-storage":
       return "Spreadsheets";
     case "api":

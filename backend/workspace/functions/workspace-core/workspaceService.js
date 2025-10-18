@@ -6,6 +6,7 @@ const appConfigRepo = require("@etron/shared/repositories/appConfigBucketReposit
 const { getUserById } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/audit-shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -174,7 +175,7 @@ async function createWorkspace(authUserId, data) {
     };
 }
 
-async function updateWorkspace(authUserId, workspaceId, payload) {;
+async function updateWorkspace(authUserId, workspaceId, payload) {
     const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.UPDATE);
 
     if (!isAuthorised) {
@@ -205,7 +206,17 @@ async function updateWorkspace(authUserId, workspaceId, payload) {;
         throw new Error("Workspace not found");
     }
 
-    return workspaceRepo.updateWorkspace(workspaceId, payload);
+    const updatedWorkspace = await workspaceRepo.updateWorkspace(workspaceId, payload);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated workspace details",
+        type: "SETTINGS"
+    });
+
+    return updatedWorkspace;
 }
 
 async function getWorkspaceByWorkspaceId(workspaceId) {

@@ -18,6 +18,7 @@ import StackLayout from "../../../../../components/layout/StackLayout";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import formatDateTime from "../../../../../utils/format/formatISODate";
 import { useFocusEffect } from "@react-navigation/native";
+import DescriptiveButton from "../../../../../components/common/buttons/DescriptiveButton";
 
 
 const ViewUser = () => {
@@ -134,6 +135,13 @@ const ViewUser = () => {
                             value={"Joined: " + joinDate}
                             placeholder="Join Date"
                             isDisabled={true}
+                        />
+
+                        <Divider />
+
+                        <DescriptiveButton 
+                            label="User Activity Log" 
+                            onPress={() => router.navigate(`/collaboration/user-log/${userId}`)}
                         />
                     </StackLayout>
                 </StackLayout>

@@ -10,6 +10,8 @@ const METRICS_BASE_URL =
   "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/metrics";
 const REPORTS_BASE_URL =
   "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/reports";
+const AUDIT_BASE_URL =
+  "https://uc0md4lh38.execute-api.ap-southeast-2.amazonaws.com/dev/audits";
 
 const endpoints = {
   workspace: {
@@ -95,33 +97,41 @@ const endpoints = {
     },
   },
 
-    modules: {
-        day_book: {
-            data_sources: {
-                addRemote: `${DATASOURCES_BASE_URL}/remote`,
-                addLocal: `${DATASOURCES_BASE_URL}/local`,
-                update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
-                getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
-                getDataSources: `${DATASOURCES_BASE_URL}`,
-                removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
-                testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
-                remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
-                viewData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
-                viewDataForMetric: (dataSourceId, metricId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
-                getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`,
-                getAvailableSheets: `${DATASOURCES_BASE_URL}/available-sheets`,
-                updateData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/update-data`,
-                
-                // google sheets specific endpoints
-                integrations: {
-                    getUserTokens: `${DATASOURCES_BASE_URL}/integrations/user-tokens`,
+  audits: {
+    core: {
+      getAudits: `${AUDIT_BASE_URL}`,
+      getUserAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/user`,
+      getWorkspaceAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/workspace`,
+    }
+  },
 
-                    google: {
-                        linkGoogle: `${DATASOURCES_BASE_URL}/integrations/google/link`
-                    },
+  modules: {
+    day_book: {
+      data_sources: {
+          addRemote: `${DATASOURCES_BASE_URL}/remote`,
+          addLocal: `${DATASOURCES_BASE_URL}/local`,
+          update: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+          getDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+          getDataSources: `${DATASOURCES_BASE_URL}`,
+          removeDataSource: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}`,
+          testConnection: `${DATASOURCES_BASE_URL}/test-connection`,
+          remotePreview: `${DATASOURCES_BASE_URL}/preview/remote`,
+          viewData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data`,
+          viewDataForMetric: (dataSourceId, metricId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/view-data-for-metric/${metricId}`,
+          getUploadUrl: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/upload`,
+          getAvailableSheets: `${DATASOURCES_BASE_URL}/available-sheets`,
+          updateData: (dataSourceId) => `${DATASOURCES_BASE_URL}/${dataSourceId}/update-data`,
+          
+          // google sheets specific endpoints
+          integrations: {
+              getUserTokens: `${DATASOURCES_BASE_URL}/integrations/user-tokens`,
 
-                }
-            },
+              google: {
+                  linkGoogle: `${DATASOURCES_BASE_URL}/integrations/google/link`
+              },
+
+          }
+      },
 
       metrics: {
         add: `${METRICS_BASE_URL}`,

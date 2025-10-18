@@ -18,7 +18,7 @@ const Collaboration = () => {
             { label: "Users", description: "Manage users in the workspace", onPress: () => router.push("collaboration/users") },
             { label: "Roles", description: "Manage permissions in the workspace", onPress: () => router.navigate("collaboration/roles") },
             { label: "Invites", description: "Manage invites to the workspace", onPress: () => router.navigate("collaboration/invites") },
-            //{ label: "Workspace Log", description: "Audit log of actions within the workspace", onPress: () => router.navigate("collaboration/workspace-log") }
+            { label: "Workspace Log", description: "Audit log of actions within the workspace", onPress: () => router.navigate("collaboration/workspace-log") }
     ];
 
     return (

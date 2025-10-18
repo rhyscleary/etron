@@ -330,8 +330,6 @@ const DataManagement = () => {
       padded={false}
       scroll={true}
     >
-      {/*Temporary redirect to dashboard screen*/}
-      <Button title="Temporary - Back to Dashboard" onPress={() => router.push("/dashboard")} />
 
       {/* Demo Mode Indicator */}
       {isDemoMode && (
