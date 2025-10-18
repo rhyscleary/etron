@@ -79,9 +79,9 @@ const endpoints = {
 
 	audits: {
 		core: {
-		getAudits: `${AUDIT_BASE_URL}`,
-		getUserAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/user`,
-		getWorkspaceAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/workspace`,
+			getAudits: `${AUDIT_BASE_URL}`,
+			getUserAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/user`,
+			getWorkspaceAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/workspace`,
 		}
 	},
 
