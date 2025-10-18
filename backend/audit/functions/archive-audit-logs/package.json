@@ -1,0 +1,14 @@
+{
+  "name": "archive-audit-logs",
+  "version": "1.0.0",
+  "description": "The backend for eTRON's audit log archiving function",
+  "author": "InSync",
+  "dependencies": {
+    "axios": ">=1.6.0",
+    "uuid": "^11.1.0"
+  },
+  "scripts": {},
+  "main": "archiveHandler.js",
+  "keywords": [],
+  "license": "ISC"
+}

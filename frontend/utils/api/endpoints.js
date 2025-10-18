@@ -10,6 +10,8 @@ const METRICS_BASE_URL =
   "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/metrics";
 const REPORTS_BASE_URL =
   "https://ewkie0rh0a.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/reports";
+const AUDIT_BASE_URL =
+  "https://uc0md4lh38.execute-api.ap-southeast-2.amazonaws.com/dev/audits";
 
 const endpoints = {
 	workspace: {
@@ -73,6 +75,14 @@ const endpoints = {
 		invites: {
 			getUserInvites: `${USER_BASE_URL}/invites`,
 		},
+	},
+
+	audits: {
+		core: {
+			getAudits: `${AUDIT_BASE_URL}`,
+			getUserAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/user`,
+			getWorkspaceAuditsDownloadUrl: `${AUDIT_BASE_URL}/download/workspace`,
+		}
 	},
 
 	modules: {

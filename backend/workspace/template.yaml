@@ -51,6 +51,8 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - DynamoDBCrudPolicy:
+            TableName: AuditLogs
         - Statement:
           - Effect: Allow
             Action:

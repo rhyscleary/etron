@@ -2,22 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FlatList, View, StyleSheet } from "react-native";
-import Header from "../../../../components/layout/Header";
-import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
-import { apiGet } from "../../../../utils/api/apiClient";
-import endpoints from "../../../../utils/api/endpoints";
-import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import Header from "../../../../../components/layout/Header";
+import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import { apiGet } from "../../../../../utils/api/apiClient";
+import endpoints from "../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { List, Text } from "react-native-paper";
-import PlaceholderListItem from "../../../../components/skeleton/PlaceholderListItem";
-import ErrorRetry from "../../../../components/common/errors/ErrorRetry";
-import SearchBar from "../../../../components/common/input/SearchBar";
+import PlaceholderListItem from "../../../../../components/skeleton/PlaceholderListItem";
+import ErrorRetry from "../../../../../components/common/errors/ErrorRetry";
+import SearchBar from "../../../../../components/common/input/SearchBar";
+import { useLocalSearchParams } from "expo-router";
 import { useMemo } from "react";
 import { useTheme } from "react-native-paper";
 
 const AMOUNT_PLACEHOLDERS = 20;
 
-const WorkspaceLog = () => {
+const UserLog = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
+    const { userId } = useLocalSearchParams();
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -25,23 +27,21 @@ const WorkspaceLog = () => {
     const [selectedFilter, setSelectedFilter] = useState("All");
     const [lastKey, setLastKey] = useState(null);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
-    const [usersMap, setUsersMap] = useState({});
     const theme = useTheme();
 
     const availableFilters = ["All", "Login", "Settings", "System", "Created", "Updated"];
 
-    // Fetch workspace and users
+    // Fetch workspace
     useEffect(() => {
         const init = async () => {
         try {
             const id = await getWorkspaceId();
             setWorkspaceId(id);
-            if (id) {
-                await fetchUsers(id);
-                await fetchWorkspaceLogs(id);
+            if (id && userId) {
+                await fetchUserLogs(id, userId);
             }
         } catch (err) {
-            console.error("Failed to initialise Workspace Log screen:", err);
+            console.error("Failed to initialise User Log screen:", err);
             setError(true);
         } finally {
             setLoading(false);
@@ -50,30 +50,11 @@ const WorkspaceLog = () => {
         init();
     }, []);
 
-    // fetch all the users at once
-    const fetchUsers = async (workspaceId) => {
-        try {
-            const response = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
-            if (response.status === 200) {
-            const map = {};
-            response.data.forEach(user => {
-                map[user.userId] = {
-                    ...user,
-                    fullName: `${user.given_name} ${user.family_name}`
-                };
-            });
-            setUsersMap(map);
-            }
-        } catch (err) {
-            console.error("Failed to fetch users:", err);
-        }
-    };
-
-    // Fetch workspace logs
-    const fetchWorkspaceLogs = useCallback(async (workspaceId, startKey = null) => {
+    // Fetch user logs
+    const fetchUserLogs = useCallback(async (workspaceId, userId, startKey = null) => {
         setError(false);
         try {
-            const params = { workspaceId };
+            const params = { workspaceId, userId };
             if (startKey) params.lastKey = startKey; // pagination
 
             const response = await apiGet(endpoints.audits.core.getAudits, params);
@@ -82,7 +63,7 @@ const WorkspaceLog = () => {
                 setError(true);
                 return;
             }
-            console.log(response.data);
+
             const data = response.data?.items || response.data || [];
             const newLastKey = response.data?.lastKey || null;
 
@@ -94,7 +75,7 @@ const WorkspaceLog = () => {
 
             setLastKey(newLastKey);
         } catch (err) {
-            console.error("Failed to fetch workspace logs:", err);
+            console.error("Failed to fetch user logs:", err);
             setError(true);
         }
     }, []);
@@ -103,7 +84,7 @@ const WorkspaceLog = () => {
     const loadMoreLogs = async () => {
         if (!lastKey || isFetchingMore) return;
         setIsFetchingMore(true);
-        await fetchWorkspaceLogs(workspaceId, lastKey);
+        await fetchUserLogs(workspaceId, userId, lastKey);
         setIsFetchingMore(false);
     };
 
@@ -129,13 +110,12 @@ const WorkspaceLog = () => {
     // Render log item
     const renderLogItem = ({ item }) => {
         const timestamp = new Date(item.timestamp).toLocaleString();
-        const userName = usersMap[item.userId]?.fullName || item.userId;
 
         return (
             <View style={[styles.logItemContainer, { backgroundColor: theme.colors.buttonBackground }]}>
                 <View style={styles.logTextContainer}>
                 <Text style={[styles.actionText, { color: theme.colors.onSurface }]}>
-                    {userName} - {item.action}
+                    {item.action}
                 </Text>
                 <Text style={[styles.timestampText, { color: theme.colors.onSurfaceVariant }]}>
                     {timestamp}
@@ -153,7 +133,7 @@ const WorkspaceLog = () => {
 
     return (
         <ResponsiveScreen
-            header={<Header title="Workspace Log" showBack />}
+            header={<Header title="User Log" showBack />}
             center={false}
             padded={false}
             scroll={false}
@@ -170,16 +150,16 @@ const WorkspaceLog = () => {
                     renderPlaceholderList()
                 ) : error ? (
                     <ErrorRetry
-                        message="Failed to load workspace logs."
+                        message="Failed to load user logs."
                         onRetry={async () => {
-                            setLoading(true);
-                            await fetchWorkspaceLogs(workspaceId);
-                            setLoading(false);
+                        setLoading(true);
+                        await fetchUserLogs(workspaceId, userId);
+                        setLoading(false);
                         }}
                     />
                 ) : filteredLogs.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Text>No logs found for this workspace.</Text>
+                        <Text>No logs found for this user.</Text>
                     </View>
                 ) : (
                     <FlatList
@@ -233,4 +213,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default WorkspaceLog;
+export default UserLog;

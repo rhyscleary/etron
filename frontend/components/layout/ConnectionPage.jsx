@@ -18,6 +18,7 @@ import { createDataAdapter } from "../../adapters/day-book/data-sources";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
+import ResponsiveScreen from "./ResponsiveScreen";
 
 // --- Test Connection Section ---
 const TestConnectionSection = ({
@@ -317,8 +318,12 @@ const ConnectionPage = ({
   const canCreate = formIsValid && (!requiresTest || testResponse?.status === 'success') && !isLoading;
 
   return (
-    <View style={commonStyles.screen}>
-      <Header title={title} showBack />
+    <ResponsiveScreen
+      header={<Header title={title} showBack />}
+      center={false}
+      padded
+      scroll={false}
+    >
       <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
         <StackLayout spacing={0}>
           {hasError && (
@@ -392,7 +397,7 @@ const ConnectionPage = ({
         onConfirm={handleDialogConfirm}
         connection={connection}
       />
-    </View>
+    </ResponsiveScreen>
   );
 };
 
