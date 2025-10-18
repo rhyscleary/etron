@@ -35,7 +35,7 @@ const DarkTheme = {
         focusedBackground: '#263e46', // #118AB2 at 20% opacity
 
         altGM: '#F7F7F7',
-        //surface: "#1E1E1E"
+        surface: "#1E1E1E"
     },   
 };
 

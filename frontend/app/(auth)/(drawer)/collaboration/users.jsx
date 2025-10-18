@@ -17,7 +17,7 @@ const Users = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [allRoles, setAllRoles] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [selectedRoles, setSelectedRoles] = useState([]);
     const [groupedUsers, setGroupedUsers] = useState([]);
     const [allUsers, setAllUsers] = useState([]);

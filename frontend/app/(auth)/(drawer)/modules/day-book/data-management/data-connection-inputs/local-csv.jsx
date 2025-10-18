@@ -11,6 +11,7 @@ import { apiPost } from "../../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../../utils/api/endpoints"
 import { router } from 'expo-router';
 import ResponsiveScreen from '../../../../../../../components/layout/ResponsiveScreen';
+import Header from '../../../../../../../components/layout/Header';
 
 const LocalCSV = () => {
     const [deviceFilePath, setDeviceFilePath] = useState(null);
@@ -112,29 +113,31 @@ const LocalCSV = () => {
 
     return (
         <>
-            <ResponsiveScreen>
+            <ResponsiveScreen
+                header = {<Header title="Upload CSV" showBack />}
+            >
                 <Button onPress={userSelectFile} title="Pick a CSV File" disabled={isUploadingData} />
             
-            {dataDetailsStatus == "none" && (
-                <Text>No data selected</Text>
-            )}
-            {dataDetailsStatus == "loading" && (
-                <ActivityIndicator />
-            )}
-            {dataDetailsStatus == "loaded" && (
-                <View>
-                    <TextField 
-                        label = "Source Name"
-                        placeholder = "Source Name"
-                        onChangeText = {setDataSourceName}
-                    />
-                    <RadioButton.Group onValueChange={newValue => setMethod(newValue)} value={method}>
-                        <RadioButton.Item label="Overwrite" value="overwrite" />
-                        <RadioButton.Item label="Extend" value="extend" />
-                    </RadioButton.Group>
-                    <Button onPress={handleFinalise} title="Create Source" disabled={isUploadingData || dataSourceName == ""} />
-                </View>
-            )}
+                {dataDetailsStatus == "none" && (
+                    <Text>No data selected</Text>
+                )}
+                {dataDetailsStatus == "loading" && (
+                    <ActivityIndicator />
+                )}
+                {dataDetailsStatus == "loaded" && (
+                    <View>
+                        <TextField 
+                            label = "Source Name"
+                            placeholder = "Source Name"
+                            onChangeText = {setDataSourceName}
+                        />
+                        <RadioButton.Group onValueChange={newValue => setMethod(newValue)} value={method}>
+                            <RadioButton.Item label="Overwrite" value="overwrite" />
+                            <RadioButton.Item label="Extend" value="extend" />
+                        </RadioButton.Group>
+                        <Button onPress={handleFinalise} title="Create Source" disabled={isUploadingData || dataSourceName == ""} />
+                    </View>
+                )}
             </ResponsiveScreen>
             
         </>

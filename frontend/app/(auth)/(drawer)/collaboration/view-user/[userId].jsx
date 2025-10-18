@@ -48,7 +48,6 @@ const ViewUser = () => {
     const loadUser = useCallback(async () => {
         setLoading(true);
         const userType = await getUserType();
-        console.log("userType:", userType);
         const workspaceId = await getWorkspaceId();
 
         let user = {};
