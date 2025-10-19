@@ -179,7 +179,7 @@ const GraphTypes = {
     area: {
         label: "Area Chart",
         value: "area",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+        previewImage: require("../../../../../../assets/images/areaChart.png"),
         render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -254,7 +254,7 @@ const GraphTypes = {
     scatter: {
         label: "Scatter Plot",
         value: "scatter",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+        previewImage: require("../../../../../../assets/images/scatterPlot.png"),
         render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -324,7 +324,7 @@ const GraphTypes = {
     box: {
         label: "Box Plot",
         value: "box",
-              previewImage: require("../../../../../../assets/images/placeholder.png"),
+              previewImage: require("../../../../../../assets/images/boxPlot.png"),
         render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
               const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -395,7 +395,7 @@ const GraphTypes = {
     histogram: {
         label: "Histogram",
         value: "histogram",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+        previewImage: require("../../../../../../assets/images/histogram.png"),
         render: ({ data, xKey, colours }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -461,7 +461,7 @@ const GraphTypes = {
     progress: {
     label: "Progress Bar",
     value: "progress",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+        previewImage: require("../../../../../../assets/images/progressCircle.png"),
     render: ({ data, yKeys, colours }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -518,7 +518,7 @@ const GraphTypes = {
 progress: {
     label: "Progress Circle",
     value: "progress",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+        previewImage: require("../../../../../../assets/images/progressCircle.png"),
     render: ({ data, yKeys, colours }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -580,7 +580,7 @@ progress: {
     numbers: {
     label: "Numbers",
     value: "numbers",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+        previewImage: require("../../../../../../assets/images/numbers.png"),
     render: ({ data, yKeys, colours }) => {
         const ChartComponent = () => {
             if (!data || data.length === 0 || !yKeys || yKeys.length === 0) {

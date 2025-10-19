@@ -122,13 +122,14 @@ const metricCardList = (loadingMetrics, metrics) => {
                             <Card
                                 style={{
                                     borderRadius: 5,
-                                    paddingVertical: 10
+                                    padding: 10,
+                                    overflow: "hidden"
                                 }}
                             >
                                 {previewImage && (
                                     <Card.Cover
                                         source={previewImage}
-                                        style={{ height: 150, backgroundColor: theme.colors.placeholder, opacity: 0.5 }}
+                                        style={{ height: 100, backgroundColor: theme.colors.placeholder, opacity: 0.5 }}
                                     />
                                 )}
                                 <Card.Content
