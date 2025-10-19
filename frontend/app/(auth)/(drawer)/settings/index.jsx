@@ -84,7 +84,7 @@ const Settings = () => {
                         description={item.description}
                         onPress={item.onPress}
                     />
-            ))}
+                ))}
             </StackLayout>
         </ResponsiveScreen>
     )

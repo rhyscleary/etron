@@ -7,26 +7,34 @@ import RNHTMLtoPDF from "react-native-html-to-pdf";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
-import { Portal, Dialog, Button } from "react-native-paper";
-import { useLocalSearchParams } from "expo-router";
+import { Portal, Dialog, Button, useTheme } from "react-native-paper";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../../../../utils/api/apiClient";
 import { uploadUpdatedReport } from "../../../../../../../utils/reportUploader";
+import { createNewTemplate, uploadUpdatedTemplate } from "../../../../../../../utils/templateUploader";
+import { uploadExportFile } from "../../../../../../../utils/exportUploader";
+import CustomBottomSheet from "../../../../../../../components/BottomSheet/bottom-sheet";
 
 const EditReport = () => {
   const { draftId } = useLocalSearchParams();
+  const router = useRouter();
   const [editorContent, setEditorContent] = useState("");
   const [dialogVisible, setDialogVisible] = useState(false);
+  const [templateDialogVisible, setTemplateDialogVisible] = useState(false);
   const [fileName, setFileName] = useState("Report");
+  const [templateName, setTemplateName] = useState("Untitled Template");
   const [reportId, setReportId] = useState(null);
   const [workspaceId, setWorkspaceId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const webViewRef = useRef(null);
-  // track whether we've sent initial content to the webview to avoid repeated sends
   const initSentRef = useRef(false);
+  const theme = useTheme();
 
+  // Fetch workspace ID
   useEffect(() => {
     const fetchWorkspaceId = async () => {
       try {
@@ -39,7 +47,7 @@ const EditReport = () => {
     fetchWorkspaceId();
   }, []);
 
-  // If draftId is not "new", fetch existing draft metadata and file
+  // Fetch draft
   useEffect(() => {
     const fetchDraft = async () => {
       if (!draftId || !workspaceId) return;
@@ -51,7 +59,6 @@ const EditReport = () => {
         );
 
         const draft = response.data;
-
         if (!draft) return;
 
         setReportId(draft.draftId);
@@ -70,22 +77,8 @@ const EditReport = () => {
     fetchDraft();
   }, [draftId, workspaceId]);
 
-  /*
-    Important note about the editor and the typing bug:
-    - Previously we injected `editorContent` into the editor HTML string directly.
-    - That caused the WebView's source to change on every keystroke (because state updated),
-      which reinitialized Pell and kicked focus out of the editor.
-    - Fix: keep the Pell HTML static (don't embed editorContent into the source).
-      Send the current HTML into the WebView via postMessage only once when entering edit mode
-      (or when the webview finishes loading). The webview receives the message and sets the editor content.
-    - While editing the editor will post messages to React Native on every change; we update editorContent
-      in state, but since we are not re-rendering the WebView source with that value, Pell stays mounted
-      and focus is preserved while typing.
-  */
-
-  // Edit mode HTML: static template (no editorContent embedded)
-  const pellHtml = useMemo(() => {
-    return `
+  // Editor HTML
+  const pellHtml = useMemo(() => `
     <!DOCTYPE html>
     <html>
       <head>
@@ -104,159 +97,104 @@ const EditReport = () => {
         <script src="https://unpkg.com/pell"></script>
         <script>
           (function () {
-            // initialize Pell editor once
             const editor = window.pell.init({
               element: document.getElementById('editor'),
               onChange: html => {
-                // send html back to React Native
-                try {
-                  window.ReactNativeWebView.postMessage(html);
-                } catch (e) {
-                  // fallback for older RN WebView bridges
-                  window.postMessage(JSON.stringify({ type: 'edit', html }), '*');
-                }
+                try { window.ReactNativeWebView.postMessage(html); } catch (e) {}
               },
               defaultParagraphSeparator: 'p',
               styleWithCSS: true
             });
 
-            // function to set content (used when React Native sends initial HTML)
             function setContent(html) {
               editor.content.innerHTML = html || '';
-              // move caret to end (so user can continue typing)
-              try {
-                const range = document.createRange();
-                range.selectNodeContents(editor.content);
-                range.collapse(false);
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-              } catch (err) {
-                // ignore if selection APIs aren't available
-              }
+              const range = document.createRange();
+              range.selectNodeContents(editor.content);
+              range.collapse(false);
+              const sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(range);
             }
 
-            // receive messages from React Native
             function receiveMessage(event) {
-              let data = event && event.data;
-              try {
-                if (typeof data === 'string') {
-                  // some bridges send raw stringified JSON
-                  data = JSON.parse(data);
-                }
-              } catch (e) {
-                // if parsing fails, treat data as plain string content
-              }
-
-              if (!data) return;
-
-              if (data.type === 'init' || data.type === 'load') {
-                setContent(data.html || data.content || '');
-                // notify RN we've loaded the content
-                try {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'loaded' }));
-                } catch (e) {
-                  window.postMessage(JSON.stringify({ type: 'loaded' }), '*');
-                }
-              }
+              let data = event.data;
+              try { data = JSON.parse(data); } catch (e) {}
+              if (data?.type === 'init' || data?.type === 'load') setContent(data.html || data.content || '');
             }
 
-            // multiple event listeners for compatibility
-            document.addEventListener('message', receiveMessage, false);
-            window.addEventListener('message', receiveMessage, false);
-
-            // expose setContent for debugging if needed
-            window.__setEditorContent = setContent;
+            document.addEventListener('message', receiveMessage);
+            window.addEventListener('message', receiveMessage);
           })();
         </script>
       </body>
     </html>
-    `;
-  }, []); // static, do not rebuild on editorContent changes
+  `, []);
 
-  // Read only HTML (we do embed editorContent here because read-only mode does not reinitialize Pell)
-  const readOnlyHtml = useMemo(() => {
-    return `
+  const readOnlyHtml = useMemo(() => `
     <!DOCTYPE html>
     <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body { font-family:sans-serif; padding:12px; }
-        </style>
-      </head>
-      <body>
-        ${editorContent || "<p><i>No content</i></p>"}
-      </body>
+      <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>body{font-family:sans-serif;padding:12px;}</style></head>
+      <body>${editorContent || "<p><i>No content</i></p>"}</body>
     </html>
-    `;
-  }, [editorContent]);
+  `, [editorContent]);
 
-  // Helper to send the current HTML into the WebView editor only when needed
+  // Initialize editor
   const sendInitToWebView = (html) => {
     if (!webViewRef.current) return;
     try {
-      webViewRef.current.postMessage(JSON.stringify({ type: 'init', html: html || '' }));
+      webViewRef.current.postMessage(JSON.stringify({ type: "init", html: html || "" }));
       initSentRef.current = true;
-    } catch (err) {
-      // sometimes postMessage may throw if the webview isn't ready; try again shortly
-      setTimeout(() => {
-        try {
-          webViewRef.current?.postMessage(JSON.stringify({ type: 'init', html: html || '' }));
-          initSentRef.current = true;
-        } catch (e) {
-          console.warn("Failed to post init to WebView:", e);
-        }
-      }, 200);
-    }
+    } catch {}
   };
 
-  // When we enter edit mode, send the latest editorContent into the webview
   useEffect(() => {
-    if (!isEditing) {
-      // reset initSentRef so next time we enter edit mode it will send again
-      initSentRef.current = false;
-      return;
-    }
-
-    // If already sent for this content, skip; otherwise send.
-    if (!initSentRef.current) {
-      // give the webview a moment to mount
+    if (isEditing && !initSentRef.current) {
       setTimeout(() => sendInitToWebView(editorContent), 120);
     }
   }, [isEditing, editorContent]);
 
-  // onLoadEnd handler to ensure the webview gets the initial content when it finishes loading
   const handleWebViewLoadEnd = () => {
-    if (isEditing && !initSentRef.current) {
-      sendInitToWebView(editorContent);
-    }
+    if (isEditing && !initSentRef.current) sendInitToWebView(editorContent);
   };
 
-  const exportAsPDF = async (customFileName) => {
+  // ✅ Generate and upload PDF
+  const exportAsPDF = async (customFileName, upload = false) => {
     try {
-      const file = await RNHTMLtoPDF.convert({
+      console.log(`[ExportUploader] Generating PDF for export...`);
+      const pdf = await RNHTMLtoPDF.convert({
         html: editorContent || "<p>No content</p>",
         fileName: "temp_report",
         base64: false,
       });
 
-      const downloadDir =
-        Platform.OS === "android"
-          ? RNFS.DownloadDirectoryPath
-          : RNFS.DocumentDirectoryPath;
+      console.log(`[ExportUploader] PDF generated: ${pdf.filePath}`);  
 
-      const destPath = `${downloadDir}/${customFileName}.pdf`;
+      if (upload) {
+        console.log(`[ExportUploader] Uploading PDF to server...`);
+        const success = await uploadExportFile({
+          workspaceId,
+          draftId,
+          filePath: pdf.filePath,
+          exportName: customFileName,
+          fileType: "pdf"
+        });
 
-      if (await RNFS.exists(destPath)) {
-        await RNFS.unlink(destPath);
+        if (success) {
+          console.log(`[ExportUploader] Export uploaded successfully.`);
+          Alert.alert("Success", "Export uploaded successfully.");
+        } else {
+          console.error(`[ExportUploader] Upload failed.`);
+          Alert.alert("Error", "Failed to upload export.");
+        }
+      } else {
+        const destPath = `${Platform.OS === "android" ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath}/${customFileName}.pdf`;
+        if (await RNFS.exists(destPath)) await RNFS.unlink(destPath);
+        await RNFS.moveFile(pdf.filePath, destPath);
+        Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
       }
-      await RNFS.moveFile(file.filePath, destPath);
-
-      Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
     } catch (err) {
-      console.error("PDF export failed:", err);
-      Alert.alert("Error", "Could not export PDF.");
+      console.error(`[ExportUploader] Export failed:`, err);
+      Alert.alert("Error", "Export failed.");
     }
   };
 
@@ -270,85 +208,75 @@ const EditReport = () => {
       Alert.alert("Error", "Missing workspace or draft ID.");
       return;
     }
-
-    const success = await uploadUpdatedReport({
-      workspaceId,
-      reportId: draftId,
-      reportName: fileName,
-      editorContent
-    });
-
+    const success = await uploadUpdatedReport({ workspaceId, reportId: draftId, reportName: fileName, editorContent });
     if (success) {
       Alert.alert("Success", "Report updated successfully");
-      setIsEditing(false); // exits edit mode after saving
-      // reset initSentRef so next time entering edit mode we will re-send content
+      setIsEditing(false);
       initSentRef.current = false;
     }
   };
 
+  const handleSaveAsTemplate = async () => {
+    if (!workspaceId) return Alert.alert("Error", "Missing workspace ID.");
+    setTemplateDialogVisible(true);
+  };
+
+  const confirmSaveTemplate = async () => {
+    setTemplateDialogVisible(false);
+    try {
+      const newTemplateId = await createNewTemplate({ workspaceId, templateName });
+      if (newTemplateId) {
+        const success = await uploadUpdatedTemplate({ workspaceId, templateId: newTemplateId, templateName, editorContent });
+        if (success) {
+          Alert.alert("Success", "Template saved successfully");
+          setIsEditing(false);
+          initSentRef.current = false;
+          router.push(`/modules/day-book/reports/edit-template/${newTemplateId}`);
+        } else {
+          Alert.alert("Error", "Template created but failed to upload content");
+        }
+      } else {
+        Alert.alert("Error", "Failed to create template");
+      }
+    } catch (err) {
+      console.error("Failed to save as template:", err);
+      Alert.alert("Error", "Failed to save as template");
+    }
+  };
+
   return (
-    <View style={commonStyles.screen}>
+    <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
       <Header
         title={reportId ? "Edit Report" : "New Report"}
         showBack
+        showEdit={!isEditing}
         showCheck={isEditing}
         showEllipsis
-        onRightIconPress={isEditing ? handleSaveReport : undefined}
+        onRightIconPress={() => (isEditing ? handleSaveReport() : setIsEditing(true))}
+        onEllipsisPress={() => setSheetVisible(true)}
       />
 
-      {/* Buttons row */}
-      <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.exportButton} onPress={() => setDialogVisible(true)}>
-          <Text style={styles.exportButtonText}>Export PDF</Text>
-        </TouchableOpacity>
-
-        {!isEditing && (
-          <TouchableOpacity style={styles.editButton} onPress={() => setIsEditing(true)}>
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
-        )}
-
-        {isEditing && (
-          <TouchableOpacity style={styles.saveButton} onPress={handleSaveReport}>
-            <Text style={styles.saveButtonText}>{reportId ? "Update" : "Save"} Report</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
       <WebView
-        // key toggles so WebView reloads when switching modes (ensures correct HTML template)
         key={isEditing ? "editor" : "viewer"}
         ref={webViewRef}
-        originWhitelist={['*']}
+        originWhitelist={["*"]}
         source={{ html: isEditing ? pellHtml : readOnlyHtml }}
         style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
-        onMessage={(event) => {
-          // Pell sends plain HTML string on change. Only update state (do NOT re-inject into WebView).
-          if (!isEditing) return;
-          try {
-            // If message is JSON (e.g. our 'loaded' message), handle accordingly
-            const data = event.nativeEvent.data;
-            // detect our loaded message optionally
-            try {
-              const maybeJson = JSON.parse(data);
-              if (maybeJson && maybeJson.type === 'loaded') {
-                // ignore or use as a hook if needed
-                return;
-              }
-            } catch (e) {
-              // not JSON - that's likely the HTML content
-            }
-            setEditorContent(event.nativeEvent.data);
-          } catch (err) {
-            console.warn("Failed to process onMessage from WebView:", err);
-          }
-        }}
+        onMessage={(e) => isEditing && setEditorContent(e.nativeEvent.data)}
         onLoadEnd={handleWebViewLoadEnd}
       />
 
-      {/* Export dialog */}
+      {/* ✅ Test button for upload */}
+      <TouchableOpacity
+        style={styles.testButton}
+        onPress={() => exportAsPDF(fileName, true)}
+      >
+        <Text style={{ color: "#fff" }}>Test Upload Export</Text>
+      </TouchableOpacity>
+
+      {/* Dialogs */}
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)}>
           <Dialog.Title>Export PDF</Dialog.Title>
@@ -361,43 +289,65 @@ const EditReport = () => {
             <Button onPress={handleExport}>Export</Button>
           </Dialog.Actions>
         </Dialog>
+
+        <Dialog visible={templateDialogVisible} onDismiss={() => setTemplateDialogVisible(false)}>
+          <Dialog.Title>Save as Template</Dialog.Title>
+          <Dialog.Content>
+            <Text>Enter template name:</Text>
+            <TextInput style={styles.input} value={templateName} onChangeText={setTemplateName} />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setTemplateDialogVisible(false)}>Cancel</Button>
+            <Button onPress={confirmSaveTemplate}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
+
+      {sheetVisible && (
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setSheetVisible(false)} />
+      )}
+
+      {sheetVisible && (
+        <CustomBottomSheet
+          variant="standard"
+          header={{ showClose: false, solidBackground: true }}
+          footer={{ variant: "minimal", placement: "right" }}
+          onClose={() => setSheetVisible(false)}
+          data={[
+            { label: "Export as PDF", onPress: () => { setDialogVisible(true); setSheetVisible(false); } },
+            { label: "Save Report", onPress: () => { handleSaveReport(); setSheetVisible(false); } },
+            { label: "Save as Template", onPress: () => { handleSaveAsTemplate(); setSheetVisible(false); } },
+          ]}
+          itemTitleExtractor={(item) => item.label}
+          onItemPress={(item) => {
+            if (typeof item.onPress === "function") item.onPress();
+          }}
+        />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  exportButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  exportButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
-  editButton: {
-    backgroundColor: "#FF9500",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-  },
-  editButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
-  saveButton: {
-    backgroundColor: "#34C759",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 6,
-  },
-  saveButtonText: { color: "white", fontSize: 14, fontWeight: "600" },
   webview: { flex: 1 },
   input: {
-    borderWidth: 1, borderColor: "#ccc", padding: 8, marginTop: 10, borderRadius: 5,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    padding: 8,
+    marginTop: 10,
+    borderRadius: 5,
+  },
+  overlay: {
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.3)",
+  },
+  testButton: {
+    backgroundColor: "#007AFF",
+    padding: 12,
+    alignItems: "center",
+    margin: 12,
+    borderRadius: 8,
   },
 });
 
