@@ -156,7 +156,7 @@
             {
               "key": "modules.daybook.reports.manage_exports",
               "label": "Manage Exports",
-              "description": "Allows managing report exports",
+              "description": "Allows managing exports",
               "defaultStatus": false
             },
             {
