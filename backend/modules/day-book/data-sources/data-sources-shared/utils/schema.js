@@ -52,46 +52,57 @@ function generateSchema(data) {
     const schema = {};
     for (const row of sampleData) {
         for (const [column, value] of Object.entries(row)) {
-            if (!schema[column]) {
-                schema[column] = deduceType(value);
-            } else {
-                // fallback to string
-                const deducedType = deduceType(value);
-                if (schema[column] !== deducedType) {
-                    schema[column] = "string";
-                }
+            if (value == null || value === "") continue;
 
+            const deducedType = deduceType(value, column);
+
+            if (!schema[column]) {
+                schema[column] = deduceType;
+            } else if (schema[column] !== deducedType) {
+                // fallback to string
+                schema[column] = "string";
             }
         }
+    }
+
+    for (const key of Object.keys(schema)) {
+        if (!schema[key]) schema[key] = "string";
     }
 
     return Object.entries(schema).map(([name, type]) => ({ name, type }));
 }
 
 function deduceType(value, columnName = "") {
+    if (value == null) return "string";
 
     if (typeof value === "number") {
         return Number.isInteger(value) ? "bigint" : "double";
-    } else if (typeof value === "boolean") {
+    }
+
+    if (typeof value === "boolean") {
         return "boolean";
-    } else if (typeof value === "string") {
+    }
+
+    if (typeof value === "string") {
         const trimmed = value.trim();
-        // numeric strings
-        if (!isNaN(trimmed) && trimmed !== "") {
+        if (trimmed === "") return "string";
+
+        // check for ISO timestamps
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(trimmed)) {
+            return "timestamp";
+        }
+
+        // check for numeric
+        if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
             if (trimmed.includes(".")) {
-                if (isMoneyField(columnName)) {
-                    return "decimal(18,2)";
-                }
-                return "double";
+                return isMoneyField(columnName) ? "decimal(18,2)" : "double";
             }
             return "bigint";
         }
-    
-        // strings that look like timestamps
-        if (!isNaN(Date.parse(value))) {
-            return "timestamp";
-        }
+
+        return "string";
     }
+
     return "string";
 }
 

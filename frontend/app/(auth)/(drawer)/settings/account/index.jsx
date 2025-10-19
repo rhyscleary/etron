@@ -10,8 +10,9 @@ import { useEffect, useState } from "react";
 import { apiDelete } from '../../../../../utils/api/apiClient';
 import BasicDialog from '../../../../../components/overlays/BasicDialog';
 import { useTheme } from "react-native-paper";
-import { useVerification } from '../../../../../components/layout/VerificationContext';
+import { useVerification } from '../../../../../contexts/VerificationContext';
 import { verifyPassword } from '../../../../../utils/verifyPassword';
+import endpoints from '../../../../../utils/api/endpoints';
 
 import {
     getCurrentUser,
@@ -20,6 +21,7 @@ import {
 } from 'aws-amplify/auth';
 import BasicButton from '../../../../../components/common/buttons/BasicButton';
 import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
+import { getWorkspaceId } from '../../../../../storage/workspaceStorage';
 
 const Account = () => {
     const theme = useTheme();
@@ -66,8 +68,15 @@ const Account = () => {
         }
 
         try {
-            // delete the user from Cognito and reset the app state
-            await deleteUser();
+            const workspaceId = await getWorkspaceId();
+            const { userId } = await getCurrentUser();
+            try {  // Deletes user details from workspace
+                await apiDelete(endpoints.workspace.users.remove(workspaceId, userId));
+            } catch (error) {
+                console.log("Error deleting user details in workspace:", error);
+                return;
+            }
+            await deleteUser();  // Deletes user from Cognito
             setDialogVisible(false);
             router.dismissAll();
             router.replace("/landing");

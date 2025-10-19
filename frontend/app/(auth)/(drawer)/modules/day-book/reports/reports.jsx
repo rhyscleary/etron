@@ -43,7 +43,8 @@ const Reports = () => {
     try {
       setLoading(true);
       const draftsResult = await apiGet(
-        endpoints.modules.day_book.reports.drafts.getDrafts(workspaceId)
+        endpoints.modules.day_book.reports.drafts.getDrafts,
+        { workspaceId }
       );
       const result = draftsResult.data;
       setReports(Array.isArray(result) ? result : []);

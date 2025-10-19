@@ -37,6 +37,14 @@ Resources:
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
+
+  AuditDomainFunctions:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./audit/template.yaml
+      Parameters:
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        WorkspaceBucketName: !Ref WorkspaceBucketName
         
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack

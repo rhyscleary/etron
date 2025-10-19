@@ -43,6 +43,9 @@ Resources:
     Properties:
       CodeUri: ./data-sources/functions/data-source-core
       Handler: dataSourceHandler.handler
+      Environment:
+        Variables:
+          POLLING_LAMBDA_NAME: !Ref DataSourcePollFunction
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
@@ -53,6 +56,10 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: WorkspaceUsers
         - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !GetAtt DataSourcePollFunction.Arn
             - Effect: Allow
               Action:
                 - ssm:GetParameter
@@ -122,6 +129,13 @@ Resources:
           Properties:
             Path: /day-book/data-sources/{dataSourceId}
             Method: patch
+            RestApiId: !Ref eTRONApi
+
+        UpdateDataSourceData:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/update-data
+            Method: put
             RestApiId: !Ref eTRONApi
 
         GetDataSourceById:
@@ -455,10 +469,54 @@ Resources:
             Method: get
             RestApiId: !Ref eTRONApi
 
+  DataSourcePollInitialiser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources/functions/polling/data-source-poller-initialiser
+      Handler: initialiserHandler.handler
+      Timeout: 30
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !GetAtt DataSourcePollingStateMachine.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - S3WritePolicy:
+            BucketName: !Ref WorkspaceBucketName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - states:StartExecution
+              Resource: !Ref DataSourcePollingStateMachine
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+                - s3:GetBucketLocation
+                - s3:HeadObject
+              Resource: "*"
+
+      Events:
+        PollSchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(15 minutes)
+
   DataSourcePollFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources/functions/data-source-poller
+      CodeUri: ./data-sources/functions/polling/data-source-poller
       Handler: dataSourcePollHandler.handler
       Timeout: 900
       Policies:
@@ -505,14 +563,55 @@ Resources:
                 - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
                 - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
                 - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
-            
 
-      Events:
-        PollEvent:
-          Type: Schedule
-          Properties:
-            Schedule: rate(15 minutes)
-            Name: DataSourcePollSchedule
+  DataSourcePollingStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt DataSourcePollingStateMachineRole.Arn
+      DefinitionString: !Sub |
+        {
+          "StartAt": "PollDataSources",
+          "States": {
+            "PollDataSources": {
+              "Type": "Map",
+              "ItemsPath": "$.dataSources",
+              "MaxConcurrency": 10,
+              "Iterator": {
+                "StartAt": "PollAndSave",
+                "States": {
+                  "PollAndSave": {
+                    "Type": "Task",
+                    "Resource": "${DataSourcePollFunction.Arn}",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        }
+
+  DataSourcePollingStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AllowInvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: 
+                  - !GetAtt DataSourcePollFunction.Arn
+                  - !Sub "${DataSourcePollFunction.Arn}:*"
 
   DataSourceUploadProcessorFunction:
     Type: AWS::Serverless::Function

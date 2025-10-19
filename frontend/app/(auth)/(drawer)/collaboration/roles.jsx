@@ -54,7 +54,7 @@ const Roles = () => {
             }
 			center={false}
 			padded={false}
-            scroll={true}
+            scroll={false}
 		>
 
             <FlatList

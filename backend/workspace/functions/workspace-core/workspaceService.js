@@ -3,9 +3,10 @@
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const appConfigRepo = require("@etron/shared/repositories/appConfigBucketRepository");
-const { getUserById, updateUser } = require("@etron/shared/utils/auth");
+const { getUserById } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/audit-shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -174,7 +175,7 @@ async function createWorkspace(authUserId, data) {
     };
 }
 
-async function updateWorkspace(authUserId, workspaceId, payload) {;
+async function updateWorkspace(authUserId, workspaceId, payload) {
     const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.UPDATE);
 
     if (!isAuthorised) {
@@ -205,37 +206,17 @@ async function updateWorkspace(authUserId, workspaceId, payload) {;
         throw new Error("Workspace not found");
     }
 
-    return workspaceRepo.updateWorkspace(workspaceId, payload);
-}
+    const updatedWorkspace = await workspaceRepo.updateWorkspace(workspaceId, payload);
 
-async function deleteWorkspace(authUserId, workspaceId) {
-    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.DELETE);
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated workspace details",
+        type: "SETTINGS"
+    });
 
-    if (!isAuthorised) {
-        throw new Error("User does not have permission to perform action");
-    }
-
-    const workspace = await workspaceRepo.getWorkspaceById(workspaceId);
-
-    if (!workspace) {
-        throw new Error("Workspace not found");
-    }
-
-    if (authUserId !== workspace.ownerId) {
-        throw new Error("Unauthorised user");
-    }
-
-    // get all users in workspace
-    const users = await workspaceUsersRepo.getUsersByWorkspaceId(workspaceId);
-
-    // set has_workspace to false
-    for (const user of users) {
-        await updateUser(user.userId, { "custom:has_workspace": "false" });
-    }
-
-    await workspaceRepo.removeWorkspace(workspaceId);
-
-    return {message: "Workspace successfully deleted"};
+    return updatedWorkspace;
 }
 
 async function getWorkspaceByWorkspaceId(workspaceId) {
@@ -347,7 +328,6 @@ async function getWorkspacePermissions() {
 module.exports = {
     createWorkspace,
     updateWorkspace,
-    deleteWorkspace,
     getWorkspaceByWorkspaceId,
     getWorkspaceByUserId,
     transferWorkspaceOwnership,

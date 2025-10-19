@@ -10,7 +10,7 @@ const Divider = ({ thickness = 2, color, style }) => {
         styles.divider,
         {
           height: thickness,
-          backgroundColor: color ?? theme.colors.outline,
+          backgroundColor: color ?? theme.colors.text,
         },
         style
       ]}

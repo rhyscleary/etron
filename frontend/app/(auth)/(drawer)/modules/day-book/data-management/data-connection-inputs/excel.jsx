@@ -23,7 +23,7 @@ const Excel = () => {
             demoModeMessage="Using sample Excel files for development"
             enablePersistentConnection={true}
             dataSourceName="My Excel Connection"
-            dataManagementPath="/modules/day-book/data-management/data-management"
+            dataManagementPath="/modules/day-book/data-management"
         />
     );
 };

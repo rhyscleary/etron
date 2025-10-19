@@ -3,7 +3,7 @@
 import { useRouter, Link, useLocalSearchParams } from "expo-router";
 import { Text } from 'react-native-paper';
 import { useEffect, useState } from "react";
-import { View, Linking } from 'react-native';
+import { View, Linking, Modal, TextInput } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
@@ -12,7 +12,9 @@ import MicrosoftButton from '../components/common/buttons/MicrosoftButton';
 import Divider from "../components/layout/Divider";
 import { commonStyles } from "../assets/styles/stylesheets/common";
 import ResponsiveScreen from "../components/layout/ResponsiveScreen";
-
+import accountService from '../services/AccountService';
+import { Amplify } from 'aws-amplify';
+import { useApp } from "../contexts/AppContext";
 import { 
     signIn, 
     signUp, 
@@ -28,15 +30,15 @@ import {
 import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../storage/workspaceStorage";
-import { saveUserInfo } from "../storage/userStorage";
 import VerificationDialog from "../components/overlays/VerificationDialog";
 
 //Amplify.configure(awsmobile);
 
 function LoginSignup() {
-    const { email: emailParam, isSignUp, link } = useLocalSearchParams();
+    const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
     const isSignUpBool = isSignUp === 'true';
     const isLinking = link === 'true';
+    const fromAccountsBool = fromAccounts === 'true';
 
     const [email, setEmail] = useState(emailParam || "");
     const [password, setPassword] = useState('');
@@ -46,45 +48,53 @@ function LoginSignup() {
     const [verificationCode, setVerificationCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [socialLoading, setSocialLoading] = useState({ google: false, microsoft: false });
-    const [signedOutForLinking, setSignedOutForLinking] = useState(!isLinking); // true if not linking
-    const [resendCooldown, setResendCooldown] = useState(0);
-    const [verificationError, setVerificationError] = useState('');
+    const [signedOutForLinking, setSignedOutForLinking] = useState(!isLinking);
 
     const router = useRouter();
     const theme = useTheme();
 
-    useEffect(() => {
-        let interval;
-        if (resendCooldown > 0) {
-            interval = setInterval(() => {
-                setResendCooldown(current => current - 1);
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [resendCooldown]);
+    const { user, actions } = useApp();
 
+    // Setup AccountService callbacks
     useEffect(() => {
-        if (showVerificationModal && email && resendCooldown === 0 && verificationError) {
-            handleResend();
-        }
-    }, [showVerificationModal]);
+        accountService.setCallbacks({
+            onMessage: (msg, isError) => {
+                setMessage(msg);
+            },
+            onSocialLoadingChange: (loadingState) => {
+                setSocialLoading(loadingState);
+            },
+            onNavigate: (path, params) => {
+                if (params) {
+                    router.push({ pathname: path, params });
+                } else {
+                    router.push(path);
+                }
+            },
+            onAuthSuccess: async (provider) => {
+                // Use the unified login action from context
+                await actions.login(provider);
+            }
+        });
+    }, [router, actions.login]);
 
+    // Handle sign out for linking
     useEffect(() => {
         if (isLinking && !signedOutForLinking) {
             (async () => {
-                try {
-                    await signOut();
+                const result = await accountService.signOutUser();
+                if (result.success) {
                     setSignedOutForLinking(true);
                     console.log("Signed out for linking.");
-                } catch (err) {
-                    console.error("Error signing out before linking:", err);
+                    setMessage("Ready to link a new account. Please sign in below.");
+                } else {
                     setMessage("Error signing out previous user. Please try again.");
                 }
             })();
         }
     }, [isLinking, signedOutForLinking]);
 
-    // handle deep link return from the social providers
+    // Setup deep link handling
     useEffect(() => {
         const handleDeepLink = async (objectUrl) => {
             console.log('Deep link received:', objectUrl);
@@ -143,7 +153,7 @@ function LoginSignup() {
                                     // save locally and go to profile screen
                                     await saveWorkspaceInfo(workspace.data);
                                     router.dismissAll();
-                                    router.replace("(auth)/dashboard");
+                                    router.replace("(auth)/authenticated-loading");
                                 } catch (error) {
                                     console.error("Error fetching workspace:", error);
                                     setMessage("Unable to locate workspace. Please try again."); 
@@ -151,7 +161,7 @@ function LoginSignup() {
                             }
 
                             router.dismissAll();
-                            router.replace("(auth)/dashboard");
+                            router.replace("(auth)/authenticated-loading");
 
                         } catch (error) {
                             console.error('No authenticated user found after social sign-in');
@@ -215,7 +225,6 @@ function LoginSignup() {
         setLoading(true);
         setMessage('');
         try {
-
             try {
                 const currentUser = await safeGetCurrentUser();
                 if (currentUser) {
@@ -279,7 +288,7 @@ function LoginSignup() {
                         // save locally and go to profile screen
                         await saveWorkspaceInfo(workspace.data);
                         router.dismissAll();
-                        router.replace("(auth)/dashboard");
+                        router.replace("(auth)/authenticated-loading");
                     } catch (error) {
                         console.error("Error fetching workspace:", error);
                         setMessage("Unable to locate workspace. Please try again."); 
@@ -287,9 +296,14 @@ function LoginSignup() {
                 }
             }
         } catch (error) {
-            console.error("Sign in error:", error);
-            setMessage(`Error: ${error.message}`);
-            await signOut();
+            if (error.message.includes("Incorrect username or password")) {
+                setMessage(`Incorrect username or password.`);
+                await signOut();
+                return;
+            } else {
+                console.error("Sign in error:", error);
+                await signOut();
+            }
         } finally {
             setLoading(false);
         }
@@ -297,166 +311,126 @@ function LoginSignup() {
 
     const handleSignUp = async () => {
         setMessage('');
-        try {
-            if (password !== confirmPassword) {
-                setMessage("Error: Passwords do not match.");
-                return;
-            }
-
-            await signUp({
-                username: email,
-                password,
-                options: {
-                    userAttributes: {
-                        email,
-                        'custom:has_workspace': `false`
-                    }
-                }
-            });
-            setMessage("Sign up successful! Check your email to confirm.");
+        
+        const result = await accountService.signUpWithEmail(email, password, confirmPassword);
+        
+        if (result.success) {
             setShowVerificationModal(true);
-        } catch (error) {
-            if (error.toString().split(":")[0] == "UsernameExistsException") {
-                setMessage("An account with that email already exists. Try signing in instead.");
-            } else {
-                console.error('Error signing up:', error);
-                setMessage(`Error: ${error.message}`);
-            }
-        }
+        } 
+        // TODO: fix merge file mismatch (login-signup, datamanagement, ... red page ?):
+        /*catch (error) {
+            console.error('Error signing up:', error);
+            setMessage(`Error: ${error.message}`);
+        }*/
     };
 
     const handleGoogleSignIn = async () => {
-        setSocialLoading({ ...socialLoading, google: true });
-        setMessage('');
+        const result = await accountService.signInWithGoogle(isLinking);
         
-        try {
-            console.log('Initiating Google Sign-In...');
-            
-            // TODO: backend please set up the Google OAuth provider in Cognito
-            
-            await signInWithRedirect({
-                provider: 'Google',
-                customState: isLinking ? 'linking' : 'signin'
-            });
-
-            //await signInWithRedirect({ provider: 'Google' });
-            
-        } catch (error) {
-            console.error('Error with Google sign-in:', error);
-            setMessage(`Google sign-in error: ${error.message}`);
-            setSocialLoading({ ...socialLoading, google: false });
+        if (result.success && isLinking) {
+            setMessage("Google sign-in initiated. You'll be redirected after authentication.");
         }
     };
 
     const handleMicrosoftSignIn = async () => {
-        setSocialLoading({ ...socialLoading, microsoft: true });
-        setMessage('');
+        const result = await accountService.signInWithMicrosoft(isLinking);
         
-        try {
-            console.log('Initiating Microsoft Sign-In...');
-            
-            // TODO: backend please set up the Microsoft OAuth provider in Cognito
-            
-            await signInWithRedirect({
-                provider: 'SignIn', // change this to the correct provider name when configured
-                customState: isLinking ? 'linking' : 'signin'
-            });
-            
-        } catch (error) {
-            console.error('Error with Microsoft sign-in:', error);
-            setMessage(`Microsoft sign-in error: ${error.message}`);
-            setSocialLoading({ ...socialLoading, microsoft: false });
-        }
-    };
-
-    // alternative social sign-in method using custom OAuth endpoints (i dont know how you are setting this up, and can't test it)
-    const handleSocialSignInAlternative = async (provider) => {
-        try {
-            const oauthConfig = {
-                google: {
-                    // replace with Google OAuth configuration
-                    clientId: 'GOOGLE_CLIENT_ID',
-                    redirectUri: 'APP_REDIRECT_URI',
-                    scope: 'openid email profile',
-                    responseType: 'code'
-                },
-                microsoft: {
-                    // replace with Microsoft OAuth configuration
-                    clientId: 'MICROSOFT_CLIENT_ID',
-                    redirectUri: 'APP_REDIRECT_URI',
-                    scope: 'openid email profile',
-                    responseType: 'code'
-                }
-            };
-
-            const config = oauthConfig[provider];
-            const authUrl = provider === 'google' 
-                ? `https://accounts.google.com/oauth2/auth?client_id=${config.clientId}&redirect_uri=${config.redirectUri}&scope=${config.scope}&response_type=${config.responseType}`
-                : `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${config.clientId}&redirect_uri=${config.redirectUri}&scope=${config.scope}&response_type=${config.responseType}`;
-
-            // open the OAuth URL in the browser
-            const supported = await Linking.canOpenURL(authUrl);
-            if (supported) {
-                await Linking.openURL(authUrl);
-            } else {
-                throw new Error(`Cannot open ${provider} OAuth URL`);
-            }
-
-        } catch (error) {
-            console.error(`Error with ${provider} sign-in:`, error);
-            setMessage(`${provider} sign-in error: ${error.message}`);
+        if (result.success && isLinking) {
+            setMessage("Microsoft sign-in initiated. You'll be redirected after authentication.");
         }
     };
 
     const handleConfirmCode = async () => {
-        setVerificationError('');
-        try {
-            await confirmSignUp({ username: email, confirmationCode: verificationCode });
+        const result = await accountService.completeSignUp(email, password, verificationCode);
+        
+        if (result.success) {
             setShowVerificationModal(false);
-
-            // sign in the user
-            await signIn({ username: email, password });
-            router.navigate("(auth)/personalise-account"); // navigate to personalise account after sign up
-        } catch (error) {
-            console.error('Error confirming code:', error);
-            setMessage(`Error: ${error.message}`);
-            setVerificationError(error.message);
+            console.log("Confirmation successful! Please personalize your account.");
+            
+            if (isLinking) {
+                // If we're linking, navigate back to accounts after successful signup
+                setTimeout(() => {
+                    router.push('/(auth)/(drawer)/settings/account/accounts');
+                }, 1000);
+            }
         }
     };
 
-    const safeGetCurrentUser = async () => {
-        try {
-            return await getCurrentUser();
-        } catch (error) {
-            if (error.name === "UserUnAuthenticatedException") {
-                return null;
-            }
-            throw error;
+    const handleToggleSignUp = () => {
+        const params = { isSignUp: (!isSignUpBool).toString() };
+        
+    // Preserve linking and fromAccounts params
+        if (isLinking) params.link = 'true';
+    if (fromAccountsBool) params.fromAccounts = 'true';
+        if (emailParam) params.email = emailParam;
+        
+        router.push({
+            pathname: '/login-signup',
+            params,
+        });
+        setConfirmPassword('');
+        setMessage('');
+    };
+
+    const getPageTitle = () => {
+        if (isLinking) {
+            return isSignUpBool ? 'Link New Account' : 'Link Existing Account';
         }
-    }
+        return isSignUpBool ? 'Welcome' : 'Welcome Back';
+    };
+
+    const getButtonLabel = () => {
+        if (loading) return 'Loading...';
+        if (isLinking) {
+            return isSignUpBool ? 'Create & Link Account' : 'Link Account';
+        }
+        return isSignUpBool ? 'Sign Up' : 'Login';
+    };
 
     return (
-        <ResponsiveScreen scroll padded center>
-            <Text style={{ fontSize: 40, textAlign: 'center' }}>
-                {isSignUpBool ? 'Welcome' : 'Welcome Back'}
-            </Text>
-
-            <View style={{ gap: 30 }}>
-                <TextField
-                    label="Email"
-                    placeholder="Email"
-                    value={email}
-                    onChangeText={setEmail}
+        <View style={commonStyles.screen}>
+            {(isLinking || fromAccountsBool) && (
+                <Header
+                    title={isLinking ? "Link Account" : ""}
+                    showBack
+                    onBack={() => router.push('/(auth)/accounts')}
                 />
+            )}
+            
+            <View style={{ padding: 20, gap: 30, flex: 1, justifyContent: 'center' }}>
+                <Text style={{ fontSize: 40, textAlign: 'center' }}>
+                    {getPageTitle()}
+                </Text>
 
-                <View>
+                {isLinking && (
+                    <Text style={{ 
+                        fontSize: 16, 
+                        textAlign: 'center', 
+                        color: theme.colors.onSurfaceVariant,
+                        marginTop: -20
+                    }}>
+                        Sign in to an existing account or create a new one to link it to your current account.
+                    </Text>
+                )}
+
+                <View style={{ gap: 30 }}>
                     <TextField
-                        label="Password"
-                        placeholder="Password"
-                        value={password}
-                        secureTextEntry
-                        onChangeText={setPassword}
+                        label="Email"
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
+                        disabled={!signedOutForLinking && isLinking}
                     />
+
+                    <View>
+                        <TextField
+                            label="Password"
+                            placeholder="Password"
+                            value={password}
+                            secureTextEntry
+                            onChangeText={setPassword}
+                            disabled={!signedOutForLinking && isLinking}
+                        />
 
                     {!isSignUpBool && (
                         <View style={{ marginTop: 10 }}>
@@ -471,22 +445,23 @@ function LoginSignup() {
                     )}
                 </View>
 
-                {isSignUpBool && (
-                    <TextField
-                        label="Confirm Password"
-                        placeholder="Confirm Password"
-                        value={confirmPassword}
-                        secureTextEntry
-                        onChangeText={setConfirmPassword}
-                    />
-                )}
-            </View>
+                    {isSignUpBool && (
+                        <TextField
+                            label="Confirm Password"
+                            placeholder="Confirm Password"
+                            value={confirmPassword}
+                            secureTextEntry
+                            onChangeText={setConfirmPassword}
+                            disabled={!signedOutForLinking && isLinking}
+                        />
+                    )}
+                </View>
 
             <View style={{alignItems: 'flex-end' }}>
                 <BasicButton
                     label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
                     onPress={isSignUpBool ? handleSignUp : handleSignIn}
-                    disabled={(isLinking && !signedOutForLinking) || loading}
+                    disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || (isSignUpBool && !confirmPassword)}
                 />
             </View>
 
@@ -503,50 +478,109 @@ function LoginSignup() {
                 OR
             </Text>
 
-            <View style={{ gap: 20, marginTop: -10 }}>
-                <GoogleButton
-                    imageSource={require('../assets/images/Google.jpg')}
-                    label={socialLoading.google ? "Connecting to Google..." : "Continue with Google"}
-                    onPress={handleGoogleSignIn}
-                    disabled={(isLinking && !signedOutForLinking) || socialLoading.google || socialLoading.microsoft}
-                />
+                <View style={{ gap: 20, marginTop: -10 }}>
+                    <GoogleButton
+                        imageSource={require('../assets/images/Google.jpg')}
+                        label={socialLoading.google ? "Connecting to Google..." : 
+                               isLinking ? "Link with Google" : "Continue with Google"}
+                        onPress={handleGoogleSignIn}
+                        disabled={(!signedOutForLinking && isLinking) || socialLoading.google || socialLoading.microsoft}
+                    />
 
-                <MicrosoftButton
-                    imageSource={require('../assets/images/Microsoft.png')}
-                    label={socialLoading.microsoft ? "Connecting to Microsoft..." : "Continue with Microsoft"}
-                    onPress={handleMicrosoftSignIn}
-                    disabled={(isLinking && !signedOutForLinking) || socialLoading.google || socialLoading.microsoft}
-                />
-            </View>
+                    <MicrosoftButton
+                        imageSource={require('../assets/images/Microsoft.png')}
+                        label={socialLoading.microsoft ? "Connecting to Microsoft..." : 
+                               isLinking ? "Link with Microsoft" : "Continue with Microsoft"}
+                        onPress={handleMicrosoftSignIn}
+                        disabled={(!signedOutForLinking && isLinking) || socialLoading.google || socialLoading.microsoft}
+                    />
+                </View>
 
             <Divider />
 
-            <BasicButton
-                label={isSignUpBool ? 'Already have an account? Log In'
-                    : "Don't have an account? Sign Up"}
-                onPress={() => {
-                    router.replace({
-                        pathname: '/login-signup',
-                        params: { isSignUp: (!isSignUpBool).toString() },
-                    });
-                    setConfirmPassword('');
-                }}
-                fullWidth
-                altBackground='true'
-                altText='true'
-            />
+                <BasicButton
+                    label={isSignUpBool ? 'Already have an account? Log In'
+                        : "Don't have an account? Sign Up"}
+                    onPress={handleToggleSignUp}
+                    fullWidth
+                    altBackground='true'
+                    altText='true'
+                    disabled={!signedOutForLinking && isLinking}
+                />
 
-            <VerificationDialog
-                visible={showVerificationModal}
-                code={verificationCode}
-                setCode={setVerificationCode}
-                onConfirm={handleConfirmCode}
-                onResend={handleResend}
-                resendCooldown={resendCooldown}
-                onLater={() => setShowVerificationModal(false)}
-                error={verificationError}
-            />
-        </ResponsiveScreen>
+            {message && (
+                <Text style={{ 
+                    marginTop: 30, 
+                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
+                    textAlign: 'center'
+                }}>
+                    {message}
+                </Text>
+            )}
+
+                <Modal
+                    visible={showVerificationModal}
+                    animationType="slide"
+                    transparent={true}
+                >
+                    <View style={{
+                        flex: 1,
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        backgroundColor: 'rgba(0,0,0,0.5)'
+                    }}>
+                        <View style={{
+                            backgroundColor: theme.colors.background,
+                            padding: 10,
+                            borderRadius: 10,
+                            width: '65%',
+                            alignItems: 'center'
+                        }}>
+                            <Text style={{ fontSize: 24, marginBottom: 20 }}>
+                                Enter Verification Code
+                            </Text>
+
+                            <TextInput
+                                placeholder="Code"
+                                value={verificationCode}
+                                onChangeText={setVerificationCode}
+                                keyboardType="numeric"
+                                style={{ 
+                                    borderWidth: 1, 
+                                    padding: 10, 
+                                    marginBottom: 20,
+                                    borderColor: theme.colors.outline,
+                                    borderRadius: 5,
+                                    minWidth: 200
+                                }}
+                            />
+
+                            <View style={{
+                                flexDirection: 'row',
+                                justifyContent: 'space-between',
+                                width: '100%',
+                                marginBottom: 20
+                            }}>
+                                <BasicButton
+                                    label="Cancel"
+                                    fullWidth='true'
+                                    danger="true"
+                                    onPress={() => setShowVerificationModal(false)}
+                                    style={{ marginRight: 10 }}
+                                />
+
+                                <BasicButton
+                                    label="Confirm"
+                                    fullWidth='true'
+                                    onPress={handleConfirmCode}
+                                    style={{ marginLeft: 10 }}
+                                />
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+            </View>
+        </View>
     );
 }
 

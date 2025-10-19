@@ -153,8 +153,7 @@ const WorkspaceManagement = () => {
                 console.log('Workspace deleted:', result);
                 setDeleteDialogVisible(false);
             
-                // sign out the user
-                await signOut();
+                router.navigate("/workspace-choice");
 
             } catch (error) {
                 console.error("Error deleting workspace: ", error);
@@ -266,13 +265,14 @@ const WorkspaceManagement = () => {
                 }}
                 rightActionLabel="Delete"
                 rightDanger
+                rightDisabled={!password}
                 handleRightAction={handleConfirmDeletion}
             />
 
             <BasicDialog
                 visible={transferDialogVisible}
                 title="Transfer Ownership"
-                message="Select a user to transfer ownership of this workspace. Once transferred this cannot be undone."
+                message="Select a user to transfer ownership of this workspace. Once transferred, this cannot be undone."
                 showInput
                 inputLabel="Password"
                 inputPlaceholder="Enter your password"
@@ -294,6 +294,7 @@ const WorkspaceManagement = () => {
                 }}
                 rightActionLabel="Transfer"
                 rightDanger
+                rightDisabled={!selectedUser || !selectedRole || !password}
                 handleRightAction={handleConfirmTransfer}
             >
                 <DropDown 

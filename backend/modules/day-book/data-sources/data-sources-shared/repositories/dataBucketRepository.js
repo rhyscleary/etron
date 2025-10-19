@@ -41,6 +41,66 @@ async function saveStoredData(workspaceId, dataSourceId, data) {
     }
 }
 
+// save data for a partition to S3
+async function savePartitionedData(workspaceId, dataSourceId, data, partitionValue) {
+    if (!partitionValue) throw new Error("partitionValue is required");
+
+    // you can customize folder structure if needed
+    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${partitionValue}.parquet`;
+
+    try {
+        let body = data;
+        if (data && typeof data.pipe === "function") {
+            body = await streamToBuffer(data);
+        }
+
+        await s3Client.send(
+            new PutObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+                Body: body,
+                ContentType: "application/octet-stream"
+            })
+        );
+    } catch (error) {
+        handleS3Error(error, `Error saving partitioned data to ${bucketName}`);
+    }
+}
+
+// load data from a partition from S3
+async function loadPartitionedData(workspaceId, dataSourceId, partitionValue) {
+    if (!partitionValue) throw new Error("partitionValue is required");
+
+    // you can customize folder structure if needed
+    const key = `workspaces/${workspaceId}/day-book/dataSources/${dataSourceId}/data/${partitionValue}.parquet`;
+
+    try {
+        // load schema for data source
+        const schema = await getDataSchema(workspaceId, dataSourceId);
+        if (!schema) {
+            throw new Error(`Schema not found for dataSourceId ${dataSourceId}`);
+        }
+        const response = await s3Client.send(
+            new GetObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+            }),
+        );
+
+        const buffer = await streamToBuffer(response.Body);
+
+        // convert parquet buffer to JSON
+        const jsonData = await fromParquet(buffer, schema);
+
+        return jsonData;
+    } catch (error) {
+        if (error.name === "NoSuchKey") {
+            return [];
+        }
+        handleS3Error(error, `Error saving partitioned data to ${bucketName}`);
+    }
+}
+
 async function doesObjectExist(bucket, key) {
     try {
         await s3Client.send(
@@ -110,6 +170,33 @@ async function removeAllStoredData(workspaceId, dataSourceId) {
 
         if (!objectList.Contents || objectList.Contents.length === 0) {
             console.log("No objects found for prefix:", prefix);
+            return;
+        }
+
+        const deleteParams = {
+            Bucket: bucketName,
+            Delete: { Objects: objectList.Contents.map(object => ({ Key: object.Key })) }
+        };
+
+        await s3Client.send(new DeleteObjectsCommand(deleteParams));
+
+    } catch (error) {
+        handleS3Error(error, `Error removing stored data from ${bucketName}`);
+    }
+}
+
+// remove metric data from store
+async function removeAllMetricData(workspaceId, metricId) {
+    const prefix = `workspaces/${workspaceId}/day-book/metrics/${metricId}/`;
+    try {
+        const objectList = await s3Client.send(
+            new ListObjectsV2Command({
+                Bucket: bucketName,
+                Prefix: prefix
+            }),
+        );
+
+        if (!objectList.Contents || objectList.Contents.length === 0) {
             return;
         }
 
@@ -243,5 +330,8 @@ module.exports = {
     getStoredData,
     getDataSchema,
     saveSchema,
-    appendToStoredData
+    appendToStoredData,
+    savePartitionedData,
+    loadPartitionedData,
+    removeAllMetricData
 };

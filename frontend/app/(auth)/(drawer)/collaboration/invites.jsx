@@ -1,114 +1,149 @@
 // Author(s): Matthew Page
 
-import { useEffect, useState } from "react";
-import { View, FlatList, Pressable, StyleSheet, TouchableOpacity } from "react-native";
-import { Card, Text, useTheme } from "react-native-paper";
+import { useEffect, useState, useCallback } from "react";
+import { View, FlatList, Pressable, StyleSheet, TouchableOpacity, RefreshControl } from "react-native";
+import { ActivityIndicator, Card, Text, useTheme, List, Divider, IconButton, Dialog, Portal, Button, Snackbar } from "react-native-paper";
 import { router } from "expo-router";
 
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-import { apiGet } from "../../../../utils/api/apiClient";
+import { apiGet, apiDelete } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
+import formatTTLDate from "../../../../utils/format/formatTTLDate";
+import { useFocusEffect } from "@react-navigation/native";
+
 
 const Invites = () => {
-  const theme = useTheme();
-  const [invites, setInvites] = useState([]);
-  const [loading, setLoading] = useState(true);
+	const theme = useTheme();
+	const [invites, setInvites] = useState([]);
+	const [roles, setRoles] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(true);
+	const [workspaceId, setWorkspaceId] = useState("");
 
-  useEffect(() => {
-    const fetchWorkspaceIdAndInvites = async () => {
-      try {
-        const workspaceId = await getWorkspaceId();
+	useEffect(() => {
+		loadInvitesAndRoles();
+	}, []);
 
-        const result = await apiGet(
-          endpoints.workspace.invites.getInvitesSent(workspaceId)
-        );
-        const invites = result.data;
+	useFocusEffect(
+		useCallback(() => {
+			setRefreshing(true);
+			loadInvitesAndRoles();
+		}, [loadInvitesAndRoles])
+	)
 
-        console.log("Invites:", invites);
-        setInvites(Array.isArray(invites) ? invites : []);
-      } catch (error) {
-        console.error("Failed to fetch invites:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+	const loadInvitesAndRoles = useCallback(async () => {
+		const workspaceId = await getWorkspaceId();
+		setWorkspaceId(workspaceId);
 
-    fetchWorkspaceIdAndInvites();
-  }, []);
+		try {
+			const result = await apiGet(endpoints.workspace.invites.getInvitesSent(workspaceId));
+			const invites = result.data;
+			setInvites(Array.isArray(invites) ? invites : []);
+		} catch (error) {
+			console.error("Failed to fetch invites:", error);
+		}
 
-  const renderInviteItem = ({ item }) => (
-    <Pressable
-      onPress={() => router.navigate(`/collaboration/edit-invite/${item.inviteId}`)} // ✅ Fixed route
-      style={styles.inviteBox}
-    >
-      <Text>{item.email}</Text>
-      <Text>{item.roleId}</Text>
-      <Text>Expiry Date: {item.expireAt}</Text>
-    </Pressable>
-  );
+		try {
+			const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+			const roles = result.data;
+			setRoles(roles);
+		} catch (error) {
+			console.error("Failed to fetch roles:", error);
+		}
 
-  /*
-  <TouchableOpacity
-            key = {item.inviteId}
-            onPress={() => {router.navigate(`/collaboration/edit-invite/${item.inviteId}`)}}
-          >
-            
-          </TouchableOpacity>
-          */
+		setLoading(false);
+		setRefreshing(false)
+	}, []);
 
-  return (
+	const handleDelete = async (inviteId) => {
+		setRefreshing(true);
+		try {
+			await apiDelete(endpoints.workspace.invites.cancelInvite(workspaceId, inviteId));
+		} catch (error) {
+			console.error("Failed to delete invite:", error);
+		}
+		loadInvitesAndRoles();
+	};
+
+	const renderInviteItem = ({ item }) => (<>
+		<List.Item
+			title={item.email}
+			description={`Role: ${roles.find(role => role.roleId == item.roleId).name}\nExpiry: ${formatTTLDate(
+				item.expireAt
+			)}`}
+			right={(props) => (
+				<IconButton
+					{...props}
+					icon="delete"
+					onPress={() => handleDelete(item.inviteId)}
+					accessibilityLabel="Delete invite"
+				/>
+			)}
+			style={styles.listItem}
+			titleStyle={commonStyles.listItemText}
+			descriptionNumberOfLines={2}
+		/>
+		<Divider />
+    </>
+	);
+
+	return (
 		<ResponsiveScreen
 			header={
-        <Header
-          title="Invites"
-          showBack
-          showPlus
-          onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "invites" } })}
-        />      
-      }
+				<Header
+					title="Invites"
+					showBack
+					showPlus
+					onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "invites" } })}
+				/>			
+			}
 			center={false}
 			padded={false}
-      scroll={true}
+			scroll={false}
 		>
 
-      {loading ? (
-        <Text style={{ textAlign: "center", marginTop: 20, color: "#999" }}>
-          Loading Invites...
-        </Text>
-      ) : (
-        <FlatList
-          data={invites}
-          keyExtractor={(item) => item.inviteId}
-          contentContainerStyle={{ paddingVertical: 16 }}
-          renderItem={renderInviteItem}
-          ListEmptyComponent={
-            <Text style={{ textAlign: "center", marginTop: 20 }}>
-              No invites sent.
-            </Text>
-          }
-        />
-      )}
-    </ResponsiveScreen>
-  );
+			{loading ? (<>
+				<ActivityIndicator size="large" />
+				<Text style={{ textAlign: "center", marginTop: 20, color: "#999" }}>
+					Loading Invites...
+				</Text>
+			</>) : (
+				<FlatList
+					data={invites}
+					keyExtractor={(item) => item.inviteId}
+					refreshControl = {
+						<RefreshControl refreshing={refreshing} onRefresh={loadInvitesAndRoles} />
+					}
+					contentContainerStyle={{ paddingVertical: 16 }}
+					renderItem={renderInviteItem}
+					ListEmptyComponent={
+						<Text style={{ textAlign: "center", marginTop: 20 }}>
+							No invites sent.
+						</Text>
+					}
+				/>
+			)}
+		</ResponsiveScreen>
+	);
 };
 
 const styles = StyleSheet.create({
-  inviteBox: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 4,
-    padding: 16,
-    marginVertical: 2,
-    marginHorizontal: 12,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+	inviteBox: {
+		borderWidth: 1,
+		borderColor: "#ccc",
+		borderRadius: 4,
+		padding: 16,
+		marginVertical: 2,
+		marginHorizontal: 12,
+	},
+	centered: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+	},
 });
 
 export default Invites;

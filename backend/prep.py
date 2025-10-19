@@ -8,6 +8,7 @@ TARGET_FOLDERS = [
     "user/functions/user-core",
     "user/functions/user-invites",
     "workspace/functions/workspace-core",
+    "workspace/functions/workspace-remover",
     "workspace/functions/workspace-invites",
     "workspace/functions/workspace-modules",
     "workspace/functions/workspace-boards",
@@ -20,8 +21,11 @@ TARGET_FOLDERS = [
     "modules/day-book/reports/functions/reports-exports",
     "modules/day-book/reports/functions/reports-templates",
     "modules/day-book/data-sources/functions/data-source-core",
-    "modules/day-book/data-sources/functions/data-source-poller",
-    "modules/day-book/data-sources/functions/data-source-upload-processor"
+    "modules/day-book/data-sources/functions/polling/data-source-poller",
+    "modules/day-book/data-sources/functions/polling/data-source-poller-initialiser",
+    "modules/day-book/data-sources/functions/data-source-upload-processor",
+    "audit/functions/audit-core",
+    "audit/functions/archive-audit-logs"
 ]
 
 SHARED_FOLDERS = [
@@ -29,7 +33,8 @@ SHARED_FOLDERS = [
     "modules/day-book/reports/reports-shared",
     "modules/day-book/data-sources/data-sources-shared",
     "modules/day-book/metrics/metrics-shared",
-    "modules/day-book/day-book-shared"
+    "modules/day-book/day-book-shared",
+    "audit/audit-shared"
 ]
 
 # === FUNCTIONS ===

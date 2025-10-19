@@ -13,6 +13,7 @@ const DescriptiveButton = ({
     altText = false,
     noBorder = true,
     showChevron = true,
+    iconColor,
 }) => {
     const theme = useTheme();
 
@@ -48,7 +49,7 @@ const DescriptiveButton = ({
                 {image ? (
                     <Image source={image} style={styles.imageIcon} />
                 ) : icon ? (
-                    <Icon source={icon} size={28} color={textColor} />
+                    <Icon source={icon} size={28} color={iconColor ?? textColor} />
                 ) : null}
 
                 <View style={styles.textContainer}>

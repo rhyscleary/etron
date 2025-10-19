@@ -19,7 +19,7 @@ const Settings = () => {
         { 
             icon: "account", 
             label: "Account", 
-            onPress: () => router.navigate("/settings/account/account")
+            onPress: () => router.navigate("/settings/account")
         },
         {
             permKey: "app.workspace.view_workspace_settings", 

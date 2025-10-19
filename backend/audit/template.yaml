@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  eTRON audit-domain functions template
+
+Parameters:
+  AppConfigurationBucketName:
+    Type: String
+  WorkspaceBucketName:
+    Type: String
+    
+Globals:
+  Function:
+    Timeout: 5
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
+        WORKSPACE_BUCKET: !Ref WorkspaceBucketName
+
+Resources:
+
+  eTRONApi:
+      Type: AWS::Serverless::Api
+      Properties:
+        StageName: dev
+        Auth:
+          DefaultAuthorizer: CognitoAuthorizer
+          Authorizers:
+            CognitoAuthorizer:
+              UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              Identity:
+                Header: Authorization
+
+  # Core Audit Lambda 
+  AuditCoreFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/audit-core
+      Handler: auditHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: AuditLogs
+        - Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        GetAudits:
+          Type: Api 
+          Properties:
+            Path: /audits
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetUserAuditsDownloadUrl:
+          Type: Api 
+          Properties: 
+            Path: /audits/download/user
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetWorkspaceAuditsDownloadUrl:
+          Type: Api 
+          Properties: 
+            Path: /audits/download/workspace
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+  AuditArchiverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/archive-audit-logs
+      Handler: archiveHandler.handler
+      Timeout: 900
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: AuditLogs
+        - S3CrudPolicy:
+            BucketName: !Ref WorkspaceBucketName
+      Events:
+        DailyAuditArchive:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 0 * * ? *) # every day midnight UTC
+            Name: DailyAuditArchiver

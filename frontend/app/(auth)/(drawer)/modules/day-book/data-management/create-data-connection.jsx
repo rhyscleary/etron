@@ -45,6 +45,7 @@ const CreateDataConnection = () => {
                                             icon={source.icon}
                                             onPress={source.onPress}
                                             boldLabel={false}
+                                            iconColor={source.iconColor}
                                             transparentBackground
                                         />
                                     </StackLayout>

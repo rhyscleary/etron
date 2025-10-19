@@ -1,224 +1,300 @@
-import {
-  getAdapterInfo,
-  createDataAdapter,
-  getSupportedTypes,
-} from "../adapters/day-book/data-sources/DataAdapterFactory";
+import { getAdapterInfo, createDataAdapter } from "../adapters/day-book/data-sources/DataAdapterFactory";
 import endpoints from "../utils/api/endpoints";
+import AuthService from "./AuthService";
+import { getWorkspaceId as getSavedWorkspaceId } from "../storage/workspaceStorage";
+
 
 class DataSourceService {
-  constructor(apiClient, authService, options = {}) {
+  constructor(apiClient) {
     this.apiClient = apiClient;
-    this.authService = authService;
     this.activeAdapters = new Map();
-    this.providerConnections = new Map(); // Separate storage for provider connections
-    this.isDemoMode =
-      options.demoMode ||
-      options.fallbackToDemo ||
-      (typeof __DEV__ !== "undefined" ? __DEV__ : false);
-    this.demoSources = this.createMockDataSources();
+    this.providerConnections = new Map();
+    this._connectInFlight = new Map();
+    this.demoConfigUnsubscribe = null;
   }
 
-  // Create mock data sources for demo mode
-  createMockDataSources() {
-    return [
-      {
-        id: "demo_api_1642105600000",
-        type: "custom-api",
-        name: "JSONPlaceholder API (Demo)",
-        status: "connected",
-        lastSync: new Date().toISOString(),
-        createdAt: "2024-01-15T10:30:00Z",
-        config: {
-          url: "https://jsonplaceholder.typicode.com",
-          headers: '{"Content-Type": "application/json"}',
-          authentication: "",
-          isDemoMode: true,
-          defaultEndpoint: "/posts",
-        },
-        testResult: {
-          status: "success",
-          responseTime: "245ms",
-          statusCode: 200,
-          contentType: "application/json",
-        },
-      },
-      {
-        id: "demo_api_1642109200000",
-        type: "custom-api",
-        name: "Weather API (Demo)",
-        status: "connected",
-        lastSync: new Date().toISOString(),
-        createdAt: "2024-01-16T11:30:00Z",
-        config: {
-          url: "https://api.openweathermap.org/data/2.5",
-          headers: '{"Accept": "application/json"}',
-          authentication:
-            '{"type": "query", "key": "appid", "value": "demo_key"}',
-          isDemoMode: true,
-          defaultEndpoint: "/weather",
-        },
-        testResult: {
-          status: "success",
-          responseTime: "180ms",
-          statusCode: 200,
-          contentType: "application/json",
-        },
-      },
-      {
-        id: "demo_sheets_1642112800000",
-        type: "google-sheets",
-        name: "Budget Sheet (Demo)",
-        status: "connected",
-        lastSync: new Date().toISOString(),
-        createdAt: "2024-01-17T12:00:00Z",
-        config: {
-          sheetId: "demo_budget_sheet_123",
-          sheetName: "Budget 2024",
-          isDemoMode: true,
-        },
-      },
-    ];
+
+  async getAuthService() {
+    return AuthService.createAuthServiceObject();
   }
 
-  // Get all connected data sources from backend or demo (EXCLUDES provider connections)
-  async getConnectedDataSources() {
-    if (this.isDemoMode) {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      // Filter out provider-only connections from demo sources
-      return this.demoSources.filter((source) => !source.config?.isProvider);
-    }
-
+  // Handle endpoints that may be defined as a function or a string
+  resolveEndpoint(epOrFn, ...args) {
     try {
-      const response = await this.apiClient.get(
-        endpoints.modules.day_book.data_sources.getDataSources()
-      );
-      // Filter out provider-only connections from backend response
-      return response.data.filter((source) => !source.config?.isProvider);
-    } catch (error) {
-      console.error(
-        "Failed to fetch connected data sources, falling back to demo mode:",
-        error
-      );
-      this.isDemoMode = true;
-      return this.getConnectedDataSources();
+      return typeof epOrFn === 'function' ? epOrFn(...args) : epOrFn;
+    } catch {
+      return epOrFn;
     }
   }
 
-  // Get provider connection status (separate from data sources)
-  getProviderConnection(type) {
-    if (this.isDemoMode) {
-      const demoProvider = this.demoSources.find(
-        (source) => source.type === type && source.config?.isProvider
-      );
-      return demoProvider;
+  async getConnectedDataSources() {
+    if (this._getConnectedPromise) {
+      console.log('[DataSourceService] getConnectedDataSources deduped - returning in-flight promise');
+      return this._getConnectedPromise;
     }
+    const startedAt = Date.now();
+    console.log('[DataSourceService] getConnectedDataSources start');
+    this._getConnectedPromise = (async () => {
+      try {
+  const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.getDataSources);
+  const workspaceId = await getSavedWorkspaceId();
+        if (!workspaceId) {
+          throw new Error('No workspace selected. Please select a workspace.');
+        }
+  // Only send workspaceId per request
+  const params = { workspaceId };
+        let response;
+        try {
+          // Outgoing request log
+          console.log('[DataSourceService] getConnectedDataSources GET', { endpointUrl, params });
+          console.log("params :) :", params);
+          response = await this.apiClient.get(endpointUrl, { params });
+          // Quick response summary (avoid logging full payload)
+          const rawType = Array.isArray(response?.data)
+            ? 'array'
+            : typeof response?.data;
+          const arrayLen = Array.isArray(response?.data) ? response.data.length : undefined;
+          const dataKeys = response?.data && typeof response.data === 'object' && !Array.isArray(response.data) ? Object.keys(response.data) : undefined;
+          console.log('[DataSourceService] getConnectedDataSources GET success', {
+            status: response?.status,
+            dataType: rawType,
+            arrayLen,
+            keys: dataKeys,
+          });
+          try {
+            const preview = (() => { try { return JSON.stringify(response?.data)?.slice(0, 400); } catch { return String(response?.data)?.slice(0, 400); } })();
+            console.log('[DataSourceService] getConnectedDataSources data preview', preview);
+          } catch {}
+        } catch (error) {
+          // Error details for the outgoing request
+          console.error('[DataSourceService] getConnectedDataSources GET failed', {
+            endpointUrl,
+            params,
+            status: error?.response?.status,
+            message: error?.message,
+            responseDataType: typeof error?.response?.data,
+          });
+          try {
+            const errPreview = (() => { const d = error?.response?.data; try { return JSON.stringify(d)?.slice(0, 400); } catch { return String(d)?.slice(0, 400); } })();
+            console.error('[DataSourceService] getConnectedDataSources error data preview', errPreview);
+          } catch {}
+          let backendMsg = '';
+          if (error?.response?.data) {
+            if (typeof error.response.data === 'string') {
+              backendMsg = error.response.data;
+            } else if (typeof error.response.data === 'object') {
+              backendMsg = error.response.data.error || error.response.data.message || JSON.stringify(error.response.data);
+            }
+          }
+          if (!backendMsg) backendMsg = error?.message || 'Unknown error';
+          const status = error?.response?.status;
+          if (status === 400) {
+            throw new Error(`Server error 400: ${backendMsg}`);
+          }
+          throw new Error(backendMsg);
+        }
+        const raw = response?.data;
+        const getArray = (obj) => {
+          if (Array.isArray(obj)) return obj;
+          if (!obj || typeof obj !== 'object') return null;
+          const direct = obj.data || obj.items || obj.results || obj.list || obj.value || obj.records || obj.rows || obj.sources || obj.Items;
+          if (Array.isArray(direct)) return direct;
+          const underData = obj.data && typeof obj.data === 'object' ? (obj.data.items || obj.data.results || obj.data.data || obj.data.records || obj.data.rows || obj.data.sources || obj.data.Items) : null;
+          if (Array.isArray(underData)) return underData;
+          // Fallback: first array value in object
+          const firstArray = Object.values(obj).find((v) => Array.isArray(v));
+          if (Array.isArray(firstArray)) return firstArray;
+          return null;
+        };
+        const list = getArray(raw) || [];
+        if (!Array.isArray(raw)) {
+          if (raw?.error || raw?.message) {
+            throw new Error(`Server error: ${raw?.error || raw?.message}`);
+          }
+        }
+        const normalize = (s) => {
+          const type = s?.type || s?.sourceType || s?.adapterType || s?.kind || 'api';
+          const name = s?.name || s?.title || s?.label || '';
+          const status = s?.status || s?.connectionStatus || s?.state || null;
+          const id = s?.id || s?._id || s?.dataSourceId || null;
+          const config = s?.config || s?.configuration || {};
+          return { ...s, id, type, name, status, config };
+        };
+        const normalized = list.map(normalize);
+        const filtered = normalized.filter((source) => !source.config?.isProvider && source.name);
+        const byId = new Map();
+        const byNameType = new Map();
+        for (const src of filtered) {
+          if (src.id && !byId.has(src.id)) {
+            byId.set(src.id, src);
+            continue;
+          }
+          if (!src.id) {
+            const key = `${src.type}::${src.name}`.toLowerCase();
+            if (!byNameType.has(key)) byNameType.set(key, src);
+          }
+        }
+        let realSources = [...byId.values(), ...byNameType.values()];
+        // Post-processing summary
+        console.log('[DataSourceService] getConnectedDataSources parsed', {
+          totalReturned: list.length,
+          uniqueCount: realSources.length,
+        });
+        const needsEnrichment = (s) => !s || !s.id || !s.status || !s.config || Object.keys(s.config || {}).length === 0;
+        const toEnrich = realSources.filter(needsEnrichment).map((s) => s.id).filter(Boolean);
+        if (toEnrich.length) {
+          try {
+            const details = await Promise.all(
+              toEnrich.map(async (id) => {
+                try {
+                  const ent = await this.getDataSource(id);
+                  return { id, entity: ent };
+                } catch {
+                  return { id, entity: null };
+                }
+              })
+            );
+            const detailMap = new Map();
+            details.forEach(({ id, entity }) => {
+              if (!entity) return;
+              const normalizedDetail = ((s) => {
+                const type = s?.type || s?.sourceType || s?.adapterType || s?.kind || 'api';
+                const name = s?.name || s?.title || s?.label || '';
+                const status = s?.status || s?.connectionStatus || s?.state || null;
+                const nid = s?.id || s?._id || s?.dataSourceId || id;
+                const config = s?.config || s?.configuration || {};
+                return { ...s, id: nid, type, name, status, config };
+              })(entity);
+              detailMap.set(id, normalizedDetail);
+            });
+            if (detailMap.size) {
+              realSources = realSources.map((s) => {
+                const d = detailMap.get(s.id);
+                if (!d) return s;
+                return { ...s, ...d, config: d.config || s.config, status: d.status || s.status };
+              });
+            }
+          } catch {}
+        }
+        return realSources;
+      } catch (error) {
+        const msg = error?.message || (error?.response && JSON.stringify(error.response?.data)) || '';
+        if (error?.response?.status === 400 || msg.includes('Missing required query parameters')) {
+          throw new Error(msg || 'Server error 400: Missing required query parameters');
+        }
+        throw new Error(msg);
+      }
+    })();
+    try {
+      const result = await this._getConnectedPromise;
+      return result;
+    } finally {
+      this._getConnectedPromise = null;
+      console.log('[DataSourceService] getConnectedDataSources end', { durationMs: Date.now() - startedAt });
+    }
+  }
 
+  getProviderConnection(type) {
     return this.providerConnections.get(type);
   }
 
-  // NEW: Check if provider is connected
   isProviderConnected(type) {
     const connection = this.getProviderConnection(type);
     return connection && connection.status === "connected";
   }
 
-  // Get a specific data source configuration
   async getDataSource(sourceId) {
-    if (this.isDemoMode) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const demoSource = this.demoSources.find(
-        (source) => source.id === sourceId
-      );
-      if (!demoSource) {
-        throw new Error(`Demo data source ${sourceId} not found`);
-      }
-      return demoSource;
+    // Guard against recursive re-entry
+    if (this._getDataSourcePromise && this._lastGetDataSourceId === sourceId) {
+  console.log('[DataSourceService] getDataSource deduped - returning in-flight promise', { sourceId });
+      return this._getDataSourcePromise;
     }
-
+    this._lastGetDataSourceId = sourceId;
+    const startedAt = Date.now();
+    console.log('[DataSourceService] getDataSource start', { sourceId });
+    this._getDataSourcePromise = (async () => {
     try {
-      const response = await this.apiClient.get(
-        endpoints.modules.day_book.data_sources.getDataSource(sourceId)
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        `Failed to fetch data source ${sourceId}, checking demo sources:`,
-        error
-      );
-
-      // Check if it's a demo source ID
-      if (sourceId.startsWith("demo_")) {
-        this.isDemoMode = true;
-        return this.getDataSource(sourceId);
+  const workspaceId = await getSavedWorkspaceId();
+  if (!workspaceId) throw new Error('No workspace selected');
+  const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.getDataSource, sourceId);
+  // Only send workspaceId per request
+  const params = { workspaceId };
+      console.log('[DataSourceService] getDataSource GET', { endpointUrl, sourceId, params });
+      const response = await this.apiClient.get(endpointUrl, { params });
+      try {
+        const status = response?.status;
+        const hasData = !!response?.data;
+        const dtype = Array.isArray(response?.data) ? 'array' : typeof response?.data;
+        const dlen = Array.isArray(response?.data) ? response.data.length : undefined;
+        const dkeys = response?.data && typeof response.data === 'object' && !Array.isArray(response.data) ? Object.keys(response.data) : undefined;
+        const preview = (() => { try { return JSON.stringify(response?.data)?.slice(0, 400); } catch { return String(response?.data)?.slice(0, 400); } })();
+        console.log('[DataSourceService] getDataSource raw response', { status, hasData, dtype, dlen, dkeys });
+        console.log('[DataSourceService] getDataSource data preview', preview);
+      } catch {}
+      const raw = response?.data;
+      const entity = (raw && typeof raw === 'object' && (raw.data || raw.item || raw.Item)) || raw;
+      if (!entity || typeof entity !== 'object') {
+        console.warn('[DataSourceService] getDataSource unexpected payload shape', { hasRaw: !!raw });
       }
-
+         // Normalize to ensure consumers can reliably read `id` and `type`
+         const normalized = { ...entity };
+         if (!normalized.id) normalized.id = normalized.dataSourceId || normalized._id || sourceId;
+         if (!normalized.type) normalized.type = normalized.sourceType || normalized.type;
+         return normalized;
+    } catch (error) {
       throw new Error("Unable to load data source");
+    }
+    })();
+    try {
+      return await this._getDataSourcePromise;
+    } finally {
+      console.log('[DataSourceService] getDataSource end', { sourceId, durationMs: Date.now() - startedAt });
+      this._getDataSourcePromise = null;
+      this._lastGetDataSourceId = null;
     }
   }
 
-  // Fetch actual data from a data source
   async fetchDataFromSource(sourceId, options = {}) {
     try {
-      // Get the data source configuration
       const dataSource = await this.getDataSource(sourceId);
-
-      if (!dataSource) {
-        throw new Error(`Data source ${sourceId} not found`);
-      }
-
-      // Get or create the appropriate adapter
+      if (!dataSource) throw new Error(`Data source ${sourceId} not found`);
       const adapter = await this.getAdapter(dataSource.type, dataSource.config);
-
-      // Check if adapter supports raw data fetching
-      if (!adapter.fetchRawData && typeof adapter.fetchRawData !== "function") {
-        throw new Error(
-          `Adapter for ${dataSource.type} does not support data fetching`
-        );
-      }
-
-      // Extract endpoint information from options or data source config
+      if (!adapter.fetchRawData || typeof adapter.fetchRawData !== "function")
+        throw new Error(`Adapter for ${dataSource.type} does not support data fetching`);
       const {
-        endpoint = dataSource.config?.defaultEndpoint || "/",
+        endpoint = dataSource.config?.endpoint || dataSource.config?.defaultEndpoint || "/",
         method = "GET",
         params = {},
-        ...adapterOptions
       } = options;
-
-      // Fetch raw data using the adapter
       const rawResponse = await adapter.fetchRawData(endpoint, method, params);
-
-      // Transform raw response into standardized format
+      try {
+        const meta = {
+          statusCode: rawResponse?.statusCode,
+          responseTime: rawResponse?.responseTime,
+          contentType: rawResponse?.headers?.["content-type"] || rawResponse?.headers?.["Content-Type"] || 'unknown',
+        };
+        const samplePreview = (() => { try { return JSON.stringify(rawResponse?.data)?.slice(0, 300); } catch { return String(rawResponse?.data)?.slice(0, 300); } })();
+        console.log('[DataSourceService] fetchDataFromSource raw response meta', meta);
+        console.log('[DataSourceService] fetchDataFromSource data preview', samplePreview);
+      } catch {}
       const transformedData = this.transformRawData(rawResponse, dataSource, {
         endpoint,
         method,
         sourceId,
       });
-
-      // Update last sync timestamp
       await this.updateLastSync(sourceId);
-
       return transformedData;
     } catch (error) {
-      console.error(`Failed to fetch data from source ${sourceId}:`, error);
-
-      // Update data source status to error
       try {
         await this.updateDataSourceStatus(sourceId, "error", error.message);
-      } catch (statusError) {
-        console.warn("Failed to update data source status:", statusError);
-      }
-
+      } catch {}
       throw new Error(`Failed to fetch data: ${error.message}`);
     }
   }
 
-  // Transform raw API response into standardized format
   transformRawData(rawResponse, dataSource, requestInfo) {
     let data = [];
     let headers = [];
-
-    // Handle different response formats
     if (Array.isArray(rawResponse.data)) {
       data = rawResponse.data;
       headers = data.length > 0 ? Object.keys(data[0]) : [];
@@ -226,11 +302,9 @@ class DataSourceService {
       data = [rawResponse.data];
       headers = Object.keys(rawResponse.data);
     } else {
-      // Handle primitive responses
       data = [{ value: rawResponse.data }];
       headers = ["value"];
     }
-
     return {
       id: requestInfo.sourceId,
       name: `${dataSource.name} - ${requestInfo.endpoint}`,
@@ -242,106 +316,271 @@ class DataSourceService {
         sourceType: dataSource.type,
         endpoint: requestInfo.endpoint,
         method: requestInfo.method,
-        statusCode: rawResponse.statusCode,
+  statusCode: rawResponse.statusCode,
         responseTime: rawResponse.responseTime,
         contentType: rawResponse.headers?.["content-type"] || "unknown",
         lastUpdated: new Date().toISOString(),
         recordCount: data.length,
-        isDemoData: dataSource.config?.isDemoMode || false,
+        isDemoData: dataSource.config?.isDemoMode || this.isDemoModeActive(),
+  demoMode: "disabled",
       },
     };
   }
 
-  // Get or create adapter for a data source type
   async getAdapter(type, config = {}) {
     const adapterKey = `${type}_${JSON.stringify(config)}`;
-
-    if (this.activeAdapters.has(adapterKey)) {
-      return this.activeAdapters.get(adapterKey);
-    }
-
+    if (this.activeAdapters.has(adapterKey)) return this.activeAdapters.get(adapterKey);
     try {
+      const authService = await this.getAuthService();
       const adapter = createDataAdapter(type, {
         ...config,
-        demoMode: this.isDemoMode || config.isDemoMode,
-        fallbackToDemo: true,
         apiClient: this.apiClient,
-        authService: this.authService,
+        endpoints,
+        authService,
       });
-
-      if (!adapter) {
-        throw new Error(`No adapter found for type: ${type}`);
-      }
-
+      if (!adapter) throw new Error(`No adapter found for type: ${type}`);
       this.activeAdapters.set(adapterKey, adapter);
       return adapter;
     } catch (error) {
-      console.error(`Failed to create adapter for ${type}:`, error);
       throw new Error(`Failed to initialize ${type} adapter: ${error.message}`);
     }
   }
 
-  // Connect a new data source
   async connectDataSource(type, config, name) {
-    if (this.isDemoMode) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    const key = `${type}::${name}::${config?.url || config?.connectionString || ''}`;
+    if (this._connectInFlight.has(key)) {
+      console.log('[DataSourceService] connectDataSource deduped (in-flight)', { key });
+      return this._connectInFlight.get(key);
+    }
+  const run = async () => {
+  // Always real connection, no demo branch
+  try {
+      console.log('[DataSourceService] connectDataSource calling testConnection', { type, name });
+      let connectionData;
+      try {
+        connectionData = await this.testConnection(type, config, name);
+      } catch (e) {
+        console.warn('[DataSourceService] testConnection failed, proceeding to create anyway', { message: e?.message });
+        connectionData = { status: 'skipped', error: e?.message };
+      }
 
-      const newDemoSource = {
-        id: `demo_${type}_${Date.now()}`,
+      console.log('[DataSourceService] connectDataSource - test result', {
         type,
-        name: `${name} (Demo)`,
-        status: "connected",
-        lastSync: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        config: {
-          ...config,
-          isDemoMode: true,
-        },
-        testResult: {
-          status: "success",
-          responseTime: "245ms",
-          statusCode: 200,
-          contentType: "application/json",
-        },
+        connectionDataSummary: {
+          status: connectionData?.status,
+          testResultKeys: connectionData?.testResult ? Object.keys(connectionData.testResult) : null,
+          sampleDataDemoFlag: connectionData?.testResult?.sampleData?.demoMode,
+          demoModeFlag: connectionData?.testResult?.demoMode,
+        }
+      });
+
+  // prepare payload matching backend contract
+      // query param: workspaceId
+      // body: { name, type, config }
+      // NOTE: endpoints file exposes addRemote / addLocal (no generic 'add')
+      const dataSourceEndpoints = endpoints?.modules?.day_book?.data_sources || {};
+      let endpointUrl = null;
+      // choose local vs remote creation endpoint (defaults to remote)
+      if (config?.isLocal || config?.mode === 'local') {
+        endpointUrl = this.resolveEndpoint(dataSourceEndpoints.addLocal);
+      } else {
+        endpointUrl = this.resolveEndpoint(dataSourceEndpoints.addRemote);
+      }
+      if (!endpointUrl) {
+        console.error('[DataSourceService] connectDataSource no add endpoint configured', { availableKeys: Object.keys(dataSourceEndpoints) });
+        throw new Error('Data source add endpoint not configured');
+      }
+  const sanitize = (obj) => {
+        if (!obj || typeof obj !== 'object') return obj;
+        const out = Array.isArray(obj) ? [] : {};
+        Object.entries(obj).forEach(([k, v]) => {
+          if (v === undefined) return; // drop undefined
+          if (v && typeof v === 'object') out[k] = sanitize(v);
+          else out[k] = v;
+        });
+        return out;
       };
 
-      this.demoSources.push(newDemoSource);
-      console.log(this.demoSources);
-      return newDemoSource;
-    }
+      // Normalize adapter type to API contract (e.g., 'custom-api' -> 'api')
+      // TODO: fix this, so it is just api
+      const normalizeType = (t) => {
+        if (!t) return t;
+        const map = { 'custom-api': 'api', 'csv-file': 'csv', 'custom-ftp': 'ftp' };
+        return map[t] || t;
+      };
 
-    try {
-      // First test the connection
-      const connectionData = await this.testConnection(type, config, name);
+  // build config + secrets payload per backend contract:
+  // remote create expects: { name, sourceType, method, expiry, config, secrets }
+  const buildConfigAndSecrets = (cfg, srcType) => {
+        const clone = cfg ? { ...cfg } : {};
+        // Try to parse possible stringified fields
+        const parseMaybeJSON = (val) => {
+          if (val == null) return val;
+          if (typeof val !== 'string') return val;
+          try { return JSON.parse(val); } catch { return val; }
+        };
+        const authRaw = parseMaybeJSON(clone.authentication);
+        // Normalize auth: allow plain string to represent an API key
+        let auth = null;
+        if (authRaw && typeof authRaw === 'object') auth = authRaw;
+        else if (typeof authRaw === 'string' && authRaw.trim()) auth = { type: 'apiKey', value: authRaw.trim() };
 
-      // Save the connection to backend
-      const response = await this.apiClient.post(
-        endpoints.modules.day_book.data_sources.add(),
-        {
-          type,
-          name,
-          config,
-          status: "connected",
-          testResult: connectionData,
+        // Derive authType per contract (map 'apikey' -> 'apiKey')
+        const authType = (() => {
+          const t = auth?.type || clone.authType;
+          if (!t) return undefined; // allow no-auth
+          const lc = String(t).toLowerCase();
+          if (lc === 'apikey') return 'apiKey';
+          if (lc === 'jwt' || lc === 'jwt bearer' || lc === 'jwt-bearer') return 'bearer';
+          return String(t);
+        })();
+
+  // MySQL: include hostname and database fields; keep password in secrets only
+  if ((srcType || '').toLowerCase() === 'mysql') {
+          const hostname = clone.hostname || clone.host || clone.server;
+          const port = clone.port != null ? String(clone.port) : '3306';
+          const username = clone.username;
+          const database = clone.databaseName || clone.database;
+
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          if (user != null) secrets.username = String(user);
+          const pw = clone.password ?? clone.secrets?.password;
+          if (pw != null) secrets.password = String(pw);
+
+          const configOut = sanitize({ hostname, port, username, database, databaseName: database });
+          return { configOut, secrets };
         }
-      );
 
-      return response.data;
-    } catch (error) {
-      console.error(
-        "Failed to connect data source, falling back to demo mode:",
-        error
-      );
-      this.isDemoMode = true;
-      return this.connectDataSource(type, config, name);
+        // FTP: include hostname, port, filePath in config; secrets include username/password (+ optional keyFile)
+        if ((srcType || '').toLowerCase() === 'ftp') {
+          const hostname = clone.hostname || clone.host;
+          const port = clone.port != null ? String(clone.port) : '21';
+          const filePath = clone.filePath || clone.directory || '/';
+          const configOut = sanitize({ hostname, port, filePath });
+
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          const pw = clone.secrets?.password ?? clone.password;
+          const keyFile = clone.secrets?.keyFile ?? clone.keyFile;
+          if (user != null) secrets.username = String(user);
+          if (pw != null) secrets.password = String(pw);
+          if (keyFile != null) secrets.keyFile = String(keyFile);
+          return { configOut, secrets };
+        }
+
+        // Default API-like case
+        // endpoint is optional in contract -- default to empty string to match example
+        const endpoint = clone.endpoint ?? clone.url ?? '';
+
+        const secrets = {};
+        switch ((authType || '').toLowerCase()) {
+          case 'apikey': {
+            // Use provided authentication value as apiKey; do not infer from URL/connectionString
+            const apiKeyValue = (auth && auth.value != null)
+              ? auth.value
+              : (typeof authRaw === 'string' && authRaw.trim())
+                ? authRaw.trim()
+                : (clone.apiKey ?? clone.secrets?.apiKey);
+            if (apiKeyValue != null) secrets.apiKey = String(apiKeyValue);
+            break;
+          }
+          case 'bearer': {
+            if (auth?.token != null) secrets.token = String(auth.token);
+            else if (clone.token != null) secrets.token = String(clone.token);
+            else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
+            break;
+          }
+          case 'basic': {
+            if (auth?.username != null) secrets.username = String(auth.username);
+            if (auth?.password != null) secrets.password = String(auth.password);
+            if (clone.username != null) secrets.username = String(clone.username);
+            if (clone.password != null) secrets.password = String(clone.password);
+            if (clone.secrets?.username != null) secrets.username = String(clone.secrets.username);
+            if (clone.secrets?.password != null) secrets.password = String(clone.secrets.password);
+            break;
+          }
+          case 'query': {
+            if (auth?.value != null) secrets.token = String(auth.value);
+            else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
+            break;
+          }
+          default: {
+            // No secrets
+          }
+        }
+        const configOut = sanitize({ authType, endpoint });
+        return { configOut, secrets };
+      };
+
+      const normalizedType = normalizeType(type);
+      const { configOut, secrets } = buildConfigAndSecrets(config, normalizedType);
+
+      const payload = sanitize({
+        name,
+        sourceType: normalizedType,
+        method: config?.method || 'overwrite',
+        config: configOut || {},
+        secrets: secrets && Object.keys(secrets).length ? secrets : undefined,
+      });
+
+  const workspaceId = await getSavedWorkspaceId();
+  console.log('[DataSourceService] DEBUG workspaceId for add:', workspaceId);
+  console.log('[DataSourceService] DEBUG payload for add:', JSON.stringify(payload));
+  if (!workspaceId) throw new Error('No workspace selected');
+  // include workspaceId in body as fallback
+  payload.workspaceId = workspaceId;
+  console.log('[DataSourceService] createDataSource POST', { endpointUrl, workspaceId, payloadSummary: { name: payload.name, sourceType: payload.sourceType, hasSecrets: !!payload.secrets, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database, filePath: payload.config?.filePath } });
+  try {
+    const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
+        // Normalize response in case server returns raw object vs { data }
+        const created = response?.data ?? response;
+        if (!created || typeof created !== 'object') {
+          throw new Error('Backend did not return a created resource');
+        }
+        console.log("Adding!!!!!!!\n===========\n", response);
+        const normalize = (s) => {
+          const typeVal = s?.type || s?.sourceType || s?.adapterType || payload.sourceType;
+          const nameVal = s?.name || payload.name;
+          const status = s?.status || 'active';
+          const id = s?.id || s?._id || s?.dataSourceId || null;
+          const configVal = s?.config || payload.config || {};
+          return { ...s, id, type: typeVal, name: nameVal, status, config: configVal };
+        };
+        const normalized = normalize(created);
+        if (!normalized.id) {
+          throw new Error('Backend did not return a resource id');
+        }
+        return normalized;
+      } catch (postErr) {
+        // Surface full error details for debugging
+        console.error('[DataSourceService] createDataSource POST failed', {
+          endpointUrl,
+          payload,
+          errorMessage: postErr?.message,
+          errorResponse: postErr?.response || null,
+          fullError: postErr
+        });
+        if (postErr?.response) {
+          console.error('[DataSourceService] POST error response data:', postErr.response.data);
+        }
+        throw postErr;
+      }
+  } catch (error) {
+      throw error;
     }
+    };
+    const promise = run().finally(() => {
+      // Clear in-flight key after completion
+      this._connectInFlight.delete(key);
+    });
+    this._connectInFlight.set(key, promise);
+    return promise;
   }
 
-  // Update data source configuration
   async updateDataSource(sourceId, updates) {
-    if (this.isDemoMode) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
+    if (this.isDemoModeActive()) {
+      await this.simulateDemoDelay("update");
       const sourceIndex = this.demoSources.findIndex((s) => s.id === sourceId);
       if (sourceIndex !== -1) {
         this.demoSources[sourceIndex] = {
@@ -353,174 +592,235 @@ class DataSourceService {
       }
       throw new Error(`Demo source ${sourceId} not found`);
     }
-
     try {
+      // Log the outgoing update payload and target endpoint
+      const sanitize = (obj) => {
+        if (!obj || typeof obj !== 'object') return obj;
+        const out = Array.isArray(obj) ? [] : {};
+        Object.entries(obj).forEach(([k, v]) => {
+          if (v === undefined) return; // drop undefined
+          if (v && typeof v === 'object') out[k] = sanitize(v);
+          else out[k] = v;
+        });
+        return out;
+      };
+      const workspaceId = await getSavedWorkspaceId();
+      if (!workspaceId) throw new Error('No workspace selected');
+  const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.update, sourceId);
+      const payload = sanitize(updates);
+      console.log('[DataSourceService] updateDataSource PUT', { endpointUrl, workspaceId, sourceId, payload });
       const response = await this.apiClient.put(
-        endpoints.modules.day_book.data_sources.update(sourceId),
-        updates
+        endpointUrl,
+        payload,
+        { params: { workspaceId } }
       );
-
-      // Clear cached adapter if config changed
-      if (updates.config) {
-        this.clearAdapterCache(sourceId);
-      }
-
+      if (updates.config) this.clearAdapterCache(sourceId);
+      console.log('[DataSourceService] updateDataSource success', { sourceId, status: response?.status || 'ok' });
       return response.data;
-    } catch (error) {
-      console.error(`Failed to update data source ${sourceId}:`, error);
+    } catch {
       throw new Error("Failed to update data source");
     }
   }
 
-  // Disconnect/delete a data source
   async disconnectDataSource(sourceId) {
-    if (this.isDemoMode) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const sourceIndex = this.demoSources.findIndex((s) => s.id === sourceId);
-      if (sourceIndex !== -1) {
-        this.demoSources.splice(sourceIndex, 1);
-        this.clearAdapterCache(sourceId);
-        return true;
-      }
-      throw new Error(`Demo source ${sourceId} not found`);
-    }
-
     try {
-      await this.apiClient.delete(
-        endpoints.modules.day_book.data_sources.removeDataSource(sourceId)
-      );
-
-      // Clear cached adapter
+      const workspaceId = await getSavedWorkspaceId();
+      if (!workspaceId) throw new Error('No workspace selected');
+  const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.removeDataSource, sourceId);
+  console.log('[DataSourceService] disconnectDataSource DELETE', { endpointUrl, workspaceId, sourceId });
+  const resp = await this.apiClient.delete(endpointUrl, { params: { workspaceId } });
       this.clearAdapterCache(sourceId);
-
+  console.log('[DataSourceService] disconnectDataSource success', { sourceId, status: resp?.status || 'ok' });
       return true;
-    } catch (error) {
-      console.error(`Failed to disconnect data source ${sourceId}:`, error);
+    } catch {
       throw new Error("Failed to disconnect data source");
     }
   }
 
-  // Test connection to a data source
   async testConnection(type, config, name) {
     try {
-      // Create temporary adapter for testing
-      const adapter = createDataAdapter(type, {
-        ...config,
-        demoMode: this.isDemoMode,
-        fallbackToDemo: true,
-        apiClient: this.apiClient,
-        authService: this.authService,
+      // Build payload per backend contract
+      const sanitize = (obj) => {
+        if (!obj || typeof obj !== 'object') return obj;
+        const out = Array.isArray(obj) ? [] : {};
+        Object.entries(obj).forEach(([k, v]) => {
+          if (v === undefined) return;
+          if (v && typeof v === 'object') out[k] = sanitize(v);
+          else out[k] = v;
+        });
+        return out;
+      };
+      const normalizeType = (t) => {
+        if (!t) return t;
+        const map = { 'custom-api': 'api', 'csv-file': 'csv', 'custom-ftp': 'ftp' };
+        return map[t] || t;
+      };
+  const buildConfigAndSecrets = (cfg, srcType) => {
+        const clone = cfg ? { ...cfg } : {};
+        const parseMaybeJSON = (val) => {
+          if (val == null) return val;
+          if (typeof val !== 'string') return val;
+          try { return JSON.parse(val); } catch { return val; }
+        };
+        const authRaw = parseMaybeJSON(clone.authentication);
+        let auth = null;
+        if (authRaw && typeof authRaw === 'object') auth = authRaw;
+        else if (typeof authRaw === 'string' && authRaw.trim()) auth = { type: 'apiKey', value: authRaw.trim() };
+        const authType = (() => {
+          const t = auth?.type || clone.authType;
+          if (!t) return undefined; // allow no-auth
+          const lc = String(t).toLowerCase();
+          if (lc === 'apikey') return 'apiKey';
+          if (lc === 'jwt' || lc === 'jwt bearer' || lc === 'jwt-bearer') return 'bearer';
+          return String(t);
+        })();
+  // MySQL specific mapping first
+  if ((srcType || '').toLowerCase() === 'mysql') {
+          const hostname = clone.hostname || clone.host || clone.server;
+          const port = clone.port != null ? String(clone.port) : '3306';
+          const username = clone.username;
+          const database = clone.databaseName || clone.database;
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          if (user != null) secrets.username = String(user);
+          const pw = clone.password ?? clone.secrets?.password;
+          if (pw != null) secrets.password = String(pw);
+          const configOut = { hostname, port, username, database, databaseName: database };
+          return { configOut, secrets };
+        }
+
+        // FTP mapping
+        if ((srcType || '').toLowerCase() === 'ftp') {
+          const hostname = clone.hostname || clone.host;
+          const port = clone.port != null ? String(clone.port) : '21';
+          const filePath = clone.filePath || clone.directory || '/';
+          const configOut = { hostname, port, filePath };
+          const secrets = {};
+          const user = clone.secrets?.username ?? clone.username;
+          const pw = clone.secrets?.password ?? clone.password;
+          const keyFile = clone.secrets?.keyFile ?? clone.keyFile;
+          if (user != null) secrets.username = String(user);
+          if (pw != null) secrets.password = String(pw);
+          if (keyFile != null) secrets.keyFile = String(keyFile);
+          return { configOut, secrets };
+        }
+        const endpoint = clone.endpoint ?? clone.url ?? '';
+        const secrets = {};
+        switch ((authType || '').toLowerCase()) {
+          case 'apikey': {
+            const apiKeyValue = (auth && auth.value != null)
+              ? auth.value
+              : (typeof authRaw === 'string' && authRaw.trim())
+                ? authRaw.trim()
+        : (clone.apiKey ?? clone.secrets?.apiKey);
+            if (apiKeyValue != null) secrets.apiKey = String(apiKeyValue);
+            break;
+          }
+          case 'bearer': {
+      if (auth?.token != null) secrets.token = String(auth.token);
+      else if (clone.token != null) secrets.token = String(clone.token);
+      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
+            break;
+          }
+          case 'basic': {
+      if (auth?.username != null) secrets.username = String(auth.username);
+      if (auth?.password != null) secrets.password = String(auth.password);
+      if (clone.username != null) secrets.username = String(clone.username);
+      if (clone.password != null) secrets.password = String(clone.password);
+      if (clone.secrets?.username != null) secrets.username = String(clone.secrets.username);
+      if (clone.secrets?.password != null) secrets.password = String(clone.secrets.password);
+            break;
+          }
+          case 'query': {
+      if (auth?.value != null) secrets.token = String(auth.value);
+      else if (clone.secrets?.token != null) secrets.token = String(clone.secrets.token);
+            break;
+          }
+          default: {}
+        }
+        const configOut = sanitize({ authType, endpoint });
+        return { configOut, secrets };
+      };
+
+      const { configOut, secrets } = buildConfigAndSecrets(config, normalizeType(type));
+      const payload = sanitize({
+        name,
+        sourceType: normalizeType(type),
+        config: configOut || {},
+        secrets: secrets && Object.keys(secrets).length ? secrets : undefined,
       });
 
-      if (!adapter || !adapter.testConnection) {
-        throw new Error(
-          `Adapter for ${type} does not support connection testing`
-        );
-      }
-
-      // Test the connection
-      const testResult = await adapter.testConnection(
-        config.url || config.connectionString,
-        config.headers,
-        config.authentication
-      );
-
+      const workspaceId = await getSavedWorkspaceId();
+      if (!workspaceId) throw new Error('No workspace selected');
+      const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.testConnection);
+      console.log(payload);
+  console.log('[DataSourceService] testConnection POST', { endpointUrl, workspaceId, payloadSummary: { type: payload.sourceType, hasConfig: !!payload.config, hasPassword: !!(payload.secrets && payload.secrets.password), endpoint: payload.config?.endpoint, hostname: payload.config?.hostname, databaseName: payload.config?.databaseName || payload.config?.database, filePath: payload.config?.filePath } });
+      const response = await this.apiClient.post(endpointUrl, payload, { params: { workspaceId } });
+      const testResult = response?.data ?? response;
+      console.log('[DataSourceService] testConnection success', { status: response?.status });
       return {
-        type,
+        type: payload.sourceType,
         name,
-        config: {
-          ...config,
-          isDemoMode: this.isDemoMode,
-        },
-        status: "success",
+        config: payload.config,
+        status: 'success',
         testResult,
         createdAt: new Date().toISOString(),
         lastTested: new Date().toISOString(),
       };
     } catch (error) {
-      console.error(`Connection test failed:`, error);
-      throw new Error(`Connection test failed: ${error.message}`);
+      // Surface server-provided message when available
+      const serverMsg = error?.response?.data?.message || error?.response?.data?.error;
+      const msg = serverMsg || error?.message || 'Connection test failed';
+      console.error('[DataSourceService] testConnection failed', { status: error?.response?.status, msg });
+      throw new Error(`Connection test failed: ${msg}`);
     }
   }
 
-  // Update last sync timestamp
   async updateLastSync(sourceId) {
     try {
-      if (this.isDemoMode) {
-        const sourceIndex = this.demoSources.findIndex(
-          (s) => s.id === sourceId
-        );
-        if (sourceIndex !== -1) {
-          this.demoSources[sourceIndex].lastSync = new Date().toISOString();
-        }
-        return;
-      }
-
-      await this.updateDataSource(sourceId, {
-        lastSync: new Date().toISOString(),
-      });
-    } catch (error) {
-      console.warn(`Failed to update last sync for ${sourceId}:`, error);
-    }
+      await this.updateDataSource(sourceId, { lastSync: new Date().toISOString() });
+    } catch {}
   }
 
-  // Update data source status
   async updateDataSourceStatus(sourceId, status, error = null) {
     try {
-      if (this.isDemoMode) {
-        const sourceIndex = this.demoSources.findIndex(
-          (s) => s.id === sourceId
-        );
-        if (sourceIndex !== -1) {
-          this.demoSources[sourceIndex].status = status;
-          if (error) {
-            this.demoSources[sourceIndex].error = error;
-          }
-        }
-        return;
-      }
-
       const updates = { status };
-      if (error) {
-        updates.error = error;
-      }
+      if (error) updates.error = error;
       await this.updateDataSource(sourceId, updates);
-    } catch (updateError) {
-      console.warn(`Failed to update status for ${sourceId}:`, updateError);
-    }
+    } catch {}
   }
 
-  // Clear cached adapter for a data source
   clearAdapterCache(sourceId) {
-    // Remove all adapters that might be related to this source
     const keysToRemove = [];
     for (const key of this.activeAdapters.keys()) {
-      if (key.includes(sourceId)) {
-        keysToRemove.push(key);
-      }
+      if (key.includes(sourceId)) keysToRemove.push(key);
     }
     keysToRemove.forEach((key) => this.activeAdapters.delete(key));
   }
 
-  // Get statistics about connected data sources
+  clearAllAdapterCache() {
+    this.activeAdapters.clear();
+  }
+
   async getDataSourceStats() {
     try {
+  const startedAt = Date.now();
+  console.log('[DataSourceService] getDataSourceStats start');
       const sources = await this.getConnectedDataSources();
-      return {
+  const stats = {
         total: sources.length,
         connected: sources.filter((s) => s.status === "connected").length,
         errors: sources.filter((s) => s.status === "error").length,
         byType: this.groupByType(sources),
         byCategory: this.groupByCategory(sources),
       };
+  console.log('[DataSourceService] getDataSourceStats end', { durationMs: Date.now() - startedAt, totals: stats });
+  return stats;
     } catch (error) {
-      console.error("Failed to get data source stats:", error);
       throw error;
     }
   }
 
-  // Group sources by type
   groupByType(sources) {
     return sources.reduce((acc, source) => {
       acc[source.type] = (acc[source.type] || 0) + 1;
@@ -528,7 +828,6 @@ class DataSourceService {
     }, {});
   }
 
-  // Group sources by category
   groupByCategory(sources) {
     return sources.reduce((acc, source) => {
       const adapterInfo = getAdapterInfo(source.type);
@@ -538,21 +837,17 @@ class DataSourceService {
     }, {});
   }
 
-  // Get available data sources/endpoints for a connected source
   async getAvailableDataSources(sourceId) {
     try {
+      console.log('[DataSourceService] getAvailableDataSources start', { sourceId });
       const dataSource = await this.getDataSource(sourceId);
       const adapter = await this.getAdapter(dataSource.type, dataSource.config);
-
-      if (
-        adapter.getDataSources &&
-        typeof adapter.getDataSources === "function"
-      ) {
-        return await adapter.getDataSources();
+      if (adapter.getDataSources && typeof adapter.getDataSources === "function") {
+        const list = await adapter.getDataSources();
+        console.log('[DataSourceService] getAvailableDataSources adapter list', { count: Array.isArray(list) ? list.length : 0 });
+        return list;
       }
-
-      // Return default if adapter doesn't support discovery
-      return [
+      const fallback = [
         {
           id: `${sourceId}_default`,
           name: `${dataSource.name} - Default`,
@@ -560,154 +855,121 @@ class DataSourceService {
           lastModified: dataSource.lastSync || dataSource.createdAt,
         },
       ];
-    } catch (error) {
-      console.error(
-        `Failed to get available data sources for ${sourceId}:`,
-        error
-      );
+      console.log('[DataSourceService] getAvailableDataSources fallback list', { count: fallback.length });
+      return fallback;
+    } catch {
       throw new Error("Failed to discover available data sources");
     }
   }
 
-  // Connect provider (stores separately, doesn't appear in data sources list)
   async connectProvider(type) {
-    console.log(`Connecting provider for type: ${type}`);
-
     try {
-      // Get the adapter instance
       const adapter = await this.getAdapter(type);
-
-      if (!adapter || !adapter.connect) {
-        throw new Error(
-          `Adapter for ${type} does not support provider connection`
-        );
-      }
-
-      // Call the adapter's connect method for authentication
+      if (!adapter || !adapter.connect)
+        throw new Error(`Adapter for ${type} does not support provider connection`);
       const connectionResult = await adapter.connect();
-      console.log(`${type} adapter connection result:`, connectionResult);
-
-      // Create a provider connection entry (NOT a data source)
       const providerConnection = {
         id: `provider_${type}_${Date.now()}`,
-        type: type,
+        type,
         name: `${this.getDisplayName(type)} Provider`,
         status: "connected",
         lastSync: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         config: {
-          isProvider: true, // Mark this as a provider connection
-          connectionResult: connectionResult,
-          isDemoMode: this.isDemoMode,
+          isProvider: true,
+          connectionResult,
+      isDemoMode: false,
         },
         testResult: {
           status: "success",
-          responseTime: "200ms",
+      responseTime: "200ms",
           statusCode: 200,
           contentType: "application/json",
         },
       };
-
-      if (this.isDemoMode) {
-        // Add to demo sources but mark as provider
-        this.demoSources.push(providerConnection);
-        console.log("Added provider to demo sources:", providerConnection.id);
-      } else {
-        // Store in separate provider connections map instead of main data sources
-        this.providerConnections.set(type, providerConnection);
-        console.log("Stored provider connection:", providerConnection.id);
-
-        // Optionally save to backend with a different endpoint for providers
-        try {
-          // You might want to create a separate endpoint for provider connections
-          // const response = await this.apiClient.post(
-          //   endpoints.modules.day_book.providers.add(),
-          //   providerConnection
-          // );
-        } catch (error) {
-          console.warn("Failed to save provider connection to backend:", error);
-        }
-      }
-
+    this.providerConnections.set(type, providerConnection);
       return providerConnection;
     } catch (error) {
-      console.error(`Failed to connect ${type} provider:`, error);
       throw new Error(`Failed to connect ${type} provider: ${error.message}`);
     }
   }
 
-  //  Disconnect a provider (separate from disconnecting data sources)
   async disconnectProvider(type) {
     try {
-      if (this.isDemoMode) {
-        // Remove from demo sources
-        const sourceIndex = this.demoSources.findIndex(
-          (s) => s.type === type && s.config?.isProvider
-        );
-        if (sourceIndex !== -1) {
-          this.demoSources.splice(sourceIndex, 1);
-        }
-      } else {
-        // Remove from provider connections
-        this.providerConnections.delete(type);
-
-        // Optionally remove from backend
-        // await this.apiClient.delete(endpoints.modules.day_book.providers.remove(type));
-      }
-
-      // Clear any cached adapters for this type
+  this.providerConnections.delete(type);
       this.clearAdapterCacheByType(type);
-
       return true;
     } catch (error) {
-      console.error(`Failed to disconnect ${type} provider:`, error);
-      throw new Error(
-        `Failed to disconnect ${type} provider: ${error.message}`
-      );
+      throw new Error(`Failed to disconnect ${type} provider: ${error.message}`);
     }
   }
 
-  // Clear cached adapters by type
   clearAdapterCacheByType(type) {
     const keysToRemove = [];
     for (const key of this.activeAdapters.keys()) {
-      if (key.startsWith(type)) {
-        keysToRemove.push(key);
-      }
+      if (key.startsWith(type)) keysToRemove.push(key);
     }
     keysToRemove.forEach((key) => this.activeAdapters.delete(key));
   }
 
-  // Sync/refresh data from a source
   async syncDataSource(sourceId, options = {}) {
     return this.fetchDataFromSource(sourceId, options);
   }
 
-  // Check if service is in demo mode
-  isDemoModeActive() {
-    return this.isDemoMode;
+  // New: fetch view data from backend endpoint
+  async viewData(sourceId, params = {}) {
+    const startedAt = Date.now();
+    try {
+      console.log("!!!!!!LOGGING SOURCEID: ", sourceId);
+        if (!sourceId) {
+          throw new Error('Missing sourceId for viewData request');
+        }
+      const workspaceId = await getSavedWorkspaceId();
+      if (!workspaceId) throw new Error('No workspace selected');
+      const endpointUrl = this.resolveEndpoint(endpoints.modules.day_book.data_sources.viewData, sourceId);
+      const query = { workspaceId, ...(params || {}) };
+      console.log('[DataSourceService] viewData GET', { endpointUrl, sourceId, params: query });
+      const response = await this.apiClient.get(endpointUrl, { params: query });
+      const raw = response?.data;
+      // Normalize data array/object shapes from backend
+      const pickArray = (obj) => {
+        if (Array.isArray(obj)) return obj;
+        if (!obj || typeof obj !== 'object') return null;
+        const direct = obj.data || obj.items || obj.results || obj.records || obj.rows || obj.value;
+        if (Array.isArray(direct)) return direct;
+        const underData = obj.data && typeof obj.data === 'object' ? (obj.data.items || obj.data.results || obj.data.records || obj.data.rows || obj.data.value) : null;
+        if (Array.isArray(underData)) return underData;
+        // If object single row, return as array
+        return obj && typeof obj === 'object' ? [obj] : null;
+      };
+      const data = pickArray(raw) || [];
+      const headers = (() => {
+        if (Array.isArray(data) && data.length > 0) {
+          const first = data.find((r) => r && typeof r === 'object' && !Array.isArray(r));
+          if (first && typeof first === 'object') return Object.keys(first);
+        }
+        return ['value'];
+      })();
+      console.log('[DataSourceService] viewData success', { status: response?.status, rows: data.length, cols: headers.length, durationMs: Date.now() - startedAt });
+      return { data, headers };
+    } catch (error) {
+      const status = error?.response?.status;
+      const msg = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Failed to load view data';
+      console.error('[DataSourceService] viewData failed', { sourceId, status, msg, durationMs: Date.now() - startedAt });
+      throw new Error(msg);
+    }
   }
 
-  // Enable demo mode manually
-  enableDemoMode() {
-    this.isDemoMode = true;
+
+  refreshFromCentralizedConfig() {
+    return false;
   }
 
-  // Get demo mode indicator in stats
-  getDemoModeInfo() {
-    return {
-      isDemoMode: this.isDemoMode,
-      demoSourceCount: this.demoSources.filter((s) => !s.config?.isProvider)
-        .length,
-      availableDemoTypes: [
-        ...new Set(
-          this.demoSources
-            .filter((s) => !s.config?.isProvider)
-            .map((s) => s.type)
-        ),
-      ],
-    };
-  }
+  getDemoStatus() { return { effective: false }; }
+
+  // Explicitly disable demo mode throughout the service
+  isDemoModeActive() { return false; }
+  async simulateDemoDelay() { return; }
 
   getDisplayName(type) {
     const displayNames = {
@@ -716,9 +978,18 @@ class DataSourceService {
       "microsoft-excel": "Microsoft Excel",
       onedrive: "OneDrive",
       dropbox: "Dropbox",
+  api: "API",
       "custom-api": "Custom API",
+      database: "Database",
+      "csv-file": "CSV File",
     };
     return displayNames[type] || type;
+  }
+
+  destroy() {
+    if (this.demoConfigUnsubscribe) this.demoConfigUnsubscribe();
+    this.clearAllAdapterCache();
+    this.providerConnections.clear();
   }
 }
 

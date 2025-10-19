@@ -13,6 +13,7 @@ import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-am
 import formatTTLDate from "../../utils/format/formatTTLDate";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
 import { router } from "expo-router";
+import ResponsiveScreen from "../../components/layout/ResponsiveScreen";
 
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
@@ -146,14 +147,25 @@ const JoinWorkspace = () => {
         router.navigate("/(auth)/create-workspace");
     }
 
+    async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    }
+
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Join Workspace" />
-
-            <Text style={{ fontSize: 16, marginBottom: 12 }}>
-              You have the following options:
-            </Text>
-
+        <ResponsiveScreen
+            header={<Header
+                title="Join Workspace"
+                showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+            />}
+            scroll={false}
+        >
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
@@ -165,8 +177,11 @@ const JoinWorkspace = () => {
                         <Text style={{ fontSize: 16, textAlign: "center"}}>
                             You currently have no pending invites.
                         </Text>
+                        <Text style={{ fontSize: 16, textAlign: "center"}}>
+                            Ask your workplace to invite you.
+                        </Text>
                     </View>
-                ): (
+                ) : (
                     <FlatList
                         data={invites}
                         renderItem={renderInvites}
@@ -188,8 +203,9 @@ const JoinWorkspace = () => {
             <BasicButton
                 label={"Create Workspace"}
                 onPress={navigateToCreateWorkspace}
+                altBackground={(!loading && invites.length == 0) ? false : true}
             />
-        </View>
+        </ResponsiveScreen>
     )
 
 }
@@ -206,7 +222,8 @@ const styles = StyleSheet.create({
     noInvitesContainer: {
         flex: 1,
         justifyContent: "center",
-        alignItems: "center"
+        alignItems: "center",
+        gap: 20
     }
 })
 

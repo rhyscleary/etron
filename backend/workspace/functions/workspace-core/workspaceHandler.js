@@ -82,20 +82,6 @@ exports.handler = async (event) => {
                 break;
             }
 
-            // DELETE WORKSPACE
-            case "DELETE /workspace/{workspaceId}": {
-                if (!pathParams.workspaceId) {
-                    throw new Error("Missing required path parameter workspaceId");
-                }
-
-                if (typeof pathParams.workspaceId !== "string") {
-                    throw new Error("workspaceId must be a UUID, 'string'");
-                }
-
-                body = await deleteWorkspace(authUserId, pathParams.workspaceId);
-                break;
-            }
-
             // GET DEFAULT WORKSPACE PERMISSIONS
             case "GET /workspace/permissions": {
                 body = await getWorkspacePermissions();

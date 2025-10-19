@@ -10,7 +10,6 @@ import { apiGet, apiPost } from "../../../../../../utils/api/apiClient";
 import endpoints from "../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import * as FileSystem from 'expo-file-system';
-import { openFileAsync } from 'expo-file-viewer';
 import * as WebBrowser from 'expo-web-browser';
 
 const Exports = () => {

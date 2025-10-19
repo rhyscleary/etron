@@ -50,15 +50,18 @@ async function createBoardInWorkspace(authUserId, workspaceId, payload) {
 
     boardItem.thumbnailKey = thumbnailKey;
 
-    const thumbnailUrl = await getUploadUrl(thumbnailKey, {
+    const uploadUrl = await getUploadUrl(thumbnailKey, {
         ContentType: "image/jpeg"
     });
+
+    const downloadUrl = await getDownloadUrl(thumbnailKey);
 
     await workspaceRepo.addBoard(boardItem);
 
     return {
         ...boardItem,
-        thumbnailUrl
+        thumbnailUploadUrl: uploadUrl,
+        thumbnailUrl: downloadUrl
     };
 }
 
