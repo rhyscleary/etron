@@ -1,18 +1,18 @@
 // Author(s): Holly Wyatt, Noah Bradley, Rhys Cleary
 
 import { useEffect, useState } from "react";
-import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
-import Header from '../../../../../components/layout/Header';
-import StackLayout from "../../../../../components/layout/StackLayout";
-import TextField from "../../../../../components/common/input/TextField";
-import BasicButton from "../../../../../components/common/buttons/BasicButton";
+import { commonStyles } from '../../../../assets/styles/stylesheets/common';
+import Header from '../../../../components/layout/Header';
+import StackLayout from "../../../../components/layout/StackLayout";
+import TextField from "../../../../components/common/input/TextField";
+import BasicButton from "../../../../components/common/buttons/BasicButton";
 import { Text, useTheme } from "react-native-paper";
 import { View, Button, ActivityIndicator } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import { Buffer } from 'buffer';
-import { apiPut} from "../../../../../utils/api/apiClient";
-import endpoints from "../../../../../utils/api/endpoints";
+import { apiPut} from "../../../../utils/api/apiClient";
+import endpoints from "../../../../utils/api/endpoints";
 import { router } from 'expo-router';
 
 import {
@@ -21,11 +21,11 @@ import {
     confirmUserAttribute,
     getCurrentUser
 } from 'aws-amplify/auth';
-import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhoto, getPhotoFromDevice, saveProfilePhoto } from "../../../../../utils/profilePhoto";
-import AvatarButton from "../../../../../components/common/buttons/AvatarButton";
-import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
-import UnsavedChangesDialog from "../../../../../components/overlays/UnsavedChangesDialog";
-import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhoto, getPhotoFromDevice, saveProfilePhoto } from "../../../../utils/profilePhoto";
+import AvatarButton from "../../../../components/common/buttons/AvatarButton";
+import { getWorkspaceId } from "../../../../storage/workspaceStorage";
+import UnsavedChangesDialog from "../../../../components/overlays/UnsavedChangesDialog";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 global.Buffer = global.Buffer || Buffer
 

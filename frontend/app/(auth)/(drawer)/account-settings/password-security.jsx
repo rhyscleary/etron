@@ -1,13 +1,13 @@
 // Author(s): Holly Wyatt
 
 import { View, ScrollView } from 'react-native'
-import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
-import Header from '../../../../../components/layout/Header';
+import { commonStyles } from '../../../../assets/styles/stylesheets/common';
+import Header from '../../../../components/layout/Header';
 import { useTheme, Text } from "react-native-paper";
-import StackLayout from '../../../../../components/layout/StackLayout';
-import DescriptiveButton from '../../../../../components/common/buttons/DescriptiveButton';
+import StackLayout from '../../../../components/layout/StackLayout';
+import DescriptiveButton from '../../../../components/common/buttons/DescriptiveButton';
 import { router } from 'expo-router';
-import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
+import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
 
 const PasswordSecurity = () => {
     const theme = useTheme();

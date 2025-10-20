@@ -26,6 +26,7 @@ import {
     fetchUserAttributes,
     resendSignUpCode
 } from 'aws-amplify/auth';
+import Header from "../components/layout/Header";
 
 import { apiGet } from "../utils/api/apiClient";
 import endpoints from "../utils/api/endpoints";
