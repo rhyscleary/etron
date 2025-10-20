@@ -2,7 +2,7 @@
 
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import Header from "../../../../../components/layout/Header";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { apiGet } from "../../../../../utils/api/apiClient";
 import endpoints from "../../../../../utils/api/endpoints";
@@ -73,10 +73,11 @@ export default function ViewRole() {
 
     const groupedPermissions = useMemo(() => groupPermissions(role?.permissions), [role]);
 
-    const onRefresh = () => {
-        setRefreshing(true);
-        loadRole();
-    }
+    useFocusEffect(
+        useCallback(() => {
+            loadRole();
+        }, [loadRole])
+    );
 
     return (
         <ResponsiveScreen
