@@ -32,7 +32,7 @@ async function streamToString(stream) {
 
 async function archiveExpiredAuditLogs() {
   const now = Math.floor(Date.now() / 1000);
-  const cutoff = now - (THIRTY_DAYS - ONE_DAY); // ~29 days old
+  const cutoff = now - (THIRTY_DAYS); // 30 days old
 
   const scanParams = {
     TableName: TABLE_NAME,
@@ -67,7 +67,11 @@ async function archiveExpiredAuditLogs() {
         userId,
         action: item.action,
         timestamp: item.timestamp,
-        type: item.type,
+        filters: item.filters ? item.filters : [],
+        module: item.module,
+        itemId: item.itemId,
+        itemType: item.itemType,
+        itemName: item.itemName,
         details: item.details ? JSON.parse(item.details) : {},
       });
     }
@@ -75,7 +79,12 @@ async function archiveExpiredAuditLogs() {
     // upload grouped logs
     for (const [key, logs] of Object.entries(grouped)) {
       const [type, workspaceId, userId] = key.split("-");
-      const s3Key =
+      const s3Key = "";
+      if (userId && workspaceId) {
+
+      } else {
+        
+      }
         type === "workspace"
           ? `workspaces/${workspaceId}/audits/workspace/${workspaceId}.json`
           : `workspaces/${workspaceId}/audits/users/${userId}.json`;

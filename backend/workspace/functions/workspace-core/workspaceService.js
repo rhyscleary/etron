@@ -212,8 +212,10 @@ async function updateWorkspace(authUserId, workspaceId, payload) {
     await logAuditEvent({
         workspaceId,
         userId: authUserId,
-        action: "Updated workspace details",
-        type: "SETTINGS"
+        action: "Updated",
+        filters: "SETTINGS",
+        itemType: "workspace details",
+        itemId: workspaceId,
     });
 
     return updatedWorkspace;

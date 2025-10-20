@@ -15,8 +15,6 @@ async function logAuditEvent({
     return;
   }
 
-  const THIRTY_DAYS = 30 * 24 * 60 * 60;
-
   const now = Math.floor(Date.now() / 1000);
 
   // create new log item
@@ -27,9 +25,12 @@ async function logAuditEvent({
     action,
     timestamp: new Date().toISOString(),
     createdAt: now,
-    type,
+    filters, // define a filter
+    module, // day book
+    itemType, // metric, data source, etc
+    itemId,
+    itemName,
     details,
-    ttl: now + THIRTY_DAYS,
   };
 
   try {
