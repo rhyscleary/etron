@@ -8,7 +8,7 @@ const AvatarButton = ({
     imageSource,
     firstName = "",
     lastName = "",
-    badgeType = "plus", // add, edit or remove
+    badgeType, // add, edit or remove
     size = 72,
     onPress,
 }) => {
@@ -40,9 +40,9 @@ const AvatarButton = ({
         <TouchableOpacity onPress={onPress}>
             <View style={styles.container}>
                 {renderAvatar()}
-                <Badge size={24} style={[styles.badge, { backgroundColor: "white" }]}>
+                {badgeType ? <Badge size={24} style={[styles.badge, { backgroundColor: "white" }]}>
                     <Icon source={badgeIcons[badgeType] || "plus"} size={16} color="black" />
-                </Badge> 
+                </Badge> : null}
             </View>
         </TouchableOpacity>
     );
