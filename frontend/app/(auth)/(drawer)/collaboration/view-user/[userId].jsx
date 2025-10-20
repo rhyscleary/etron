@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme, Divider } from "react-native-paper";
+import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme, Divider, List } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
@@ -78,7 +78,6 @@ const ViewUser = () => {
         setLoading(false);
     });
 
-
 	return (
 		<ResponsiveScreen
 			header={
@@ -106,35 +105,17 @@ const ViewUser = () => {
                             imageSource={profilePicture ? {uri: profilePicture} : undefined}
                             firstName={firstName}
                             lastName={lastName}
-                            badgeType={profilePicture ? "remove" : "plus"}
                             //onPress={handleChoosePhoto}
                         />
                     </View>
 
                     <StackLayout spacing={24}>
-                        <TextField
-                            value={name}
-                            placeholder="Name"
-                            isDisabled={true}
-                        />
-
-                        <TextField
-                            value={email}
-                            placeholder="Email"
-                            isDisabled={true}
-                        />
-
-                        <TextField
-                            value={roleName}
-                            placeholder="Role"
-                            isDisabled={true}
-                        />
-
-                        <TextField
-                            value={"Joined: " + joinDate}
-                            placeholder="Join Date"
-                            isDisabled={true}
-                        />
+                        <List.Section>
+                            <List.Item title="Name" description={name} />
+                            <List.Item title="Email" description={email} />
+                            <List.Item title="Role" description={roleName} />
+                            <List.Item title="Joined" description={joinDate} />
+                        </List.Section>
 
                         <Divider />
 
