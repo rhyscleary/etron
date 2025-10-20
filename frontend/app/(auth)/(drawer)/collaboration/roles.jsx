@@ -28,7 +28,7 @@ const Roles = () => {
                     const result = await apiGet(endpoints.workspace.roles.getRoles(id));
                     const roles = result.data;
                     //console.log("Fetched roles:", result);
-                    console.log(roles[0]?.permissions[0]);
+                    console.log("Roles:", roles[0]?.permissions[0]);
 
                     // Ensure this matches your actual API shape
                     setRoles(Array.isArray(roles) ? roles : []);
@@ -63,7 +63,7 @@ const Roles = () => {
                 contentContainerStyle={{ paddingVertical: 16 }}
                 renderItem={({ item }) => (
                     <Pressable
-                        onPress={() => router.navigate(`/collaboration/edit-role/${item.roleId}`)}
+                        onPress={() => router.navigate(`/collaboration/view-role/${item.roleId}`)}
                         style={{
                             borderWidth: 1,
                             borderColor: '#ccc',
