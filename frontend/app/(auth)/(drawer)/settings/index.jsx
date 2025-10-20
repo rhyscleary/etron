@@ -16,11 +16,6 @@ const Settings = () => {
 
     // container for different setting options
     const settingButtonMap = [
-        { 
-            icon: "account", 
-            label: "Account", 
-            onPress: () => router.navigate("/settings/account")
-        },
         {
             permKey: "app.workspace.view_workspace_settings", 
             icon: "briefcase-outline", 

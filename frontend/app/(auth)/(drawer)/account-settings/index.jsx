@@ -1,27 +1,27 @@
 // Author(s): Holly Wyatt
 
 import { View, ScrollView, ActivityIndicator, StyleSheet } from 'react-native'
-import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
-import Header from '../../../../../components/layout/Header';
-import StackLayout from '../../../../../components/layout/StackLayout';
-import DescriptiveButton from '../../../../../components/common/buttons/DescriptiveButton';
+import { commonStyles } from '../../../../assets/styles/stylesheets/common';
+import Header from '../../../../components/layout/Header';
+import StackLayout from '../../../../components/layout/StackLayout';
+import DescriptiveButton from '../../../../components/common/buttons/DescriptiveButton';
 import { router } from 'expo-router';
 import { useEffect, useState } from "react";
-import { apiDelete } from '../../../../../utils/api/apiClient';
-import BasicDialog from '../../../../../components/overlays/BasicDialog';
+import { apiDelete } from '../../../../utils/api/apiClient';
+import BasicDialog from '../../../../components/overlays/BasicDialog';
 import { useTheme } from "react-native-paper";
-import { useVerification } from '../../../../../contexts/VerificationContext';
-import { verifyPassword } from '../../../../../utils/verifyPassword';
-import endpoints from '../../../../../utils/api/endpoints';
+import { useVerification } from '../../../../contexts/VerificationContext';
+import { verifyPassword } from '../../../../utils/verifyPassword';
+import endpoints from '../../../../utils/api/endpoints';
 
 import {
     getCurrentUser,
     deleteUser,
     signIn
 } from 'aws-amplify/auth';
-import BasicButton from '../../../../../components/common/buttons/BasicButton';
-import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
-import { getWorkspaceId } from '../../../../../storage/workspaceStorage';
+import BasicButton from '../../../../components/common/buttons/BasicButton';
+import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
+import { getWorkspaceId } from '../../../../storage/workspaceStorage';
 
 const Account = () => {
     const theme = useTheme();
@@ -87,7 +87,7 @@ const Account = () => {
 
     return(
         <ResponsiveScreen
-            header = {<Header title="Manage Account" showBack />}
+            header = {<Header title="Manage Account" showMenu />}
             center = {false}
         >
             <StackLayout spacing={12}>

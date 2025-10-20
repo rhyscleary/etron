@@ -1,14 +1,14 @@
 // Author(s): Holly Wyatt
 
 import { View, ScrollView, ActivityIndicator, Text } from 'react-native'
-import BasicButton from '../../../../../components/common/buttons/BasicButton';
-import { useAccount } from '../../../../../hooks/useAccount';
-import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
-import Header from '../../../../../components/layout/Header';
-import BasicDialog from '../../../../../components/overlays/BasicDialog';
-import AccountCard from '../../../../../components/cards/accountCard';
-import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
-import StackLayout from '../../../../../components/layout/StackLayout';
+import BasicButton from '../../../../components/common/buttons/BasicButton';
+import { useAccount } from '../../../../hooks/useAccount';
+import { commonStyles } from '../../../../assets/styles/stylesheets/common';
+import Header from '../../../../components/layout/Header';
+import BasicDialog from '../../../../components/overlays/BasicDialog';
+import AccountCard from '../../../../components/cards/accountCard';
+import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
+import StackLayout from '../../../../components/layout/StackLayout';
 
 const Accounts = () => {
     const {
