@@ -19,14 +19,14 @@ export default function ItemNotFound ({
             </View>
             <Text style={[styles.emptyTitle]}>{item} not found</Text>
             <Text style={[styles.emptyBody]}>
-                This {item} {itemId ? `(${itemId}) ` : ""}may have been removed. Try again or contact an admin.
+                This {item} {itemId ? `(ID: ${itemId}) ` : ""}may have been removed. Try again or contact an admin.
             </Text>
 
             <View style={styles.emptyActions}>
                 <Button mode="contained" onPress={() => router.back()}>
                     Back
                 </Button>
-                <Button mode="outlined" onPress={() => router.navigate(listRoute)}>
+                <Button mode="outlined" onPress={() => router.dismissTo(listRoute)}>
                     {capitalizedItem}s
                 </Button>
             </View>
