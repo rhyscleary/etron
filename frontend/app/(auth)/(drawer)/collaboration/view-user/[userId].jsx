@@ -105,6 +105,7 @@ const ViewUser = () => {
                             imageSource={profilePicture ? {uri: profilePicture} : undefined}
                             firstName={firstName}
                             lastName={lastName}
+                            disabled={true}
                             //onPress={handleChoosePhoto}
                         />
                     </View>
