@@ -87,7 +87,7 @@ const Account = () => {
 
     return(
         <ResponsiveScreen
-            header = {<Header title="Account Settings" showMenu />}
+            header = {<Header title="My Account" showMenu />}
             center = {false}
         >
             <StackLayout spacing={12}>
