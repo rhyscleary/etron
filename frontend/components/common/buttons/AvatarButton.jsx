@@ -11,6 +11,7 @@ const AvatarButton = ({
     badgeType, // add, edit or remove
     size = 72,
     onPress,
+    disabled,
 }) => {
     const theme = useTheme();
 
@@ -37,7 +38,7 @@ const AvatarButton = ({
         }
     }
     return (
-        <TouchableOpacity onPress={onPress}>
+        <TouchableOpacity onPress={onPress} disabled={disabled}>
             <View style={styles.container}>
                 {renderAvatar()}
                 {badgeType ? <Badge size={24} style={[styles.badge, { backgroundColor: "white" }]}>
