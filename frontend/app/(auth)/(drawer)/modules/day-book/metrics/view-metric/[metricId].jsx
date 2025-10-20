@@ -13,6 +13,7 @@ import BasicButton from "../../../../../../../components/common/buttons/BasicBut
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { apiGet, apiDelete } from "../../../../../../../utils/api/apiClient";
 import ResponsiveScreen from "../../../../../../../components/layout/ResponsiveScreen";
+import ItemNotFound from "../../../../../../../components/common/errors/MissingItem";
 
 
 const ViewMetric = () => {
@@ -21,6 +22,7 @@ const ViewMetric = () => {
     const [loading, setLoading] = useState(true);
     const [metricSettings, setMetricSettings] = useState(null);
     const [metricData, setMetricData] = useState(null);
+    const [metricExists, setMetricExists] = useState(true);
 
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
     const router = useRouter();
@@ -47,6 +49,13 @@ const ViewMetric = () => {
             return;
         }
 
+        console.log("metricSettings:", metricSettings);
+        if (!metricSettings) {
+            setMetricExists(false);
+            setLoading(false);
+            return;
+        }
+
         try {  // Download metric data
             let result = await apiGet(
                 endpoints.modules.day_book.data_sources.viewDataForMetric(metricSettings.dataSourceId, metricId),
@@ -61,19 +70,28 @@ const ViewMetric = () => {
         setLoading(false);
     }
 
-    if (loading) {
+    if (loading || !metricExists) {
         return (
             <ResponsiveScreen
                 header={
                     <Header title="View Metric" showBack />
                 }
-                center={false}
+                center={metricExists ? false : true}
                 padded={false}
                 scroll={false}
             >
-                <ActivityIndicator size="large" />
+                {metricExists ? (
+                    <ActivityIndicator size="large" />
+                ) : (
+                    <ItemNotFound
+                        icon = "alert-circle-outline"
+                        item = "metric"
+                        itemId = {metricId}
+                        listRoute = "/modules/day-book/metrics/"
+                    />
+                )}
             </ResponsiveScreen>
-        );
+        ) 
     }
 
     function convertToGraphData(rows) {
