@@ -282,11 +282,6 @@ const DataManagement = () => {
 					</View>
 				)}
 
-				<BasicButton
-					label="Testing"
-					onPress={() => router.navigate(`/modules/day-book/data-management/select-data-source/0987654321`)}
-				/>
-
 				{/* Grouped Data Sources */}
 				{Object.entries(groupedSources).map(([category, sources]) => (
 					<View key={category} style={styles.categorySection}>
