@@ -65,6 +65,8 @@ async function archiveExpiredAuditLogs() {
       grouped[key].push({
         logId: item.logId,
         userId,
+        user_given_name: item.userGivenName,
+        userFamilyName: item.userFamilyName,
         action: item.action,
         timestamp: item.timestamp,
         filters: item.filters ? item.filters : [],
@@ -83,7 +85,7 @@ async function archiveExpiredAuditLogs() {
       if (userId && workspaceId) {
 
       } else {
-        
+
       }
         type === "workspace"
           ? `workspaces/${workspaceId}/audits/workspace/${workspaceId}.json`
