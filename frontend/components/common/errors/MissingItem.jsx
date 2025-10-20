@@ -27,7 +27,7 @@ export default function ItemNotFound ({
                     Back
                 </Button>
                 <Button mode="outlined" onPress={() => router.navigate(listRoute)}>
-                    {capitalizedItem}
+                    {capitalizedItem}s
                 </Button>
             </View>
         </View>
