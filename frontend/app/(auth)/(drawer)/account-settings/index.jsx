@@ -50,8 +50,8 @@ const Account = () => {
     }, []);
 
     const accountSettingsButtons = [
-        { label: "Personal Details", description: "Update first and last name, phone number, and avatar", onPress: () => router.navigate("/settings/account/personal-details")},
-        { label: "Password and Security", onPress: () => router.navigate("/settings/account/password-security") },
+        { label: "Personal Details", description: "Update first and last name, phone number, and avatar", onPress: () => router.navigate("account-settings/personal-details")},
+        { label: "Password and Security", onPress: () => router.navigate("account-settings/password-security") },
         { label: "Delete Account", onPress: () => setDialogVisible(true)}
     ]
 
@@ -87,7 +87,7 @@ const Account = () => {
 
     return(
         <ResponsiveScreen
-            header = {<Header title="Manage Account" showMenu />}
+            header = {<Header title="Account Settings" showMenu />}
             center = {false}
         >
             <StackLayout spacing={12}>
@@ -100,7 +100,7 @@ const Account = () => {
                         key={"Accounts"}
                         label={"Accounts"}
                         description={email}
-                        onPress={() => router.navigate("/settings/account/accounts")}
+                        onPress={() => router.navigate("account-settings/accounts")}
                     />
                 )}
                 {accountSettingsButtons.map((item) => (

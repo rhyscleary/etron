@@ -63,7 +63,7 @@ const Settings = () => {
     return (
         <ResponsiveScreen
             header={
-                <Header title="Settings" showMenu />
+                <Header title="Workspace Settings" showMenu />
             }
             center={false}
             padded={false}
