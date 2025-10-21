@@ -11,6 +11,8 @@ Parameters:
   AthenaDatabaseName:
     Type: String
     Default: etron_day_book_db
+  AuditQueueUrl:
+    Type: String
 
 Globals:
   Function:
@@ -23,6 +25,7 @@ Globals:
         APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
         ATHENA_DATABASE: !Ref AthenaDatabaseName
+        AUDIT_QUEUE_URL: !Ref AuditQueueUrl
 
 Resources:
 
@@ -69,6 +72,7 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:GetObject
                 - s3:PutObject
                 - s3:ListBucket
@@ -220,6 +224,7 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:GetObject
                 - s3:PutObject
                 - s3:ListBucket
@@ -290,6 +295,7 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:GetObject
                 - s3:PutObject
                 - s3:ListBucket
@@ -360,6 +366,7 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:GetObject
                 - s3:PutObject
                 - s3:ListBucket
@@ -429,6 +436,7 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:GetObject
                 - s3:PutObject
                 - s3:ListBucket
@@ -499,6 +507,7 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:GetObject
                 - s3:PutObject
                 - s3:ListBucket
@@ -536,6 +545,7 @@ Resources:
               Resource: "*"
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:GetObject
                 - s3:PutObject
                 - s3:ListBucket
@@ -629,6 +639,7 @@ Resources:
         - Statement:
             - Effect: Allow
               Action:
+                - sqs:SendMessage
                 - s3:DeleteObject
                 - s3:GetObject
                 - s3:PutObject

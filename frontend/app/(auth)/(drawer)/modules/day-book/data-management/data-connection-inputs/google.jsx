@@ -15,6 +15,8 @@ import { apiGet, apiPost } from "../../../../../../../utils/api/apiClient";
 
 const GOOGLE_WEB_CLIENT_ID =
   "50734582647-ll5a03cudvfqhi8jhooco2j7pvddbf6s.apps.googleusercontent.com";
+const IOS_CLIENT_ID =
+  "50734582647-5scgmeadfvempp7l78ul9kk7rajess5o.apps.googleusercontent.com";
 
 export default function Google({ workspaceId }) {
   const [linking, setLinking] = useState(false);
@@ -45,7 +47,7 @@ export default function Google({ workspaceId }) {
     try {
       setLinking(true);
       try {
-        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        await GoogleSignin.hasPlayServices();
           // google services are available
       } catch (err) {
         console.error('play services are not available');

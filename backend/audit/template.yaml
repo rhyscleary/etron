@@ -8,6 +8,8 @@ Parameters:
     Type: String
   WorkspaceBucketName:
     Type: String
+  AuditQueue:
+    Type: String
     
 Globals:
   Function:
@@ -19,6 +21,7 @@ Globals:
       Variables:
         APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
+        AUDIT_QUEUE_ARN: !Ref AuditQueueArn
 
 Resources:
 
@@ -101,3 +104,32 @@ Resources:
           Properties:
             Schedule: cron(0 0 * * ? *) # every day midnight UTC
             Name: DailyAuditArchiver
+
+  AuditProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/audit-processor
+      Handler: loggerHandler.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+              Resource: !Sub arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${AuditQueueName}
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+              Resource: "*"  
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: "*"  
+      Events:
+        AuditQueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !Ref AuditQueue
+            BatchSize: 10          # process up to 10 messages at a time
+            MaximumRetryAttempts: 2
