@@ -42,24 +42,41 @@ jobs:
 
       - name: Pack and stage local shared packages for SAM
         run: |
-          # Create the exact paths npm will resolve DURING sam build
-          mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
-          mkdir -p backend/.aws-sam/audit/audit-shared
+          set -e
+          cd backend
 
-          # Pack day-book-shared and move its .tgz into the staged path
-          pushd backend/modules/day-book/day-book-shared
+          # Ensure all likely resolution paths exist
+          mkdir -p .aws-sam/shared .aws-sam/build/shared
+          mkdir -p .aws-sam/audit/audit-shared .aws-sam/build/audit-shared .aws-sam/build/audit/audit-shared
+          mkdir -p .aws-sam/modules/day-book/day-book-shared .aws-sam/build/modules/day-book/day-book-shared
+
+          # 1) @etron/shared
+          pushd shared
           npm pack
-          mv *.tgz ../../../.aws-sam/modules/day-book/day-book-shared/
+          SHARED_TGZ=$(ls -1 *.tgz)
+          cp "$SHARED_TGZ" ../.aws-sam/shared/
+          cp "$SHARED_TGZ" ../.aws-sam/build/shared/
           popd
 
-          # If you also consume audit-shared via a file: path, pack that too
-          pushd backend/audit/audit-shared
+          # 2) @etron/audit-shared
+          pushd audit/audit-shared
           npm pack
-          mv *.tgz ../../.aws-sam/audit/audit-shared/
+          AUDIT_TGZ=$(ls -1 *.tgz)
+          cp "$AUDIT_TGZ" ../../.aws-sam/audit/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit/audit-shared/
+          popd
+
+          # 3) @etron/day-book-shared
+          pushd modules/day-book/day-book-shared
+          npm pack
+          DB_TGZ=$(ls -1 *.tgz)
+          cp "$DB_TGZ" ../../../.aws-sam/modules/day-book/day-book-shared/
+          cp "$DB_TGZ" ../../../.aws-sam/build/modules/day-book/day-book-shared/
           popd
 
           echo "Staged tgz files:"
-          find backend/.aws-sam -type f -name '*.tgz' -maxdepth 5 -print
+          find .aws-sam -maxdepth 5 -name '*.tgz' -print
 
 
       - name: Cache SAM build artifacts
@@ -155,6 +172,44 @@ jobs:
       - name: Set the stack name for prod
         if: github.ref == 'refs/heads/main'
         run: echo "STACK_NAME=etron-prod" >> $GITHUB_ENV
+
+      - name: Pack and stage local shared packages for SAM
+        run: |
+          set -e
+          cd backend
+
+          # Ensure all likely resolution paths exist
+          mkdir -p .aws-sam/shared .aws-sam/build/shared
+          mkdir -p .aws-sam/audit/audit-shared .aws-sam/build/audit-shared .aws-sam/build/audit/audit-shared
+          mkdir -p .aws-sam/modules/day-book/day-book-shared .aws-sam/build/modules/day-book/day-book-shared
+
+          # 1) @etron/shared
+          pushd shared
+          npm pack
+          SHARED_TGZ=$(ls -1 *.tgz)
+          cp "$SHARED_TGZ" ../.aws-sam/shared/
+          cp "$SHARED_TGZ" ../.aws-sam/build/shared/
+          popd
+
+          # 2) @etron/audit-shared
+          pushd audit/audit-shared
+          npm pack
+          AUDIT_TGZ=$(ls -1 *.tgz)
+          cp "$AUDIT_TGZ" ../../.aws-sam/audit/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit/audit-shared/
+          popd
+
+          # 3) @etron/day-book-shared
+          pushd modules/day-book/day-book-shared
+          npm pack
+          DB_TGZ=$(ls -1 *.tgz)
+          cp "$DB_TGZ" ../../../.aws-sam/modules/day-book/day-book-shared/
+          cp "$DB_TGZ" ../../../.aws-sam/build/modules/day-book/day-book-shared/
+          popd
+
+          echo "Staged tgz files:"
+          find .aws-sam -maxdepth 5 -name '*.tgz' -print
 
       - name: Deploy the SAM app
         run: |
