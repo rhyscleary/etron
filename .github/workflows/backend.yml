@@ -40,36 +40,27 @@ jobs:
           cd backend
           python3 prep.py
 
-      - name: Pack and copy shared packages
+      - name: Pack and stage local shared packages for SAM
         run: |
-          # create the exact target directories npm expects under backend/.aws-sam
-          mkdir -p backend/.aws-sam/shared
-          mkdir -p backend/.aws-sam/audit/audit-shared
+          # Create the exact paths npm will resolve DURING sam build
           mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
+          mkdir -p backend/.aws-sam/audit/audit-shared
 
-          # pack the repository-level shared package (repo root: shared)
-          pushd shared
+          # Pack day-book-shared and move its .tgz into the staged path
+          pushd backend/modules/day-book/day-book-shared
           npm pack
-          mv *.tgz ../backend/.aws-sam/shared/
-          echo "shared tgz moved to backend/.aws-sam/shared:"
-          ls -la ../backend/.aws-sam/shared || true
+          mv *.tgz ../../../.aws-sam/modules/day-book/day-book-shared/
           popd
 
-          # pack the audit shared package (repo root: audit/audit-shared)
-          pushd audit/audit-shared
+          # If you also consume audit-shared via a file: path, pack that too
+          pushd backend/audit/audit-shared
           npm pack
-          mv *.tgz ../../backend/.aws-sam/audit/audit-shared/
-          echo "audit-shared tgz moved to backend/.aws-sam/audit/audit-shared:"
-          ls -la ../../backend/.aws-sam/audit/audit-shared || true
+          mv *.tgz ../../.aws-sam/audit/audit-shared/
           popd
 
-          # pack the day-book module shared package (repo root: modules/day-book/day-book-shared)
-          pushd modules/day-book/day-book-shared
-          npm pack
-          mv *.tgz ../../../backend/.aws-sam/modules/day-book/day-book-shared/
-          echo "day-book-shared tgz moved to backend/.aws-sam/modules/day-book/day-book-shared:"
-          ls -la ../../../backend/.aws-sam/modules/day-book/day-book-shared || true
-          popd
+          echo "Staged tgz files:"
+          find backend/.aws-sam -type f -name '*.tgz' -maxdepth 5 -print
+
 
       - name: Cache SAM build artifacts
         uses: actions/cache@v4
@@ -80,7 +71,6 @@ jobs:
       - name: Build the SAM application
         run: |
           cd backend
-          echo "Contents of backend/.aws-sam before sam build:"
           ls -R .aws-sam || true
           sam build --no-cached
   
@@ -103,30 +93,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Pack and copy shared packages for tests
-        run: |
-          mkdir -p backend/.aws-sam/shared
-          mkdir -p backend/.aws-sam/audit/audit-shared
-          mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
-
-          pushd shared
-          npm pack
-          mv *.tgz ../backend/.aws-sam/shared/
-          ls -la ../backend/.aws-sam/shared || true
-          popd
-
-          pushd audit/audit-shared
-          npm pack
-          mv *.tgz ../../backend/.aws-sam/audit/audit-shared/
-          ls -la ../../backend/.aws-sam/audit/audit-shared || true
-          popd
-
-          pushd modules/day-book/day-book-shared
-          npm pack
-          mv *.tgz ../../../backend/.aws-sam/modules/day-book/day-book-shared/
-          ls -la ../../../backend/.aws-sam/modules/day-book/day-book-shared || true
-          popd
-
       - name: Install dependencies for testing
         run: |
           cd backend
@@ -136,7 +102,6 @@ jobs:
         run: |
           cd backend
           npm run test       
-
   backend_deploy:
     runs-on: ubuntu-latest
     name: Build and Deploy Backend to AWS
@@ -178,35 +143,9 @@ jobs:
           cd backend
           python3 scripts/prepare_build.py
 
-      - name: Pack and copy shared packages (for deploy)
-        run: |
-          mkdir -p backend/.aws-sam/shared
-          mkdir -p backend/.aws-sam/audit/audit-shared
-          mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
-
-          pushd shared
-          npm pack
-          mv *.tgz ../backend/.aws-sam/shared/
-          ls -la ../backend/.aws-sam/shared || true
-          popd
-
-          pushd audit/audit-shared
-          npm pack
-          mv *.tgz ../../backend/.aws-sam/audit/audit-shared/
-          ls -la ../../backend/.aws-sam/audit/audit-shared || true
-          popd
-
-          pushd modules/day-book/day-book-shared
-          npm pack
-          mv *.tgz ../../../backend/.aws-sam/modules/day-book/day-book-shared/
-          ls -la ../../../backend/.aws-sam/modules/day-book/day-book-shared || true
-          popd
-
       - name: Build the SAM app
         run: |
           cd backend
-          echo "Contents of backend/.aws-sam before sam build (deploy):"
-          ls -R .aws-sam || true
           sam build --no-cached
 
       - name: Set the stack name for develop
