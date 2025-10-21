@@ -85,6 +85,12 @@ jobs:
           path: backend/.aws-sam
           key: ${{ runner.os }}-sam-${{ github.sha }}
 
+      - name: Verify local tarballs exist
+        run: |
+          test -f backend/.aws-sam/shared/etron-shared-1.0.0.tgz
+          test -f backend/.aws-sam/audit/audit-shared/etron-audit-shared-1.0.0.tgz
+          test -f backend/.aws-sam/modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz
+
       - name: Build the SAM application
         run: |
           cd backend
