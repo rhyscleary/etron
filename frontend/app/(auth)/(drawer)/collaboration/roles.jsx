@@ -1,11 +1,10 @@
-// Author(s): Matthew Page
+// Author(s): Matthew Page, Noah Bradley
 
-import { View, FlatList, Pressable, Text as RNText  } from "react-native";
+import { View, FlatList, RefreshControl } from "react-native";
 import Header from "../../../../components/layout/Header";
-import { commonStyles } from "../../../../assets/styles/stylesheets/common";
-import { Text } from "react-native-paper";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { Text, TextInput, TouchableRipple, useTheme, ActivityIndicator } from "react-native-paper";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
@@ -13,34 +12,76 @@ import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 
 const Roles = () => {
-    const [roles, setRoles] = useState([]);
-    const [workspaceId, setWorkspaceId] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const theme = useTheme();
 
+    const [roles, setRoles] = useState([]);
+    const [search, setSearch] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const loadRoles = useCallback(async () => {
+        try {
+            const workspaceId = await getWorkspaceId();
+            const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+            setRoles(result.data);
+        } catch (error) {
+            console.error("Error fetching roles:", error);
+        } finally {
+            setLoading(false);
+            setRefreshing(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const loadWorkspaceAndRoles = async () => {
-            try {
-                const id = await getWorkspaceId();
-                setWorkspaceId(id);
+        setLoading(true);
+        loadRoles();
+    }, [loadRoles]);
 
-                if (id) {
-                    const result = await apiGet(endpoints.workspace.roles.getRoles(id));
-                    const roles = result.data;
-                    //console.log("Fetched roles:", result);
-                    console.log("Roles:", roles[0]?.permissions[0]);
+    useFocusEffect(
+        useCallback(() => {
+            setRefreshing(true);
+                loadRoles();
+        }, [loadRoles])
+    );
 
-                    // Ensure this matches your actual API shape
-                    setRoles(Array.isArray(roles) ? roles : []);
-                    setLoading(false);
-                }
-            } catch (error) {
-                console.error("Error fetching roles:", error);
-            }
-        };
+    const filtered = useMemo(() => {
+        const query = search.trim().toLowerCase();
+        if (!query) return roles;
+        return roles.filter(role => (role.name || "").toLowerCase().includes(query));
+    }, [roles, search]);
 
-        loadWorkspaceAndRoles();
-    }, []);
+    const renderItem = ({ item, index }) => {
+        const isLast = index === filtered.length - 1;
+
+        return (<>
+            <TouchableRipple
+                borderless={false}
+                onPress={() => router.navigate(`/collaboration/view-role/${item.roleId}`)}
+                style={{
+                    backgroundColor: theme.colors.surface,
+                    borderRadius: 12,
+                    paddingVertical: 14,
+                    paddingHorizontal: 16,
+                    marginTop: index === 0 ? 12 : 8,
+                    borderWidth: 1,
+                    borderColor: theme.isV3
+                    ? theme.colors.outlineVariant
+                    : theme.colors.backdrop?.concat("33") || "#E0E0E0",
+                }}
+            >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                    <Text variant="titleMedium" style={{ flex: 1 }}>
+                        {item.name}
+                    </Text>
+                    {!item.owner && (
+                        <Text variant="labelMedium" style={{ opacity: 0.6 }}>
+                            {item.permissions.length ?? 0} perms
+                        </Text>
+                    )}
+                </View>
+            </TouchableRipple>
+        </>);
+    };
 
     return (
 		<ResponsiveScreen
@@ -53,41 +94,44 @@ const Roles = () => {
                 />             
             }
 			center={false}
-			padded={false}
             scroll={false}
+            tapToDismissKeyboard={false}
 		>
-
-            <FlatList
-                data={roles}
-                keyExtractor={(item) => item.roleId}
-                contentContainerStyle={{ paddingVertical: 16 }}
-                renderItem={({ item }) => (
-                    <Pressable
-                        onPress={() => router.navigate(`/collaboration/view-role/${item.roleId}`)}
-                        style={{
-                            borderWidth: 1,
-                            borderColor: '#ccc',
-                            borderRadius: 4,
-                            padding: 16,
-                            marginVertical: 2,
-                            marginHorizontal: 12
-                        }}
-                    >
-                        <Text>{item.name}</Text>
-                    </Pressable>
-                )}
-                ListEmptyComponent={
-                    loading ? (
-                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                            Loading Roles...
-                        </RNText>
-                    ) : (
-                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                            No roles found
-                        </RNText>
-                    )
-                }
-            />
+            <View style={{  paddingTop: 8 }}>
+                <TextInput
+                    mode="outlined"
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder="Search roles…"
+                    left={<TextInput.Icon icon="magnify" />}
+                />
+            </View>
+            {loading ? (
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    <ActivityIndicator size="large" />
+                    <Text style={{ marginTop: 12, opacity: 0.6 }}>Loading roles…</Text>
+                </View>
+            ) : (
+                <FlatList
+                    data={filtered}
+                    keyExtractor={(item) => item.roleId}
+                    renderItem={renderItem}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadRoles(); }} />}
+                    ListEmptyComponent={
+                        <View style={{ alignItems: "center", marginTop: 48 }}>
+                            <Text variant="titleMedium" style={{ marginBottom: 6 }}>
+                                {search ? "No matching roles" : "No roles yet"}
+                            </Text>
+                            <Text style={{ textAlign: "center", opacity: 0.6 }}>
+                                {search
+                                    ? "Try a different search."
+                                    : "Tap the plus button in the header to create a role."}
+                            </Text>
+                        </View>
+                    }
+                    contentContainerStyle={{ paddingBottom: 24 }}
+                />
+            )}
         </ResponsiveScreen>
     );
 };

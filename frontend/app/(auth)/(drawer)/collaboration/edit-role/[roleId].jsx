@@ -296,93 +296,95 @@ export default function EditRole() {
 					/>
 				</Card>
 
-				<Card style={styles.card}>
-					<Card.Title title="Board Access"/>
-					<Card.Content>
-					{boards.length > 0 ? (
-						<View style={styles.chipsWrap}>
-							{boards.map((board) => {
-								const active = selectedBoards.includes(board.boardId);
-								return (
-									<Chip
-										key={board.boardId}
-										mode={active ? "flat" : "outlined"}
-										selected={active}
-										onPress={() => toggleBoard(board.boardId)}
-										style={styles.chip}
-									>
-										{board.name}
-									</Chip>
-								);
-							})}
-						</View>
-					) : (
-						<Text>The workspace has no boards.</Text>
-					)}
-					</Card.Content>
-				</Card>
-
-				<Card style={styles.card}>
-					<Card.Title title={`Permissions (${selectedPerms.length})`} />
-					<Card.Content>
-						{Object.entries(permissions.reduce((acc, category) => {
-							(acc[category.section] ||= []).push(category);
-							return acc;
-						}, {})).map(([sectionLabel, categories]) => (
-							<View key={sectionLabel} style={{ marginBottom: 8 }}>
-								<Text style={{ marginBottom: 6 }}>{sectionLabel}</Text>
-
-								{categories.map((category) => {
-									const open = !!openAccordions[category.categoryKey];
-									const keys = category.permissions.map((permission) => permission.key);
-									const allSelected = keys.every((key) => selectedPerms.includes(key));
-
-									const handleBulkToggle = () => {
-										if (allSelected) setSelectedPerms(prev => prev.filter(key => !keys.includes(key)));
-										else setSelectedPerms(prev => Array.from(new Set([...prev, ...keys])));
-									};
-
+				{!role.owner && (<>
+					<Card style={styles.card}>
+						<Card.Title title="Board Access"/>
+						<Card.Content>
+						{boards.length > 0 ? (
+							<View style={styles.chipsWrap}>
+								{boards.map((board) => {
+									const active = selectedBoards.includes(board.boardId);
 									return (
-										<View key={category.categoryKey} style={{ marginBottom: 6 }}>
-											<List.Accordion
-												title={category.categoryLabel}
-												expanded={open}
-												onPress={() => setOpenAccordions(s => ({ ...s, [category.categoryKey]: !s[category.categoryKey] }))}
-											>
-												<View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
-													<Chip compact onPress={handleBulkToggle}>
-														{allSelected ? 'Clear' : 'Select All'}
-													</Chip>
-												</View>
-
-												<View style={{ paddingLeft: 4 }}>
-													{category.permissions.map(perm => {
-														const checked = selectedPerms.includes(perm.key);
-														return (
-															<Checkbox.Item
-																key={perm.key}
-																status={checked ? 'checked' : 'unchecked'}
-																onPress={() => setSelectedPerms(prev => checked ? prev.filter(k => k !== perm.key) : [...prev, perm.key] )}
-																label={perm.label}
-																position="leading"
-																labelVariant="bodyMedium"
-																description={perm.description || undefined}
-															/>
-														);
-													})}
-												</View>
-											</List.Accordion>
-										</View>
+										<Chip
+											key={board.boardId}
+											mode={active ? "flat" : "outlined"}
+											selected={active}
+											onPress={() => toggleBoard(board.boardId)}
+											style={styles.chip}
+										>
+											{board.name}
+										</Chip>
 									);
 								})}
 							</View>
-						))}
-
-						{permissions.length === 0 && (
-							<Text>No available permissions.</Text>
+						) : (
+							<Text>The workspace has no boards.</Text>
 						)}
-					</Card.Content>
-				</Card>
+						</Card.Content>
+					</Card>
+
+					<Card style={styles.card}>
+						<Card.Title title={`Permissions (${selectedPerms.length})`} />
+						<Card.Content>
+							{Object.entries(permissions.reduce((acc, category) => {
+								(acc[category.section] ||= []).push(category);
+								return acc;
+							}, {})).map(([sectionLabel, categories]) => (
+								<View key={sectionLabel} style={{ marginBottom: 8 }}>
+									<Text style={{ marginBottom: 6 }}>{sectionLabel}</Text>
+
+									{categories.map((category) => {
+										const open = !!openAccordions[category.categoryKey];
+										const keys = category.permissions.map((permission) => permission.key);
+										const allSelected = keys.every((key) => selectedPerms.includes(key));
+
+										const handleBulkToggle = () => {
+											if (allSelected) setSelectedPerms(prev => prev.filter(key => !keys.includes(key)));
+											else setSelectedPerms(prev => Array.from(new Set([...prev, ...keys])));
+										};
+
+										return (
+											<View key={category.categoryKey} style={{ marginBottom: 6 }}>
+												<List.Accordion
+													title={category.categoryLabel}
+													expanded={open}
+													onPress={() => setOpenAccordions(s => ({ ...s, [category.categoryKey]: !s[category.categoryKey] }))}
+												>
+													<View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
+														<Chip compact onPress={handleBulkToggle}>
+															{allSelected ? 'Clear' : 'Select All'}
+														</Chip>
+													</View>
+
+													<View style={{ paddingLeft: 4 }}>
+														{category.permissions.map(perm => {
+															const checked = selectedPerms.includes(perm.key);
+															return (
+																<Checkbox.Item
+																	key={perm.key}
+																	status={checked ? 'checked' : 'unchecked'}
+																	onPress={() => setSelectedPerms(prev => checked ? prev.filter(k => k !== perm.key) : [...prev, perm.key] )}
+																	label={perm.label}
+																	position="leading"
+																	labelVariant="bodyMedium"
+																	description={perm.description || undefined}
+																/>
+															);
+														})}
+													</View>
+												</List.Accordion>
+											</View>
+										);
+									})}
+								</View>
+							))}
+
+							{permissions.length === 0 && (
+								<Text>No available permissions.</Text>
+							)}
+						</Card.Content>
+					</Card>
+				</>)}
 			</StackLayout>)}
 
 			<Portal>
