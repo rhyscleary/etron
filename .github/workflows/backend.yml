@@ -42,31 +42,42 @@ jobs:
 
       - name: Pack and stage local shared packages for SAM
         run: |
-          # Create the exact directories npm resolves during `sam build`
+          # Create staging targets used by different relative "file:" paths
           mkdir -p backend/.aws-sam/shared
-          mkdir -p backend/.aws-sam/audit/audit-shared
-          mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
+          mkdir -p backend/.aws-sam/build/shared
 
-          # core shared -> .aws-sam/shared
+          mkdir -p backend/.aws-sam/audit/audit-shared
+          mkdir -p backend/.aws-sam/build/audit-shared
+
+          mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
+          mkdir -p backend/.aws-sam/build/modules/day-book/day-book-shared
+
+          # core shared -> stage to .aws-sam/shared AND .aws-sam/build/shared
           pushd backend/shared
           npm pack
-          mv *.tgz ../.aws-sam/shared/
+          TGZ=$(ls -1 *.tgz)
+          cp "$TGZ" ../.aws-sam/shared/
+          cp "$TGZ" ../.aws-sam/build/shared/
           popd
 
-          # audit-shared -> .aws-sam/audit/audit-shared
+          # audit-shared -> stage to .aws-sam/audit/audit-shared AND .aws-sam/build/audit-shared
           pushd backend/audit/audit-shared
           npm pack
-          mv *.tgz ../../.aws-sam/audit/audit-shared/
+          TGZ=$(ls -1 *.tgz)
+          cp "$TGZ" ../../.aws-sam/audit/audit-shared/
+          cp "$TGZ" ../../.aws-sam/build/audit-shared/
           popd
 
-          # day-book-shared -> .aws-sam/modules/day-book/day-book-shared
+          # day-book-shared -> stage to .aws-sam/modules/day-book/day-book-shared AND .aws-sam/build/modules/day-book/day-book-shared
           pushd backend/modules/day-book/day-book-shared
           npm pack
-          mv *.tgz ../../../.aws-sam/modules/day-book/day-book-shared/
+          TGZ=$(ls -1 *.tgz)
+          cp "$TGZ" ../../../.aws-sam/modules/day-book/day-book-shared/
+          cp "$TGZ" ../../../.aws-sam/build/modules/day-book/day-book-shared/
           popd
 
           echo "Staged tarballs:"
-          find backend/.aws-sam -maxdepth 5 -type f -name '*.tgz' -print
+          find backend/.aws-sam -maxdepth 6 -type f -name '*.tgz' -print
 
 
       - name: Cache SAM build artifacts
