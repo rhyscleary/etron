@@ -42,15 +42,22 @@ jobs:
 
       - name: Pack and copy shared packages
         run: |
+          # create expected target directories under backend/.aws-sam
           mkdir -p backend/.aws-sam/shared
           mkdir -p backend/.aws-sam/audit/audit-shared
+
+          # pack from backend/shared -> move into backend/.aws-sam/shared
           pushd backend/shared
           npm pack
-          mv *.tgz ../backend/.aws-sam/shared/
+          mv *.tgz ../.aws-sam/shared/
+          ls -la ../.aws-sam/shared || true
           popd
+
+          # pack from backend/audit/audit-shared -> move into backend/.aws-sam/audit/audit-shared
           pushd backend/audit/audit-shared
           npm pack
-          mv *.tgz ../../backend/.aws-sam/audit/audit-shared/
+          mv *.tgz ../../.aws-sam/audit/audit-shared/
+          ls -la ../../.aws-sam/audit/audit-shared || true
           popd
 
 
