@@ -172,7 +172,6 @@ const ViewMetric = () => {
                     />
                 }
                 center={false}
-                padded={false}
             >
                 <Card style={[styles.card]}>
                     <Card.Title title={metricSettings.name}/>
@@ -203,7 +202,7 @@ export default ViewMetric;
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    card: { marginTop: 20, width: "90%", alignSelf: "center" },
+    card: { marginTop: 20, alignSelf: "center" },
     graphCardContainer: { aspectRatio: 16 / 20, width: "100%" },
     button: { alignSelf: "flex-end" },
 });

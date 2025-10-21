@@ -2,20 +2,11 @@ name: Backend CI/CD workflow
 
 on:
   push:
-    branches:
-      - main
-      - develop
-      - 'feature-*'
-    paths:
-      - 'backend/**'
-
+    branches: [ main, develop, 'feature-*' ]
+    paths: [ 'backend/**' ]
   pull_request:
-    branches:
-      - main
-      - develop
-      - 'feature-*'
-    paths:
-      - 'backend/**'
+    branches: [ main, develop, 'feature-*' ]
+    paths: [ 'backend/**' ]
 
 jobs:
   backend_build:
@@ -40,17 +31,88 @@ jobs:
           cd backend
           python3 prep.py
 
+      - name: Pack and stage local shared packages for SAM
+        run: |
+          set -e
+          cd backend
+
+          # Ensure all likely resolution paths exist
+          mkdir -p .aws-sam/shared .aws-sam/build/shared
+          mkdir -p .aws-sam/audit/audit-shared .aws-sam/build/audit-shared .aws-sam/build/audit/audit-shared
+          mkdir -p .aws-sam/modules/day-book/day-book-shared .aws-sam/build/modules/day-book/day-book-shared
+
+          # 1) @etron/shared
+          pushd shared
+          npm pack
+          SHARED_TGZ=$(ls -1 *.tgz)
+          cp "$SHARED_TGZ" ../.aws-sam/shared/
+          cp "$SHARED_TGZ" ../.aws-sam/build/shared/
+          popd
+
+          # 2) @etron/audit-shared
+          pushd audit/audit-shared
+          npm pack
+          AUDIT_TGZ=$(ls -1 *.tgz)
+          cp "$AUDIT_TGZ" ../../.aws-sam/audit/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit/audit-shared/
+          popd
+
+          # 3) @etron/day-book-shared
+          pushd modules/day-book/day-book-shared
+          npm pack
+          DB_TGZ=$(ls -1 *.tgz)
+          cp "$DB_TGZ" ../../../.aws-sam/modules/day-book/day-book-shared/
+          cp "$DB_TGZ" ../../../.aws-sam/build/modules/day-book/day-book-shared/
+          popd
+
+          echo "Staged tgz files:"
+          find .aws-sam -maxdepth 5 -name '*.tgz' -print
+
+      - name: Rewrite local file deps to stable .aws-sam paths
+        run: |
+          set -e
+          cd backend
+          for PKG in $(find . -path '*/functions/*/package.json'); do
+            sed -i \
+              -e 's|"file:\.\.\/\.\.\/shared\/etron-shared-1\.0\.0\.tgz"|"file:..\/..\/..\/.aws-sam\/shared\/etron-shared-1.0.0.tgz"|g' \
+              -e 's|"file:\.\.\/\.\.\/audit\/audit-shared\/etron-audit-shared-1\.0\.0\.tgz"|"file:..\/..\/..\/.aws-sam\/audit\/audit-shared\/etron-audit-shared-1.0.0.tgz"|g' \
+              -e 's|"file:\.\.\/\.\.\/modules\/day-book\/day-book-shared\/etron-day-book-shared-1\.0\.0\.tgz"|"file:..\/..\/..\/.aws-sam\/modules\/day-book\/day-book-shared\/etron-day-book-shared-1.0.0.tgz"|g' \
+              "$PKG"
+          done
+
+      - name: Show rewritten deps
+        run: |
+          cd backend
+          echo "Audit core package.json:"
+          sed -n '1,200p' audit/functions/audit-core/package.json | sed -n '/"dependencies"/,/\}/p' || true
+          echo "Workspace core package.json:"
+          sed -n '1,200p' workspace/functions/workspace-core/package.json | sed -n '/"dependencies"/,/\}/p' || true
+          echo "All function dependency refs:"
+          grep -R --line-number --color=never -E '@etron/(shared|audit-shared|day-book-shared)|file:..\/..\/..\/.aws-sam' backend || true
+
       - name: Cache SAM build artifacts
         uses: actions/cache@v4
         with:
           path: backend/.aws-sam
           key: ${{ runner.os }}-sam-${{ github.sha }}
 
+      - name: Verify staged tarballs exist
+        run: |
+          test -f backend/.aws-sam/shared/etron-shared-1.0.0.tgz
+          test -f backend/.aws-sam/audit/audit-shared/etron-audit-shared-1.0.0.tgz
+          test -f backend/.aws-sam/modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz
+          # Also verify the build-mirror copies
+          test -f backend/.aws-sam/build/shared/etron-shared-1.0.0.tgz
+          test -f backend/.aws-sam/build/audit-shared/etron-audit-shared-1.0.0.tgz
+          test -f backend/.aws-sam/build/modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz
+
       - name: Build the SAM application
         run: |
           cd backend
-          sam build --no-cached
-  
+          ls -R .aws-sam || true
+          sam build
+
   backend_test:
     runs-on: ubuntu-latest
     name: Backend Tests
@@ -78,13 +140,13 @@ jobs:
       - name: Run test for the SAM application
         run: |
           cd backend
-          npm run test       
+          npm run test
+
   backend_deploy:
     runs-on: ubuntu-latest
     name: Build and Deploy Backend to AWS
     needs: backend_test
     if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
-    
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -110,7 +172,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Set up Python for build preparation
+      - name: Set up Python for deployment
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -120,10 +182,76 @@ jobs:
           cd backend
           python3 scripts/prepare_build.py
 
-      - name: Build the SAM app
+      # Pack & rewrite BEFORE sam build in deploy job as well
+      - name: Pack and stage local shared packages for SAM (deploy)
+        run: |
+          set -e
+          cd backend
+
+          mkdir -p .aws-sam/shared .aws-sam/build/shared
+          mkdir -p .aws-sam/audit/audit-shared .aws-sam/build/audit-shared .aws-sam/build/audit/audit-shared
+          mkdir -p .aws-sam/modules/day-book/day-book-shared .aws-sam/build/modules/day-book/day-book-shared
+
+          pushd shared
+          npm pack
+          SHARED_TGZ=$(ls -1 *.tgz)
+          cp "$SHARED_TGZ" ../.aws-sam/shared/
+          cp "$SHARED_TGZ" ../.aws-sam/build/shared/
+          popd
+
+          pushd audit/audit-shared
+          npm pack
+          AUDIT_TGZ=$(ls -1 *.tgz)
+          cp "$AUDIT_TGZ" ../../.aws-sam/audit/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit-shared/
+          cp "$AUDIT_TGZ" ../../.aws-sam/build/audit/audit-shared/
+          popd
+
+          pushd modules/day-book/day-book-shared
+          npm pack
+          DB_TGZ=$(ls -1 *.tgz)
+          cp "$DB_TGZ" ../../../.aws-sam/modules/day-book/day-book-shared/
+          cp "$DB_TGZ" ../../../.aws-sam/build/modules/day-book/day-book-shared/
+          popd
+
+          echo "Staged tgz files:"
+          find .aws-sam -maxdepth 5 -name '*.tgz' -print
+
+      - name: Rewrite local file deps to stable .aws-sam paths (deploy)
+        run: |
+          set -e
+          cd backend
+          for PKG in $(find . -path '*/functions/*/package.json'); do
+            sed -i \
+              -e 's|"file:\.\.\/\.\.\/shared\/etron-shared-1\.0\.0\.tgz"|"file:..\/..\/..\/.aws-sam\/shared\/etron-shared-1.0.0.tgz"|g' \
+              -e 's|"file:\.\.\/\.\.\/audit\/audit-shared\/etron-audit-shared-1\.0\.0\.tgz"|"file:..\/..\/..\/.aws-sam\/audit\/audit-shared\/etron-audit-shared-1.0.0.tgz"|g' \
+              -e 's|"file:\.\.\/\.\.\/modules\/day-book\/day-book-shared\/etron-day-book-shared-1\.0\.0\.tgz"|"file:..\/..\/..\/.aws-sam\/modules\/day-book\/day-book-shared\/etron-day-book-shared-1.0.0.tgz"|g' \
+              "$PKG"
+          done
+
+      - name: Show rewritten deps (deploy)
         run: |
           cd backend
-          sam build --no-cached
+          echo "Audit core package.json:"
+          sed -n '1,200p' audit/functions/audit-core/package.json | sed -n '/"dependencies"/,/\}/p' || true
+          echo "Workspace core package.json:"
+          sed -n '1,200p' workspace/functions/workspace-core/package.json | sed -n '/"dependencies"/,/\}/p' || true
+          echo "All function dependency refs:"
+          grep -R --line-number --color=never -E '@etron/(shared|audit-shared|day-book-shared)|file:..\/..\/..\/.aws-sam' backend || true
+
+      - name: Verify staged tarballs exist (deploy)
+        run: |
+          test -f backend/.aws-sam/shared/etron-shared-1.0.0.tgz
+          test -f backend/.aws-sam/audit/audit-shared/etron-audit-shared-1.0.0.tgz
+          test -f backend/.aws-sam/modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz
+          test -f backend/.aws-sam/build/shared/etron-shared-1.0.0.tgz
+          test -f backend/.aws-sam/build/audit-shared/etron-audit-shared-1.0.0.tgz
+          test -f backend/.aws-sam/build/modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz
+
+      - name: Build the SAM app (deploy)
+        run: |
+          cd backend
+          sam build
 
       - name: Set the stack name for develop
         if: github.ref == 'refs/heads/develop'
@@ -137,7 +265,7 @@ jobs:
         run: |
           cd backend
           sam deploy --stack-name "${{ env.STACK_NAME }}" \
-                      --region ap-southeast-2 \
-                      --capabilities CAPABILITY_IAM \
-                      --no-confirm-changeset \
-                      --no-disable-rollback
+                     --region ap-southeast-2 \
+                     --capabilities CAPABILITY_IAM \
+                     --no-confirm-changeset \
+                     --no-disable-rollback
