@@ -6,47 +6,180 @@ import Header from "../../components/layout/Header";
 import { commonStyles } from "../../assets/styles/stylesheets/common";
 import { useEffect, useState } from "react";
 import InviteCard from "../../components/cards/inviteCard";
+import BasicButton from "../../components/common/buttons/BasicButton";
+import { apiGet, apiPost } from "../../utils/api/apiClient";
+import endpoints from "../../utils/api/endpoints";
+import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-amplify/auth";
+import formatTTLDate from "../../utils/format/formatTTLDate";
+import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
+import { router } from "expo-router";
+import ResponsiveScreen from "../../components/layout/ResponsiveScreen";
 
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
     const [invites, setInvites] = useState([]);
     const [selectedInvite, setSelectedInvite] = useState(null);
+    const [joining, setJoining] = useState(false);
+
 
     useEffect(() => {
         async function loadInvites() {
             setLoading(true);
             try {
-                const invites = await getWorkspaceInfo();
-                if (invites) {
-                    setInvites(invites);
+                const userAttributes = await fetchUserAttributes();
+                console.log(userAttributes);
+                const email = userAttributes.email;
+                console.log(email);
+
+                const inviteResult = await apiGet(
+                    endpoints.user.invites.getUserInvites,
+                    { email }
+                );
+                console.log(inviteResult.data);
+                if (inviteResult.data && inviteResult.data.length > 0) {
+                    const processedInvites = await Promise.all(inviteResult.data.map(async invite => {
+                        const expireAt = formatTTLDate(invite.expireAt);
+                        console.log(invite.workspaceId);
+                        const workspace = await apiGet(
+                            endpoints.workspace.core.getWorkspace(invite.workspaceId)
+                        );
+
+                        return {
+                            ...invite,
+                            expireAt,
+                            workspaceName: workspace.data.name,
+                            workspaceDescription: workspace.data.description
+                        };
+                    }));
+
+                    setInvites(processedInvites);
                 }
             } catch (error) {
-                console.log("Error loading workspace invites ", error);
+                console.error("Error loading workspace invites:", error);
             }
             setLoading(false);
         }
         loadInvites();
     }, []);
 
+    // updates user attributes in cognito
+    async function handleUpdateUserAttribute(attributeKey, value) {
+        try {
+            const output = await updateUserAttribute({
+                userAttribute: {
+                    attributeKey,
+                    value
+                }
+            });
+
+            const { nextStep } = output;
+
+            switch (nextStep.updateAttributeStep) {
+                case 'CONFIRM_ATTRIBUTE_WITH_CODE':
+                    const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+                    console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
+                    return { needsConfirmation: true };
+                case 'DONE':
+                    const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    console.log(`${fieldName} updated successfully`);
+                    return { needsConfirmation: false };
+                default:
+                    console.log(`${attributeKey.replace('_', ' ')} update completed`);
+                    return { needsConfirmation: false };
+            }
+        } catch (error) {
+            console.error("Error updating user attribute:", error);
+            const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            setMessage(`Error updating ${fieldName}: ${error.message}`);
+            return { needsConfirmation: false, error: true };
+        }
+    }
+
     const renderInvites = ({item}) => (
         <InviteCard 
             invite={item}
+            selected={selectedInvite?.inviteId === item.inviteId}
             onSelect={setSelectedInvite}
         />
     );
 
+    async function handleJoin() {
+        setJoining(true);
+
+        try {
+            const workspaceId = selectedInvite.workspaceId;
+            const inviteId = selectedInvite.inviteId;
+
+            const payload = {
+                inviteId
+            }
+
+            // try adding user to the workspace
+            await apiPost(
+                endpoints.workspace.users.add(workspaceId),
+                payload
+            )
+
+            // if successful store workspace info
+            const workspace = await apiGet(
+                endpoints.workspace.core.getWorkspace(workspaceId)
+            )
+
+            // save workspace info to local storage
+            saveWorkspaceInfo(workspace.data);
+
+            // update user attribute to be in a workspace
+            await handleUpdateUserAttribute('custom:has_workspace', "true");
+
+            console.log('Join response:', workspace.data);
+            setJoining(false);
+
+
+            // navigate to the profile
+            router.navigate("/dashboard");
+        } catch (error) {
+            setJoining(false);
+            console.error("Error joining workspace: ", error);
+        }
+    }
+
+    function navigateToCreateWorkspace() {
+        router.navigate("/(auth)/create-workspace");
+    }
+
+    async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
+    }
+
     return (
-        <View style={commonStyles.screen}>
-            <Header title="Join Workspace" showBack />
-
-            <Text style={{ fontSize: 16 }}>
-              You have the following options:
-            </Text>
-
+        <ResponsiveScreen
+            header={<Header
+                title="Join Workspace"
+                showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+            />}
+            scroll={false}
+        >
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" />
+                        <Text>Loading invites...</Text>
+                    </View>
+                ) : invites.length === 0 ? (
+                    <View style={styles.noInvitesContainer}>
+                        <Text style={{ fontSize: 16, textAlign: "center"}}>
+                            You currently have no pending invites.
+                        </Text>
+                        <Text style={{ fontSize: 16, textAlign: "center"}}>
+                            Ask your workplace to invite you.
+                        </Text>
                     </View>
                 ) : (
                     <FlatList
@@ -54,11 +187,25 @@ const JoinWorkspace = () => {
                         renderItem={renderInvites}
                         keyExtractor={item => item.inviteId}
                         ItemSeparatorComponent={() => <View style={{height: 12}} />}
+                        ListFooterComponent={() => (
+                            <View style={commonStyles.inlineButtonContainer}>
+                                <BasicButton 
+                                    label={joining ? "Joining..." : "Join"} 
+                                    onPress={handleJoin}
+                                    disabled={joining} 
+                                />
+                            </View>
+                        )}
                     />
                 )}
+
             </View>
-            
-        </View>
+            <BasicButton
+                label={"Create Workspace"}
+                onPress={navigateToCreateWorkspace}
+                altBackground={(!loading && invites.length == 0) ? false : true}
+            />
+        </ResponsiveScreen>
     )
 
 }
@@ -71,6 +218,12 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center"
+    },
+    noInvitesContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        gap: 20
     }
 })
 

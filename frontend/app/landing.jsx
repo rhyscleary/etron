@@ -1,92 +1,95 @@
 // Author(s): Matthew Parkinson
 
-import React, { useState, useEffect } from 'react';
-import { Redirect, useRouter, router, Link } from "expo-router";
+import React from 'react';
 import { View, Image, ImageBackground, StyleSheet } from 'react-native';
-import { PaperProvider, Text } from 'react-native-paper';
-import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
-import {SafeAreaView, SafeAreaProvider} from 'react-native-safe-area-context';
-
-/*
-UNSURE WHAT TO DO WITH THIS AT THIS MOMENT
-
-import { Linking } from 'react-native';
-
-import { signIn, signUp, signInWithRedirect } from 'aws-amplify/auth';
-
-import awsmobile from '../src/aws-exports';
-Amplify.configure({
-    awsmobile,
-    oauth: {
-        redirectSignIn: 'myapp://auth/',
-        redirectSignOut: 'myapp://signout/',
-        responseType: 'code'
-    }});
-*/
+import { router } from "expo-router";
+import BasicButton from '../components/common/buttons/BasicButton';
+import ResponsiveScreen from '../components/layout/ResponsiveScreen';
 
 const Landing = () => {
-  const theme = useTheme();
+	const theme = useTheme();
 
-  return (
-    <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
-            <ImageBackground
-                source={require('../assets/images/LandingTextBackground.png')}
-                style={styles.background}
-                resizeMode='cover'
-            >
-            
+	return (
+		<ImageBackground
+			source={require('../assets/images/LandingTextBackground.png')}
+			style={styles.background}
+			resizeMode='cover'
+		>	
+			<ResponsiveScreen transparent>
+				<View style={styles.container}>
+					
+					{/* --- Top Logo Section --- */}
+					<View style={styles.header}>
+						<Image
+							source={require('../assets/images/Logo.png')}
+							style={styles.logo}
+						/>
+					</View>
 
-            <View style={{ padding: 5, gap: 30, justifyContent: 'center' }}>
+					{/* --- Center Foreground & Buttons --- */}
+					<View style={styles.centerSection}>
+						<Image
+							source={require('../assets/images/LandingTextForeground.png')}
+							style={styles.foregroundImage}
+						/>
 
-              <View>
-                <Image style={{ width: 380, height: 280, resizeMode: 'contain' }}
-                    source={require('../assets/images/LandingTextForeground.png')}>
-                </Image>
-              </View>
-                <View style={{ padding: 20, gap: 30 }}>
-                    <View>
-                        <BasicButton
-                            label='Login'
-                            onPress={() => router.push('/login-signup?isSignUp=false')}
-                        />
-                    </View>
-
-                    <View style={{ alignItems: 'flex-end' }}>
-                        <BasicButton
-                            label='Sign Up'
-                            onPress={() => router.push('/login-signup?isSignUp=true')}
-                        />
-                    </View>
-                </View>
-
-            </View>
-            </ImageBackground>
-        </SafeAreaView>
-    </SafeAreaProvider>
-  );
-}
+						<View style={styles.buttonContainer}>
+							<BasicButton
+								label='Login'
+								onPress={() => router.navigate('/login-signup?isSignUp=false')}
+								fullWidth
+							/>
+							<BasicButton
+								label='Sign Up'
+								onPress={() => router.navigate('/login-signup?isSignUp=true')}
+								fullWidth
+							/>
+						</View>
+					</View>
+				</View>
+			</ResponsiveScreen>
+		</ImageBackground>
+	);
+};
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    padding: 5,
-    gap: 30,
-    justifyContent: 'center',
-  },
-  foregroundImage: {
-    width: 380,
-    height: 280,
-    resizeMode: 'contain',
-  },
-  buttonContainer: {
-    padding: 20,
-    gap: 30,
-  },
+	background: {
+		flex: 1,
+	},
+	container: {
+		flex: 1,
+		padding: 20,
+	},
+	header: {
+		width: '100%',
+		alignItems: 'center',
+		marginTop: 40,
+	},
+	logo: {
+		width: '100%',
+		height: 100,
+		resizeMode: 'contain',
+	},
+
+	// This section takes remaining space and centers content
+	centerSection: {
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		gap: 30,
+	},
+
+	foregroundImage: {
+		width: 320,
+		height: 220,
+		resizeMode: 'contain',
+	},
+	buttonContainer: {
+		width: '100%',
+		gap: 20,
+		marginTop: 40,
+	},
 });
 
 export default Landing;

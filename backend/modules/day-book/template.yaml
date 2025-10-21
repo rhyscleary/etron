@@ -3,77 +3,55 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   eTRON day book function template
 
+Parameters:
+  AppConfigurationBucketName:
+    Type: String
+  WorkspaceBucketName:
+    Type: String
+  AthenaDatabaseName:
+    Type: String
+    Default: etron_day_book_db
+  AuditQueueUrl:
+    Type: String
+
 Globals:
   Function:
     Timeout: 5
     Runtime: nodejs22.x
     Architectures:
       - x86_64
+    Environment:
+      Variables:
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
+        WORKSPACE_BUCKET: !Ref WorkspaceBucketName
+        ATHENA_DATABASE: !Ref AthenaDatabaseName
+        AUDIT_QUEUE_URL: !Ref AuditQueueUrl
 
 Resources:
-  SourcedDataBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: etron-day-book-sourced-data
 
-  DataSourceFunction:
+  eTRONApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+            Identity:
+              Header: Authorization
+
+  DataSourceCoreFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources
-      Handler: handlers/dataSourceHandler.handler
+      CodeUri: ./data-sources/functions/data-source-core
+      Handler: dataSourceHandler.handler
+      Environment:
+        Variables:
+          POLLING_LAMBDA_NAME: !Ref DataSourcePollFunction
       Policies:
         - DynamoDBCrudPolicy:
             TableName: DataSources
-        - DynamoDBCrudPolicy:
-            TableName: Workspaces
-        - DynamoDBCrudPolicy:
-            TableName: WorkspaceUsers
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-                - ssm:PutParameter
-                - ssm:DeleteParameter
-                - ssm:GetParameters
-              Resource: "*"
-
-      Events:
-        AddDataSource:
-          Type: Api 
-          Properties:
-            Path: /day-book/data-sources
-            Method: post
-
-        UpdateDataSource:
-          Type: Api 
-          Properties:
-            Path: /day-book/data-sources/{dataSourceId}
-            Method: put
-
-        GetDataSourceById:
-          Type: Api 
-          Properties:
-            Path: /day-book/data-sources/{dataSourceId}
-            Method: get
-            
-        GetDataSources:
-          Type: Api 
-          Properties:
-            Path: /day-book/data-sources
-            Method: get
-
-        RemoveDataSource:
-          Type: Api 
-          Properties:
-            Path: /day-book/data-sources/{dataSourceId}
-            Method: delete
-
-  MetricFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./metrics
-      Handler: handlers/metricHandler.handler
-      Policies:
         - DynamoDBCrudPolicy:
             TableName: Metrics
         - DynamoDBCrudPolicy:
@@ -83,69 +61,159 @@ Resources:
         - Statement:
             - Effect: Allow
               Action:
+                - lambda:InvokeFunction
+              Resource: !GetAtt DataSourcePollFunction.Arn
+            - Effect: Allow
+              Action:
                 - ssm:GetParameter
                 - ssm:PutParameter
                 - ssm:DeleteParameter
                 - ssm:GetParameters
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+                - s3:GetBucketLocation
+                - s3:HeadObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:GetWorkGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetDatabases
+                - glue:GetTable
+                - glue:GetTables
+                - glue:CreateTable
+                - glue:UpdateTable
+                - glue:DeleteTable
+              Resource:
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
-        AddMetric:
+        AddRemoteDataSource:
           Type: Api 
           Properties:
-            Path: /day-book/metrics
+            Path: /day-book/data-sources/remote
             Method: post
+            RestApiId: !Ref eTRONApi
 
-        UpdateMetric:
+        AddLocalDataSource:
           Type: Api 
           Properties:
-            Path: /day-book/metrics/{metricId}
+            Path: /day-book/data-sources/local
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        TestDataSourceConnection:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/test-connection
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        UpdateDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: patch
+            RestApiId: !Ref eTRONApi
+
+        UpdateDataSourceData:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/update-data
             Method: put
+            RestApiId: !Ref eTRONApi
 
-        GetMetricById:
+        GetDataSourceById:
           Type: Api 
           Properties:
-            Path: /day-book/metrics/{metricId}
+            Path: /day-book/data-sources/{dataSourceId}
             Method: get
+            RestApiId: !Ref eTRONApi
             
-        GetMetrics:
+        GetDataSources:
           Type: Api 
           Properties:
-            Path: /day-book/metrics
+            Path: /day-book/data-sources
             Method: get
+            RestApiId: !Ref eTRONApi
 
-        RemoveMetric:
+        GetUploadUrl:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}/upload
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        ViewData:
           Type: Api 
           Properties:
-            Path: /day-book/metrics/{metricId}
-            Method: delete
+            Path: /day-book/data-sources/{dataSourceId}/view-data
+            Method: get
+            RestApiId: !Ref eTRONApi
 
-  MetricUpdateFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./metrics
-      Handler: handlers/metricUpdateHandler.handler
-      Policies:
-        - S3ReadPolicy:
-            BucketName: etron-day-book-sourced-data
-  
-      Events:
-        S3PutEvent:
-          Type: S3
+        ViewDataForMetric:
+          Type: Api 
           Properties:
-            Bucket: !Ref SourcedDataBucket
-            Events: s3:ObjectCreated:Put
+            Path: /day-book/data-sources/{dataSourceId}/view-data-for-metric/{metricId}
+            Method: get
+            RestApiId: !Ref eTRONApi
 
-  DataSourcePollFunction:
+        RemoveDataSource:
+          Type: Api 
+          Properties:
+            Path: /day-book/data-sources/{dataSourceId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
+
+        RemotePreview:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/preview/remote
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        GetAvailableSheets:
+          Type: Api
+          Properties:
+            Path: /day-book/data-sources/available-spreadsheets
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+            
+
+  MetricFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./data-sources
-      Handler: handlers/dataSourcePollHandler.handler
+      CodeUri: ./metrics/functions/metric-core
+      Handler: metricHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
             TableName: DataSources
-        - S3WritePolicy:
-            BucketName: etron-day-book-sourced-data
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
         - Statement:
             - Effect: Allow
               Action:
@@ -154,10 +222,448 @@ Resources:
                 - ssm:DeleteParameter
                 - ssm:GetParameters
               Resource: "*"
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
-        PollEvent:
+        AddMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        UpdateMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: patch
+            RestApiId: !Ref eTRONApi
+
+        GetMetricById:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+            
+        GetMetrics:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        RemoveMetric:
+          Type: Api 
+          Properties:
+            Path: /day-book/metrics/{metricId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
+
+
+  ReportDraftsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./reports/functions/reports-drafts
+      Handler: draftHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        CreateDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        UpdateDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts/{draftId}
+            Method: patch
+            RestApiId: !Ref eTRONApi
+
+        GetDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts/{draftId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetDrafts:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        DeleteDraft:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/drafts/{draftId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
+
+
+  ReportTemplatesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./reports/functions/reports-templates
+      Handler: templateHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        CreateTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        UpdateTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates/{templateId}
+            Method: patch
+            RestApiId: !Ref eTRONApi
+
+        GetTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates/{templateId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetTemplates:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        DeleteTemplate:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/templates/{templateId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
+
+  ReportExportsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./reports/functions/reports-exports
+      Handler: exportHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        AddExport:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports
+            Method: post
+            RestApiId: !Ref eTRONApi
+
+        GetExport:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports/{exportId}
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetExports:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetExportDownloadUrl:
+          Type: Api 
+          Properties:
+            Path: /day-book/reports/exports/{exportId}/download
+            Method: get
+            RestApiId: !Ref eTRONApi
+
+  DataSourcePollInitialiser:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources/functions/polling/data-source-poller-initialiser
+      Handler: initialiserHandler.handler
+      Timeout: 30
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !GetAtt DataSourcePollingStateMachine.Arn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - S3WritePolicy:
+            BucketName: !Ref WorkspaceBucketName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - states:StartExecution
+              Resource: !Ref DataSourcePollingStateMachine
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+                - s3:GetBucketLocation
+                - s3:HeadObject
+              Resource: "*"
+
+      Events:
+        PollSchedule:
           Type: Schedule
           Properties:
-            Schedule: rate(5 minutes)
-            Name: DataSourcePollSchedule
+            Schedule: rate(15 minutes)
+
+  DataSourcePollFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources/functions/polling/data-source-poller
+      Handler: dataSourcePollHandler.handler
+      Timeout: 900
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - S3WritePolicy:
+            BucketName: !Ref WorkspaceBucketName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+                - ssm:PutParameter
+                - ssm:DeleteParameter
+                - ssm:GetParameters
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+                - s3:GetBucketLocation
+                - s3:HeadObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:GetWorkGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetDatabases
+                - glue:GetTable
+                - glue:GetTables
+                - glue:CreateTable
+                - glue:UpdateTable
+                - glue:DeleteTable
+              Resource:
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
+
+  DataSourcePollingStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt DataSourcePollingStateMachineRole.Arn
+      DefinitionString: !Sub |
+        {
+          "StartAt": "PollDataSources",
+          "States": {
+            "PollDataSources": {
+              "Type": "Map",
+              "ItemsPath": "$.dataSources",
+              "MaxConcurrency": 10,
+              "Iterator": {
+                "StartAt": "PollAndSave",
+                "States": {
+                  "PollAndSave": {
+                    "Type": "Task",
+                    "Resource": "${DataSourcePollFunction.Arn}",
+                    "End": true
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        }
+
+  DataSourcePollingStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AllowInvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: 
+                  - !GetAtt DataSourcePollFunction.Arn
+                  - !Sub "${DataSourcePollFunction.Arn}:*"
+
+  DataSourceUploadProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources/functions/data-source-upload-processor
+      Handler: fileUploadHandler.handler
+      Timeout: 120
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - S3ReadPolicy:
+            BucketName: !Ref WorkspaceBucketName
+        - S3WritePolicy:
+            BucketName: !Ref WorkspaceBucketName
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sqs:SendMessage
+                - s3:DeleteObject
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:GetBucketLocation
+                - s3:HeadObject
+              Resource: !Sub arn:aws:s3:::${WorkspaceBucketName}/*
+            - Effect: Allow
+              Action:
+                - athena:StartQueryExecution
+                - athena:GetQueryExecution
+                - athena:GetQueryResults
+                - athena:GetWorkGroup
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - glue:GetDatabase
+                - glue:GetDatabases
+                - glue:GetTable
+                - glue:GetTables
+                - glue:CreateTable
+                - glue:UpdateTable
+                - glue:DeleteTable
+              Resource:
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+                - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*

@@ -42,9 +42,8 @@ export const commonStyles = StyleSheet.create({
     paddingBottom: 100,
   },
   inlineButtonContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginVertical: 30,
+    flexDirection: "row-reverse",
+    justifyContent: "space-between",
     gap: 32,
   },
   listItemText: {

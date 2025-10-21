@@ -46,7 +46,7 @@ const ConnectionDataSourceLayout = ({
   demoModeMessage,
   enablePersistentConnection = false,
   dataSourceName,
-  dataManagementPath = "/modules/day-book/data-management/data-management",
+  dataManagementPath = "/modules/day-book/data-management",
   getNavigationParams,
   getAdapterFilterOptions,
 }) => {
@@ -92,7 +92,7 @@ const ConnectionDataSourceLayout = ({
         const user = await getCurrentUser();
         setConnectionInfo(user);
       } catch (error) {
-        console.log("No authenticated user:", error);
+        console.error("No authenticated user:", error);
         setConnectionInfo(null);
       } finally {
         setAuthChecked(true);
@@ -225,7 +225,7 @@ const ConnectionDataSourceLayout = ({
         params: navigationParams,
       };
 
-      router.push(navigationData);
+      router.navigate(navigationData);
     } catch (error) {
       console.error("Error connecting data source:", error);
       Alert.alert(
@@ -364,7 +364,7 @@ const ConnectionDataSourceLayout = ({
               backgroundColor={theme.colors.secondaryContainer}
               textColor={theme.colors.onSecondaryContainer}
             >
-              🚀 Demo Mode Active{"\n"}
+              Demo Mode Active{"\n"}
               {demoModeMessage ||
                 `Using sample ${serviceDisplayName} data for development`}
             </StatusCard>
@@ -409,7 +409,7 @@ const ConnectionDataSourceLayout = ({
                       onPress: () => {
                         handleDisconnect();
                         // Optionally navigate to login or re-trigger connection
-                        // router.push('/login-signup');
+                        // router.navigate('/login-signup');
                       },
                     },
                   ]

@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const { getWorkspaceByUserId, transferWorkspaceOwnership, getDefaultWorkspacePermissions, createWorkspace, updateWorkspace, getWorkspaceByWorkspaceId, deleteWorkspace } = require("./workspaceService");
+const { getWorkspaceByUserId, transferWorkspaceOwnership, createWorkspace, updateWorkspace, getWorkspaceByWorkspaceId, deleteWorkspace, getWorkspacePermissions } = require("./workspaceService");
 
 
 exports.handler = async (event) => {
@@ -27,7 +27,15 @@ exports.handler = async (event) => {
             }
 
             // UPDATE WORKSPACE
-            case "PUT /workspace/{workspaceId}": {
+            case "PATCH /workspace/{workspaceId}": {
+                if (!pathParams.workspaceId) {
+                    throw new Error("Missing required path parameter workspaceId");
+                }
+
+                if (typeof pathParams.workspaceId !== "string") {
+                    throw new Error("workspaceId must be a UUID, 'string'");
+                }
+
                 body = await updateWorkspace(authUserId, pathParams.workspaceId, requestJSON);
                 break;
             }
@@ -35,7 +43,7 @@ exports.handler = async (event) => {
             // GET WORKSPACE BY ID
             case "GET /workspace/{workspaceId}": {
                 if (!pathParams.workspaceId) {
-                    throw new Error("Missing required path parameters");
+                    throw new Error("Missing required path parameter workspaceId");
                 }
 
                 if (typeof pathParams.workspaceId !== "string") {
@@ -49,7 +57,7 @@ exports.handler = async (event) => {
             // GET WORKSPACE BY USERID
             case "GET /workspace/users/{userId}": {
                 if (!pathParams.userId) {
-                    throw new Error("Missing required path parameters");
+                    throw new Error("Missing required path parameter workspaceId");
                 }
 
                 if (typeof pathParams.userId !== "string") {
@@ -61,40 +69,22 @@ exports.handler = async (event) => {
             }
 
             // TRANSFER OWNERSHIP
-            case "PUT /workspace/{workspaceId}/transfer/{userId}": {
-                if (!pathParams.workspaceId || !pathParams.userId) {
-                    throw new Error("Missing required path parameters");
-                }
-
-                if (typeof pathParams.workspaceId !== "string") {
-                    throw new Error("workspaceId must be a UUID, 'string'");
-                }
-
-                if (typeof pathParams.userId !== "string") {
-                    throw new Error("userId must be a UUID, 'string'");
-                }
-
-                body = await transferWorkspaceOwnership(authUserId, workspaceId, userId);
-                break;
-            }
-
-            // DELETE WORKSPACE
-            case "DELETE /workspace/{workspaceId}": {
+            case "PUT /workspace/{workspaceId}/transfer": {
                 if (!pathParams.workspaceId) {
-                    throw new Error("Missing required path parameters");
+                    throw new Error("Missing required path parameter workspaceId");
                 }
 
                 if (typeof pathParams.workspaceId !== "string") {
                     throw new Error("workspaceId must be a UUID, 'string'");
                 }
 
-                body = await deleteWorkspace(authUserId, pathParams.workspaceId);
+                body = await transferWorkspaceOwnership(authUserId, pathParams.workspaceId, requestJSON);
                 break;
             }
 
             // GET DEFAULT WORKSPACE PERMISSIONS
             case "GET /workspace/permissions": {
-                body = await getDefaultWorkspacePermissions();
+                body = await getWorkspacePermissions();
                 break;
             }
   

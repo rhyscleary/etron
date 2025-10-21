@@ -1,29 +1,32 @@
 // Author(s): Rhys Cleary
 
-const { UserType } = require("@etron/shared/constants/enums");
 const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
+const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { getUserByEmail } = require("@etron/shared/utils/auth");
-const { isOwner, isManager } = require("@etron/shared/utils/permissions");
-const {v4 : uuidv4} = require('uuid');
+const { hasPermission } = require("@etron/shared/utils/permissions");
 
-async function addUserToWorkspace(workspaceId, inviteId) {
+// Permissions for this service
+const PERMISSIONS = {
+    MANAGE_USERS: "app.collaboration.manage_users",
+    VIEW_USERS: "app.collaboration.view_users"
+};
+
+async function addUserToWorkspace(workspaceId, payload) {
+    await validateWorkspaceId(workspaceId);
+
+    const { inviteId } = payload;
+
+    if (!inviteId || typeof inviteId !== "string") {
+        throw new Error("Please specify a inviteId");
+    }
+
     // get invite
     const invite = await workspaceInvitesRepo.getInviteById(workspaceId, inviteId);
 
     if (!invite) {
         throw new Error("Invite not found");
-    }
-
-    // check if the user type is valid
-    if (!Object.values(UserType).includes(invite.type)) {
-        throw new Error(`Invalid type of user: ${invite.type}`);
-    }
-
-    // if role is specified check if it's valid
-    if (invite.roleId !== undefined) {
-    
     }
 
     // get cognito user by email
@@ -38,8 +41,7 @@ async function addUserToWorkspace(workspaceId, inviteId) {
         email: userProfile.email,
         given_name: userProfile.given_name,
         family_name: userProfile.family_name,
-        type: invite.type,
-        roleId: invite.roleId || null,
+        roleId: invite.roleId,
         joinedAt: date,
         updatedAt: date
     };
@@ -59,15 +61,18 @@ async function addUserToWorkspace(workspaceId, inviteId) {
     }
 
     return userItem;
-
 }
 
-async function updateUserInWorkspace(authUserId, workspaceId, userId, updateData) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+async function updateUserInWorkspace(authUserId, workspaceId, userId, payload) {
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_USERS);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
+
+    await validateWorkspaceId(workspaceId);
+
+    const { roleId } = payload;
 
     // check if the user exists
     const user = await workspaceUsersRepo.getUser(workspaceId, userId);
@@ -76,40 +81,55 @@ async function updateUserInWorkspace(authUserId, workspaceId, userId, updateData
         throw new Error("User not found");
     }
 
-    if (updateData.type) {
-        // convert type to lowercase
-        const type = updateData.type.toLowerCase();
-
-        // check if the user type is valid
-        if (!Object.values(UserType).includes(type)) {
-            throw new Error(`Invalid type of user: ${type}`);
-        }
-
-        updateData.type = type;
-    }
-
     // check if the role exists
-    if (updateData.roleId !== undefined) {
-        
+    const role = await workspaceRepo.getRoleById(workspaceId, roleId);
+
+    if (!role) {
+        throw new Error("Role not found:", roleId);
     }
 
-    return workspaceUsersRepo.updateUser(workspaceId, userId, updateData);
+    // prevent assigning the Owner role to another user
+    if (role.owner) {
+        throw new Error("A workspace is limited to one owner");
+    }
+
+    const updatedUserItem = {
+        roleId 
+    };
+
+    return workspaceUsersRepo.updateUser(workspaceId, userId, updatedUserItem);
 }
 
 async function getUserInWorkspace(authUserId, workspaceId, userId) {
+    await validateWorkspaceId(workspaceId);
+
     return workspaceUsersRepo.getUser(workspaceId, userId);
 }
 
 async function getUsersInWorkspace(authUserId, workspaceId) {
-    return workspaceUsersRepo.getUsersByWorkspaceId(workspaceId);
-}
-
-async function removeUserFromWorkspace(authUserId, workspaceId, userId) {
-    const isAuthorised = await isOwner(authUserId, workspaceId) || await isManager(authUserId, workspaceId);
+    const isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.VIEW_USERS);
 
     if (!isAuthorised) {
         throw new Error("User does not have permission to perform action");
     }
+
+    await validateWorkspaceId(workspaceId);
+
+    return workspaceUsersRepo.getUsersByWorkspaceId(workspaceId);
+}
+
+async function removeUserFromWorkspace(authUserId, workspaceId, userId) {
+    let isAuthorised;
+    console.log("authUserId:", authUserId);
+    console.log("userId:", userId);
+    if (authUserId == userId) isAuthorised = true;
+    else isAuthorised = await hasPermission(authUserId, workspaceId, PERMISSIONS.MANAGE_USERS);
+
+    if (!isAuthorised) {
+        throw new Error("User does not have permission to perform action");
+    }
+
+    await validateWorkspaceId(workspaceId);
 
     await workspaceUsersRepo.removeUser(workspaceId, userId);
 

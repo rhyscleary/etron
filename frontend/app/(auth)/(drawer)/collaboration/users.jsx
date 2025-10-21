@@ -1,38 +1,82 @@
 // Author(s): Matthew Page
 
-import { Pressable, View, SectionList, Text as RNText } from "react-native";
+import { Pressable, View, SectionList, Text as RNText, ActivityIndicator, StyleSheet } from "react-native";
 import Header from "../../../../components/layout/Header";
 import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import { router } from "expo-router";
-import { Text, TextInput, TouchableRipple, Chip } from "react-native-paper";
-import { useEffect, useState } from "react";
+import { Text, TextInput, TouchableRipple, Chip, ProgressBar } from "react-native-paper";
+import { useEffect, useState, useCallback } from "react";
 import { apiGet } from "../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import endpoints from "../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
+import { useFocusEffect } from "@react-navigation/native";
+import { RefreshControl } from "react-native";
 
 const Users = () => {
-    const [workspaceId, setWorkspaceId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [users, setUsers] = useState([]);
+    const [allRoles, setAllRoles] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [selectedRoles, setSelectedRoles] = useState([]);
+    const [groupedUsers, setGroupedUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
 
     useEffect(() => {
-        fetchIdAndUsers();
+        setLoading(true);
+        loadUsersAndRoles();
     }, []);
 
-    const fetchIdAndUsers = async () => {
+    useFocusEffect(
+        useCallback(() => {
+            setRefreshing(true);
+            loadUsersAndRoles();
+        }, [loadUsersAndRoles])
+    );
+
+    const loadUsersAndRoles = useCallback(async () => {
+        const workspaceId = await getWorkspaceId();
+
+        let users = [];
         try {
-            const id = await getWorkspaceId();
-            setWorkspaceId(id);
-            const result = await apiGet(endpoints.workspace.users.getUsers(id));
-            setUsers(result);
+            const result = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
+            users = result.data;
+            setAllUsers(users);
         } catch (error) {
-            console.log("Failed to fetch users:", error);
-        } finally {
-            setLoading(false);
+            console.error("Failed to fetch users:", error);
         }
-    };
+
+        let roles = []
+        try {
+            const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+            roles = result.data
+            setAllRoles(roles);
+        } catch (error) {
+            console.error("Failed to fetch workspace roles:", error);
+        }
+
+        sortUsers(users, roles);
+
+        setRefreshing(false);
+        setLoading(false);
+    });
+
+    function sortUsers(users = allUsers, roles = allRoles) {
+        const filteredUsers = users.filter(user => {
+            const matchesSearch = (user.name || user.email || '')
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase());
+
+            const matchesRole = selectedRoles.length === 0 || selectedRoles.some(role => role.roleId === user.roleId);
+            return matchesSearch && matchesRole;
+        });
+
+        const rolesForSort = selectedRoles.length > 0 ? selectedRoles : roles;
+        const sortedUsers = rolesForSort.map(role => {
+            return { title: role.name, data: filteredUsers.filter(user => user.roleId === role.roleId) };
+        });
+        setGroupedUsers(sortedUsers)
+    }
 
     const handleSearchChange = (query) => {
         setSearchQuery(query);
@@ -46,40 +90,25 @@ const Users = () => {
         );
     };
 
-    const roleFilters = {
-        owner: "Owner",
-        manager: "Manager",
-        employee: "Employee"
-    };
-
-    const availableRoles = ["owner", "manager", "employee"];
-
-    // Apply search + filter logic
-    const filteredUsers = users.filter(user => {
-        const matchesSearch = (user.name || user.email || '')
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase());
-
-        const matchesRole = selectedRoles.length === 0 || selectedRoles.includes(user.type);
-
-        return matchesSearch && matchesRole;
-    });
-
-    const uniqueRoles = [...new Set(filteredUsers.map(user => user.type))];
-
-    const groupedUsers = uniqueRoles.map(role => {
-        const data = filteredUsers.filter(user => user.type === role);
-        return { title: roleFilters[role] || role, data };
-    });
+    useEffect(() => {
+        sortUsers();
+    }, [selectedRoles, searchQuery])
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Users"
-                showBack
-                showPlus
-                onRightIconPress={() => router.push("/collaboration/invite-user")}
-            />
+		<ResponsiveScreen
+			header={
+                <Header
+                    title="Users"
+                    showBack
+                    showPlus
+                    onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "users" } })}
+                />            
+            }
+			center={false}
+			padded={false}
+            scroll={false}
+            tapToDismissKeyboard={false}
+		>
 
             {/* Search Box */}
             <TextInput
@@ -92,37 +121,28 @@ const Users = () => {
 
             {/* Role Filters */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-                {availableRoles.map(role => (
+                {allRoles.map(role => (
                     <Chip
-                        key={role}
+                        key={role.roleId}
                         mode="outlined"
                         selected={selectedRoles.includes(role)}
                         onPress={() => handleToggleRole(role)}
                         style={{ marginRight: 8, marginBottom: 8 }}
                     >
-                        {roleFilters[role]}
+                        {role.name}
                     </Chip>
                 ))}
             </View>
 
-            {/* Workspace Log */}
-            <Pressable
-                onPress={() => router.push("/collaboration/workspace-log")}
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    borderRadius: 4,
-                    padding: 16,
-                    marginVertical: 8
-                }}
-            >
-                <Text>Workspace Log</Text>
-            </Pressable>
-
             {/* Sectioned User List */}
             <SectionList
                 sections={groupedUsers}
-                keyExtractor={(item) => item.userId || item.id}
+                keyExtractor={(item) => item.userId}
+                keyboardDismissMode="on-drag"
+                keyboardShouldPersistTaps="handled"
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={loadUsersAndRoles} />
+                }
                 renderSectionHeader={({ section: { title } }) => (
                     <Text style={{ marginTop: 16, fontWeight: 'bold' }}>{title}</Text>
                 )}
@@ -135,16 +155,22 @@ const Users = () => {
                             padding: 12,
                             marginVertical: 4
                         }}
-                        onPress={() => router.push(`/collaboration/edit-user/${item.userId || item.id}`)}
+                        onPress={() => router.navigate(`/collaboration/view-user/${item.userId}`)}
                     >
-                        <Text>{item.name ?? item.email?.split('@')[0] ?? 'Unnamed User'}</Text>
+                        <>
+                            <Text style={commonStyles.listItemText}>{item.given_name + " " + item.family_name}</Text>
+                            <Text style={commonStyles.captionText}>{item.email}</Text>
+                        </>
                     </TouchableRipple>
                 )}
                 ListEmptyComponent={
                     loading ? (
-                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                            Loading Users...
-                        </RNText>
+                        <View style={styles.loadingContainer}>
+                            <ActivityIndicator size="large" />
+                            <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
+                                Loading Users...
+                            </RNText>
+                        </View> 
                     ) : (
                         <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
                             No users found
@@ -152,8 +178,16 @@ const Users = () => {
                     )
                 }
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
+
+const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center"
+    },
+})
 
 export default Users;

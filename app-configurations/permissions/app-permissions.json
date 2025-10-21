@@ -1,0 +1,173 @@
+{
+  "app": {
+    "label": "Workspace",
+    "description": "Core workspace permissions",
+    "categories": {
+      "workspace": {
+        "label": "Workspace",
+        "permissions": [
+          {
+            "key": "app.workspace.update_workspace",
+            "label": "Update Workspace",
+            "description": "Allows updating workspace details",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.workspace.manage_modules",
+            "label": "Manage Modules",
+            "description": "Allows enabling or disabling modules in a workspace",
+            "defaultStatus": false
+          },
+                    {
+            "key": "app.workspace.manage_boards",
+            "label": "Manage Boards",
+            "description": "Allows creation and deletion of boards in a workspace",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.workspace.view_workspace_settings",
+            "label": "View Workspace Settings",
+            "description": "Allows viewing of the workspace settings",
+            "defaultStatus": false
+          }
+        ]
+      },
+      "collaboration": {
+        "label": "Collaboration",
+        "permissions": [
+          {
+            "key": "app.collaboration.invite_user",
+            "label": "Invite User",
+            "description": "Allows inviting new users to the workspace",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.collaboration.cancel_invite",
+            "label": "Cancel Invite",
+            "description": "Allows cancelling pending user invites",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.collaboration.view_invites",
+            "label": "View Invites",
+            "description": "Allows viewing pending invites",
+            "defaultStatus": true
+          },
+          {
+            "key": "app.collaboration.manage_roles",
+            "label": "Manage Roles",
+            "description": "Allows creating or modifying roles",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.collaboration.view_roles",
+            "label": "View Roles",
+            "description": "Allows viewing available roles",
+            "defaultStatus": true
+          },
+                    {
+            "key": "app.collaboration.manage_users",
+            "label": "Manage Users",
+            "description": "Allows managing workspace users",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.collaboration.view_users",
+            "label": "View Users",
+            "description": "Allows viewing workspace users",
+            "defaultStatus": true
+          },
+          {
+            "key": "app.workspace.view_collaboration_settings",
+            "label": "View Collaboration Settings",
+            "description": "Allows viewing of the collaboration settings",
+            "defaultStatus": true
+          }
+        ]
+      }
+    }
+  },
+  "modules": {
+    "daybook": {
+      "label": "Day Book",
+      "description": "Permissions within the Day Book module",
+      "categories": {
+        "datasources": {
+          "label": "Data Sources",
+          "permissions": [
+            {
+              "key": "modules.daybook.datasources.view_dataSources",
+              "label": "View Data Sources",
+              "description": "Allows viewing connected data sources",
+              "defaultStatus": true
+            },
+            {
+              "key": "modules.daybook.datasources.manage_dataSources",
+              "label": "Manage Data Sources",
+              "description": "Allows managing data sources",
+              "defaultStatus": false
+            },
+            {
+              "key": "modules.daybook.datasources.view_data",
+              "label": "View Data",
+              "description": "Allows viewing data from sources",
+              "defaultStatus": true
+            }
+          ]
+        },
+        "metrics": {
+          "label": "Metrics",
+          "permissions": [
+            {
+              "key": "modules.daybook.metrics.view_metrics",
+              "label": "View Metrics",
+              "description": "Allows viewing metrics",
+              "defaultStatus": true
+            },
+            {
+              "key": "modules.daybook.metrics.manage_metrics",
+              "label": "Manage Metrics",
+              "description": "Allows creating or editing metrics",
+              "defaultStatus": false
+            }
+          ]
+        },
+        "reports": {
+          "label": "Reports",
+          "permissions": [
+            {
+              "key": "modules.daybook.reports.view_reports",
+              "label": "View Reports",
+              "description": "Allows viewing reports",
+              "defaultStatus": true
+            },
+            {
+              "key": "modules.daybook.reports.manage_drafts",
+              "label": "Manage Drafts",
+              "description": "Allows creating or editing report drafts",
+              "defaultStatus": false
+            },
+            {
+              "key": "modules.daybook.reports.view_exports",
+              "label": "View Exports",
+              "description": "Allows viewing report exports",
+              "defaultStatus": true
+            },
+            {
+              "key": "modules.daybook.reports.manage_exports",
+              "label": "Manage Exports",
+              "description": "Allows managing exports",
+              "defaultStatus": false
+            },
+            {
+              "key": "modules.daybook.reports.manage_templates",
+              "label": "Manage Templates",
+              "description": "Allows managing report templates",
+              "defaultStatus": false
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 
 const Roles = () => {
@@ -25,15 +26,16 @@ const Roles = () => {
 
                 if (id) {
                     const result = await apiGet(endpoints.workspace.roles.getRoles(id));
+                    const roles = result.data;
                     //console.log("Fetched roles:", result);
-                    console.log(result[0]?.permissions[0]);
+                    console.log("Roles:", roles[0]?.permissions[0]);
 
                     // Ensure this matches your actual API shape
-                    setRoles(Array.isArray(result) ? result : []);
+                    setRoles(Array.isArray(roles) ? roles : []);
                     setLoading(false);
                 }
             } catch (error) {
-                console.log("Error fetching roles:", error);
+                console.error("Error fetching roles:", error);
             }
         };
 
@@ -41,13 +43,19 @@ const Roles = () => {
     }, []);
 
     return (
-        <View style={commonStyles.screen}>
-            <Header
-                title="Roles"
-                showBack
-                showPlus
-                onRightIconPress={() => router.push("/collaboration/create-role")}
-            />
+		<ResponsiveScreen
+			header={
+                <Header
+                    title="Roles"
+                    showBack
+                    showPlus
+                    onRightIconPress={() => router.navigate("/collaboration/create-role")}
+                />             
+            }
+			center={false}
+			padded={false}
+            scroll={false}
+		>
 
             <FlatList
                 data={roles}
@@ -55,7 +63,7 @@ const Roles = () => {
                 contentContainerStyle={{ paddingVertical: 16 }}
                 renderItem={({ item }) => (
                     <Pressable
-                        onPress={() => router.push(`/collaboration/edit-role/${item.roleId}`)}
+                        onPress={() => router.navigate(`/collaboration/view-role/${item.roleId}`)}
                         style={{
                             borderWidth: 1,
                             borderColor: '#ccc',
@@ -80,7 +88,7 @@ const Roles = () => {
                     )
                 }
             />
-        </View>
+        </ResponsiveScreen>
     );
 };
 

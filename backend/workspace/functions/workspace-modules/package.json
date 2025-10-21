@@ -6,7 +6,8 @@
   "dependencies": {
     "axios": ">=1.6.0",
     "uuid": "^11.1.0",
-    "@etron/shared": "file:../../../shared/etron-shared-1.0.0.tgz"
+    "@etron/shared": "file:../../../shared/etron-shared-1.0.0.tgz",
+    "@etron/day-book-shared": "file:../../../modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz"
   },
   "scripts": {},
   "main": "moduleHandler.js",

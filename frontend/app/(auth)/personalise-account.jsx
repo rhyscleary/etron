@@ -1,168 +1,273 @@
-// Noah Bradley
+// Author(s): Noah Bradley, Rhys Cleary
 
-import React, { useState, useEffect } from 'react';
-import { View, TextInput, Button, Image, TouchableOpacity, Modal, StyleSheet } from 'react-native';
-import { PaperProvider, Text } from 'react-native-paper';
+import { useState, useEffect } from 'react';
+import { View } from 'react-native';
+import { Text } from 'react-native-paper';
 import TextField from '../../components/common/input/TextField';
 import BasicButton from '../../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
-import Header from '../../components/layout/Header';
-import { commonStyles } from '../../assets/styles/stylesheets/common';
 import StackLayout from '../../components/layout/StackLayout';
+import AvatarButton from '../../components/common/buttons/AvatarButton';
+import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, getPhotoFromDevice, saveProfilePhoto } from '../../utils/profilePhoto';
+import { fetchUserAttributes, signOut, updateUserAttribute } from 'aws-amplify/auth';
+import DecisionDialog from '../../components/overlays/DecisionDialog';
+import ResponsiveScreen from '../../components/layout/ResponsiveScreen';
+import Header from '../../components/layout/Header';
 
 //import * as ImagePicker from 'expo-image-picker';
 
 const PersonaliseAccount = () => {
-  const [displayName, setDisplayName] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [showWorkspaceModal, setWorkspaceModal] = useState(false);
-  //const [profilePicture, setProfilePicture] = useState(null);
-/*
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+	const [firstName, setFirstName] = useState('');
+	const [lastName, setLastName] = useState('');
+	const [phoneNumber, setPhoneNumber] = useState('');
+	const [profilePicture, setProfilePicture] = useState(null);
+	const [saving, setSaving] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const [showWorkspaceModal, setWorkspaceModal] = useState(false);
+	const [pictureChanged, setPictureChanged] = useState(false);
+	const [needsPhoneConfirmation, setNeedsPhoneConfirmation] = useState(false);
+	const [errors, setErrors] = useState({
+		firstName: false,
+		lastName: false,
+		phoneNumber: false,
+	});
 
-    if (!result.canceled) {
-      setProfilePicture(result.assets[0].uri);
+	async function handleChoosePhoto() {
+		const uri = await getPhotoFromDevice();
+		setProfilePicture(uri);
+		setPictureChanged(true);
+	}
+
+	const handleRemovePhoto = () => {
+		setProfilePicture(null);
+		setPictureChanged(true);
+	};
+
+	useEffect(() => {
+		loadProfileData();
+	}, []);
+
+	async function loadProfileData() {
+		setLoading(true);
+		try {
+			const userAttributes = await fetchUserAttributes();
+			
+			setFirstName(userAttributes.given_name || "");
+			setLastName(userAttributes.family_name || "");
+			// remove country code from phone number
+			const phoneNumber = userAttributes.phone_number || "";
+			const cleanPhone = phoneNumber.startsWith('+61') ? 
+					phoneNumber.substring(3) : phoneNumber;
+			setPhoneNumber(cleanPhone);
+
+			const profilePhotoUri = await loadProfilePhoto();
+			setProfilePicture(profilePhotoUri || null);
+			
+		} catch (error) {
+			console.error("Error loading personal details: ", error);
+			setMessage("Error loading personal details");
+		}
+		setLoading(false);
+	}
+
+	// updates user details, including verification code if needed (shouldn't be) 
+	async function handleUpdateUserAttribute(attributeKey, value) {
+		try {
+			const output = await updateUserAttribute({
+				userAttribute: {
+					attributeKey,
+					value
+				}
+			});
+
+			const { nextStep } = output;
+
+			switch (nextStep.updateAttributeStep) {
+				case 'CONFIRM_ATTRIBUTE_WITH_CODE':
+					const codeDeliveryDetails = nextStep.codeDeliveryDetails;
+					console.log(`Confirmation code was sent to ${codeDeliveryDetails?.deliveryMedium} at ${codeDeliveryDetails?.destination}`);
+					if (attributeKey === 'phone_number') {
+							setNeedsPhoneConfirmation(true);
+					}
+					return { needsConfirmation: true };
+				case 'DONE':
+					const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+					console.log(`${fieldName} updated successfully`);
+					return { needsConfirmation: false };
+				default:
+					console.log(`${attributeKey.replace('_', ' ')} update completed`);
+					return { needsConfirmation: false };
+			}
+		} catch (error) {
+			console.error("Error updating user attribute:", error);
+			const fieldName = attributeKey.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+			setMessage(`Error updating ${fieldName}: ${error.message}`);
+			return { needsConfirmation: false, error: true };
+		}
+	}
+
+
+	async function handleSaveUserAttributes() {
+		try {
+			if (firstName?.trim()) {
+				await handleUpdateUserAttribute('given_name', firstName.trim());
+			};
+
+			if (lastName?.trim()) {
+				await handleUpdateUserAttribute('family_name', lastName.trim());
+			};
+
+			if (phoneNumber?.trim()) {
+				// clean the phone number. ensure it starts with +61
+				const formattedPhone = phoneNumber.startsWith('+61') ? phoneNumber : `+61${phoneNumber}`;
+				await handleUpdateUserAttribute('phone_number', formattedPhone);
+			};
+
+			if (pictureChanged) {
+				if (profilePicture) {
+					const s3Url = await saveProfilePhoto(profilePicture);
+					if (s3Url) {
+						await handleUpdateUserAttribute('picture', s3Url);
+					}
+				} else {
+					await handleUpdateUserAttribute('picture', "");
+					await removeProfilePhotoFromLocalStorage();
+				}
+			}
+
+			setWorkspaceModal(true);
+
+		} catch (error) {
+			console.error("Error updating Cognito attributes:", error);
+		}
+	}
+
+	async function handleContinue() {
+		const newErrors = {
+			firstName: !firstName.trim(),
+			lastName: !lastName.trim(),
+			phoneNumber: phoneNumber && (phoneNumber.length < 9 || phoneNumber.length > 10),
+		};
+		setErrors(newErrors);
+
+		if (Object.values(newErrors).some(Boolean)) {
+			return;
+		}
+
+		setSaving(true);
+
+		try {
+			await handleSaveUserAttributes();
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const theme = useTheme();
+
+	async function handleBackSignOut() {
+        try {
+            await signOut();
+            router.replace("/landing");
+        } catch (error) {
+            console.error("Error signing out:", error);
+        }
     }
-  };
-*/
-  const handleSave = async () => {
-    console.log({
-      displayName,
-      fullName,
-      phoneNumber,
-      //profilePicture
-    });
-    // BACKEND CONNECTION HERE FOR SAVING DETAILS TO ACCOUNT
-    setWorkspaceModal(true);
-  };
 
-  const theme = useTheme();
+	return (
+		<ResponsiveScreen
+			header={<Header
+				title="Account Personalisation"
+				showBack
+                backIcon="logout"
+                onBackPress={handleBackSignOut}
+			/>}
+		>
+			<View style={{ alignItems: "center"}}>
+				<AvatarButton 
+					type={profilePicture ? "image" : "default"}
+					imageSource={profilePicture ? {uri: profilePicture} : undefined}
+					firstName={firstName}
+					lastName={lastName}
+					badgeType={profilePicture ? "edit" : "plus"}
+					onPress={handleChoosePhoto}
+				/>
+				{profilePicture && (
+					<BasicButton label="Remove Photo" onPress={handleRemovePhoto} />
+				)}
+			</View>
 
-  return (
-    <View style={commonStyles.screen}>
-      <View style={{ padding: 20, gap: 30, justifyContent: 'center' }}>
+			<TextField
+				label="First Name"
+				placeholder="First Name"
+				value={firstName}
+				onChangeText={setFirstName}
+			/>
 
-        
-        <Text style={{ fontSize: 24, textAlign: 'center' }}>
-          Account Personalisation
-        </Text>
+			{errors.firstName && (
+				<Text style={{ color: theme.colors.error }}>Please enter your first name</Text>
+			)}
 
-        <StackLayout spacing={30}>
-          <TextField
-            label="Display Name"
-            placeholder="Display Name"
-            value={displayName}
-            onChangeText={setDisplayName}
-          />
+			<TextField
+					label="Last Name"
+					placeholder="Last Name"
+					value={lastName}
+					onChangeText={setLastName}
+			/>
 
-          <TextField
-              label="Full Name (Optional)"
-              placeholder="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
-          />
+			{errors.lastName && (
+					<Text style={{ color: theme.colors.error }}>Please enter your last name</Text>
+			)}
 
-          <TextField
-              label="Phone Number (Optional)"
-              placeholder="Phone Number"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-          />
-        </StackLayout>
+			<TextField
+					label="Phone Number (Optional)"
+					placeholder="Phone Number"
+					value={phoneNumber}
+					maxLength={10}
+					keyboardType="numeric"
+					textContentType="telephoneNumber"
+					onChangeText={(text) => {
+						setPhoneNumber(text);
+						if (text.length >= 9 && text.length <= 10) {
+							setErrors((prev) => ({ ...prev, phoneNumber: false }));
+						}
+					}}
+			/>
 
-        <View style={{ alignItems: 'flex-end' }}>
-          <BasicButton
-            label='Continue'
-            onPress={handleSave}
-          />
-        </View>
+			{errors.phoneNumber && (
+				<Text style={{ color: theme.colors.error }}>Phone number must be 9-10 digits</Text>
+			)}
 
-        <Modal
-          visible={showWorkspaceModal}
-          animationType="slide"
-          transparent={true}
-        >
-          <View style={{
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-          }}>
-            <View style={{
-            backgroundColor: theme.colors.background,
-            padding: 10,
-            borderRadius: 10,
-            width: '65%',
-            alignItems: 'center'
-          }}>
+			<View style={{ alignItems: 'flex-end' }}>
+				<BasicButton
+					label={saving ? "Saving..." : "Continue"}
+					onPress={handleContinue}
+				/>
+			</View>
 
-            <Text style={{ fontSize: 24, marginBottom: 20 }}>
-              Workspace
-            </Text>
+			<DecisionDialog
+				visible={showWorkspaceModal}
+				title="Workspace"
+				message="Create your own workspace or join an existing one."
+				showGoBack={true}
+				leftActionLabel="Create"
+				handleLeftAction={() => {
+					setWorkspaceModal(false);
+					router.navigate("/(auth)/create-workspace");
+				}}
+				rightActionLabel="Join"
+				handleRightAction={() => {
+					setWorkspaceModal(false);
+					router.navigate("/(auth)/join-workspace");
+				}}
+				handleGoBack={() => {
+					setWorkspaceModal(false);
+				}}
+			/>
 
-            <Text style={{ fontSize: 16, marginBottom: 20, textAlign: 'center' }}>
-              Are you creating your own workspace or joining an existing one?
-            </Text>
-
-          <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            marginBottom: 20
-          }}>
-            <BasicButton
-              label="Creating"
-              fullWidth='true'
-              onPress={() => {
-                setWorkspaceModal(false);
-                router.push('/(auth)/create-workspace');
-              }}
-              style={{ marginRight: 50 }}
-            />
-            <BasicButton
-              label="Joining"
-              fullWidth='true'
-              onPress={() => {
-                setWorkspaceModal(false);
-                router.push('/(auth)/join-workspace');
-              }}
-              style={{ marginRight: 50 }}
-            />
-          </View>
-              
-          <TouchableOpacity onPress={() => setWorkspaceModal(false)}>
-            <Text>Go back</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-        </Modal>
-
-      </View>
-    </View>
-  );
+		</ResponsiveScreen>
+	);
 }
 
 export default PersonaliseAccount;
-
-/*
-<TouchableOpacity onPress={pickImage} style={{ marginBottom: 20 }}>
-        {profilePicture ? (
-          <Image source={{ uri: profilePicture }} style={{ width: 100, height: 100, borderRadius: 50 }} />
-        ) : (
-          <View style={{
-            width: 100, height: 100, borderRadius: 50,
-            backgroundColor: '#ccc', justifyContent: 'center', alignItems: 'center'
-          }}>
-            <Text>Add Photo</Text>
-          </View>
-        )}
-      </TouchableOpacity>
-*/

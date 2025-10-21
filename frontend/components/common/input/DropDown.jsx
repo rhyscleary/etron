@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { Text, useTheme, IconButton, List } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
 
 const DropDown = ({
@@ -8,42 +8,76 @@ const DropDown = ({
     items = [],
     showRouterButton=true,
     onSelect,
+    value,
 }) => {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
-
+    const [searchQuery, setSearchQuery] = useState("");
+    
+    useEffect(() => {
+        if (value) {
+            const found = items.find((i) => i.value === value);
+            setSelectedItem(found || null);
+        }
+    }, [value, items]);
+    
     const handleItemSelect = (item) => {
         setSelectedItem(item);
-        setExpanded(prev => !prev);
+        setExpanded(false);
         if (onSelect) {
-            onSelect(item);
+            onSelect(item.value);
         }
     }
+
+    const filteredItems = items.filter((item) =>
+        (item.label ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
     const theme = useTheme();
 
     return (
         <List.Section>
             <List.Accordion
-                title={selectedItem || title}
-                expanded={!expanded}
+                title={selectedItem ? selectedItem.label : title}
+                expanded={expanded}
                 onPress={() => setExpanded(prev => !prev)}
                 style={[
-                    styles.container,
+                    expanded ? styles.containerExpanded : styles.containerCollapsed,
                     { borderColor: theme.colors.outline }
                 ]}
             >
-                {items.map((item, index) => (    
-                    <List.Item 
-                        key={index}
-                        title={item}
-                        style={[
-                            styles.items,
-                            { borderColor: theme.colors.outline }
-                        ]}
-                        onPress={() => handleItemSelect(item)}
+                <View style={styles.searchContainer}>
+                    <TextInput
+                        mode="outlined"
+                        placeholder="Search..."
+                        placeholderTextColor={theme.colors.placeholderText}
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        style={styles.searchInput}
+                        outlineColor={theme.colors.outline}
+                        activeOutlineColor={theme.colors.primary}
+                        theme={{ roundness: 0 }}
                     />
-                ))}
+                </View>
+                
+                <ScrollView style={{ macHeight: 200}}>
+                    {filteredItems.map((item, index) => {
+                        const isLastItem = index === filteredItems.length - 1 && !showRouterButton;
+                        
+                        return (
+                            <List.Item 
+                                key={index}
+                                title={item.label}
+                                style={[
+                                    styles.items,
+                                    isLastItem && styles.lastItem,
+                                    { borderColor: theme.colors.outline }
+                                ]}
+                                onPress={() => handleItemSelect(item)}
+                            />                        
+                        );
+                    })}
+                </ScrollView>
 
                 {showRouterButton && (
                     <TouchableOpacity
@@ -51,8 +85,8 @@ const DropDown = ({
                             styles.routerButton,
                             { borderColor: theme.colors.outline }
                         ]}
-                        onPress={() => {
-                            router.push('/modules/day-book/data-management/create-data-connection')
+                        onPress={() => { //TODO: MAKE THIS HAVE PROPER NAVIGATION SO THAT THE BACK BUTTON AFTER CREATING A DATA CONNECTION TAKES YOU BACK HERE
+                            router.navigate('/modules/day-book/data-management/create-data-connection')
                         }}
                     >
                         <View
@@ -71,7 +105,7 @@ const DropDown = ({
                                     { color: theme.colors.placeholderText, } 
                                 ]}
                             >
-                                New Data Source
+                                New Data Source {/*TODO: MAKE THIS A VARIABLE*/}
                             </Text>
                         </View>
                     </TouchableOpacity>
@@ -84,13 +118,28 @@ const DropDown = ({
 export default DropDown;
 
 const styles = StyleSheet.create({
-    container: {
+    containerCollapsed: {
+        borderWidth: 1,
+        borderRadius: 10
+    },
+    containerExpanded: {
         borderWidth: 1,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
     },
+    searchContainer: {
+        borderCurve: 0,
+    },
+    searchInput: {
+        height: 50,
+        fontSize: 16,
+    },
     items: {
         borderWidth: 1,
+    },
+    lastItem: {
+        borderBottomLeftRadius: 10,
+        borderBottomRightRadius: 10,
     },
     routerButton: {
         height: 50,
@@ -181,7 +230,7 @@ const DropDown = ({
                     onPress={() => {
                         setMenuVisible(false);
                         setSearchQuery('');
-                        router.push('/create-data-connection')
+                        router.navigate('/create-data-connection')
                     }}
                 >
                     <Text style={{ color: theme.colors.placeholderText, textAlignVertical: 'center' }}>

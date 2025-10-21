@@ -11,30 +11,64 @@ Globals:
     Architectures:
       - x86_64
 
+Parameters:
+  WorkspaceBucketName:
+    Type: String
+  AppConfigurationBucketName:
+    Type: String
+  AthenaDatabaseName:
+    Type: String
+    Default: etron_day_book_db
+    
+
 Resources:
+
+  AthenaGlueDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: !Ref AthenaDatabaseName
+
+  AuditQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: AuditQueue
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 1209600 # 14 days
+
   WorkspaceDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./workspace/template.yaml
+      Parameters:
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        WorkspaceBucketName: !Ref WorkspaceBucketName
+        AuditQueueUrl: !Ref AuditQueue
+
+  AuditDomainFunctions:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: ./audit/template.yaml
+      Parameters:
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        WorkspaceBucketName: !Ref WorkspaceBucketName
+        AuditQueueArn: !Ref AuditQueue
+        
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./user/template.yaml
+      Parameters:
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        AuditQueueUrl: !Ref AuditQueue
+        
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: ./modules/day-book/template.yaml
-
-#Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
- #HelloWorldApi:
-    #Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    #Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  #HelloWorldFunction:
-    #Description: "Hello World Lambda Function ARN"
-    #Value: !GetAtt HelloWorldFunction.Arn
-  #HelloWorldFunctionIamRole:
-    #Description: "Implicit IAM Role created for Hello World function"
-    #Value: !GetAtt HelloWorldFunctionRole.Arn
+      Parameters:
+        AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        WorkspaceBucketName: !Ref WorkspaceBucketName
+        AthenaDatabaseName: !Ref AthenaDatabaseName
+        AuditQueueUrl: !Ref AuditQueue

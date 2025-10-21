@@ -29,24 +29,21 @@ const BasicButton = ({
         : theme.colors.text;
 
     return (
-        <View>
-            <Button 
-                compact  
-                mode="contained" 
-                textColor={textColor}  
-                buttonColor={buttonColor}
-                disabled={disabled}
-                style={[
-                    styles.button,
-                    fullWidth ? styles.fullWidth : styles.fixedWidth,
-                    style
-                ]}
-                onPress={onPress}
-                //disabled={disabled}
-            >
-                {label}
-            </Button>
-        </View>
+        <Button 
+            compact  
+            mode="contained" 
+            textColor={textColor}  
+            buttonColor={buttonColor}
+            disabled={disabled}
+            style={[
+                styles.button,
+                fullWidth ? styles.fullWidth : styles.fixedWidth
+            ]}
+            onPress={onPress}
+            //disabled={disabled}
+        >
+            {label}
+        </Button>
     );
 }
 
@@ -56,6 +53,8 @@ const styles = StyleSheet.create({
     },
     fixedWidth: {
         width: 145,
+        maxWidth: "100%",
+        flexShrink: 1
     },
     fullWidth: {
         width: '100%',

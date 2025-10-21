@@ -1,7 +1,8 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Matthew Page
 
 import { useRouter } from "expo-router";
 import { Appbar, useTheme, Searchbar } from "react-native-paper";
+import { useNavigation } from '@react-navigation/native';
 
 /*
 TODO:
@@ -18,25 +19,46 @@ const Header = ({
     showMenu,
     showEdit,
     showCheck,
+    showCheckLeft,
     showPlus,
+    showEllipsis,
     onRightIconPress,
-    customBackAction
+    onLeftIconPress,
+    onEllipsisPress,
+    customBackAction,
+    onBackPress,
+    backIcon
 }) => {
     const router = useRouter();
     const theme = useTheme();
 
+    const navigation = useNavigation();
+
     return (
-        <Appbar.Header mode="center-aligned" style={[{backgroundColor: theme.colors.background}, {marginBottom: 12}]}>
+        <Appbar.Header mode="center-aligned"
+            style={{
+                backgroundColor: theme.colors.background,
+                marginBottom: 12
+            }}
+        >
             {
                 showBack ? (
-                    <Appbar.BackAction onPress={customBackAction || (() => router.back())} />
+                    <Appbar.Action
+                        icon={backIcon || "arrow-left"}
+                        onPress={async() => {
+                            if (onBackPress) return await onBackPress();
+                            router.back();
+                        }} 
+                    />
                 ) : showMenu ? (
-                    <Appbar.Action icon="menu" onPress={() => {}} />
+                    <Appbar.Action icon="menu" onPress={() => navigation.openDrawer()} />
                 ) : null
             }
             
             <Appbar.Content title={title} />
-
+            {showEllipsis && (
+                <Appbar.Action icon="dots-vertical" onPress={onEllipsisPress} />
+            )}
             {
                 showPlus ? (
                     <Appbar.Action icon="plus" onPress={onRightIconPress} />

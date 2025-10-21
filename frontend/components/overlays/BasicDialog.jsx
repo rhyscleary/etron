@@ -21,10 +21,12 @@ const BasicDialog = ({
     handleLeftAction = () => {},
     rightActionLabel = "Confirm",
     rightDanger = false,
+    rightDisabled = false,
     handleRightAction = () => {},
     inputError = false,
     inputErrorMessage = "",
-    secureTextEntry = false
+    secureTextEntry = false,
+    children,
 }) => {
     const theme = useTheme();
 
@@ -35,6 +37,9 @@ const BasicDialog = ({
 
                 <Dialog.Content>
                     <Text variant="bodyLarge">{message}</Text>
+
+                    {children}
+                    
                     {showInput && (
                         <View style={styles.inputContainer}>
                             <TextField 
@@ -49,12 +54,12 @@ const BasicDialog = ({
                     )}
                     {inputError && (
                         <Text style={{color: theme.colors.error}}>{inputErrorMessage}</Text> 
-                    )}  
+                    )}
                 </Dialog.Content>
 
                 <Dialog.Actions style={styles.actions}>
                     <BasicButton label={leftActionLabel} danger={leftDanger} onPress={(handleLeftAction)}/>
-                    <BasicButton label={rightActionLabel} danger={rightDanger} onPress={handleRightAction}/>
+                    <BasicButton label={rightActionLabel} danger={rightDanger} disabled={rightDisabled}onPress={handleRightAction}/>
                 </Dialog.Actions>
             </Dialog>
         </Portal>

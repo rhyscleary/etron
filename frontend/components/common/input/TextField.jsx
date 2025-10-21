@@ -1,4 +1,4 @@
-// Author(s): Rhys Cleary, Holly Wyatt, Holly Wyatt
+// Author(s): Rhys Cleary, Holly Wyatt
 
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
@@ -15,7 +15,12 @@ const TextField = ({
     dense = false,
     onFocus,
     onBlur,
-    autoCapitalize = 'none'
+    autoCapitalize = 'none',
+    contentStyle,
+    isDisabled = false,
+    customRightButton = false,
+    rightButtonIcon,
+    rightButtonPress
 }) => {
     const theme = useTheme();
     const [hidePassword, setHidePassword] = useState(secureTextEntry);
@@ -50,6 +55,7 @@ const TextField = ({
 
             <TextInput
                 mode="outlined"
+                disabled={isDisabled}
                 dense={dense}
                 autoCapitalize={autoCapitalize}
                 value={value}
@@ -73,14 +79,22 @@ const TextField = ({
                 numberOfLines={tall ? 8 : 1}
                 scrollEnabled={focused}
                 style={getInputStyle()}
+                contentStyle={contentStyle}
                 secureTextEntry={isPassword ? hidePassword : false}
                 right={
-                    isPassword ? (
+                    customRightButton ? (
                         <TextInput.Icon
-                            icon={hidePassword ? "eye-off" : "eye"}
-                            onPress={() => setHidePassword(!hidePassword)}
+                            icon={rightButtonIcon}
+                            onPress={rightButtonPress}
                         />
-                    ) : null
+                    ) : (
+                        isPassword ? (
+                            <TextInput.Icon
+                                icon={hidePassword ? "eye-off" : "eye"}
+                                onPress={() => setHidePassword(!hidePassword)}
+                            />
+                        ) : null
+                    )
                 }
             />
             {typeof error === "string" && (

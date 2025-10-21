@@ -1,5 +1,4 @@
-import { View, Alert } from "react-native";
-import { ScrollView } from "react-native";
+import { View, Alert, ScrollView } from "react-native";
 import { useTheme, Text } from "react-native-paper";
 import { router } from "expo-router";
 import { useState, useEffect, useMemo } from "react";
@@ -14,12 +13,14 @@ import CollapsibleList from "./CollapsibleList";
 import Divider from "./Divider";
 
 import { commonStyles } from "../../assets/styles/stylesheets/common";
-import useDataSources from "../../hooks/useDataSource";
+import { useApp } from "../../contexts/AppContext";
 import { createDataAdapter } from "../../adapters/day-book/data-sources";
 import { apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { getCurrentUser, fetchAuthSession, signOut } from "aws-amplify/auth";
+import ResponsiveScreen from "./ResponsiveScreen";
 
+// --- Test Connection Section ---
 const TestConnectionSection = ({
   isTestingConnection, testResponse, connectionError,
   onTestConnection, canTest, theme
@@ -29,7 +30,6 @@ const TestConnectionSection = ({
       <Text style={[commonStyles.captionText, { color: theme.colors.onSurfaceVariant }]}>
         Test your connection before creating it to ensure everything works correctly.
       </Text>
-
       <IconButton
         label={isTestingConnection ? "Testing..." : "Test Connection"}
         icon="connection"
@@ -37,14 +37,12 @@ const TestConnectionSection = ({
         loading={isTestingConnection}
         disabled={!canTest}
       />
-
       {testResponse && (
         <>
           <Divider color={theme.colors.buttonBackground} />
           <TestResultCard result={testResponse} title="Test Results" />
         </>
       )}
-
       {connectionError && (
         <>
           <Divider color={theme.colors.buttonBackground} />
@@ -55,26 +53,22 @@ const TestConnectionSection = ({
   </View>
 );
 
-const ConnectionPage = ({ 
-  connectionType, 
-  title, 
-  FormComponent, 
-  formValidator, 
+// --- Main Page ---
+const ConnectionPage = ({
+  connectionType,
+  title,
+  FormComponent,
+  formValidator,
   connectionDataBuilder,
-  nameGenerator 
+  nameGenerator
 }) => {
   const theme = useTheme();
-
-  // Use the global data sources hook for all data source operations
   const {
-    dataSources,
-    loading: dataSourcesLoading,
-    error: dataSourcesError,
-    connectDataSource,
-    testConnection: testDataSourceConnection,
-  } = useDataSources();
+  dataSources: { list: dataSources },
+  actions: { connectDataSource, testConnection: testDataSourceConnection },
+  } = useApp();
 
-  // Local form state
+  // State
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [connection, setConnection] = useState(null);
@@ -85,161 +79,130 @@ const ConnectionPage = ({
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [adapter, setAdapter] = useState(null);
   const [adapterError, setAdapterError] = useState(null);
-  
-  // Accordion state management
   const [expandedSections, setExpandedSections] = useState(new Set(['form']));
 
-  // Initialize adapter for this connection type
+  // Adapter setup
   useEffect(() => {
     try {
-      // Create API client and auth service (same as in useDataSources)
+  console.log('[ConnectionPage] creating adapter', { connectionType });
       const apiClient = {
         post: apiPost,
-        get: async (url) => ({ data: [] }),
-        put: async (url, data) => ({ data: {} }),
-        delete: async (url) => ({ data: {} })
+        get: async () => ({ data: [] }),
+        put: async () => ({ data: {} }),
+        delete: async () => ({ data: {} })
       };
-
       const authService = { getCurrentUser, fetchAuthSession, signOut };
-
-      const newAdapter = createDataAdapter(connectionType, {
+    const newAdapter = createDataAdapter(connectionType, {
         authService,
         apiClient,
         endpoints,
         options: {
-          demoMode: typeof __DEV__ !== 'undefined' ? __DEV__ : true,
-          fallbackToDemo: true
+      // Do not allow automatic fallback to demo when creating a UI adapter
+      fallbackToDemo: false
         }
       });
-
       if (!newAdapter) throw new Error('Failed to create adapter - adapter is null');
-      
       setAdapter(newAdapter);
       setAdapterError(null);
     } catch (err) {
       setAdapterError(`Failed to create adapter: ${err.message}`);
-      console.error('Adapter creation error:', err);
+  console.error('[ConnectionPage] Adapter creation error:', err);
     }
   }, [connectionType]);
 
-  // Auto-expand test section when form becomes valid
+  // Expand test section when form valid
+  const formIsValid = useMemo(() => formValidator ? formValidator(formData) : true, [formData, formValidator]);
   useEffect(() => {
     if (formIsValid && !isConnected()) {
       setExpandedSections(prev => new Set([...prev, 'test']));
     }
+    // eslint-disable-next-line
   }, [formIsValid, isConnected]);
 
+  // When the endpoint/URL changes, clear previous test results to force re-test
+  useEffect(() => {
+    // For API-based connections, the primary field is usually `url` or `endpoint`
+    setTestResponse(null);
+    setConnectionError(null);
+  }, [formData?.url, formData?.endpoint]);
+
+  // Accordion toggle
   const handleSectionToggle = (sectionKey) => {
     setExpandedSections(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(sectionKey)) {
-        newSet.delete(sectionKey);
-      } else {
-        newSet.add(sectionKey);
-      }
+      newSet.has(sectionKey) ? newSet.delete(sectionKey) : newSet.add(sectionKey);
       return newSet;
     });
   };
 
+  // Name generator
   const generateName = () => {
     if (nameGenerator && !formData.name) {
       const generatedName = nameGenerator(formData);
-      if (generatedName) {
-        return generatedName;
-      }
+      if (generatedName) return generatedName;
     }
   };
 
-  const formIsValid = useMemo(() => {
-    return formValidator ? formValidator(formData) : true;
-  }, [formData, formValidator]);
+  // Auto-apply generated name to formData when URL/endpoint present and name empty
+  useEffect(() => {
+    if (!formData.name && (formData.url || formData.endpoint) && nameGenerator) {
+      try {
+        const generated = nameGenerator(formData);
+        if (generated) {
+          setFormData(prev => ({ ...prev, name: generated }));
+        }
+      } catch {}
+    }
+  }, [formData.url, formData.endpoint, formData.name, nameGenerator]);
 
+  // Form validation
   const validateForm = () => {
     if (!formValidator) return true;
-    
     const validation = formValidator(formData, true);
     if (validation === true) {
       setErrors({});
       return true;
     }
-    
     setErrors(validation || {});
     return false;
   };
 
-  /*const handleTestConnection = async () => {
+  // Test connection
+  const handleTestConnection = async () => {
     if (!validateForm()) return;
     if (!adapter) {
       setConnectionError("Adapter not initialized");
       return;
     }
-
     setIsTestingConnection(true);
     setConnectionError(null);
     setTestResponse(null);
-
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
       const connectionName = formData.name || generateName() || `${title} Connection`;
-      
-      // Use the testConnection from useDataSources hook
-      const result = await testDataSourceConnection(connectionType, connectionData, connectionName);
+  const result = await testDataSourceConnection(connectionType, connectionData, connectionName);
       setTestResponse(result);
       setConnectionError(null);
     } catch (error) {
       console.error('Error testing connection:', error);
-      const errorMsg = error.message || "Failed to test connection";
-      setConnectionError(errorMsg);
+      setConnectionError(error.message || "Failed to test connection");
       setTestResponse(null);
     } finally {
       setIsTestingConnection(false);
     }
-  };*/
-  // fake
-  const handleTestConnection = async () => {
-  if (!validateForm()) return;
-  if (!adapter) {
-    setConnectionError("Adapter not initialized");
-    return;
-  }
+  };
 
-  setIsTestingConnection(true);
-  setConnectionError(null);
-  setTestResponse(null);
-
-  try {
-    // Simulate a fake successful test result
-    const fakeResult = {
-      status: "success",
-      data: {
-        message: "Mock connection test passed",
-        timestamp: new Date().toISOString()
-      }
-    };
-
-    await new Promise(resolve => setTimeout(resolve, 500)); // simulate network delay
-
-    setTestResponse(fakeResult);
-    setConnectionError(null);
-  } catch (error) {
-    setConnectionError("Mock connection failed");
-  } finally {
-    setIsTestingConnection(false);
-  }
-};
-
-
+  // Create connection
   const handleContinue = async () => {
-    if (!testResponse || testResponse.status !== "success") return;
-
     setIsCreatingConnection(true);
     try {
       const connectionData = connectionDataBuilder ? connectionDataBuilder(formData) : formData;
       const connectionName = formData.name || generateName() || `${title} Connection`;
-      
-      // Use the connectDataSource from useDataSources hook
-      const result = await connectDataSource(connectionType, connectionData, connectionName);
-
+  console.log('[ConnectionPage] calling connectDataSource', { type: connectionType, name: connectionName });
+  const result = await connectDataSource(connectionType, connectionData, connectionName);
+      if (!result || !result.id) {
+        throw new Error('Backend did not confirm creation (missing id)');
+      }
       if (result) {
         const dialogData = formatConnectionForDialog(result, connectionType, testResponse);
         setConnection(dialogData);
@@ -255,32 +218,31 @@ const ConnectionPage = ({
     }
   };
 
-  // Format connection data for dialog display
+  // Format dialog data
   const formatConnectionForDialog = (connection, type, testResult) => {
     const baseData = {
       name: connection.name,
       status: connection.status || 'connected',
       createdAt: connection.createdAt || new Date().toISOString(),
       testResult: testResult?.status === 'success' ? testResult.data : null,
-      originalConnection: connection
+      originalConnection: connection,
+      isDemoMode: false
     };
-
     const formatters = {
-      'custom-api': (conn) => ({
+    'custom-api': (conn) => ({
         ...baseData,
-        title: "API Connection Created",
-        message: "Your custom API connection has been successfully created and is ready to use.",
+        title: `API Connection Created`,
+        message: `Your custom API connection has been successfully created and is ready to use.`,
         details: [
-          { label: "URL", value: conn.config?.url || formData.url },
+      { label: "Endpoint", value: conn.config?.endpoint ?? '' },
           { label: "Type", value: "REST API" },
-          { label: "Authentication", value: conn.config?.authentication || formData.authentication ? "Configured" : "None" }
+      { label: "Authentication", value: conn.config?.authType ? "Configured" : "None" }
         ]
       }),
-
       'custom-ftp': (conn) => ({
         ...baseData,
-        title: "FTP Connection Created", 
-        message: "Your FTP connection has been successfully created and is ready to use.",
+        title: `FTP Connection Created`,
+        message: `Your FTP connection has been successfully created and is ready to use.`,
         details: [
           { label: "Hostname", value: conn.config?.hostname || formData.hostname },
           { label: "Port", value: conn.config?.port || formData.port || "21" },
@@ -289,11 +251,10 @@ const ConnectionPage = ({
           { label: "Protocol", value: conn.config?.keyFile || formData.keyFile ? "SFTP" : "FTP" }
         ]
       }),
-
       'custom-mysql': (conn) => ({
         ...baseData,
-        title: "MySQL Connection Created",
-        message: "Your MySQL connection has been successfully created and is ready to use.",
+        title: `MySQL Connection Created`,
+        message: `Your MySQL connection has been successfully created and is ready to use.`,
         details: [
           { label: "Host", value: conn.config?.host || formData.host },
           { label: "Port", value: conn.config?.port || formData.port || "3306" },
@@ -303,16 +264,12 @@ const ConnectionPage = ({
         ]
       })
     };
-
     const formatter = formatters[type];
-    if (formatter) {
-      return formatter(connection);
-    }
-
+    if (formatter) return formatter(connection);
     return {
       ...baseData,
-      title: "Connection Created",
-      message: "Your connection has been successfully created and is ready to use.",
+      title: `Connection Created`,
+      message: `Your connection has been successfully created and is ready to use.`,
       details: [
         { label: "Type", value: type },
         { label: "Name", value: connection.name }
@@ -320,11 +277,12 @@ const ConnectionPage = ({
     };
   };
 
+  // Navigation
   const navigateToDataManagement = (connectionData) => {
     const originalConnection = connectionData.originalConnection || connectionData;
     
-    router.push({
-      pathname: "/modules/day-book/data-management/data-management",
+    router.navigate({
+      pathname: "/modules/day-book/data-management",
       params: {
         type: connectionType,
         connectionId: originalConnection.id,
@@ -340,34 +298,34 @@ const ConnectionPage = ({
     navigateToDataManagement(connection);
   };
 
+  // UI helpers
   const getTestSectionStatus = () => {
     if (testResponse) return { description: "Connection tested successfully", icon: "wifi-check" };
     if (connectionError) return { description: "Connection test failed", icon: "wifi-alert" };
     return { description: "Test your connection", icon: "wifi-sync" };
   };
-
   const getFormDescription = () => {
     if (!formData.name) return "Configure your connection";
     const primaryInfo = formData.url || formData.hostname || formData.host || 'connection';
     return `${formData.name} • ${primaryInfo}`;
   };
-
-  // Check if there's an existing connection of this type
   const existingConnection = dataSources.find(source => source.type === connectionType);
   const isConnected = () => existingConnection?.status === 'connected';
-
   const testSectionStatus = getTestSectionStatus();
-  const isLoading = dataSourcesLoading || isTestingConnection || isCreatingConnection;
-  const hasError = adapterError || dataSourcesError;
+  const isLoading = isTestingConnection || isCreatingConnection;
+  const hasError = adapterError;
+  const requiresTest = connectionType === 'custom-api';
+  const canCreate = formIsValid && (!requiresTest || testResponse?.status === 'success') && !isLoading;
 
   return (
-    <View style={commonStyles.screen}>
-      <Header title={title} showBack />
-
+    <ResponsiveScreen
+      header={<Header title={title} showBack />}
+      center={false}
+      padded
+      scroll={false}
+    >
       <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
         <StackLayout spacing={0}>
-
-          {/* Error Display */}
           {hasError && (
             <View style={{
               padding: 15,
@@ -376,37 +334,10 @@ const ConnectionPage = ({
               marginBottom: 20
             }}>
               <Text style={{ color: theme.colors.onErrorContainer }}>
-                {adapterError || dataSourcesError}
+                {adapterError}
               </Text>
             </View>
           )}
-
-          {/* Demo Mode Indicator */}
-          {adapter?.getConnectionInfo?.()?.isDemoMode && (
-            <View style={{
-              padding: 15,
-              backgroundColor: theme.colors.secondaryContainer,
-              borderRadius: 8,
-              marginBottom: 20
-            }}>
-              <Text style={{
-                color: theme.colors.onSecondaryContainer,
-                fontWeight: 'bold',
-                textAlign: 'center'
-              }}>
-                🚀 Demo Mode Active
-              </Text>
-              <Text style={{
-                color: theme.colors.onSecondaryContainer,
-                textAlign: 'center',
-                fontSize: 12,
-                marginTop: 4
-              }}>
-                Using sample data for development
-              </Text>
-            </View>
-          )}
-
           <CollapsibleList
             canCloseFormAccordion={formIsValid}
             expandedSections={expandedSections}
@@ -452,25 +383,21 @@ const ConnectionPage = ({
           />
         </StackLayout>
       </ScrollView>
-
-      {/* Continue Button */}
       <View style={commonStyles.floatingButtonContainer}>
         <BasicButton
           label={isCreatingConnection ? "Creating Connection..." : "Create Connection"}
           onPress={handleContinue}
-          disabled={isLoading || !testResponse || testResponse.status !== "success"}
+          disabled={!canCreate}
           fullWidth={false}
         />
       </View>
-
-      {/* Dialog */}
       <ConnectionDialog
         visible={showSuccessDialog}
         onDismiss={() => setShowSuccessDialog(false)}
         onConfirm={handleDialogConfirm}
         connection={connection}
       />
-    </View>
+    </ResponsiveScreen>
   );
 };
 

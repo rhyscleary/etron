@@ -3,14 +3,43 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   eTRON workspace-domain functions template
 
+Parameters:
+  AppConfigurationBucketName:
+    Type: String
+  WorkspaceBucketName:
+    Type: String
+  AthenaDatabaseName:
+    Type: String
+    Default: etron_day_book_db
+  AuditQueueUrl:
+    Type: String
+    
 Globals:
   Function:
     Timeout: 5
     Runtime: nodejs22.x
     Architectures:
       - x86_64
+    Environment:
+      Variables:
+        APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
+        WORKSPACE_BUCKET: !Ref WorkspaceBucketName
+        ATHENA_DATABASE: !Ref AthenaDatabaseName
+        AUDIT_QUEUE_URL: !Ref AuditQueueUrl
 
 Resources:
+
+  eTRONApi:
+      Type: AWS::Serverless::Api
+      Properties:
+        StageName: dev
+        Auth:
+          DefaultAuthorizer: CognitoAuthorizer
+          Authorizers:
+            CognitoAuthorizer:
+              UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              Identity:
+                Header: Authorization
 
   # Workspace Lambda 
   WorkspaceCoreFunction:
@@ -25,6 +54,23 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - DynamoDBCrudPolicy:
+            TableName: AuditLogs
+        - Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
         CreateWorkspace:
@@ -32,42 +78,42 @@ Resources:
           Properties:
             Path: /workspace
             Method: post
+            RestApiId: !Ref eTRONApi
 
         UpdateWorkspace:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}
-            Method: put
+            Method: patch
+            RestApiId: !Ref eTRONApi
 
         GetWorkspace:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}
             Method: get
+            RestApiId: !Ref eTRONApi
 
         GetWorkspaceByUserId:
           Type: Api 
           Properties: 
             Path: /workspace/users/{userId}
             Method: get
+            RestApiId: !Ref eTRONApi
 
         TransferOwnership:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/transfer/{userId}
+            Path: /workspace/{workspaceId}/transfer
             Method: put
-
-        DeleteWorkspace:
-          Type: Api 
-          Properties:
-            Path: /workspace/{workspaceId}
-            Method: delete
+            RestApiId: !Ref eTRONApi
 
         GetDefaultPermissions:
           Type: Api
           Properties:
             Path: /workspace/permissions 
             Method: get
+            RestApiId: !Ref eTRONApi
 
   # Invite Lambda 
   WorkspaceInvitesFunction:
@@ -82,6 +128,21 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
         InviteUser:
@@ -89,30 +150,35 @@ Resources:
           Properties:
             Path: /workspace/{workspaceId}/invites
             Method: post
+            RestApiId: !Ref eTRONApi
 
         CancelUsersInvites:
           Type: Api 
           Properties:
-            Path: /workspace/invites/{email}
+            Path: /workspace/invites
             Method: delete
+            RestApiId: !Ref eTRONApi
 
         CancelInvite:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/invites/{inviteId}
             Method: delete
+            RestApiId: !Ref eTRONApi
         
         GetInvite:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/invites/{inviteId}
             Method: get
+            RestApiId: !Ref eTRONApi
 
         GetSentInvites:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/invites
             Method: get
+            RestApiId: !Ref eTRONApi
 
   # User Lambda 
   WorkspaceUsersFunction:
@@ -127,37 +193,57 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
         AddUser:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/users/invites/{inviteId}
+            Path: /workspace/{workspaceId}/users
             Method: post
+            RestApiId: !Ref eTRONApi
 
         UpdateUser:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/users/{userId}
-            Method: put
+            Method: patch
+            RestApiId: !Ref eTRONApi
 
         RemoveUser:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/users/{userId}
             Method: delete
+            RestApiId: !Ref eTRONApi
 
         GetUser:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/users/{userId}
             Method: get
+            RestApiId: !Ref eTRONApi
 
         GetAllUsers:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/users
             Method: get
+            RestApiId: !Ref eTRONApi
         
 
   # Role Lambda 
@@ -173,6 +259,21 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
         CreateRole:
@@ -180,38 +281,50 @@ Resources:
           Properties:
             Path: /workspace/{workspaceId}/roles
             Method: post
+            RestApiId: !Ref eTRONApi
 
         UpdateRole:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/roles/{roleId}
-            Method: put
+            Method: patch
+            RestApiId: !Ref eTRONApi
 
         DeleteRole:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/roles/{roleId}
             Method: delete
+            RestApiId: !Ref eTRONApi
 
         GetRole:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/roles/{roleId}
             Method: get
+            RestApiId: !Ref eTRONApi
+
+        GetRoleOfUser:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}/roleOfUser
+            Method: get
+            RestApiId: !Ref eTRONApi
 
         GetRoles:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/roles
             Method: get
+            RestApiId: !Ref eTRONApi
 
 
-  # Profile Lambda 
-  WorkspaceProfilesFunction:
+  # Board Lambda 
+  WorkspaceBoardsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: ./functions/workspace-profiles
-      Handler: profileHandler.handler
+      CodeUri: ./functions/workspace-boards
+      Handler: boardHandler.handler
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Workspaces
@@ -219,37 +332,121 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
-        CreateProfile:
+        CreateBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles
+            Path: /workspace/{workspaceId}/boards
             Method: post
+            RestApiId: !Ref eTRONApi
 
-        UpdateProfile:
+        UpdateBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles/{profileId}
-            Method: put
+            Path: /workspace/{workspaceId}/boards/{boardId}
+            Method: patch
+            RestApiId: !Ref eTRONApi
 
-        DeleteProfile:
+        DeleteBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles/{profileId}
+            Path: /workspace/{workspaceId}/boards/{boardId}
             Method: delete
+            RestApiId: !Ref eTRONApi
 
-        GetProfile:
+        GetBoard:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles/{profileId}
+            Path: /workspace/{workspaceId}/boards/{boardId}
             Method: get
+            RestApiId: !Ref eTRONApi
 
-        GetProfiles:
+        GetBoards:
           Type: Api 
           Properties:
-            Path: /workspace/{workspaceId}/profiles
+            Path: /workspace/{workspaceId}/boards
             Method: get
+            RestApiId: !Ref eTRONApi
+
+  # Workspace Deletion Lambda 
+  WorkspaceRemovalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./functions/workspace-remover
+      Handler: removerHandler.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Workspaces
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceUsers
+        - DynamoDBCrudPolicy:
+            TableName: WorkspaceInvites
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+              - s3:GetBucketLocation
+              - s3:HeadObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - athena:StartQueryExecution
+              - athena:GetQueryExecution
+              - athena:GetQueryResults
+              - athena:GetWorkGroup
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - glue:GetDatabase
+              - glue:GetDatabases
+              - glue:GetTable
+              - glue:GetTables
+              - glue:CreateTable
+              - glue:UpdateTable
+              - glue:DeleteTable
+            Resource:
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+
+      Events:
+        DeleteWorkspace:
+          Type: Api 
+          Properties:
+            Path: /workspace/{workspaceId}
+            Method: delete
+            RestApiId: !Ref eTRONApi
 
   # Module Lambda 
   WorkspaceModulesFunction:
@@ -264,6 +461,49 @@ Resources:
             TableName: WorkspaceUsers
         - DynamoDBCrudPolicy:
             TableName: WorkspaceInvites
+        - DynamoDBCrudPolicy:
+            TableName: DataSources
+        - DynamoDBCrudPolicy:
+            TableName: Metrics
+        - DynamoDBCrudPolicy:
+            TableName: Reports
+        - Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+              - s3:GetBucketLocation
+              - s3:HeadObject
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - athena:StartQueryExecution
+              - athena:GetQueryExecution
+              - athena:GetQueryResults
+              - athena:GetWorkGroup
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - glue:GetDatabase
+              - glue:GetDatabases
+              - glue:GetTable
+              - glue:GetTables
+              - glue:CreateTable
+              - glue:UpdateTable
+              - glue:DeleteTable
+            Resource:
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
+              - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
+          - Effect: Allow
+            Action:
+              - cognito-idp:ListUsers
+              - cognito-idp:AdminUpdateUserAttributes
+            Resource:
+              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
 
       Events:
         InstallModule:
@@ -271,29 +511,32 @@ Resources:
           Properties:
             Path: /workspace/{workspaceId}/modules/{moduleKey}
             Method: post
+            RestApiId: !Ref eTRONApi
 
         ToggleModule:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/modules/{moduleKey}/toggle
             Method: put
+            RestApiId: !Ref eTRONApi
 
         UninstallModule:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/modules/{moduleKey}
             Method: delete
+            RestApiId: !Ref eTRONApi
 
         GetInstalledModules:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/modules/installed
             Method: get
+            RestApiId: !Ref eTRONApi
 
         GetUninstalledModules:
           Type: Api 
           Properties:
             Path: /workspace/{workspaceId}/modules/uninstalled
             Method: get
-
-  
+            RestApiId: !Ref eTRONApi

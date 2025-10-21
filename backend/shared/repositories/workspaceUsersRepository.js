@@ -7,7 +7,8 @@ const {
     GetCommand, 
     DeleteCommand, 
     UpdateCommand,
-    QueryCommand 
+    QueryCommand,
+    BatchWriteCommand 
 } = require("@aws-sdk/lib-dynamodb");
 
 const dynamoDB = DynamoDBDocumentClient.from(new DynamoDBClient());
@@ -140,7 +141,7 @@ async function getUserByUserId(userId) {
         })
     );
 
-    return result.Items || null
+    return result.Items[0] || null
 }
 
 // get all users in a workspace
@@ -163,8 +164,8 @@ async function getUsersByWorkspaceId(workspaceId) {
     return result.Items || null;
 }
 
-// get users by workspaceId and email
-async function getUsersByWorkspaceIdAndEmail(workspaceId, email) {
+// get user by workspaceId and email
+async function getUserByWorkspaceIdAndEmail(workspaceId, email) {
     const result = await dynamoDB.send(
         new QueryCommand({
             TableName: tableName,
@@ -177,7 +178,30 @@ async function getUsersByWorkspaceIdAndEmail(workspaceId, email) {
         })
     );
 
-    return result.Items;
+    return result.Items[0];
+}
+
+// remove all the users
+async function removeAllUsers(workspaceId) {
+    const { Items } = await dynamoDB.send(new QueryCommand({
+        TableName: tableName,
+        KeyConditionExpression: "workspaceId = :workspaceId",
+        ExpressionAttributeValues: { ":workspaceId": workspaceId }
+    }));
+
+    if (!Items || Items.length === 0) return;
+
+    // batch delete the items
+    const deleteRequests = Items.map(item => ({
+        DeleteRequest: { Key: { workspaceId, userId: item.userId } }
+    }));
+
+    for (let i = 0; i < deleteRequests.length; i += 25) {
+        const batch = deleteRequests.slice(i, i + 25);
+        await dynamoDB.send(new BatchWriteCommand({
+            RequestItems: { [tableName]: batch }
+        }));
+  }
 }
 
 module.exports = {
@@ -187,5 +211,6 @@ module.exports = {
     getUser,
     getUserByUserId,
     getUsersByWorkspaceId,
-    getUsersByWorkspaceIdAndEmail
+    getUserByWorkspaceIdAndEmail,
+    removeAllUsers
 }
