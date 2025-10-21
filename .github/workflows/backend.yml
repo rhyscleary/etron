@@ -40,6 +40,20 @@ jobs:
           cd backend
           python3 prep.py
 
+      - name: Pack and copy shared packages
+        run: |
+          mkdir -p backend/.aws-sam/shared
+          mkdir -p backend/.aws-sam/audit/audit-shared
+          pushd backend/shared
+          npm pack
+          mv *.tgz ../backend/.aws-sam/shared/
+          popd
+          pushd backend/audit/audit-shared
+          npm pack
+          mv *.tgz ../../backend/.aws-sam/audit/audit-shared/
+          popd
+
+
       - name: Cache SAM build artifacts
         uses: actions/cache@v4
         with:
@@ -49,6 +63,7 @@ jobs:
       - name: Build the SAM application
         run: |
           cd backend
+          ls -R backend/.aws-sam || true
           sam build --no-cached
   
   backend_test:
