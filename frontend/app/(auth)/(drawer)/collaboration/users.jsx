@@ -29,10 +29,21 @@ const Users = () => {
 
     useFocusEffect(
         useCallback(() => {
-            setRefreshing(true);
-            loadUsersAndRoles();
+            if (!loading) {
+                setRefreshing(true);
+                loadUsersAndRoles();
+            }
         }, [loadUsersAndRoles])
     );
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await loadUsersAndRoles();
+        } finally {
+            setRefreshing(false);
+        }
+    }, [loadUsersAndRoles]);
 
     const loadUsersAndRoles = useCallback(async () => {
         const workspaceId = await getWorkspaceId();
@@ -57,8 +68,8 @@ const Users = () => {
 
         sortUsers(users, roles);
 
-        setRefreshing(false);
         setLoading(false);
+        setRefreshing(false);
     });
 
     function sortUsers(users = allUsers, roles = allRoles) {
@@ -133,49 +144,59 @@ const Users = () => {
             </View>
 
             {/* Sectioned User List */}
-            <SectionList
-                sections={groupedUsers}
-                keyExtractor={(item) => item.userId}
-                keyboardDismissMode="on-drag"
-                keyboardShouldPersistTaps="handled"
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={loadUsersAndRoles} />
-                }
-                renderSectionHeader={({ section: { title } }) => (
-                    <Text style={{ marginTop: 8, fontWeight: 'bold' }}>{title}</Text>
-                )}
-                renderItem={({ item }) => (
-                    <TouchableRipple
-                        style={{
-                            borderWidth: 1,
-                            borderColor: '#e0e0e0',
-                            borderRadius: 4,
-                            padding: 12,
-                            marginVertical: 4
-                        }}
-                        onPress={() => router.navigate(`/collaboration/view-user/${item.userId}`)}
-                    >
-                        <>
-                            <Text style={commonStyles.listItemText}>{item.given_name + " " + item.family_name}</Text>
-                            <Text style={commonStyles.captionText}>{item.email}</Text>
-                        </>
-                    </TouchableRipple>
-                )}
-                ListEmptyComponent={
-                    loading ? (
-                        <View style={styles.loadingContainer}>
-                            <ActivityIndicator size="large" />
+            <View style={{flex:1}}>
+                <SectionList
+                    sections={groupedUsers}
+                    keyExtractor={(item) => item.userId}
+                    keyboardDismissMode="on-drag"
+                    keyboardShouldPersistTaps="handled"
+                    stickySectionHeadersEnabled={false}
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    style={{ flex:1 }}
+                    renderSectionHeader={({ section: { title } }) => (
+                        <Pressable
+                            onStartShouldSetResponder={() => true}
+                            onMoveShouldSetResponder={() => true}
+                            hitSlop={8}
+                            style={{ paddingVertical: 6 }}
+                        >
+                            <Text style={{ fontWeight: 'bold' }}>{title}</Text>
+                        </Pressable>
+                    )}
+                    renderItem={({ item }) => (
+                        <TouchableRipple
+                            style={{
+                                borderWidth: 1,
+                                borderColor: '#e0e0e0',
+                                borderRadius: 4,
+                                padding: 12,
+                                marginVertical: 4
+                            }}
+                            onPress={() => router.navigate(`/collaboration/view-user/${item.userId}`)}
+                        >
+                            <>
+                                <Text style={commonStyles.listItemText}>{item.given_name + " " + item.family_name}</Text>
+                                <Text style={commonStyles.captionText}>{item.email}</Text>
+                            </>
+                        </TouchableRipple>
+                    )}
+                    ListEmptyComponent={
+                        loading ? (
+                            <View style={styles.loadingContainer}>
+                                <ActivityIndicator size="large" />
+                                <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
+                                    Loading Users...
+                                </RNText>
+                            </View> 
+                        ) : (
                             <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                                Loading Users...
+                                No users found
                             </RNText>
-                        </View> 
-                    ) : (
-                        <RNText style={{ textAlign: 'center', marginTop: 16, color: '#999' }}>
-                            No users found
-                        </RNText>
-                    )
-                }
-            />
+                        )
+                    }
+                />
+            </View>
         </ResponsiveScreen>
     );
 };
