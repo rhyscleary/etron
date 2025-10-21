@@ -65,7 +65,7 @@ export default function EditRole() {
 	const { roleId } = useLocalSearchParams();
 
 	const [workspaceId, setWorkspaceId] = useState(null);
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 
 	const [notFound, setNotFound] = useState(false);
@@ -124,6 +124,7 @@ export default function EditRole() {
 				return;
 			}
 			setRole(role);
+			console.log("Role:", role);
 
 			result = await apiGet(endpoints.workspace.core.getDefaultPermissions);
 			const allCategories = buildPermissionGroups(result.data);
