@@ -6,6 +6,8 @@ Description: >
 Parameters:
   AppConfigurationBucketName:
     Type: String
+  AuditQueueUrl:
+    Type: String
 
 Globals:
   Function:
@@ -16,6 +18,7 @@ Globals:
     Environment:
       Variables:
         APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
+        AUDIT_QUEUE_URL: !Ref AuditQueueUrl
 
 Resources:
 
@@ -47,6 +50,7 @@ Resources:
         - Statement:
           - Effect: Allow
             Action:
+              - sqs:SendMessage
               - s3:GetObject
               - s3:PutObject
               - s3:ListBucket
@@ -84,6 +88,7 @@ Resources:
         - Statement:
           - Effect: Allow
             Action:
+              - sqs:SendMessage
               - s3:GetObject
               - s3:PutObject
               - s3:ListBucket

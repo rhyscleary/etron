@@ -30,6 +30,13 @@ Resources:
       DatabaseInput:
         Name: !Ref AthenaDatabaseName
 
+  AuditQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: AuditQueue
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 1209600 # 14 days
+
   WorkspaceDomainFunctions:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -37,6 +44,7 @@ Resources:
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
+        AuditQueueUrl: !Ref AuditQueue
 
   AuditDomainFunctions:
     Type: AWS::CloudFormation::Stack
@@ -45,6 +53,7 @@ Resources:
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
+        AuditQueueArn: !Ref AuditQueue
         
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
@@ -52,6 +61,7 @@ Resources:
       TemplateURL: ./user/template.yaml
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        AuditQueueUrl: !Ref AuditQueue
         
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
@@ -61,3 +71,4 @@ Resources:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
         AthenaDatabaseName: !Ref AthenaDatabaseName
+        AuditQueueUrl: !Ref AuditQueue
