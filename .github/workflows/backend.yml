@@ -95,7 +95,7 @@ jobs:
         run: |
           cd backend
           ls -R .aws-sam || true
-          sam build --no-cached
+          sam build
   
   backend_test:
     runs-on: ubuntu-latest
@@ -169,7 +169,7 @@ jobs:
       - name: Build the SAM app
         run: |
           cd backend
-          sam build --no-cached
+          sam build
 
       - name: Set the stack name for develop
         if: github.ref == 'refs/heads/develop'
