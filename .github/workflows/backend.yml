@@ -44,11 +44,11 @@ jobs:
         run: |
           mkdir -p backend/.aws-sam/shared
           mkdir -p backend/.aws-sam/audit/audit-shared
-          pushd shared
+          pushd backend/shared
           npm pack
           mv *.tgz ../backend/.aws-sam/shared/
           popd
-          pushd audit/audit-shared
+          pushd backend/audit/audit-shared
           npm pack
           mv *.tgz ../../backend/.aws-sam/audit/audit-shared/
           popd
