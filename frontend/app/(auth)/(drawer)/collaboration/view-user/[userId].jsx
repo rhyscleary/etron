@@ -91,7 +91,6 @@ const ViewUser = () => {
                 />
             }
 			center={userExists ? false : true}
-			padded
             scroll={false}
 		>
 
@@ -100,25 +99,22 @@ const ViewUser = () => {
                     <ActivityIndicator size="large" />
                 </View>
             ) : ( userExists ? (
-                <StackLayout spacing={34}>
+                <StackLayout>
                     <View style={{ alignItems: "center"}}>
                         <AvatarDisplay
                             imageSource={profilePicture ? { uri: profilePicture } : null}
                             firstName={firstName}
                             lastName={lastName}
-                            disabled={true}
                         />
                     </View>
 
-                    <StackLayout spacing={24}>
+                    <StackLayout>
                         <List.Section>
                             <List.Item title="Name" description={name} />
                             <List.Item title="Email" description={email} />
                             <List.Item title="Role" description={roleName} />
                             <List.Item title="Joined" description={joinDate} />
                         </List.Section>
-
-                        <Divider />
 
                         <DescriptiveButton 
                             label="User Activity Log" 
