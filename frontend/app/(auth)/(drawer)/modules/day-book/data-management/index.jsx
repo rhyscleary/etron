@@ -225,7 +225,7 @@ const DataManagement = () => {
 						height={60}
 						subtitle={source.lastUpdate ? `Last sync: ${formatLastSync(source.lastUpdate)}` : undefined}
 						status={source.status}
-						onNavigate={() => router.navigate(`/modules/day-book/data-management/select-data-source/${source.dataSourceId}`)}
+						onNavigate={() => router.navigate(`/modules/day-book/data-management/view-data-source/${source.dataSourceId}`)}
 						onSync={() => handleSyncSource(source)}
 						onDelete={() => handleDisconnectSource(source)}
 						onTest={() => handleTestConnection(source)}
