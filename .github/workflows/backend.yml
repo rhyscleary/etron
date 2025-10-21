@@ -61,9 +61,9 @@ jobs:
           key: ${{ runner.os }}-sam-${{ github.sha }}
 
       - name: Build the SAM application
-        run: ls -R backend/.aws-sam || true
         run: |
           cd backend
+          ls -R backend/.aws-sam || true
           sam build --no-cached
   
   backend_test:
