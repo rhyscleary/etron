@@ -17,7 +17,7 @@ import endpoints from '../../../../utils/api/endpoints';
 import {
     getCurrentUser,
     deleteUser,
-    signIn
+    signOut
 } from 'aws-amplify/auth';
 import BasicButton from '../../../../components/common/buttons/BasicButton';
 import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
@@ -87,7 +87,7 @@ const Account = () => {
 
     return(
         <ResponsiveScreen
-            header = {<Header title="Account Settings" showMenu />}
+            header = {<Header title="My Account" showMenu />}
             center = {false}
         >
             <StackLayout spacing={12}>
@@ -111,6 +111,10 @@ const Account = () => {
                         onPress={item.onPress}
                     />
                 ))}
+                <BasicButton
+                    label={"Sign Out"}
+                    onPress={() => signOut()}
+                />
             </StackLayout>
                 
             <BasicDialog

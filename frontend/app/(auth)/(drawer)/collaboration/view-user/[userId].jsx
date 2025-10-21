@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
-import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme, Divider, Avatar } from "react-native-paper";
+import { Text, TextInput, RadioButton, Dialog, Portal, Button, useTheme, Divider, List, Icon, Avatar} from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import Header from "../../../../../components/layout/Header";
@@ -19,7 +19,7 @@ import formatDateTime from "../../../../../utils/format/formatISODate";
 import { useFocusEffect } from "@react-navigation/native";
 import DescriptiveButton from "../../../../../components/common/buttons/DescriptiveButton";
 import AvatarDisplay from "../../../../../components/icons/AvatarDisplay";
-
+import ItemNotFound from "../../../../../components/common/errors/MissingItem";
 
 const ViewUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -34,10 +34,7 @@ const ViewUser = () => {
     const [joinDate, setJoinDate] = useState("");
 	const [profilePicture, setProfilePicture] = useState(null);
     const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		loadUser();
-	}, []);	
+    const [userExists, setUserExists] = useState(true);
 
     useFocusEffect(
         useCallback(() => {
@@ -55,6 +52,12 @@ const ViewUser = () => {
             user = result.data;
         } catch (error) {
             console.error("Error fetching user:", error);
+            return;
+        }
+        
+        if (!user) {
+            setUserExists(false);
+            setLoading(false);
             return;
         }
         
@@ -77,7 +80,6 @@ const ViewUser = () => {
         setLoading(false);
     });
 
-
 	return (
 		<ResponsiveScreen
 			header={
@@ -88,7 +90,7 @@ const ViewUser = () => {
                     onRightIconPress={() => router.navigate(`/collaboration/edit-user/${userId}`)} 
                 />
             }
-			center={false}
+			center={userExists ? false : true}
 			padded
             scroll={false}
 		>
@@ -97,40 +99,24 @@ const ViewUser = () => {
                 <View style={commonStyles.centeredContainer}>
                     <ActivityIndicator size="large" />
                 </View>
-            ) : (
+            ) : ( userExists ? (
                 <StackLayout spacing={34}>
                     <View style={{ alignItems: "center"}}>
                         <AvatarDisplay
                             imageSource={profilePicture ? { uri: profilePicture } : null}
                             firstName={firstName}
                             lastName={lastName}
+                            disabled={true}
                         />
                     </View>
 
                     <StackLayout spacing={24}>
-                        <TextField
-                            value={name}
-                            placeholder="Name"
-                            isDisabled={true}
-                        />
-
-                        <TextField
-                            value={email}
-                            placeholder="Email"
-                            isDisabled={true}
-                        />
-
-                        <TextField
-                            value={roleName}
-                            placeholder="Role"
-                            isDisabled={true}
-                        />
-
-                        <TextField
-                            value={"Joined: " + joinDate}
-                            placeholder="Join Date"
-                            isDisabled={true}
-                        />
+                        <List.Section>
+                            <List.Item title="Name" description={name} />
+                            <List.Item title="Email" description={email} />
+                            <List.Item title="Role" description={roleName} />
+                            <List.Item title="Joined" description={joinDate} />
+                        </List.Section>
 
                         <Divider />
 
@@ -140,7 +126,14 @@ const ViewUser = () => {
                         />
                     </StackLayout>
                 </StackLayout>
-            )}
+            ) : (
+                <ItemNotFound
+                    icon="account-cancel-outline"
+                    item="user"
+                    itemId={userId}
+                    listRoute="/collaboration/users"
+                />
+            ))}
 		</ResponsiveScreen>
 	);
 };

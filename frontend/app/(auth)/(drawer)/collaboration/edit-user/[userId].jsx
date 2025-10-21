@@ -17,6 +17,7 @@ import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen"
 import DropDown from "../../../../../components/common/input/DropDown";
 import DecisionDialog from "../../../../../components/overlays/DecisionDialog";
 import { getUserInfo } from "../../../../../storage/userStorage";
+import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, getPhotoFromDevice, saveProfilePhoto } from "../../../../../utils/profilePhoto";
 
 const EditUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -113,7 +114,6 @@ const EditUser = () => {
 	}
 
 	const handleUpdate = async () => {
-		
 		try {
 			setSaving(true);
 
@@ -160,6 +160,11 @@ const EditUser = () => {
 		setProfilePicture(null);
 	};
 
+	async function handleChoosePhoto() {
+		const uri = await getPhotoFromDevice();
+		setProfilePicture(uri);
+	}
+
 	return (
 		<ResponsiveScreen
 			header={<Header title="Edit User" showBack showCheck={isAltered && !saving} onRightIconPress={preUpdateCheck} />}
@@ -180,7 +185,7 @@ const EditUser = () => {
 						firstName={firstName}
 						lastName={lastName}
 						badgeType={profilePicture ? "remove" : "plus"}
-						//onPress={handleChoosePhoto}
+						onPress={profilePicture ? handleRemovePhoto : handleChoosePhoto}
 					/>
 					{profilePicture && (
 						<Button title="Remove Photo" onPress={handleRemovePhoto} />

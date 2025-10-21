@@ -8,9 +8,10 @@ const AvatarButton = ({
     imageSource,
     firstName = "",
     lastName = "",
-    badgeType = "plus", // add, edit or remove
+    badgeType, // add, edit or remove
     size = 72,
     onPress,
+    disabled,
 }) => {
     const theme = useTheme();
 
@@ -37,12 +38,12 @@ const AvatarButton = ({
         }
     }
     return (
-        <TouchableOpacity onPress={onPress}>
+        <TouchableOpacity onPress={onPress} disabled={disabled}>
             <View style={styles.container}>
                 {renderAvatar()}
-                <Badge size={24} style={[styles.badge, { backgroundColor: "white" }]}>
+                {badgeType ? <Badge size={24} style={[styles.badge, { backgroundColor: "white" }]}>
                     <Icon source={badgeIcons[badgeType] || "plus"} size={16} color="black" />
-                </Badge> 
+                </Badge> : null}
             </View>
         </TouchableOpacity>
     );
