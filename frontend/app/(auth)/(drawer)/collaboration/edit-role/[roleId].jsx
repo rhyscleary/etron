@@ -2,7 +2,7 @@
 
 import { View, StyleSheet, Alert } from "react-native";
 import Header from "../../../../../components/layout/Header";
-import { ActivityIndicator, Card, Checkbox, Chip, List, Snackbar, Text, Portal } from "react-native-paper";
+import { ActivityIndicator, Card, Checkbox, Chip, List, Snackbar, Text, Portal, Dialog, Button } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
@@ -14,6 +14,7 @@ import TextField from "../../../../../components/common/input/TextField";
 import ItemNotFound from "../../../../../components/common/errors/MissingItem";
 import StackLayout from "../../../../../components/layout/StackLayout";
 
+const MANAGE_ROLES = "app.collaboration.manage_roles";
 
 function buildPermissionGroups(tree) {
 	const permissionGroups = [];
@@ -79,6 +80,8 @@ export default function EditRole() {
 	const [boards, setBoards] = useState([]);
 
 	const [openAccordions, setOpenAccordions] = useState({});
+	const [currentUserRoleId, setCurrentUserRoleId] = useState(null);
+	const [confirmSelfLock, setConfirmSelfLock] = useState(false);
 
 	const initialRef = useRef({ name: "", perms: [], boards: [] });
 
@@ -129,6 +132,13 @@ export default function EditRole() {
 			result = await apiGet(endpoints.workspace.boards.getBoards(workspaceId));
 			setBoards(result.data);
 
+			try {
+				result = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
+				setCurrentUserRoleId(result.data.roleId);
+			} catch (error) {
+				console.warn("Could not determine current user's role:", error);
+			}
+
 			const initialName = role.name;
 			const initialPerms = role.permissions;
 			const initialBoards = role.hasAccess.boards;
@@ -169,9 +179,22 @@ export default function EditRole() {
 		);
 	};
 
+	const willSelfLoseManageRoles = useMemo(() => {
+		if (!currentUserRoleId) return false;
+		if (currentUserRoleId !== roleId) return false;
+		const hadManage = (initialRef.current.perms).includes(MANAGE_ROLES);
+		const willHaveManage = selectedPerms.includes(MANAGE_ROLES);
+		return hadManage && !willHaveManage;
+	}, [currentUserRoleId, roleId, selectedPerms]);
+
 
 	const handleSave = async () => {
 		try {
+			if (willSelfLoseManageRoles) {
+				setConfirmSelfLock(true);
+				return;
+			}
+			
 			setSaving(true);
 			await apiPatch(endpoints.workspace.roles.update(workspaceId, roleId), {
 				name: name.trim(),
@@ -193,6 +216,27 @@ export default function EditRole() {
 		} finally {
 			setSaving(false);
 		}
+	};
+
+	const confirmProceedSelfLock = async () => {
+		setConfirmSelfLock(false);
+		await (async () => {
+		try {
+			setSaving(true);
+			await apiPatch(endpoints.workspace.roles.update(workspaceId, roleId), {
+				name: name.trim(),
+				permissions: selectedPerms,
+				hasAccess: { boards: selectedBoards },
+			});
+			initialRef.current = { name: name.trim(), perms: selectedPerms, boards: selectedBoards };
+			setSnack({ visible: true, text: "Role updated" });
+		} catch (error) {
+			console.error("Error saving role (confirmed):", error);
+			setSnack({ visible: true, text: "Failed to save role" });
+		} finally {
+			setSaving(false);
+		}
+		})();
 	};
 
 	const handleBack = async () => {
@@ -238,6 +282,11 @@ export default function EditRole() {
 					listRoute="/collaboration/roles"
 				/>
 			) : (<StackLayout>
+				{willSelfLoseManageRoles && (
+					<Chip icon="alert" style={{ marginBottom: 16 }} selected>
+						You’re removing your own “Manage Roles” permission.
+					</Chip>
+				)}
 				<Card style={styles.card}>
 					<TextField
 						label="Role Name"
@@ -349,6 +398,20 @@ export default function EditRole() {
 				>
 					{snack.text}
 				</Snackbar>
+
+				<Dialog visible={confirmSelfLock} onDismiss={() => setConfirmSelfLock(false)}>
+					<Dialog.Icon icon="shield-alert" />
+					<Dialog.Title>Remove your own ability to manage roles?</Dialog.Title>
+					<Dialog.Content>
+						<Text>
+							You’re removing the “Manage Roles” permission from the role you currently hold. After saving, you won't able to continue editing roles.
+						</Text>
+					</Dialog.Content>
+					<Dialog.Actions>
+						<Button onPress={() => setConfirmSelfLock(false)}>Cancel</Button>
+						<Button onPress={confirmProceedSelfLock} textColor="#b00020">Proceed</Button>
+					</Dialog.Actions>
+				</Dialog>
 			</Portal>
 		</ResponsiveScreen>
 	);
