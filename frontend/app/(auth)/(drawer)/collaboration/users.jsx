@@ -105,7 +105,6 @@ const Users = () => {
                 />            
             }
 			center={false}
-			padded={false}
             scroll={false}
             tapToDismissKeyboard={false}
 		>
@@ -116,18 +115,17 @@ const Users = () => {
                 value={searchQuery}
                 onChangeText={handleSearchChange}
                 mode="outlined"
-                style={{ marginVertical: 16 }}
             />
 
             {/* Role Filters */}
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 {allRoles.map(role => (
                     <Chip
                         key={role.roleId}
                         mode="outlined"
                         selected={selectedRoles.includes(role)}
                         onPress={() => handleToggleRole(role)}
-                        style={{ marginRight: 8, marginBottom: 8 }}
+                        style={{ marginRight: 8 }}
                     >
                         {role.name}
                     </Chip>
@@ -144,7 +142,7 @@ const Users = () => {
                     <RefreshControl refreshing={refreshing} onRefresh={loadUsersAndRoles} />
                 }
                 renderSectionHeader={({ section: { title } }) => (
-                    <Text style={{ marginTop: 16, fontWeight: 'bold' }}>{title}</Text>
+                    <Text style={{ marginTop: 8, fontWeight: 'bold' }}>{title}</Text>
                 )}
                 renderItem={({ item }) => (
                     <TouchableRipple
