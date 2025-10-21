@@ -42,24 +42,31 @@ jobs:
 
       - name: Pack and stage local shared packages for SAM
         run: |
-          # Create the exact paths npm will resolve DURING sam build
-          mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
+          # Create the exact directories npm resolves during `sam build`
+          mkdir -p backend/.aws-sam/shared
           mkdir -p backend/.aws-sam/audit/audit-shared
+          mkdir -p backend/.aws-sam/modules/day-book/day-book-shared
 
-          # Pack day-book-shared and move its .tgz into the staged path
-          pushd backend/modules/day-book/day-book-shared
+          # core shared -> .aws-sam/shared
+          pushd backend/shared
           npm pack
-          mv *.tgz ../../../.aws-sam/modules/day-book/day-book-shared/
+          mv *.tgz ../.aws-sam/shared/
           popd
 
-          # If you also consume audit-shared via a file: path, pack that too
+          # audit-shared -> .aws-sam/audit/audit-shared
           pushd backend/audit/audit-shared
           npm pack
           mv *.tgz ../../.aws-sam/audit/audit-shared/
           popd
 
-          echo "Staged tgz files:"
-          find backend/.aws-sam -type f -name '*.tgz' -maxdepth 5 -print
+          # day-book-shared -> .aws-sam/modules/day-book/day-book-shared
+          pushd backend/modules/day-book/day-book-shared
+          npm pack
+          mv *.tgz ../../../.aws-sam/modules/day-book/day-book-shared/
+          popd
+
+          echo "Staged tarballs:"
+          find backend/.aws-sam -maxdepth 5 -type f -name '*.tgz' -print
 
 
       - name: Cache SAM build artifacts
@@ -67,6 +74,12 @@ jobs:
         with:
           path: backend/.aws-sam
           key: ${{ runner.os }}-sam-${{ github.sha }}
+
+      - name: Verify local tarballs exist
+        run: |
+          test -f backend/.aws-sam/shared/etron-shared-1.0.0.tgz
+          test -f backend/.aws-sam/audit/audit-shared/etron-audit-shared-1.0.0.tgz
+          test -f backend/.aws-sam/modules/day-book/day-book-shared/etron-day-book-shared-1.0.0.tgz
 
       - name: Build the SAM application
         run: |
