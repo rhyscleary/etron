@@ -6,6 +6,7 @@ const { getAppModules } = require("@etron/shared/repositories/appConfigBucketRep
 const { deleteFolder } = require("@etron/shared/repositories/workspaceBucketRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -57,6 +58,17 @@ async function installModule(authUserId, workspaceId, moduleKey) {
     };
 
     await workspaceRepo.addModule(moduleItem);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Installed",
+        filters: ["added", "settings"],
+        itemType: "module",
+        itemId: moduleId,
+        itemName: selectedModule.name
+    });
 
     return moduleItem;
 }
@@ -110,6 +122,17 @@ async function uninstallModule(authUserId, workspaceId, moduleKey) {
     await deleteFolder(`workspaces/${workspaceId}/${normalisedKey}/`);
 
     await workspaceRepo.removeModule(workspaceId, module.moduleId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Uninstalled",
+        filters: ["removed", "settings"],
+        itemType: "module",
+        itemId: module.moduleId,
+        itemName: module.name
+    });
 
     return {message: "Module successfully uninstalled"};
 }

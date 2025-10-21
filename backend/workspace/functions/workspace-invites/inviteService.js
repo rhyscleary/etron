@@ -6,6 +6,7 @@ const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRep
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -75,6 +76,16 @@ async function inviteUsertoWorkspace(authUserId, workspaceId, payload) {
 
     await workspaceInvitesRepo.addInvite(inviteItem);
 
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Invited",
+        filters: ["users", "invites"],
+        itemType: "invite",
+        itemId: inviteId,
+    });
+
     return inviteItem;
 }
 
@@ -94,6 +105,16 @@ async function cancelInviteToWorkspace(authUserId, workspaceId, inviteId) {
     }
 
     await workspaceInvitesRepo.removeInviteById(workspaceId, inviteId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Invited",
+        filters: ["users", "invites"],
+        itemType: "invite",
+        itemId: inviteId,
+    });
 
     return {message: "Invite cancelled"};
 }
