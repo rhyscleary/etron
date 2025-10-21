@@ -3,7 +3,7 @@
 import { Dialog, Portal, Text, useTheme } from "react-native-paper";
 import BasicButton from "../common/buttons/BasicButton";
 import TextField from "../common/input/TextField";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, Keyboard, TouchableWithoutFeedback } from "react-native";
 
 
 const BasicDialog = ({
@@ -32,34 +32,48 @@ const BasicDialog = ({
 
     return (
         <Portal>
-            <Dialog visible={visible} onDismiss={onDismiss} style={[styles.dialog, {backgroundColor: theme.colors.surface}]}>
+            <Dialog
+                visible={visible}
+                onDismiss={() => {
+                    Keyboard.dismiss();
+                    onDismiss();
+                }}
+                style={[styles.dialog, {backgroundColor: theme.colors.surface}]}
+            >
                 {title ? <Dialog.Title style={styles.title}>{title}</Dialog.Title> : null}
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <Dialog.Content>
+                        <Text variant="bodyLarge">{message}</Text>
 
-                <Dialog.Content>
-                    <Text variant="bodyLarge">{message}</Text>
-
-                    {children}
-                    
-                    {showInput && (
-                        <View style={styles.inputContainer}>
-                            <TextField 
-                                label={inputLabel} 
-                                value={inputValue} 
-                                placeholder={inputPlaceholder} 
-                                onChangeText={inputOnChangeText}
-                                error={inputError}
-                                secureTextEntry={secureTextEntry}
-                            />
-                        </View>
-                    )}
-                    {inputError && (
-                        <Text style={{color: theme.colors.error}}>{inputErrorMessage}</Text> 
-                    )}
-                </Dialog.Content>
+                        {children}
+                        
+                        {showInput && (
+                            <View style={styles.inputContainer}>
+                                <TextField 
+                                    label={inputLabel} 
+                                    value={inputValue} 
+                                    placeholder={inputPlaceholder} 
+                                    onChangeText={inputOnChangeText}
+                                    error={inputError}
+                                    secureTextEntry={secureTextEntry}
+                                />
+                            </View>
+                        )}
+                        {inputError && (
+                            <Text style={{color: theme.colors.error}}>{inputErrorMessage}</Text> 
+                        )}
+                    </Dialog.Content>
+                </TouchableWithoutFeedback>
 
                 <Dialog.Actions style={styles.actions}>
-                    <BasicButton label={leftActionLabel} danger={leftDanger} onPress={(handleLeftAction)}/>
-                    <BasicButton label={rightActionLabel} danger={rightDanger} disabled={rightDisabled}onPress={handleRightAction}/>
+                    <BasicButton label={leftActionLabel} danger={leftDanger} onPress={() => {
+                        Keyboard.dismiss();
+                        handleLeftAction();
+                    }}/>
+                    <BasicButton label={rightActionLabel} danger={rightDanger} disabled={rightDisabled} onPress={() => {
+                        Keyboard.dismiss();
+                        handleRightAction()
+                    }}/>
                 </Dialog.Actions>
             </Dialog>
         </Portal>

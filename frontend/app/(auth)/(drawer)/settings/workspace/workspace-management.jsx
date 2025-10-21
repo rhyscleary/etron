@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { ScrollView, StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View, Keyboard } from "react-native";
 import { router, useRouter } from "expo-router";
 import StackLayout from "../../../../../components/layout/StackLayout";
 import BasicDialog from "../../../../../components/overlays/BasicDialog";
@@ -24,21 +24,23 @@ import DropDown from "../../../../../components/common/input/DropDown";
 import { isOwnerRole } from "../../../../../storage/permissionsStorage";
 import { hasPermission } from "../../../../../utils/permissions";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import { Platform } from "react-native";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
     const theme = useTheme();
 
-    const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
-    const [transferDialogVisible, setTransferDialogVisible] = useState(false);
+    const [showDialog, setShowDialog] = useState(false);
+    const [dialogMode, setDialogMode] = useState(null); // 'delete' | 'transfer' | null
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState(false);
+    const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
+
     const [selectedUser, setSelectedUser] = useState("");
     const [selectedRole, setSelectedRole] = useState("");
     const [users, setUsers] = useState([]);
     const [roles, setRoles] = useState([]);
     const [workspaceId, setWorkspaceId] = useState(null);
-    const [passwordErrorMessage, setPasswordErrorMessage] = useState("");
     const [isOwner, setIsOwner] = useState(false);
     const [menuOptions, setMenuOptions] = useState([]);
 
@@ -130,6 +132,7 @@ const WorkspaceManagement = () => {
 
     // DELETE WORKSPACE
     async function handleConfirmDeletion() {
+        Keyboard.dismiss();
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
             setPasswordError(true);
@@ -151,7 +154,7 @@ const WorkspaceManagement = () => {
                 );
 
                 console.log('Workspace deleted:', result);
-                setDeleteDialogVisible(false);
+                closeDialog();
             
                 router.navigate("/workspace-choice");
 
@@ -166,6 +169,7 @@ const WorkspaceManagement = () => {
 
     // TRANSFER OWNERSHIP
     async function handleConfirmTransfer() {
+        Keyboard.dismiss();
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
             setPasswordError(true);
@@ -198,7 +202,7 @@ const WorkspaceManagement = () => {
                 );
 
                 console.log("Ownership transferred:", result.data);
-                setTransferDialogVisible(false);
+                closeDialog();
             } catch (error) {
                 console.error("Error transfering ownership: ", error);
             }
@@ -206,6 +210,14 @@ const WorkspaceManagement = () => {
         
         setPassword("");
         setPasswordError(false);
+    }
+
+    function closeDialog() {
+        setShowDialog(false);
+        setDialogMode(null);
+        setPassword("");
+        setPasswordError(false);
+        setPasswordErrorMessage("");
     }
 
     return (
@@ -233,90 +245,80 @@ const WorkspaceManagement = () => {
                 
                 {isOwner && (
                     <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
-                        <BasicButton label="Transfer Ownership" danger onPress={() => setTransferDialogVisible(true)}/>
-                        <BasicButton label="Delete Workspace" danger onPress={() => setDeleteDialogVisible(true)}/>
+                        <BasicButton label="Transfer Ownership" danger onPress={() => {
+                            Keyboard.dismiss();
+                            setDialogMode('transfer');
+                            setShowDialog(true);
+                        }}/>
+                        <BasicButton label="Delete Workspace" danger onPress={() => {
+                            Keyboard.dismiss();
+                            setDialogMode('delete');
+                            setShowDialog(true);
+                        }}/>
                     </View>
                 )}
 
             </ScrollView>
 
-            <BasicDialog
-                visible={deleteDialogVisible}
-                title="Delete Workspace"
-                message="Once you delete a workspace it will erase all of its data. This cannot be undone."
-                showInput
-                inputLabel="Password"
-                inputPlaceholder="Enter your password"
-                inputValue={password}
-                inputOnChangeText={(text) => {
-                    setPassword(text);
-                    if (text) {
-                        setPasswordError(false);
+            {showDialog && (
+                <BasicDialog
+                    visible={showDialog}
+                    onDismiss={closeDialog}
+                    title={dialogMode === 'delete' ? 'Delete Workspace' : 'Transfer Ownership'}
+                    message={
+                        dialogMode === 'delete'
+                            ? 'Once you delete a workspace it will erase all of its data. This cannot be undone.'
+                            : 'Select a user to transfer ownership of this workspace. Once transferred, this cannot be undone.'
                     }
-                }}
-                inputError={passwordError}
-                inputErrorMessage={passwordErrorMessage}
-                secureTextEntry={true}
-                leftActionLabel="Cancel"
-                handleLeftAction={() => {
-                    setDeleteDialogVisible(false);
-                    setPassword("");
-                    setPasswordError(false);
-                }}
-                rightActionLabel="Delete"
-                rightDanger
-                rightDisabled={!password}
-                handleRightAction={handleConfirmDeletion}
-            />
-
-            <BasicDialog
-                visible={transferDialogVisible}
-                title="Transfer Ownership"
-                message="Select a user to transfer ownership of this workspace. Once transferred, this cannot be undone."
-                showInput
-                inputLabel="Password"
-                inputPlaceholder="Enter your password"
-                inputValue={password}
-                inputOnChangeText={(text) => {
-                    setPassword(text);
-                    if (text) {
-                        setPasswordError(false);
+                    showInput
+                    inputLabel="Password"
+                    inputPlaceholder="Enter your password"
+                    inputValue={password}
+                    inputOnChangeText={(text) => {
+                        setPassword(text);
+                    }}
+                    inputError={passwordError}
+                    inputErrorMessage={passwordErrorMessage}
+                    secureTextEntry
+                    leftActionLabel="Cancel"
+                    handleLeftAction={closeDialog}
+                    rightActionLabel={dialogMode === 'delete' ? 'Delete' : 'Transfer'}
+                    rightDanger
+                    rightDisabled={
+                        dialogMode === 'delete'
+                            ? !password
+                            : !selectedUser || !selectedRole || !password
+                        }
+                    handleRightAction={
+                        dialogMode === 'delete' ? handleConfirmDeletion : handleConfirmTransfer
                     }
-                }}
-                inputError={passwordError}
-                inputErrorMessage={passwordErrorMessage}
-                secureTextEntry={true}
-                leftActionLabel="Cancel"
-                handleLeftAction={() => {
-                    setTransferDialogVisible(false);
-                    setPassword("");
-                    setPasswordError(false);
-                }}
-                rightActionLabel="Transfer"
-                rightDanger
-                rightDisabled={!selectedUser || !selectedRole || !password}
-                handleRightAction={handleConfirmTransfer}
-            >
-                <DropDown 
-                    title="Select User"
-                    items={users.map(user => ({
-                        label: `${user.given_name} ${user.family_name}`,
-                        value: user.userId
-                    }))}
-                    showRouterButton={false}
-                    onSelect={(userId) => setSelectedUser(userId)}
-                />
-
-                <DropDown 
-                    title="Select Your New Role"
-                    items={roles.map(role => ({
-                        label: `${role.name}`,
-                        value: role.roleId
-                    }))}
-                    showRouterButton={false}
-                    onSelect={(roleId) => setSelectedRole(roleId)}
-                />
-            </BasicDialog>
+                    /* Optional: forward text-input hints */
+                    inputProps={{
+                        autoCapitalize: 'none',
+                        autoCorrect: false,
+                        keyboardType: Platform.OS === 'android' ? 'visible-password' : 'default',
+                        onSubmitEditing: () => {
+                            Keyboard.dismiss();
+                            (dialogMode === 'delete' ? handleConfirmDeletion : handleConfirmTransfer)();
+                        }
+                    }}
+                >
+                    {dialogMode === 'transfer' && (<>
+                        <DropDown
+                            title="Select User"
+                            items={users.map(u => ({ label: `${u.given_name} ${u.family_name}`, value: u.userId }))}
+                            showRouterButton={false}
+                            onSelect={setSelectedUser}
+                        />
+                        <DropDown
+                            title="Select Your New Role"
+                            items={roles.map(r => ({ label: r.name, value: r.roleId }))}
+                            showRouterButton={false}
+                            onSelect={setSelectedRole}
+                        />
+                    </>)}
+                </BasicDialog>
+                )}
         </ResponsiveScreen>
     )
 }
