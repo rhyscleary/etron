@@ -226,39 +226,34 @@ const WorkspaceManagement = () => {
                 <Header title="Workspace" showBack />
             }
 			center={false}
-			padded={false}
             scroll={true}
         >
-		
-            <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer}>
-                <StackLayout spacing={12}>
-                    {menuOptions.map(item => (
-                        <DescriptiveButton 
-                            key={item.label}
-                            icon={item.icon}
-                            label={item.label}
-                            description={item.description}
-                            onPress={item.onPress}
-                        />
-                    ))}
-                </StackLayout>
-                
-                {isOwner && (
-                    <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
-                        <BasicButton label="Transfer Ownership" danger onPress={() => {
-                            Keyboard.dismiss();
-                            setDialogMode('transfer');
-                            setShowDialog(true);
-                        }}/>
-                        <BasicButton label="Delete Workspace" danger onPress={() => {
-                            Keyboard.dismiss();
-                            setDialogMode('delete');
-                            setShowDialog(true);
-                        }}/>
-                    </View>
-                )}
-
-            </ScrollView>
+            <StackLayout spacing={12}>
+                {menuOptions.map(item => (
+                    <DescriptiveButton
+                        key={item.label}
+                        icon={item.icon}
+                        label={item.label}
+                        description={item.description}
+                        onPress={item.onPress}
+                    />
+                ))}
+            </StackLayout>
+            
+            {isOwner && (
+                <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
+                    <BasicButton label="Transfer Ownership" danger onPress={() => {
+                        Keyboard.dismiss();
+                        setDialogMode('transfer');
+                        setShowDialog(true);
+                    }}/>
+                    <BasicButton label="Delete Workspace" danger onPress={() => {
+                        Keyboard.dismiss();
+                        setDialogMode('delete');
+                        setShowDialog(true);
+                    }}/>
+                </View>
+            )}
 
             {showDialog && (
                 <BasicDialog
