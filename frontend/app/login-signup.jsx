@@ -1,9 +1,10 @@
 // Author(s): Matthew Parkinson, Holly Wyatt, Rhys Cleary
 
 import { useRouter, Link, useLocalSearchParams } from "expo-router";
-import { Text } from 'react-native-paper';
+import { Text, Snackbar, Portal, ActivityIndicator } from 'react-native-paper';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
-import { View, Linking, Modal, TextInput } from 'react-native';
+import { View, Linking, Modal, TextInput, Keyboard, StyleSheet } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
@@ -36,14 +37,15 @@ import VerificationDialog from "../components/overlays/VerificationDialog";
 //Amplify.configure(awsmobile);
 
 function LoginSignup() {
-    const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
-    const isSignUpBool = isSignUp === 'true';
+    const { emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
+    const isSignUpBool = isSignUp == 'true';
     const isLinking = link === 'true';
     const fromAccountsBool = fromAccounts === 'true';
 
     const [email, setEmail] = useState(emailParam || "");
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
+    const [snack, setSnack] = useState({ visible: false, text: '' , tone: 'error'});  //tone: 'error' | 'info'
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
@@ -53,6 +55,7 @@ function LoginSignup() {
 
     const router = useRouter();
     const theme = useTheme();
+    const insets = useSafeAreaInsets();
 
     const { user, actions } = useApp();
 
@@ -66,14 +69,10 @@ function LoginSignup() {
                 setSocialLoading(loadingState);
             },
             onNavigate: (path, params) => {
-                if (params) {
-                    router.push({ pathname: path, params });
-                } else {
-                    router.push(path);
-                }
+                if (params) router.push({ pathname: path, params });
+                else router.push(path);
             },
             onAuthSuccess: async (provider) => {
-                // Use the unified login action from context
                 await actions.login(provider);
             }
         });
@@ -200,6 +199,10 @@ function LoginSignup() {
         return () => subscription?.remove();
     }, []);
 
+    const showSnack = (text, tone = 'error') => {
+        setSnack({ visible: true, text, tone});
+    }
+
     const setHasWorkspaceAttribute = async (value) => {
         try {
             await updateUserAttributes({
@@ -227,18 +230,18 @@ function LoginSignup() {
         setMessage('');
         try {
             try {
-                const currentUser = await safeGetCurrentUser();
+                const currentUser = await getCurrentUser();
                 if (currentUser) {
-                    console.log("User is already signed in. Signing out before continuing..");
+                    console.log("User is already signed in. Signing out before continuing...");
                     await signOut();
                 }
-            } catch (error) {
-                console.error("Error retrieving signed in user:", error);
+            } catch (error) {  // If the user isn't authenticated, then this is expected behaviour.
+                if (!error.message.includes("User needs to be authenticated to call this API")) console.error("Error retrieving signed in user:", error);
             }
 
             const { isSignedIn, nextStep } = await signIn({ username: email, password });
             
-            // check if not fully signed up
+            // Check if email confirmation still required
             if (!isSignedIn && nextStep.signInStep === "CONFIRM_SIGN_UP") {
                 setShowVerificationModal(true);
                 setResendCooldown(60);
@@ -251,15 +254,7 @@ function LoginSignup() {
                 
                 const hasGivenName = userAttributes["given_name"];
                 const hasFamilyName = userAttributes["family_name"];
-                let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
-
-                // If the attribute doesn't exist, set it to false
-                if (hasWorkspaceAttribute == null) {
-                    await setHasWorkspaceAttribute(false);
-                    hasWorkspaceAttribute = "false";
-                }
-
-                const hasWorkspace = hasWorkspaceAttribute === "true";
+                const hasWorkspace = userAttributes["custom:has_workspace"] == 'true';
 
                 if (!hasWorkspace) {
                     if (!hasGivenName || !hasFamilyName) {
@@ -272,21 +267,18 @@ function LoginSignup() {
                         return;
                     }
                 } else {
-                    // fetch the workspace
                     try {
                         const workspace = await apiGet(
                             endpoints.workspace.core.getByUserId(user.userId)
                         );
 
                         if (!workspace.data || !workspace.data.workspaceId) {
-                            // clear attribute and redirect to choose workspace
                             await setHasWorkspaceAttribute(false);
                             router.dismissAll();
                             router.replace("(auth)/workspace-choice");
                             return;
                         }
 
-                        // save locally and go to profile screen
                         await saveWorkspaceInfo(workspace.data);
                         router.dismissAll();
                         router.replace("(auth)/authenticated-loading");
@@ -298,11 +290,13 @@ function LoginSignup() {
             }
         } catch (error) {
             if (error.message.includes("Incorrect username or password")) {
-                setMessage(`Incorrect username or password.`);
+                showSnack("Incorrect email or password", 'error');
                 await signOut();
-                return;
+            } else if (error.message.includes("Password attempts exceeded")) {
+                showSnack("Password attempt limit reached, please try again later.", 'error');
             } else {
                 console.error("Sign in error:", error);
+                showSnack("Sign in failed. Please try again.", 'error');
                 await signOut();
             }
         } finally {
@@ -311,18 +305,17 @@ function LoginSignup() {
     };
 
     const handleSignUp = async () => {
+        setLoading(true);
         setMessage('');
         
         const result = await accountService.signUpWithEmail(email, password, confirmPassword);
-        
+
         if (result.success) {
             setShowVerificationModal(true);
-        } 
-        // TODO: fix merge file mismatch (login-signup, datamanagement, ... red page ?):
-        /*catch (error) {
-            console.error('Error signing up:', error);
-            setMessage(`Error: ${error.message}`);
-        }*/
+        } else {
+            showSnack(result.error, "error");
+        }
+        setLoading(false);
     };
 
     const handleGoogleSignIn = async () => {
@@ -360,10 +353,10 @@ function LoginSignup() {
     const handleToggleSignUp = () => {
         const params = { isSignUp: (!isSignUpBool).toString() };
         
-    // Preserve linking and fromAccounts params
+        // Preserve linking and fromAccounts params + email
         if (isLinking) params.link = 'true';
-    if (fromAccountsBool) params.fromAccounts = 'true';
-        if (emailParam) params.email = emailParam;
+        if (fromAccountsBool) params.fromAccounts = 'true';
+        params.emailParam = email;
         
         router.push({
             pathname: '/login-signup',
@@ -389,7 +382,7 @@ function LoginSignup() {
     };
 
     return (
-        <View style={commonStyles.screen}>
+        <ResponsiveScreen>
             {(isLinking || fromAccountsBool) && (
                 <Header
                     title={isLinking ? "Link Account" : ""}
@@ -461,19 +454,13 @@ function LoginSignup() {
             <View style={{alignItems: 'flex-end' }}>
                 <BasicButton
                     label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
-                    onPress={isSignUpBool ? handleSignUp : handleSignIn}
-                    disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || (isSignUpBool && !confirmPassword)}
+                    onPress={() => {
+                        Keyboard.dismiss();
+                        isSignUpBool ? handleSignUp() : handleSignIn()
+                    }}
+                    disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || password.length < 8 || (isSignUpBool && !confirmPassword)}
                 />
             </View>
-
-            {message && (
-                <Text style={{
-                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                    textAlign: 'center'
-                }}>
-                    {message}
-                </Text>
-            )}
 
             <Text style={{ fontSize: 20, textAlign: 'center' }}>
                 OR
@@ -509,16 +496,6 @@ function LoginSignup() {
                     disabled={!signedOutForLinking && isLinking}
                 />
 
-            {message && (
-                <Text style={{ 
-                    marginTop: 30, 
-                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                    textAlign: 'center'
-                }}>
-                    {message}
-                </Text>
-            )}
-
                 <Modal
                     visible={showVerificationModal}
                     animationType="slide"
@@ -543,6 +520,7 @@ function LoginSignup() {
 
                             <TextInput
                                 placeholder="Code"
+                                placeholderTextColor={"#DDDDDD"}
                                 value={verificationCode}
                                 onChangeText={setVerificationCode}
                                 keyboardType="numeric"
@@ -552,7 +530,8 @@ function LoginSignup() {
                                     marginBottom: 20,
                                     borderColor: theme.colors.outline,
                                     borderRadius: 5,
-                                    minWidth: 200
+                                    minWidth: 200,
+                                    color: "#FFFFFF"
                                 }}
                             />
 
@@ -560,11 +539,11 @@ function LoginSignup() {
                                 flexDirection: 'row',
                                 justifyContent: 'space-between',
                                 width: '100%',
-                                marginBottom: 20
+                                marginBottom: 20,
+                                gap: 10
                             }}>
                                 <BasicButton
                                     label="Cancel"
-                                    fullWidth='true'
                                     danger="true"
                                     onPress={() => setShowVerificationModal(false)}
                                     style={{ marginRight: 10 }}
@@ -572,7 +551,6 @@ function LoginSignup() {
 
                                 <BasicButton
                                     label="Confirm"
-                                    fullWidth='true'
                                     onPress={handleConfirmCode}
                                     style={{ marginLeft: 10 }}
                                 />
@@ -581,8 +559,82 @@ function LoginSignup() {
                     </View>
                 </Modal>
             </View>
-        </View>
+            <Portal>
+                <Snackbar
+                    visible={snack.visible}
+                    onDismiss={() => setSnack(s => ({ ...s, visible: false }))}
+                    wrapperStyle={{
+                        bottom: (insets.bottom ?? 0) + 12, //keeps it above home indicator
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        
+                    }}
+                    style={{
+                        alignSelf: 'center',
+                        borderRadius: 12,
+                        width: "90%",
+                        maxWidth: 600,
+                        backgroundColor:
+                            snack.tone === 'error'
+                                ? theme.colors.errorContainer
+                                : theme.colors.inverseSurface,
+                    }}
+                    theme={{
+                        colors: {
+                            onSurface:
+                                snack.tone === 'error'
+                                ? theme.colors.onErrorContainer
+                                : theme.colors.inverseOnSurface,
+                        },
+                    }}
+                    action={{
+                        label: 'Dismiss',
+                        onPress: () => setSnack(s => ({ ...s, visible: false })),
+                    }}
+                >
+                    <Text
+                        style={{
+                        fontWeight: '600',
+                        marginBottom: 2,
+                        color:
+                            snack.tone === 'error'
+                            ? theme.colors.onErrorContainer
+                            : theme.colors.inverseOnSurface,
+                        }}
+                    >
+                        {snack.tone === 'error' ? (isSignUpBool ? 'Sign-up error' : 'Sign-in error') : 'Notice'}
+                    </Text>
+                    <Text
+                        style={{
+                        color:
+                            snack.tone === 'error'
+                            ? theme.colors.onErrorContainer
+                            : theme.colors.inverseOnSurface,
+                        }}
+                    >
+                        {snack.text}
+                    </Text>
+                </Snackbar>
+            </Portal>
+            <Portal>
+                { loading && (
+                    <View style={styles.loadingOverlay} pointerEvents="auto">
+                        <ActivityIndicator size="large" />
+                    </View>
+                )}
+            </Portal>
+        </ResponsiveScreen>
     );
 }
 
 export default LoginSignup;
+
+const styles = StyleSheet.create({
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
