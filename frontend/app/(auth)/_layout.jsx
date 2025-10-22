@@ -51,9 +51,7 @@ export default function AuthLayout() {
 
             let workspace;
             try {
-                workspace = await apiGet(
-                    endpoints.workspace.core.getByUserId(userId)
-                );
+                workspace = await apiGet(endpoints.workspace.core.getByUserId(userId));
             } catch (error) {
                 if (error.message.includes("Workspace not found")) {
                     console.log("No workspace yet, resetting attribute...");
@@ -147,7 +145,6 @@ export default function AuthLayout() {
                 console.log("User authenticated but no workspace found. Redirecting to workspace choice page...");
                 router.replace("/(auth)/workspace-choice");
             } else {
-                saveUserInfoIntoStorage();
                 console.log("User authenticated, has workspace, and has personal details. Redirecting to workspace dashboard...");
                 router.replace("/(auth)/dashboard")
             }
@@ -166,7 +163,7 @@ export default function AuthLayout() {
 
     useEffect(() => {
         checkAuthStatus();
-     }, [authStatus, verifyingPassword]);
+    }, [authStatus, verifyingPassword]);
 
 
     return (         

@@ -1,26 +1,23 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Noah Bradley
 
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Header from "../../../../../components/layout/Header";
-import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
-import DescriptiveButton from "../../../../../components/common/buttons/DescriptiveButton";
-import { router } from "expo-router";
+import { Card, List, Text, useTheme } from "react-native-paper";
 import { useEffect, useState } from "react";
 import StackLayout from "../../../../../components/layout/StackLayout";
-import { Text, useTheme } from "react-native-paper";
-import { apiGet, apiPatch, apiPut } from "../../../../../utils/api/apiClient";
-import BasicButton from "../../../../../components/common/buttons/BasicButton";
-import TextField from "../../../../../components/common/input/TextField";
-import { getWorkspaceId, getWorkspaceInfo, saveWorkspaceInfo } from "../../../../../storage/workspaceStorage";
-import endpoints from "../../../../../utils/api/endpoints";
-import UnsavedChangesDialog from "../../../../../components/overlays/UnsavedChangesDialog";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import { apiGet } from "../../../../../utils/api/apiClient";
+import endpoints from "../../../../../utils/api/endpoints";
+import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
+import { router } from "expo-router";
+import formatDateTime from "../../../../../utils/format/formatISODate";
 
 
 const WorkspaceDetails = () => {
     const theme = useTheme();
 
     const [name, setName] = useState("");
+    const [workspace, setWorkspace] = useState();
     const [location, setLocation] = useState("");
     const [description, setDescription] = useState("");
     const [loading, setLoading] = useState(false);
@@ -30,17 +27,16 @@ const WorkspaceDetails = () => {
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
-    useEffect(() => {
+    /*useEffect(() => {
         async function loadWorkspaceDetails() {
             setLoading(true);
             try {
                 const workspaceId = await getWorkspaceId();
 
-                const result = await apiGet(
-                    endpoints.workspace.core.getWorkspace(workspaceId)
-                );
-
+                const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
                 const workspace = result.data;
+
+                console.log("Workspace:", workspace);
 
                 if (workspace) {
                     // set values for workspace details
@@ -61,9 +57,25 @@ const WorkspaceDetails = () => {
             setLoading(false);
         }
         loadWorkspaceDetails();
-    }, []);
+    }, []);*/
 
     useEffect(() => {
+        (async () => {
+            setLoading(true);
+            try {
+                const workspaceId = await getWorkspaceId();
+                const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
+                setWorkspace(result.data);
+            } catch (error) {
+                console.error("Error loading workspace details:", error);
+                setWorkspace(null);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    /*useEffect(() => {
         const changed =
             name.trim() !== originalData.name ||
             location.trim() !== originalData.location ||
@@ -134,62 +146,66 @@ const WorkspaceDetails = () => {
     function handleDiscardChanges() {
         setShowUnsavedDialog(false);
         router.back();
-    }
+    }*/
 
     return (
 		<ResponsiveScreen
-			header={<Header title="Workspace Details" showBack onBackPress={handleBackPress}/>}
+			header={<Header
+                title="Workspace Details"
+                showBack
+                showEdit
+                onRightIconPress={() => router.navigate("settings/workspace/edit-workspace-details")}
+            />}
 			center={false}
 			padded
-            scroll={false}
 		>
-
             <View style={styles.contentContainer}>
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" />
                         <Text>Loading details...</Text>
                     </View>
-                ) : (
-                    <View>
-                        <StackLayout spacing={30}> 
-                            <TextField 
-                                label="Name" 
-                                value={name} 
-                                placeholder="Name"
-                                error={errors.name}
-                                onChangeText={(text) => {
-                                    setName(text);
-                                    if (text.trim()) {
-                                        setErrors((prev) => ({...prev, name: false}))
-                                    }
-                                }}  
-                            />
-                            {errors.name && (
-                                <Text style={{color: theme.colors.error}}>Please enter a name.</Text>
-                            )}
-
-                            <TextField label="Location (Optional)" value={location} placeholder="Location" onChangeText={setLocation} />
-                            <TextField label="Description (Optional)" value={description} placeholder="Description" onChangeText={setDescription} />
-                        </StackLayout>
-
-                        <View style={commonStyles.inlineButtonContainer}>
-                            <BasicButton 
-                                label={updating ? "Updating..." : "Update"}
-                                onPress={handleUpdate}
-                                disabled={updating} 
-                            />
-                        </View>
+                ) : !workspace ? (
+                    <View style={styles.loadingContainer}>
+                        <Text>Workspace not found.</Text>
                     </View>
+                ) : (
+                    <StackLayout spacing={16}>
+                        <Card>
+                            <Card.Content>
+                                <List.Section>
+                                    <List.Item
+                                        title={workspace.name || "-"}
+                                    />
+                                    <List.Item
+                                        title="Location"
+                                        description={workspace.location || "-"}
+                                    />
+                                    <List.Item
+                                        title="Description"
+                                        description={workspace.description || "-"}
+                                        descriptionNumberOfLines={5}
+                                    />
+                                </List.Section>
+                            </Card.Content>
+                        </Card>
+                        <Card>
+                            <Card.Content>
+                                <List.Section>
+                                    <List.Item
+                                        title="Created"
+                                        description={workspace.createdAt ? formatDateTime(workspace.createdAt) : "—"}
+                                    />
+                                    <List.Item
+                                        title="Last Updated"
+                                        description={workspace.updatedAt ? formatDateTime(workspace.updatedAt) : "—"}
+                                    />
+                                </List.Section>
+                            </Card.Content>
+                        </Card>
+                    </StackLayout>
                 )}
             </View>
-
-            <UnsavedChangesDialog
-                visible={showUnsavedDialog}
-                onDismiss={() => setShowUnsavedDialog(false)}
-                handleLeftAction={handleDiscardChanges}
-                handleRightAction={() => setShowUnsavedDialog(false)}
-            />
         </ResponsiveScreen>
     )
 }
@@ -202,7 +218,11 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center"
-    }
+    },
+        nameTitle: {
+        fontWeight: "700",
+        marginBottom: 8,
+    },
 })
 
 export default WorkspaceDetails;

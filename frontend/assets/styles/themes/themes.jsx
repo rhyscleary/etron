@@ -36,7 +36,7 @@ const DarkTheme = {
 
         altGM: '#F7F7F7',
         surface: "#1E1E1E"
-    },   
+    },
 };
 
 export const themes = {

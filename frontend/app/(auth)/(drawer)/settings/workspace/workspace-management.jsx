@@ -21,7 +21,7 @@ import {
     signOut
 } from 'aws-amplify/auth';
 import DropDown from "../../../../../components/common/input/DropDown";
-import { isOwnerRole } from "../../../../../storage/permissionsStorage";
+import { getPermissions, isOwnerRole, saveRole } from "../../../../../storage/permissionsStorage";
 import { hasPermission } from "../../../../../utils/permissions";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import { Platform } from "react-native";
@@ -44,6 +44,12 @@ const WorkspaceManagement = () => {
     const [isOwner, setIsOwner] = useState(false);
     const [menuOptions, setMenuOptions] = useState([]);
 
+    async function permissionTest() {
+        console.log(await getPermissions());
+        console.log(await hasPermission())
+    }
+    permissionTest();
+
 
     // container for different workspace management options
     const permissionButtonMap = [
@@ -51,7 +57,7 @@ const WorkspaceManagement = () => {
                 permKey: "app.workspace.update_workspace", 
                 label: "Workspace Details", 
                 description: "Update name, location and description", 
-                onPress: () => router.navigate("settings/workspace/workspace-details") 
+                onPress: () => router.navigate("settings/workspace/view-workspace-details") 
             },
             {
                 permKey: "app.workspace.manage_modules", 
@@ -222,9 +228,7 @@ const WorkspaceManagement = () => {
 
     return (
 		<ResponsiveScreen
-			header={
-                <Header title="Workspace" showBack />
-            }
+			header={<Header title="Workspace" showBack />}
 			center={false}
             scroll={true}
         >
