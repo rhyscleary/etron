@@ -9,11 +9,13 @@ import BasicButton from "../../components/common/buttons/BasicButton";
 import TextField from "../../components/common/input/TextField";
 import StackLayout from "../../components/layout/StackLayout";
 import { Text, useTheme } from "react-native-paper";
-import { apiPost } from "../../utils/api/apiClient";
+import { apiPost, apiGet } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
-import { updateUserAttribute, signOut } from "aws-amplify/auth";
+import { updateUserAttribute, signOut, fetchUserAttributes } from "aws-amplify/auth";
 import ResponsiveScreen from "../../components/layout/ResponsiveScreen";
+import { saveUserInfo } from "../../storage/userStorage";
+import { saveRole } from "../../storage/permissionsStorage";
 
 const CreateWorkspace = () => {
     const router = useRouter();
@@ -78,18 +80,31 @@ const CreateWorkspace = () => {
                 description: description.trim() || null
             }
 
-            const result = await apiPost(
-                endpoints.workspace.core.create,
-                workspaceData
-            );
+            
+            const result = await apiPost(endpoints.workspace.core.create, workspaceData);
+            
+            // save workspace and user info to local storage
+            const workspace = result.data
+            saveWorkspaceInfo(workspace);
 
-            // save workspace info to local storage
-            saveWorkspaceInfo(result.data);
+            const userAttributes = await fetchUserAttributes();
+            try {
+                const result = await apiGet(endpoints.workspace.users.getUser(workspace.workspaceId, userAttributes.sub));
+                await saveUserInfo(result.data);  // Saves into local storage
+            } catch (error) {
+                console.error("Error saving user info into storage:", error);
+            }
+
+            try {
+                const result = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspace.workspaceId));
+                await saveRole(result.data);
+            } catch (error) {
+                console.error("Error saving user's role details into local storage:", error);
+            }
 
             // update user attribute to be in a workspace
             await handleUpdateUserAttribute('custom:has_workspace', "true");
 
-            console.log('Workspace creation response:', result);
             setCreating(false);
 
 

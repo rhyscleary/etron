@@ -84,14 +84,14 @@ class WorkspaceService {
 				const status = error?.response?.status;
 				const data = error?.response?.data;
 				const headers = error?.response?.headers;
-				console.error("[WorkspaceService] Failed to fetch/set workspace", {
+				/*console.error("[WorkspaceService] Failed to fetch/set workspace", {
 					message: error?.message,
 					status,
 					dataPreview: (() => { try { return JSON.stringify(data)?.slice(0, 500); } catch { return String(data)?.slice(0, 500); } })(),
 					headerKeys: headers ? Object.keys(headers) : undefined,
-				});
+				});*/
 			} catch {}
-			console.error("[WorkspaceService] Error object:", error);
+			//console.error("[WorkspaceService] Error object:", error);
 			return null;
 		}
 	}
