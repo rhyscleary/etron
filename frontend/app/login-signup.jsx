@@ -1,9 +1,9 @@
 // Author(s): Matthew Parkinson, Holly Wyatt, Rhys Cleary
 
 import { useRouter, Link, useLocalSearchParams } from "expo-router";
-import { Text } from 'react-native-paper';
+import { Text, Snackbar } from 'react-native-paper';
 import { useEffect, useState } from "react";
-import { View, Linking, Modal, TextInput } from 'react-native';
+import { View, Linking, Modal, TextInput, Keyboard } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
@@ -36,14 +36,15 @@ import VerificationDialog from "../components/overlays/VerificationDialog";
 //Amplify.configure(awsmobile);
 
 function LoginSignup() {
-    const { email: emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
-    const isSignUpBool = isSignUp === 'true';
+    const { emailParam, isSignUp, link, fromAccounts } = useLocalSearchParams();
+    const isSignUpBool = isSignUp == 'true';
     const isLinking = link === 'true';
     const fromAccountsBool = fromAccounts === 'true';
 
     const [email, setEmail] = useState(emailParam || "");
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
+    const [snack, setSnack] = useState({ visible: false, text: '' , tone: 'error'});  //tone: 'error' | 'info'
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showVerificationModal, setShowVerificationModal] = useState(false);
     const [verificationCode, setVerificationCode] = useState('');
@@ -196,6 +197,10 @@ function LoginSignup() {
         return () => subscription?.remove();
     }, []);
 
+    const showSnack = (text, tone = 'error') => {
+        setSnack({ visible: true, text, tone});
+    }
+
     const setHasWorkspaceAttribute = async (value) => {
         try {
             await updateUserAttributes({
@@ -283,11 +288,13 @@ function LoginSignup() {
             }
         } catch (error) {
             if (error.message.includes("Incorrect username or password")) {
-                setMessage(`Incorrect username or password.`);
+                showSnack("Incorrect email or password", 'error');
                 await signOut();
-                return;
+            } else if (error.message.includes("Password attempts exceeded")) {
+                showSnack("Password attempt limit reached, please try again later.", 'error');
             } else {
                 console.error("Sign in error:", error);
+                showSnack("Sign in failed. Please try again.", 'error');
                 await signOut();
             }
         } finally {
@@ -299,10 +306,13 @@ function LoginSignup() {
         setMessage('');
         
         const result = await accountService.signUpWithEmail(email, password, confirmPassword);
-        
+
         if (result.success) {
             setShowVerificationModal(true);
+        } else {
+            showSnack(result.error, "error");
         }
+
     };
 
     const handleGoogleSignIn = async () => {
@@ -340,10 +350,10 @@ function LoginSignup() {
     const handleToggleSignUp = () => {
         const params = { isSignUp: (!isSignUpBool).toString() };
         
-        // Preserve linking and fromAccounts params
+        // Preserve linking and fromAccounts params + email
         if (isLinking) params.link = 'true';
         if (fromAccountsBool) params.fromAccounts = 'true';
-        if (emailParam) params.email = emailParam;
+        params.emailParam = email;
         
         router.push({
             pathname: '/login-signup',
@@ -369,7 +379,7 @@ function LoginSignup() {
     };
 
     return (
-        <View style={commonStyles.screen}>
+        <ResponsiveScreen>
             {(isLinking || fromAccountsBool) && (
                 <Header
                     title={isLinking ? "Link Account" : ""}
@@ -441,19 +451,13 @@ function LoginSignup() {
             <View style={{alignItems: 'flex-end' }}>
                 <BasicButton
                     label={loading ? 'Loading...' : (isSignUpBool ? 'Sign Up' : 'Login')}
-                    onPress={isSignUpBool ? handleSignUp : handleSignIn}
+                    onPress={() => {
+                        Keyboard.dismiss();
+                        isSignUpBool ? handleSignUp() : handleSignIn()
+                    }}
                     disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || (isSignUpBool && !confirmPassword)}
                 />
             </View>
-
-            {message && (
-                <Text style={{
-                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                    textAlign: 'center'
-                }}>
-                    {message}
-                </Text>
-            )}
 
             <Text style={{ fontSize: 20, textAlign: 'center' }}>
                 OR
@@ -488,16 +492,6 @@ function LoginSignup() {
                     altText='true'
                     disabled={!signedOutForLinking && isLinking}
                 />
-
-            {message && (
-                <Text style={{ 
-                    marginTop: 30, 
-                    color: message.includes('Error') ? theme.colors.error : theme.colors.primary,
-                    textAlign: 'center'
-                }}>
-                    {message}
-                </Text>
-            )}
 
                 <Modal
                     visible={showVerificationModal}
@@ -561,7 +555,55 @@ function LoginSignup() {
                     </View>
                 </Modal>
             </View>
-        </View>
+            <Snackbar
+                visible={snack.visible}
+                onDismiss={() => setSnack(s => ({ ...s, visible: false }))}
+                duration={3500}
+                style={{
+                    alignSelf: 'center',
+                    borderRadius: 12,
+                    backgroundColor:
+                        snack.tone === 'error'
+                            ? theme.colors.errorContainer
+                            : theme.colors.inverseSurface,
+                }}
+                theme={{
+                    colors: {
+                    onSurface:
+                        snack.tone === 'error'
+                        ? theme.colors.onErrorContainer
+                        : theme.colors.inverseOnSurface,
+                    },
+                }}
+                action={{
+                    label: 'Dismiss',
+                    onPress: () => setSnack(s => ({ ...s, visible: false })),
+                }}
+            >
+                <Text
+                    style={{
+                    fontWeight: '600',
+                    marginBottom: 2,
+                    color:
+                        snack.tone === 'error'
+                        ? theme.colors.onErrorContainer
+                        : theme.colors.inverseOnSurface,
+                    }}
+                >
+                    {snack.tone === 'error' ? (isSignUpBool ? 'Sign-up error' : 'Sign-in error') : 'Notice'}
+                </Text>
+                <Text
+                    style={{
+                    color:
+                        snack.tone === 'error'
+                        ? theme.colors.onErrorContainer
+                        : theme.colors.inverseOnSurface,
+                    }}
+                >
+                    {snack.text}
+                </Text>
+            </Snackbar>
+        </ResponsiveScreen>
     );
 }
 
