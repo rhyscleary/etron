@@ -268,9 +268,7 @@ function LoginSignup() {
                     }
                 } else {
                     try {
-                        const workspace = await apiGet(
-                            endpoints.workspace.core.getByUserId(user.userId)
-                        );
+                        const workspace = await apiGet(endpoints.workspace.core.getByUserId(user.userId));
 
                         if (!workspace.data || !workspace.data.workspaceId) {
                             await setHasWorkspaceAttribute(false);
@@ -283,8 +281,14 @@ function LoginSignup() {
                         router.dismissAll();
                         router.replace("(auth)/authenticated-loading");
                     } catch (error) {
-                        console.error("Error fetching workspace:", error);
-                        setMessage("Unable to locate workspace. Please try again."); 
+                        if (error.message.includes("No user found")) {
+                            await setHasWorkspaceAttribute(false);
+                            router.dismissAll();
+                            router.replace("(auth)/workspace-choice");
+                        } else {
+                            console.error("Error fetching workspace:", error);
+                            setMessage("Unable to locate workspace. Please try again.");
+                        }
                     }
                 }
             }
