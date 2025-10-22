@@ -29,7 +29,6 @@ const CreateDataConnection = () => {
                 <Header title="New Connection" showBack />
             }
             center={false}
-            padded={false}
             scroll={false}
         >
             <ScrollView contentContainerStyle={commonStyles}>
