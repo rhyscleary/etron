@@ -66,14 +66,10 @@ function LoginSignup() {
                 setSocialLoading(loadingState);
             },
             onNavigate: (path, params) => {
-                if (params) {
-                    router.push({ pathname: path, params });
-                } else {
-                    router.push(path);
-                }
+                if (params) router.push({ pathname: path, params });
+                else router.push(path);
             },
             onAuthSuccess: async (provider) => {
-                // Use the unified login action from context
                 await actions.login(provider);
             }
         });
@@ -227,18 +223,18 @@ function LoginSignup() {
         setMessage('');
         try {
             try {
-                const currentUser = await safeGetCurrentUser();
+                const currentUser = await getCurrentUser();
                 if (currentUser) {
-                    console.log("User is already signed in. Signing out before continuing..");
+                    console.log("User is already signed in. Signing out before continuing...");
                     await signOut();
                 }
-            } catch (error) {
-                console.error("Error retrieving signed in user:", error);
+            } catch (error) {  // If the user isn't authenticated, then this is expected behaviour.
+                if (!error.message.includes("User needs to be authenticated to call this API")) console.error("Error retrieving signed in user:", error);
             }
 
             const { isSignedIn, nextStep } = await signIn({ username: email, password });
             
-            // check if not fully signed up
+            // Check if email confirmation still required
             if (!isSignedIn && nextStep.signInStep === "CONFIRM_SIGN_UP") {
                 setShowVerificationModal(true);
                 setResendCooldown(60);
@@ -251,15 +247,7 @@ function LoginSignup() {
                 
                 const hasGivenName = userAttributes["given_name"];
                 const hasFamilyName = userAttributes["family_name"];
-                let hasWorkspaceAttribute = userAttributes["custom:has_workspace"];
-
-                // If the attribute doesn't exist, set it to false
-                if (hasWorkspaceAttribute == null) {
-                    await setHasWorkspaceAttribute(false);
-                    hasWorkspaceAttribute = "false";
-                }
-
-                const hasWorkspace = hasWorkspaceAttribute === "true";
+                const hasWorkspace = userAttributes["custom:has_workspace"] == 'true';
 
                 if (!hasWorkspace) {
                     if (!hasGivenName || !hasFamilyName) {
@@ -272,21 +260,18 @@ function LoginSignup() {
                         return;
                     }
                 } else {
-                    // fetch the workspace
                     try {
                         const workspace = await apiGet(
                             endpoints.workspace.core.getByUserId(user.userId)
                         );
 
                         if (!workspace.data || !workspace.data.workspaceId) {
-                            // clear attribute and redirect to choose workspace
                             await setHasWorkspaceAttribute(false);
                             router.dismissAll();
                             router.replace("(auth)/workspace-choice");
                             return;
                         }
 
-                        // save locally and go to profile screen
                         await saveWorkspaceInfo(workspace.data);
                         router.dismissAll();
                         router.replace("(auth)/authenticated-loading");
@@ -317,12 +302,7 @@ function LoginSignup() {
         
         if (result.success) {
             setShowVerificationModal(true);
-        } 
-        // TODO: fix merge file mismatch (login-signup, datamanagement, ... red page ?):
-        /*catch (error) {
-            console.error('Error signing up:', error);
-            setMessage(`Error: ${error.message}`);
-        }*/
+        }
     };
 
     const handleGoogleSignIn = async () => {
@@ -360,9 +340,9 @@ function LoginSignup() {
     const handleToggleSignUp = () => {
         const params = { isSignUp: (!isSignUpBool).toString() };
         
-    // Preserve linking and fromAccounts params
+        // Preserve linking and fromAccounts params
         if (isLinking) params.link = 'true';
-    if (fromAccountsBool) params.fromAccounts = 'true';
+        if (fromAccountsBool) params.fromAccounts = 'true';
         if (emailParam) params.email = emailParam;
         
         router.push({

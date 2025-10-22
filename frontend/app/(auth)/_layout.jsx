@@ -12,8 +12,7 @@ import endpoints from '../../utils/api/endpoints';
 
 export default function AuthLayout() {
     const { authStatus } = useAuthenticator();
-    const { verifyingPassword } = useVerification();// temp until backend
-    // const [checked, setChecked] = useState(false);
+    const { verifyingPassword } = useVerification();
 
     const setHasWorkspaceAttribute = async (value) => {
         try {
@@ -131,52 +130,44 @@ export default function AuthLayout() {
         }
     }
 
-    useEffect(() => {
-        //if (checked) return;
+    const checkAuthStatus = async () => {
+        console.log("(AuthLayout) Auth status:", authStatus);
 
-        const loadLayout = async () => {
-            console.log("(AuthLayout) Auth status:", authStatus);
+        if (authStatus === 'authenticated') {
+            const workspaceExists = await checkWorkspaceExists().catch(() => false);
+            const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
 
-            if (authStatus === 'authenticated') {
-                const workspaceExists = await checkWorkspaceExists().catch(() => false);
-                const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
+            saveUserInfoIntoStorage();
 
-                saveUserInfoIntoStorage();
-
-                if (!workspaceExists && !personalDetailsExists) {
-                    await unloadProfilePhoto();
-                    console.log("User authenticated but no workspace or personal details found. Redirecting to personalise account page...");
-                    router.replace("/(auth)/personalise-account");
-                } else if (!workspaceExists) {
-                    console.log("User authenticated but no workspace found. Redirecting to workspace choice page...");
-                    router.replace("/(auth)/workspace-choice");
-                } else {
-                    saveUserInfoIntoStorage();
-                    console.log("User authenticated, has workspace, and has personal details. Redirecting to workspace dashboard...");
-                    router.replace("/(auth)/dashboard")
-                }
-
-            } else if (authStatus === `configuring`) {
-                console.log("Auth status configuring...")
+            if (!workspaceExists && !personalDetailsExists) {
+                await unloadProfilePhoto();
+                console.log("User authenticated but no workspace or personal details found. Redirecting to personalise account page...");
+                router.replace("/(auth)/personalise-account");
+            } else if (!workspaceExists) {
+                console.log("User authenticated but no workspace found. Redirecting to workspace choice page...");
+                router.replace("/(auth)/workspace-choice");
             } else {
-                if (!verifyingPassword) {  // temp until backend
-                    console.log("Redirecting to root page.");
-                    if (router.canDismiss()) router.dismissAll();
-                    router.replace('/landing');
-                } else {
-                    console.log("Paused redirect due to verifying password.");
-                }
+                saveUserInfoIntoStorage();
+                console.log("User authenticated, has workspace, and has personal details. Redirecting to workspace dashboard...");
+                router.replace("/(auth)/dashboard")
             }
-
-            //setChecked(true);
+        } else if (authStatus === `configuring`) {
+            console.log("Auth status configuring...")
+        } else {
+            if (!verifyingPassword) {  // temp until backend
+                console.log("Redirecting to root page.");
+                if (router.canDismiss()) router.dismissAll();
+                router.replace('/landing');
+            } else {
+                console.log("Paused redirect due to verifying password.");
+            }
         }
-        loadLayout();
+    }
 
-     }, [authStatus, verifyingPassword]); // temp until backend
+    useEffect(() => {
+        checkAuthStatus();
+     }, [authStatus, verifyingPassword]);
 
-     /*if (!checked) {
-        return <ActivityIndicator size="large" />
-     }*/
 
     return (         
         <>
