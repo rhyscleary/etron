@@ -312,7 +312,6 @@ function LoginSignup() {
         } else {
             showSnack(result.error, "error");
         }
-
     };
 
     const handleGoogleSignIn = async () => {
@@ -455,7 +454,7 @@ function LoginSignup() {
                         Keyboard.dismiss();
                         isSignUpBool ? handleSignUp() : handleSignIn()
                     }}
-                    disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || (isSignUpBool && !confirmPassword)}
+                    disabled={(isLinking && !signedOutForLinking) || loading || !email.trim() || !password || password.length < 8 || (isSignUpBool && !confirmPassword)}
                 />
             </View>
 
