@@ -285,7 +285,7 @@ export default function EditRole() {
 			) : (<StackLayout>
 				{willSelfLoseManageRoles && (
 					<Chip icon="alert" style={{ marginBottom: 16 }} selected>
-						You’re removing your own “Manage Roles” permission.
+						You're removing your own “Manage Roles” permission.
 					</Chip>
 				)}
 				<Card style={styles.card}>
