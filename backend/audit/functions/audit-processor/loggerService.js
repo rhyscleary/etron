@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 const { v4: uuidv4 } = require("uuid");
-const auditRepo = require("@etron/audit-shared/repositories/auditRepository");
+const auditRepo = require("@etron/shared/repositories/auditRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 
 // log item structure

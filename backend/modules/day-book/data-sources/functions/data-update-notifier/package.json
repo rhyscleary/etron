@@ -1,17 +1,16 @@
 {
-  "name": "metric-updater",
+  "name": "data-update-notifier",
   "version": "1.0.0",
-  "description": "The backend for eTRON's metric update function",
+  "description": "The backend for eTRON's data update notifier function",
   "author": "InSync",
   "dependencies": {
     "axios": ">=1.6.0",
     "uuid": "^11.1.0",
     "@etron/shared": "file:../../../../../shared/etron-shared-1.0.0.tgz",
-    "@etron/metrics-shared": "file:../../metrics-shared/etron-metrics-shared-1.0.0.tgz",
     "@etron/day-book-shared": "file:../../../day-book-shared/etron-day-book-shared-1.0.0.tgz"
   },
   "scripts": {},
-  "main": "metricUpdateHandler.js",
+  "main": "dataUpdateHandler.js",
   "keywords": [],
   "license": "ISC"
 }

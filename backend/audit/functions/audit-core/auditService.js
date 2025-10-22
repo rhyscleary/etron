@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-const auditRepo = require("@etron/audit-shared/repositories/auditRepository");
+const auditRepo = require("@etron/shared/repositories/auditRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { hasPermission } = require("@etron/shared/utils/permissions");
 

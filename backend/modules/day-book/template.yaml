@@ -13,6 +13,10 @@ Parameters:
     Default: etron_day_book_db
   AuditQueueUrl:
     Type: String
+  AppSyncUrl:
+    Type: String
+  AppSyncApiKey:
+    Type: String
 
 Globals:
   Function:
@@ -26,6 +30,8 @@ Globals:
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
         ATHENA_DATABASE: !Ref AthenaDatabaseName
         AUDIT_QUEUE_URL: !Ref AuditQueueUrl
+        APP_SYNC_URL: !Ref AppSyncUrl
+        APP_SYNC_API_KEY: !Ref AppSyncApiKey
 
 Resources:
 
@@ -667,3 +673,20 @@ Resources:
                 - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog
                 - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/*
                 - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
+
+  
+  DataUpdateNotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./data-sources/functions/data-update-notifier
+      Handler: dataUpdateHandler.handler
+      Timeout: 30
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref WorkspaceBucketName
+      Events:
+        S3UploadEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref WorkspaceBucketName
+            Events: s3:ObjectCreated:Put

@@ -23,6 +23,10 @@ Parameters:
     Type: String
   AuditQueueUrl:
     Type: String
+  AppSyncUrl:
+    Type: String
+  AppSyncApiKey:
+    Type: String
 
 Resources:
 
@@ -69,3 +73,5 @@ Resources:
         WorkspaceBucketName: !Ref WorkspaceBucketName
         AthenaDatabaseName: !Ref AthenaDatabaseName
         AuditQueueUrl: !Ref AuditQueueUrl
+        AppSyncUrl: !Ref AppSyncUrl
+        AppSyncApiKey: !Ref AppSyncApiKey
