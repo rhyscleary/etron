@@ -11,6 +11,7 @@ export function AppProvider({ children }) {
     if (!serviceRef.current) {
         serviceRef.current = new DataSourceService(apiClient);
     }
+
     // Local app state
     const [dataSources, setDataSources] = useState({
         list: [],
@@ -57,9 +58,10 @@ export function AppProvider({ children }) {
     }, [recomputeDataSources]);
 
     // Eager load once at app start (deduped in service if called again elsewhere)
-    useEffect(() => {
+    /*useEffect(() => {
         refreshDataSources();
-    }, [refreshDataSources]);
+    }, [refreshDataSources]);*/
+
     return (
         <AppContext.Provider value={{
             dataSources,
@@ -70,10 +72,8 @@ export function AppProvider({ children }) {
                 switchAccount: () => {},
                 connectDataSource: async (type, config, name) => {
                     console.log('[AppContext] connectDataSource called', { type, config, name });
-                    // No transformation here; service normalizes and posts
                     const created = await serviceRef.current.connectDataSource(type, config, name);
                     console.log('[AppContext] connectDataSource result', created);
-                    // Refresh list after successful creation
                     try { await refreshDataSources(); } catch {}
                     return created;
                 },

@@ -116,6 +116,7 @@ export default function ViewRole() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [roleExists, setRoleExists] = useState(true);
+    const [boards, setBoards] = useState([]);
     const [openAccordions, setOpenAccordions] = useState({});
 
     const loadRole = useCallback(async () => {
@@ -133,6 +134,9 @@ export default function ViewRole() {
 
             result = await apiGet(endpoints.workspace.core.getDefaultPermissions);
             setPermIndex(buildPermissionIndex(result.data));
+
+            result = await apiGet(endpoints.workspace.boards.getBoards(workspaceId));
+			setBoards(result.data);
         } catch (error) {
             console.error("Error fetching role:", error);
             setRoleExists(false);
@@ -178,17 +182,17 @@ export default function ViewRole() {
                 <Card>
                     <Card.Title title={role.name} />
                     <List.Item title="Created" description={formatDateTime(role.createdAt)} />
-                    <List.Item title="Updated" description={formatDateTime(role.updatedAt)} />
+                    <List.Item title="Last Updated" description={formatDateTime(role.updatedAt)} />
                 </Card>
 
-                {!role.owner && (<>
+                {!role.owner && (<StackLayout spacing={16}>
                     <Card>
-                        <Card.Title   title="Board Access" />
+                        <Card.Title title="Board Access" />
                         <Card.Content>
                             <View style={styles.chipsWrap}>
-                                {role.hasAccess.boards.map((board) => (
-                                    <Chip key={board} mode="outlined" style={styles.chip} onPress={() => router.navigate(`/boards/${board}`)}>  {/*Doesn't work yet, but will if we have boards*/}
-                                        {board}
+                                {role.hasAccess.boards.map((roleBoard) => (
+                                    <Chip key={roleBoard} mode="outlined" style={styles.chip} onPress={() => router.navigate(`/boards/${roleBoard}`)}>  {/*Doesn't work yet, but will if we have boards*/}
+                                        {boards.find((board) => (board.id = roleBoard)).name}
                                     </Chip>
                                 ))}
                             </View>
@@ -236,7 +240,7 @@ export default function ViewRole() {
                             )}
                         </Card.Content>
                     </Card>
-                </>)}
+                </StackLayout>)}
             </StackLayout>) : (
                 <View style={styles.emptyWrap}>
                     <ItemNotFound

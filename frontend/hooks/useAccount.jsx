@@ -28,7 +28,7 @@ export function useAccount() {
             
             return result;
         } catch (err) {
-            console.error("Error loading linked accounts:", err);
+            //console.error("Error loading linked accounts:", err);
             setError(err);
             setCurrentEmail("");
             setCurrentProvider("");
@@ -52,7 +52,7 @@ export function useAccount() {
             setLinkedAccounts(updatedAccounts);
             console.log(`Account ${email} linked successfully with provider ${provider}`);
         } catch (err) {
-            console.error("Error adding linked account:", err);
+            //console.error("Error adding linked account:", err);
             setError(err);
         }
     }, []);
@@ -66,7 +66,7 @@ export function useAccount() {
                 await loadLinkedAccounts(currentProvider || 'Cognito');
             }
         } catch (error) {
-            console.error('Error linking current user:', error);
+            //console.error('Error linking current user:', error);
             setError(error);
         }
     }, [currentEmail, currentProvider, addLinkedAccount, loadLinkedAccounts]);
@@ -86,7 +86,7 @@ export function useAccount() {
             setLinkedAccounts(updatedAccounts);
             return updatedAccounts;
         } catch (err) {
-            console.error("Error removing linked account:", err);
+            //console.error("Error removing linked account:", err);
             setError(err);
             return [];
         }
@@ -101,7 +101,7 @@ export function useAccount() {
                 params: { email: targetEmail, fromAccounts: 'true' },
             });
         } catch (err) {
-            console.error("Error switching account:", err);
+            //console.error("Error switching account:", err);
             setError(err);
         }
     }, []);
@@ -121,7 +121,7 @@ export function useAccount() {
                 setLinkedAccounts(updatedAccounts);
             }
         } catch (error) {
-            console.error('Error removing account:', error);
+            //console.error('Error removing account:', error);
             setError(error);
         } finally {
             setDialogVisible(false);
@@ -172,7 +172,7 @@ export function useAccount() {
             await loadLinkedAccounts(provider);
             console.log('Authentication success handled, accounts refreshed');
         } catch (error) {
-            console.error('Error handling auth success:', error);
+            //console.error('Error handling auth success:', error);
             setError(error);
         }
     }, [loadLinkedAccounts]);

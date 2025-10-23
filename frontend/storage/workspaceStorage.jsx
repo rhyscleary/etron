@@ -71,20 +71,20 @@ function normalizeWorkspaceShape(raw) {
 
 export async function saveWorkspaceInfo(workspace) {
     try {
-                const normalized = normalizeWorkspaceShape(workspace) || workspace;
-                const userKey = await getUserStorageKey();
-                console.log('[workspaceStorage] saveWorkspaceInfo.beforeSave', { userKey, receivedId: extractWorkspaceId(workspace), normalizedId: extractWorkspaceId(normalized) });
-                if (userKey) {
-                    const map = await loadWorkspaceMap();
-                    map[userKey] = normalized;
-                    await saveWorkspaceMap(map);
-                    console.log('[workspaceStorage] saveWorkspaceInfo (per-user)', { hasWorkspace: !!workspace, workspaceId: extractWorkspaceId(normalized) });
-                } else {
-                    // Fallback to legacy single-entry behavior
-                    const value = JSON.stringify(normalized);
-                    await AsyncStorage.setItem(workspaceKey, value);
-                    console.log('[workspaceStorage] saveWorkspaceInfo (legacy)', { hasWorkspace: !!workspace, workspaceId: extractWorkspaceId(normalized) });
-                }
+        const normalized = normalizeWorkspaceShape(workspace) || workspace;
+        const userKey = await getUserStorageKey();
+        //console.log('[workspaceStorage] saveWorkspaceInfo.beforeSave', { userKey, receivedId: extractWorkspaceId(workspace), normalizedId: extractWorkspaceId(normalized) });
+        if (userKey) {
+            const map = await loadWorkspaceMap();
+            map[userKey] = normalized;
+            await saveWorkspaceMap(map);
+            //console.log('[workspaceStorage] saveWorkspaceInfo (per-user)', { hasWorkspace: !!workspace, workspaceId: extractWorkspaceId(normalized) });
+        } else {
+            // Fallback to legacy single-entry behavior
+            const value = JSON.stringify(normalized);
+            await AsyncStorage.setItem(workspaceKey, value);
+            //console.log('[workspaceStorage] saveWorkspaceInfo (legacy)', { hasWorkspace: !!workspace, workspaceId: extractWorkspaceId(normalized) });
+        }
     } catch (error) {
         console.error("Error saving workspace information: ", error);
     }
@@ -92,46 +92,49 @@ export async function saveWorkspaceInfo(workspace) {
 
 export async function getWorkspaceInfo() {
     try {
-                const userKey = await getUserStorageKey();
-                if (userKey) {
-                    const map = await loadWorkspaceMap();
-                    let parsed = map[userKey] || null;
-                    // Migrate legacy single-entry to per-user if exists and user has none
-                    if (!parsed) {
-                        const legacy = await AsyncStorage.getItem(workspaceKey);
-                        const legacyParsed = legacy ? JSON.parse(legacy) : null;
-                        if (legacyParsed) {
-                            const healed = normalizeWorkspaceShape(legacyParsed);
-                            if (healed) {
-                                map[userKey] = healed;
-                                await saveWorkspaceMap(map);
-                                // Optionally clear legacy key to avoid confusion
-                                try { await AsyncStorage.removeItem(workspaceKey); } catch {}
-                                parsed = healed;
-                            }
-                        }
+        const userKey = await getUserStorageKey();
+        if (userKey) {
+            const map = await loadWorkspaceMap();
+            console.log("map:", map);
+            let parsed = map[userKey] || null;
+            // Migrate legacy single-entry to per-user if exists and user has none
+            if (!parsed) {
+                const legacy = await AsyncStorage.getItem(workspaceKey);
+                const legacyParsed = legacy ? JSON.parse(legacy) : null;
+                if (legacyParsed) {
+                    const healed = normalizeWorkspaceShape(legacyParsed);
+                    if (healed) {
+                        map[userKey] = healed;
+                        await saveWorkspaceMap(map);
+                        // Optionally clear legacy key to avoid confusion
+                        try { await AsyncStorage.removeItem(workspaceKey); } catch {}
+                        parsed = healed;
                     }
-                    const id = extractWorkspaceId(parsed);
-                    console.log('[workspaceStorage] getWorkspaceInfo', { userKey, exists: !!parsed, workspaceId: id });
-                    // Auto-heal shape
-                    if (parsed && id && (!parsed.id || !parsed.workspaceId)) {
-                        try {
-                            const healed = normalizeWorkspaceShape(parsed);
-                            if (healed) {
-                                const map2 = await loadWorkspaceMap();
-                                map2[userKey] = healed;
-                                await saveWorkspaceMap(map2);
-                            }
-                        } catch {}
-                    }
-                    return parsed;
                 }
-                // Fallback legacy behavior when no user context
-                const value = await AsyncStorage.getItem(workspaceKey);
-                const parsed = value ? JSON.parse(value) : null;
-                const id = extractWorkspaceId(parsed);
-                console.log('[workspaceStorage] getWorkspaceInfo (legacy)', { exists: !!parsed, workspaceId: id });
-                return parsed;
+            }
+            console.log("PARSED:", parsed);
+            //const id = extractWorkspaceId(parsed);
+            //console.log('[workspaceStorage] getWorkspaceInfo', { userKey, exists: !!parsed, workspaceId: id });
+            // Auto-heal shape
+            /*if (parsed && id && (!parsed.id || !parsed.workspaceId)) {
+                try {
+                    const healed = normalizeWorkspaceShape(parsed);
+                    if (healed) {
+                        const map2 = await loadWorkspaceMap();
+                        map2[userKey] = healed;
+                        await saveWorkspaceMap(map2);
+                    }
+                } catch {}
+            }*/
+            return parsed;
+        }
+        // Fallback legacy behavior when no user context
+        const value = await AsyncStorage.getItem(workspaceKey);
+        const parsed = value ? JSON.parse(value) : null;
+        //const id = extractWorkspaceId(parsed);
+        const id = parsed.workspaceId;
+        //console.log('[workspaceStorage] getWorkspaceInfo (legacy)', { exists: !!parsed, workspaceId: id });
+        return parsed;
     } catch (error) {
         console.error("Error retrieving workspace information: ", error);
         return null;
@@ -140,16 +143,16 @@ export async function getWorkspaceInfo() {
 
 export async function removeWorkspaceInfo() {
     try {
-                const userKey = await getUserStorageKey();
-                if (userKey) {
-                    const map = await loadWorkspaceMap();
-                    if (map[userKey]) delete map[userKey];
-                    await saveWorkspaceMap(map);
-                    console.log('[workspaceStorage] removeWorkspaceInfo (per-user)', { userKey });
-                } else {
-                    await AsyncStorage.removeItem(workspaceKey);
-                    console.log('[workspaceStorage] removeWorkspaceInfo (legacy)');
-                }
+        const userKey = await getUserStorageKey();
+        if (userKey) {
+            const map = await loadWorkspaceMap();
+            if (map[userKey]) delete map[userKey];
+            await saveWorkspaceMap(map);
+            //console.log('[workspaceStorage] removeWorkspaceInfo (per-user)', { userKey });
+        } else {
+            await AsyncStorage.removeItem(workspaceKey);
+            //console.log('[workspaceStorage] removeWorkspaceInfo (legacy)');
+        }
     } catch (error) {
         console.error("Error removing workspace information: ", error);
     }
@@ -158,12 +161,13 @@ export async function removeWorkspaceInfo() {
 // get values from the information stored
 export async function getWorkspaceId() {
     const workspace = await getWorkspaceInfo();
-    const id = extractWorkspaceId(workspace);
+    const id = workspace.workspaceId;
+    //const id = extractWorkspaceId(workspace);
     // Auto-heal stored value to include id/workspaceId for future fast access
-    if (workspace && id && (!workspace.id || !workspace.workspaceId)) {
+    /*if (workspace && id && (!workspace.id || !workspace.workspaceId)) {
         try { await saveWorkspaceInfo(workspace); } catch {}
-    }
-    console.log('[workspaceStorage] getWorkspaceId ->', id);
+    }*/
+    //console.log('[workspaceStorage] getWorkspaceId ->', id);
     return id;
 }
 

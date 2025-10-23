@@ -1,4 +1,4 @@
-export function transformData(rawData, options) {
+export default function transformData(rawData, options) {
   const { valueToTrack, dateField, dimensions, timeFrame } = options;
 
   // Parse timestamps with plain Date()

@@ -73,7 +73,7 @@ export default function ResponsiveScreen({
 
 const styles = StyleSheet.create({
     safe: { flex: 1 },
-    padded: { paddingHorizontal: 20, gap: 30, paddingTop: 20, paddingBottom: 12 },
+    padded: { paddingHorizontal: 20, gap: 30, paddingBottom: 12 },
     scrollContent: { flexGrow: 1 },
     content: { flexGrow: 1, width: "100%" },
     centerGrow: {justifyContent: "center" },
