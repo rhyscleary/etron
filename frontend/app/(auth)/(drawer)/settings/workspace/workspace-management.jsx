@@ -40,7 +40,7 @@ const WorkspaceManagement = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
     const [isOwner, setIsOwner] = useState(false);
 
-    const [tooltipFor, setTooltipFor] = useState(null);
+    const [tooltipFor, setTooltipFor] = useState([]);
     
 
 
@@ -53,13 +53,13 @@ const WorkspaceManagement = () => {
             route: "settings/workspace/view-workspace-details",
         },
         {
-            permKey: "app.workspace.manage_modules", 
+            permKey: "app.workasdspace.manage_modules", 
             label: "Module Management", 
             description: "Add and remove modules from the workspace", 
             route: "settings/workspace/module-management",
         },
         {
-            permKey: "app.workspace.manage_boards",
+            permKey: "app.worksdaspace.manage_boards",
             label: "Board Management", 
             description: "Edit boards within the workspace", 
             route: "settings/workspace/board-management",
@@ -212,8 +212,8 @@ const WorkspaceManagement = () => {
                     description={option.description}
                     onPress={() => {
                         if (isBlocked) {
-                            setTooltipFor(option.key);
-                            setTimeout(() => setTooltipFor(null), 1600);
+                            setTooltipFor(prev => [...prev, option.key]);
+                            setTimeout(() => setTooltipFor(prev => prev.filter(key => key !== option.key)), 1600);
                             return;
                         }
                         router.navigate(option.route);
@@ -226,8 +226,8 @@ const WorkspaceManagement = () => {
             return (
                 <Menu
                     key={`${option.key}`}
-                    visible={tooltipFor === option.key}
-                    onDismiss={() => setTooltipFor(null)}
+                    visible={tooltipFor.includes(option.key)}
+                    onDismiss={() => setTooltipFor(prev => prev.filter(key => key !== option.key))}
                     anchor={anchor}
                     contentStyle={{
                         paddingVertical: 6,
