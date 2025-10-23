@@ -55,7 +55,7 @@ async function deleteWorkspace(authUserId, workspaceId) {
     // remove workspace data from table
     await workspaceRepo.removeAllWorkspaceData(workspaceId);
 
-    return {message: "Workspace successfully deleted"};
+    return { message: "Workspace successfully deleted" };
 }
 
 module.exports = {
