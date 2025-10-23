@@ -2,7 +2,7 @@
 
 import { Platform, View, StyleSheet, KeyboardAvoidingView, TouchableWithoutFeedback, Keyboard } from "react-native";
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import { useTheme } from "react-native-paper";
+import { useTheme, Portal, ActivityIndicator } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ResponsiveScreen({
@@ -14,6 +14,7 @@ export default function ResponsiveScreen({
     footer,
     transparent = false,
     tapToDismissKeyboard = true,
+    loadingOverlayActive = false
 }) {
     const contentStyles = [styles.content, padded && styles.padded, center && styles.centerGrow]
     const theme = useTheme();
@@ -67,6 +68,14 @@ export default function ResponsiveScreen({
             {footer ? (<View style={[styles.footer, { backgroundColor: theme.colors.background }]}>
                 {footer}
             </View>) :  null }
+
+            <Portal>
+                {loadingOverlayActive && (
+                    <View style={styles.loadingOverlay} pointerEvents="auto">
+                        <ActivityIndicator size="large" />
+                    </View>
+                )}
+            </Portal>
         </SafeAreaView>
     );
 }
@@ -80,4 +89,15 @@ const styles = StyleSheet.create({
     header: { width: "100%" },
     body: { flex: 1 },
     footer: { paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8},
+    loadingOverlay: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		backgroundColor: 'rgba(0,0,0,0.35)',
+		alignItems: 'center',
+		justifyContent: 'center',
+        zIndex: 1000,
+	}
 });

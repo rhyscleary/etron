@@ -95,7 +95,6 @@ export async function getWorkspaceInfo() {
         const userKey = await getUserStorageKey();
         if (userKey) {
             const map = await loadWorkspaceMap();
-            console.log("map:", map);
             let parsed = map[userKey] || null;
             // Migrate legacy single-entry to per-user if exists and user has none
             if (!parsed) {
@@ -112,7 +111,6 @@ export async function getWorkspaceInfo() {
                     }
                 }
             }
-            console.log("PARSED:", parsed);
             //const id = extractWorkspaceId(parsed);
             //console.log('[workspaceStorage] getWorkspaceInfo', { userKey, exists: !!parsed, workspaceId: id });
             // Auto-heal shape
