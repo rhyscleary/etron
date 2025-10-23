@@ -11,53 +11,15 @@ import endpoints from "../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { router } from "expo-router";
 import formatDateTime from "../../../../../utils/format/formatISODate";
+import { hasPermission } from "../../../../../utils/permissions";
 
 
 const WorkspaceDetails = () => {
     const theme = useTheme();
 
-    const [name, setName] = useState("");
     const [workspace, setWorkspace] = useState();
-    const [location, setLocation] = useState("");
-    const [description, setDescription] = useState("");
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState(false);
-    const [updating, setUpdating] = useState(false);
-    const [originalData, setOriginalData] = useState({});
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-
-    /*useEffect(() => {
-        async function loadWorkspaceDetails() {
-            setLoading(true);
-            try {
-                const workspaceId = await getWorkspaceId();
-
-                const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
-                const workspace = result.data;
-
-                console.log("Workspace:", workspace);
-
-                if (workspace) {
-                    // set values for workspace details
-                    setName(workspace.name || "");
-                    setDescription(workspace.description || "");
-                    setLocation(workspace.location || "");
-
-                    // set original values 
-                    setOriginalData({
-                        name: workspace.name || "",
-                        location: workspace.location || "",
-                        description: workspace.description || ""
-                    });
-                }
-            } catch (error) {
-                console.error("Error loading workspace details: ", error);
-            }
-            setLoading(false);
-        }
-        loadWorkspaceDetails();
-    }, []);*/
+    const [editWorkspacePermission, setEditWorkspacePermission] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -72,81 +34,10 @@ const WorkspaceDetails = () => {
             } finally {
                 setLoading(false);
             }
+
+            setEditWorkspacePermission(await hasPermission("app.workspace.update_workspace"));
         })();
     }, []);
-
-    /*useEffect(() => {
-        const changed =
-            name.trim() !== originalData.name ||
-            location.trim() !== originalData.location ||
-            description.trim() !== originalData.description;
-        setHasUnsavedChanges(changed);
-    }, [name, location, description, originalData]);
-
-    async function handleUpdate() {
-        setUpdating(true);
-
-        const newErrors = {
-            name: !name.trim(),
-        };
-        setErrors(newErrors);
-        
-        if (Object.values(newErrors).some(Boolean)) {
-            setUpdating(false);
-            return;
-        }
-
-        try {
-            const updateData = {};
-
-            if (name.trim() !== originalData.name) {
-                updateData.name = name.trim();
-            }
-
-            if (location.trim() !== originalData.location) {
-                updateData.location = location.trim();
-            }
-
-            if (description.trim() !== originalData.description) {
-                updateData.description = description.trim();
-            }
-
-            // get workspace id from local storage
-            const workspaceId = await getWorkspaceId();
-
-            const result = await apiPatch(
-                endpoints.workspace.core.update(workspaceId),
-                updateData
-            );
-
-            console.log('Workspace details updated:', result.data);
-            
-            setOriginalData({
-                name,
-                location,
-                description
-            });
-
-        } catch (error) {
-            setUpdating(false);
-            console.error("Error updating workspace details: ", error);
-        }
-
-        setUpdating(false);
-    }
-
-    function handleBackPress() {
-        if (hasUnsavedChanges) {
-            setShowUnsavedDialog(true);
-        } else {
-            router.back();
-        }
-    }
-
-    function handleDiscardChanges() {
-        setShowUnsavedDialog(false);
-        router.back();
-    }*/
 
     return (
 		<ResponsiveScreen
@@ -155,6 +46,7 @@ const WorkspaceDetails = () => {
                 showBack
                 showEdit
                 onRightIconPress={() => router.navigate("settings/workspace/edit-workspace-details")}
+                rightIconPermission={editWorkspacePermission}
             />}
 			center={false}
 			padded
