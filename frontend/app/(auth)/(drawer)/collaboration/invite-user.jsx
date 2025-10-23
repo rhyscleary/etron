@@ -16,111 +16,112 @@ import TextField from "../../../../components/common/input/TextField";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
 
 const InviteUser = () => {
-  const [workspaceId, setWorkspaceId] = useState(null);
-  const [userEmail, setUserEmail] = useState("");
-  const [roles, setRoles] = useState([]);
-  const [selectedRole, setSelectedRole] = useState("");
-  const [inviting, setInviting] = useState(false);
-  const { navigatedFrom } = useLocalSearchParams();
+	const [workspaceId, setWorkspaceId] = useState(null);
+	const [userEmail, setUserEmail] = useState("");
+	const [roles, setRoles] = useState([]);
+	const [selectedRole, setSelectedRole] = useState("");
+	const [inviting, setInviting] = useState(false);
+	const { navigatedFrom } = useLocalSearchParams();
 
-  useEffect(() => {
-    const fetchId = async () => {
-      const id = await getWorkspaceId();
-      setWorkspaceId(id);
-    };
-    fetchId();
-  }, []);
+	useEffect(() => {
+		const fetchId = async () => {
+			const id = await getWorkspaceId();
+			setWorkspaceId(id);
+		};
+		fetchId();
+	}, []);
 
-  useEffect(() => {
-    if (!workspaceId) return;
+	useEffect(() => {
+		if (!workspaceId) return;
 
-    const fetchRoles = async () => {
-      try {
-        const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
-        const fetchedRoles = result.data;
+		const fetchRoles = async () => {
+			try {
+				const result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+				const fetchedRoles = result.data;
 
-        // filter out the owner role
-        const filtered = (fetchedRoles || []).filter(role => !role.owner);
-        setRoles(filtered);
-      } catch (error) {
-        console.error("Error fetching roles:", error);
-      }
-    };
+				// filter out the owner role
+				const filtered = (fetchedRoles || []).filter(role => !role.owner);
+				setRoles(filtered);
+			} catch (error) {
+				console.error("Error fetching roles:", error);
+			}
+		};
 
-    fetchRoles();
-  }, [workspaceId]);
+		fetchRoles();
+	}, [workspaceId]);
 
-  const handleSendInvite = async () => {
-    if (!userEmail || !selectedRole || !workspaceId) {
-      console.warn("Missing data for invite.");
-      return;
-    }
+	const handleSendInvite = async () => {
+		if (!userEmail || !selectedRole || !workspaceId) {
+			console.warn("Missing data for invite.");
+			return;
+		}
 
-    try {
-      const selectedRoleObj = roles.find(role => role.roleId === selectedRole);
+		try {
+			const selectedRoleObj = roles.find(role => role.roleId === selectedRole);
 
-      if (!selectedRoleObj) {
-        console.warn("Selected role not found in roles list.");
-        return;
-      }
+			if (!selectedRoleObj) {
+				console.warn("Selected role not found in roles list.");
+				return;
+			}
 
-      setInviting(true);
+			setInviting(true);
 
-      const data = {
-        email: userEmail.trim(),
-        roleId: selectedRoleObj.roleId,
-      };
+			const data = {
+				email: userEmail.trim(),
+				roleId: selectedRoleObj.roleId,
+			};
 
-      const result = await apiPost(
-        endpoints.workspace.invites.create(workspaceId),
-        data
-      );
+			const result = await apiPost(
+				endpoints.workspace.invites.create(workspaceId),
+				data
+			);
 
-      console.log("Invite sent:", result);
+			console.log("Invite sent:", result);
 
-      if (navigatedFrom == "invites") router.back();
-      else router.replace("/collaboration/invites");
-      setInviting(false);
-    } catch (error) {
-      console.error("Error sending invite:", error);
-      setInviting(false);
-    }
-  };
+			if (navigatedFrom == "invites") router.back();
+			else router.replace("/collaboration/invites");
+			setInviting(false);
+		} catch (error) {
+			console.error("Error sending invite:", error);
+			setInviting(false);
+		}
+	};
 
-  return (
+	return (
 		<ResponsiveScreen
 			header={<Header title="Invite User" showBack />}
 			center={false}
 			padded
-      scroll={false}
+			scroll={false}
+			tapToDismissKeyboard={false}
 		>
-      <StackLayout spacing={34}>
-        <TextField
-          label="Email Address"
-          value={userEmail}
-          placeholder="Email"
-          onChangeText={setUserEmail}
-        />
+			<StackLayout spacing={34}>
+				<TextField
+					label="Email Address"
+					value={userEmail}
+					placeholder="Email"
+					onChangeText={setUserEmail}
+				/>
 
-        <DropDown
-          title="Select Role"
-          items={roles.map(role => ({ label: role.name, value: role.roleId }))}
-          value={selectedRole}
-          onSelect={setSelectedRole}
-          showRouterButton={false}
-        />
-      </StackLayout>
-            
-      <View style={commonStyles.inlineButtonContainer}>
-        <BasicButton 
-          label={inviting ? "Inviting..." : "Invite"} 
-          onPress={handleSendInvite}
-          disabled={inviting}
-        />
-      </View>
+				<DropDown
+					title="Select Role"
+					items={roles.map(role => ({ label: role.name, value: role.roleId }))}
+					value={selectedRole}
+					onSelect={setSelectedRole}
+					showRouterButton={false}
+				/>
+			</StackLayout>
+						
+			<View style={commonStyles.inlineButtonContainer}>
+				<BasicButton 
+					label={inviting ? "Inviting..." : "Invite"} 
+					onPress={handleSendInvite}
+					disabled={inviting}
+				/>
+			</View>
 
-    </ResponsiveScreen>
-  );
+		</ResponsiveScreen>
+	);
 };
 
 export default InviteUser;
