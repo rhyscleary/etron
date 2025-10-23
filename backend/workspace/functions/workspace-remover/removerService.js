@@ -3,7 +3,7 @@
 const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const workspaceUsersRepo = require("@etron/shared/repositories/workspaceUsersRepository");
 const workspaceInvitesRepo = require("@etron/shared/repositories/workspaceInvitesRepository");
-const auditLogRepo = require("@etron/shared/repositories/auditRepository");
+//const auditLogRepo = require("@etron/shared/repositories/auditRepository");
 const { updateUser } = require("@etron/shared/utils/auth");
 const { deleteFolder } = require("@etron/shared/repositories/workspaceBucketRepository");
 
@@ -31,7 +31,7 @@ async function deleteWorkspace(authUserId, workspaceId) {
     // delete invites from table
     await workspaceInvitesRepo.removeAllInvites(workspaceId);
     // remove audits from table
-    await auditLogRepo.removeAllLogs(workspaceId);
+    //await auditLogRepo.removeAllLogs(workspaceId);
 
     // fetch and remove modules
     const installedModules = await workspaceRepo.getModulesByWorkspaceId(workspaceId);
@@ -49,6 +49,8 @@ async function deleteWorkspace(authUserId, workspaceId) {
 
     // remove the data from S3
     await deleteFolder(`workspaces/${workspaceId}/`);
+
+    console.log("Hello");
 
     // remove workspace data from table
     await workspaceRepo.removeAllWorkspaceData(workspaceId);

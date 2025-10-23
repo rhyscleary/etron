@@ -675,18 +675,3 @@ Resources:
                 - !Sub arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/*/*
 
   
-  DataUpdateNotifierFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ./data-sources/functions/data-update-notifier
-      Handler: dataUpdateHandler.handler
-      Timeout: 30
-      Policies:
-        - S3ReadPolicy:
-            BucketName: !Ref WorkspaceBucketName
-      Events:
-        S3UploadEvent:
-          Type: S3
-          Properties:
-            Bucket: !Ref WorkspaceBucketName
-            Events: s3:ObjectCreated:Put
