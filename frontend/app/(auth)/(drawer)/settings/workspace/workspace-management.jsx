@@ -41,6 +41,7 @@ const WorkspaceManagement = () => {
     const [isOwner, setIsOwner] = useState(false);
 
     const [tooltipFor, setTooltipFor] = useState([]);
+    const [loading, setLoading] = useState(false);
     
 
 
@@ -123,10 +124,12 @@ const WorkspaceManagement = () => {
 
     // DELETE WORKSPACE
     async function handleConfirmDeletion() {
+        setLoading(true);
         Keyboard.dismiss();
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
@@ -135,12 +138,14 @@ const WorkspaceManagement = () => {
         if (!validPassword) {
             setPasswordErrorMessage("The password entered is invalid.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
         if (workspaceId) {
             try {
                 await apiDelete(endpoints.workspace.core.delete(workspaceId));
+                setLoading(false);
                 closeDialog();
                 router.navigate("/workspace-choice");
             } catch (error) {
@@ -150,14 +155,17 @@ const WorkspaceManagement = () => {
 
         setPassword("");
         setPasswordError(false);
+        setLoading(false);
     }
 
     // TRANSFER OWNERSHIP
     async function handleConfirmTransfer() {
+        setLoading(true);
         Keyboard.dismiss();
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
@@ -167,6 +175,7 @@ const WorkspaceManagement = () => {
         if (!validPassword) {
             setPasswordErrorMessage("The password entered is invalid.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
@@ -182,7 +191,7 @@ const WorkspaceManagement = () => {
                 };
 
                 const result = await apiPut(endpoints.workspace.core.transfer(workspaceId), transferPayload);
-
+                setLoading(false);
                 console.log("Ownership transferred:", result.data);
                 closeDialog();
             } catch (error) {
@@ -192,6 +201,7 @@ const WorkspaceManagement = () => {
         
         setPassword("");
         setPasswordError(false);
+        setLoading(false);
     }
 
     function closeDialog() {
@@ -251,6 +261,7 @@ const WorkspaceManagement = () => {
 			header={<Header title="Workspace" showBack />}
 			center={false}
             scroll={true}
+            loadingOverlayActive={loading}
         >
             <StackLayout spacing={12}>
                 {menuOptions.map(renderOption)}
