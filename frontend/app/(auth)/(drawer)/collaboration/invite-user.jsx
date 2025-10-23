@@ -1,7 +1,7 @@
 // Author(s): Matthew Page
 
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, TouchableOpacity } from "react-native";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { Text, TextInput, RadioButton, Dialog, Portal, Button } from "react-native-paper";
 import { router, useLocalSearchParams } from "expo-router";
 import Header from "../../../../components/layout/Header";
@@ -94,6 +94,7 @@ const InviteUser = () => {
 			padded
 			scroll={false}
 			tapToDismissKeyboard={false}
+			loadingOverlayActive={inviting}
 		>
 			<StackLayout spacing={34}>
 				<TextField
@@ -120,8 +121,22 @@ const InviteUser = () => {
 				/>
 			</View>
 
+			
 		</ResponsiveScreen>
 	);
 };
 
 export default InviteUser;
+
+ const styles = StyleSheet.create({
+	loadingOverlay: {
+		position: 'absolute',
+		top: 0,
+		left: 0,
+		right: 0,
+		bottom: 0,
+		backgroundColor: 'rgba(0,0,0,0.35)',
+		alignItems: 'center',
+		justifyContent: 'center',
+	}
+});
