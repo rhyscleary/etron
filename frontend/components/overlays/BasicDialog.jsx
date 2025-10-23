@@ -27,6 +27,7 @@ const BasicDialog = ({
     inputErrorMessage = "",
     secureTextEntry = false,
     children,
+    inputProps = {}
 }) => {
     const theme = useTheme();
 
@@ -56,6 +57,7 @@ const BasicDialog = ({
                                     onChangeText={inputOnChangeText}
                                     error={inputError}
                                     secureTextEntry={secureTextEntry}
+                                    {...inputProps}
                                 />
                             </View>
                         )}

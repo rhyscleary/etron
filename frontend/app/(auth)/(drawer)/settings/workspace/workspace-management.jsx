@@ -273,12 +273,10 @@ const WorkspaceManagement = () => {
                     inputLabel="Password"
                     inputPlaceholder="Enter your password"
                     inputValue={password}
-                    inputOnChangeText={(text) => {
-                        setPassword(text);
-                    }}
+                    inputOnChangeText={setPassword}
                     inputError={passwordError}
                     inputErrorMessage={passwordErrorMessage}
-                    secureTextEntry
+                    secureTextEntry={true}
                     leftActionLabel="Cancel"
                     handleLeftAction={closeDialog}
                     rightActionLabel={dialogMode === 'delete' ? 'Delete' : 'Transfer'}
