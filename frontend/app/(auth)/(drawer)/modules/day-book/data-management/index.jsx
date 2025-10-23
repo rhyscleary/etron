@@ -172,7 +172,7 @@ const DataManagement = () => {
 						style: "destructive",
 						onPress: async () => {
 							try {
-								await apiDelete(endpoints.modules.day_book.data_sources.removeDataSource(source.dataSourceId, {workspaceId}));
+								await apiDelete(endpoints.modules.day_book.data_sources.removeDataSource(source.dataSourceId), {workspaceId});
 								await fetchDataSources();
 							} catch (error) {
 								console.error("Error disconnecting data source", error);
