@@ -44,12 +44,6 @@ const WorkspaceManagement = () => {
     const [isOwner, setIsOwner] = useState(false);
     const [menuOptions, setMenuOptions] = useState([]);
 
-    async function permissionTest() {
-        console.log(await getPermissions());
-        console.log(await hasPermission())
-    }
-    permissionTest();
-
 
     // container for different workspace management options
     const permissionButtonMap = [
