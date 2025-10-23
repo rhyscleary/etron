@@ -5,7 +5,7 @@ import { fetchAuthSession, fetchUserAttributes, getCurrentUser, signOut, updateU
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useVerification } from '../../contexts/VerificationContext';
 import { getWorkspaceId, saveWorkspaceInfo } from '../../storage/workspaceStorage';
-import { saveUserInfo } from '../../storage/userStorage';
+import { saveUserInfo, removeWorkspaceInfo } from '../../storage/userStorage';
 import { saveRole, getRole, getPermissions } from '../../storage/permissionsStorage';
 import { apiGet } from '../../utils/api/apiClient';
 import endpoints from '../../utils/api/endpoints';
