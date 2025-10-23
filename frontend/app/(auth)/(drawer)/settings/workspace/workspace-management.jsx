@@ -53,13 +53,13 @@ const WorkspaceManagement = () => {
             route: "settings/workspace/view-workspace-details",
         },
         {
-            permKey: "app.workasdspace.manage_modules", 
+            permKey: "app.workspace.manage_modules", 
             label: "Module Management", 
             description: "Add and remove modules from the workspace", 
             route: "settings/workspace/module-management",
         },
         {
-            permKey: "app.worksdaspace.manage_boards",
+            permKey: "app.workspace.manage_boards",
             label: "Board Management", 
             description: "Edit boards within the workspace", 
             route: "settings/workspace/board-management",
