@@ -180,6 +180,7 @@ const JoinWorkspace = () => {
             />}
             center={false}
             scroll={false}
+            loadingOverlayActive={joining}
         >
             {loading ? (
                 <View style={styles.loadingContainer}>
