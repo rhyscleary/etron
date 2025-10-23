@@ -1,14 +1,11 @@
-// Author(s): Rhys Cleary, Matthew Page
+// Author(s): Rhys Cleary, Matthew Page, Noah Bradley
 
 import { useRouter } from "expo-router";
-import { Appbar, useTheme, Searchbar } from "react-native-paper";
+import { useState } from "react";
+import { Appbar, useTheme, Menu, Text } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
 
 /*
-TODO:
-    - Will need to add in navigation rail into the onPress() of the menu action
-    - Likely will change the icon styles depending on the users OS
-
     Removed code. Incase want to add a second right icon:
     {rightIcon && (<Appbar.Action icon={rightIcon} onPress={onRightIconPress} />)}
 */
@@ -22,6 +19,7 @@ const Header = ({
     showCheckLeft,
     showPlus,
     showEllipsis,
+    rightIconPermission = true,
     onRightIconPress,
     onLeftIconPress,
     onEllipsisPress,
@@ -31,8 +29,28 @@ const Header = ({
 }) => {
     const router = useRouter();
     const theme = useTheme();
-
     const navigation = useNavigation();
+
+    const [noPermVisible, setNoPermVisible] = useState(false);
+    
+    const RightIconAnchor = (
+        <Appbar.Action
+            icon={showPlus ? "plus"
+                : showEdit ? "pencil"
+                : showCheck ? "check"
+                : "line"}
+            color={rightIconPermission ? undefined : theme.colors.onSurfaceDisabled ?? theme.colors.onSurfaceVariant}  // Dims when user doesn't have permission
+            style={!rightIconPermission ? { opacity: 0.6 } : null}
+            onPress={async () => {
+                if (!rightIconPermission) {
+                    setNoPermVisible(true);
+                    setTimeout(() => setNoPermVisible(false), 1600);
+                    return;
+                }
+                if (onRightIconPress) await onRightIconPress();
+            }}
+        />
+    );
 
     return (
         <Appbar.Header mode="center-aligned"
@@ -56,19 +74,37 @@ const Header = ({
             }
             
             <Appbar.Content title={title} />
+
             {showEllipsis && (
                 <Appbar.Action icon="dots-vertical" onPress={onEllipsisPress} />
             )}
-            {
-                showPlus ? (
-                    <Appbar.Action icon="plus" onPress={onRightIconPress} />
-                ) : showEdit ? (
-                    <Appbar.Action icon="pencil" onPress={onRightIconPress} />
-                ) : showCheck ? (
-                    <Appbar.Action icon="check" onPress={onRightIconPress} />
-                ) : null
-            }
 
+            {(showPlus || showEdit || showCheck) && (
+                rightIconPermission ? (
+                    RightIconAnchor
+                ) : (
+                    <Menu
+                        visible={noPermVisible}
+                        onDismiss={() => setNoPermVisible(false)}
+                        anchor={RightIconAnchor}
+                        contentStyle={{
+                            paddingVertical: 6,
+                            paddingHorizontal: 10,
+                            borderRadius: 8,
+                        }}
+                    >
+                        <Text
+                            style={{
+                                color: theme.colors.onSurface,
+                                maxWidth: 220,
+                                lineHeight: 18
+                            }}
+                        >
+                            You don't have permission to perform this action.
+                        </Text>
+                    </Menu>
+                )
+            )}
         </Appbar.Header>
     );
 }
