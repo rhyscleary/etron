@@ -19,7 +19,7 @@ const WorkspaceDetails = () => {
 
     const [workspace, setWorkspace] = useState();
     const [loading, setLoading] = useState(false);
-    const [permission, setPermission] = useState(false);
+    const [editWorkspacePermission, setEditWorkspacePermission] = useState(false);
 
     useEffect(() => {
         (async () => {
@@ -35,7 +35,7 @@ const WorkspaceDetails = () => {
                 setLoading(false);
             }
 
-            setPermission(await hasPermission("app.workspace.update_workspace"));
+            setEditWorkspacePermission(await hasPermission("app.workspace.update_workspace"));
         })();
     }, []);
 
@@ -46,7 +46,7 @@ const WorkspaceDetails = () => {
                 showBack
                 showEdit
                 onRightIconPress={() => router.navigate("settings/workspace/edit-workspace-details")}
-                rightIconPermission={permission}
+                rightIconPermission={editWorkspacePermission}
             />}
 			center={false}
 			padded
