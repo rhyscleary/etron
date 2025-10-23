@@ -6,8 +6,7 @@
   "dependencies": {
     "axios": ">=1.6.0",
     "uuid": "^11.1.0",
-    "@etron/shared": "file:../../../shared/etron-shared-1.0.0.tgz",
-    "@etron/audit-shared": "file:../../../audit/audit-shared/etron-audit-shared-1.0.0.tgz"
+    "@etron/shared": "file:../../../shared/etron-shared-1.0.0.tgz"
   },
   "scripts": {},
   "main": "workspaceHandler.js",
