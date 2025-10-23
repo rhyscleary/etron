@@ -1,9 +1,13 @@
-# eTRON
+# Electronic Tracking Revenue and Operations Network
 
-THE FOLLOWING IS HOW TO INSTALL AND SET UP EVERYTHING NEEDED TO RUN OUR APPLICATION
+eTRON is an all-in-one affordable mobile solution for small to medium enterprises to aggregate and track business operations.
+It delivers a collaborative platform to use on the go. The modular design gives businesses many options to customise it to their needs.
+
+## The following is how to install and setup everything needed to run the application:
 
 # Setting up Development Environment
-## Install Apps
+## Frontend
+### Install Apps
 1. Install VSCode
 2. Install GitHub Desktop
     1. Link it to vscode
@@ -35,7 +39,7 @@ THE FOLLOWING IS HOW TO INSTALL AND SET UP EVERYTHING NEEDED TO RUN OUR APPLICAT
     7. Press "OK" to save it
     8. Can close all that now
 
-## Set up Environment
+### Set up Environment
 1. Download code
     1. Get copy of code into computer
 2. Install dependencies
@@ -54,6 +58,16 @@ THE FOLLOWING IS HOW TO INSTALL AND SET UP EVERYTHING NEEDED TO RUN OUR APPLICAT
     3. Make sure its "using development build", press s to swap to dev build if not
     4. Press 'a' to open with Android
     5. Let it build
+
+## Backend
+### Setup the Environment
+#### Install AWS SAM CLI
+Follow the tutorial to configure SAM for your environment:
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+
+Optional -
+Invoke the Lambda functions locally for testing (You will not be able to have them interact with the emulator for a full integration test): 
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-invoke.html
 
 
 # API Documentation
