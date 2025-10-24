@@ -72,4 +72,4 @@ https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/u
 
 # API Documentation
 We use Postman during devleopment to document our API endpoints.
-The Postman collection is available at https://insync-6111.postman.co/workspace/InSync-Workspace~dc1db447-258b-47ae-847e-38ad0486491f/collection/34328174-89ee0fd8-025e-4e8c-94df-96b04d71143b?action=share&creator=34328174
+The Postman collection is available at https://documenter.getpostman.com/view/34328174/2sB3Wjy3XW
