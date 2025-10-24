@@ -101,11 +101,10 @@ const Account = () => {
             return;
         }
 
-
         try {
             const workspaceId = await getWorkspaceId();
             const { userId } = await getCurrentUser();
-            try {  // Deletes user details from workspace
+            try {
                 await apiDelete(endpoints.workspace.users.remove(workspaceId, userId));
             } catch (error) {
                 console.error("Error deleting user details in workspace:", error);
@@ -113,8 +112,7 @@ const Account = () => {
             }
             await deleteUser();  // Deletes user from Cognito
             setDialogVisible(false);
-            router.dismissAll();
-            router.replace("/landing");
+            // _layout will automatically redirect to sign in page from here
         } catch (error) {
             console.error("Error deleting account: ", error);
         } finally {
