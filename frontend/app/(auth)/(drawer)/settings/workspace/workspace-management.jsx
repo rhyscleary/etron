@@ -41,6 +41,7 @@ const WorkspaceManagement = () => {
     const [isOwner, setIsOwner] = useState(false);
 
     const [tooltipFor, setTooltipFor] = useState([]);
+    const [loading, setLoading] = useState(false);
     
 
 
@@ -70,63 +71,68 @@ const WorkspaceManagement = () => {
     const [noPermBoardsVisible, setNoPermBoardsVisible] = useState(false);
 
     useEffect(() => {
-        async function fetchData() {
-            const workspaceId = await getWorkspaceId();
-            setWorkspaceId(workspaceId);
-
-            try {
-                const ownerCheck = await isOwnerRole();
-                setIsOwner(ownerCheck);
-            } catch (error) {
-                console.error("Error checking owner role:", error);
-                setIsOwner(false);
-            }
-
-            // filter menu buttons by permissions
-            const evaluatedMenuOptions = [];
-            for (const option of permissionButtonMap) {
-                const allowed = option.permKey ? await hasPermission(option.permKey) : true;
-
-                evaluatedMenuOptions.push({ ...option, allowed, key:option.label});
-            }
-            setMenuOptions(evaluatedMenuOptions);
-
-            if (!isOwner) return;
-
-            try {
-                const currentUser = await getCurrentUser();
-                const currentUserId = currentUser.userId;
-
-                const response = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
-                const users = response.data;
-
-                // filter out the current user (expected to be the current owner)
-                const filteredList = users.filter(user => user.userId !== currentUserId);
-                setUsers(filteredList);
-            } catch (error) {
-                console.error("Error loading users:", error);
-            }
-
-            // fetch workspace roles (excluding owner)
-            try {
-                const response = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
-                const roles = response.data;
-                const filteredList = roles.filter(role => !role.owner);
-                setRoles(filteredList);
-            } catch (error) {
-                console.error("Error fetching roles:", error);
-            }
-
-        }
         fetchData();
     }, []);
 
+    async function fetchData() {
+        const workspaceId = await getWorkspaceId();
+        setWorkspaceId(workspaceId);
+
+        let ownerCheck
+        try {
+            ownerCheck = await isOwnerRole();
+            setIsOwner(ownerCheck);
+        } catch (error) {
+            console.error("Error checking owner role:", error);
+            setIsOwner(false);
+        }
+
+        // filter menu buttons by permissions
+        const evaluatedMenuOptions = [];
+        for (const option of permissionButtonMap) {
+            const allowed = option.permKey ? await hasPermission(option.permKey) : true;
+
+            evaluatedMenuOptions.push({ ...option, allowed, key:option.label});
+        }
+        setMenuOptions(evaluatedMenuOptions);
+
+        if (!ownerCheck) return;
+
+        try {
+            const currentUser = await getCurrentUser();
+            const currentUserId = currentUser.userId;
+
+            const response = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
+            const users = response.data;
+
+            // filter out the current user (expected to be the current owner)
+            const filteredList = users.filter(user => user.userId !== currentUserId);
+            console.log("FilteredList:", filteredList);
+            setUsers(filteredList);
+        } catch (error) {
+            console.error("Error loading users:", error);
+        }
+
+        // fetch workspace roles (excluding owner)
+        try {
+            const response = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+            const roles = response.data;
+            const filteredList = roles.filter(role => !role.owner);
+            setRoles(filteredList);
+        } catch (error) {
+            console.error("Error fetching roles:", error);
+        }
+
+    }
+
     // DELETE WORKSPACE
     async function handleConfirmDeletion() {
+        setLoading(true);
         Keyboard.dismiss();
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
@@ -135,12 +141,14 @@ const WorkspaceManagement = () => {
         if (!validPassword) {
             setPasswordErrorMessage("The password entered is invalid.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
         if (workspaceId) {
             try {
                 await apiDelete(endpoints.workspace.core.delete(workspaceId));
+                setLoading(false);
                 closeDialog();
                 router.navigate("/workspace-choice");
             } catch (error) {
@@ -150,14 +158,17 @@ const WorkspaceManagement = () => {
 
         setPassword("");
         setPasswordError(false);
+        setLoading(false);
     }
 
     // TRANSFER OWNERSHIP
     async function handleConfirmTransfer() {
+        setLoading(true);
         Keyboard.dismiss();
         if (!password) {
             setPasswordErrorMessage("Please enter your password.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
@@ -167,10 +178,12 @@ const WorkspaceManagement = () => {
         if (!validPassword) {
             setPasswordErrorMessage("The password entered is invalid.");
             setPasswordError(true);
+            setLoading(false);
             return;
         }
 
         if (workspaceId && selectedUser) {
+            closeDialog();
             try {
                 // transfer ownership
                 console.log(selectedUser);
@@ -182,9 +195,8 @@ const WorkspaceManagement = () => {
                 };
 
                 const result = await apiPut(endpoints.workspace.core.transfer(workspaceId), transferPayload);
-
+                setLoading(false);
                 console.log("Ownership transferred:", result.data);
-                closeDialog();
             } catch (error) {
                 console.error("Error transfering ownership: ", error);
             }
@@ -192,6 +204,7 @@ const WorkspaceManagement = () => {
         
         setPassword("");
         setPasswordError(false);
+        setLoading(false);
     }
 
     function closeDialog() {
@@ -251,6 +264,7 @@ const WorkspaceManagement = () => {
 			header={<Header title="Workspace" showBack />}
 			center={false}
             scroll={true}
+            loadingOverlayActive={loading}
         >
             <StackLayout spacing={12}>
                 {menuOptions.map(renderOption)}

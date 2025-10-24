@@ -26,6 +26,7 @@ const CreateMetric = () => {
     const router = useRouter();
     const theme = useTheme();
 
+    const [loading, setLoading] = useState(false);
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
     const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
@@ -183,19 +184,14 @@ const CreateMetric = () => {
     }, []);
 
     const handleFinish = async () => {
-
-        //TODO: Upload metric pruned data
-
-        /*
-        try { await uploadPrunedData() } catch (error) {
-            console.log("Error uploading pruned data:", error);
-            return;
-        }*/
+        setLoading(true);
         try { await uploadMetricSettings() } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;
-        }  
-        
+        } finally {
+            setLoading(false);
+        }
+
         console.log("Form completed");
         router.navigate("/modules/day-book/metrics"); 
     }
@@ -484,6 +480,7 @@ const CreateMetric = () => {
 			center={false}
 			padded
             scroll={true}
+            loadingOverlayActive={loading}
 		>
             <View style={styles.content}>
                 {renderFormStep()}

@@ -16,6 +16,8 @@ import Header from '../../../../../../../components/layout/Header';
 const LocalCSV = () => {
     const [deviceFilePath, setDeviceFilePath] = useState(null);
     const [dataDetailsStatus, setDataDetailsStatus] = useState("unstarted");
+    const [loading, setLoading] = useState(false);
+
     const userSelectFile = async () => {
         try {
             setDataDetailsStatus("loading");
@@ -66,6 +68,7 @@ const LocalCSV = () => {
     }
 
     const createDataSource = async () => {
+        setLoading(true);
         const workspaceId = await getWorkspaceId();
         
         let dataSourceDetails = {
@@ -81,9 +84,11 @@ const LocalCSV = () => {
                 endpoints.modules.day_book.data_sources.addLocal,
                 dataSourceDetails
             );
+            setLoading(false);
             return result.data;
         } catch (error) {
             console.error("Error posting via endpoint:", error);
+            setLoading(false);
             return null;
         }
     }
@@ -115,6 +120,8 @@ const LocalCSV = () => {
         <>
             <ResponsiveScreen
                 header = {<Header title="Upload CSV" showBack />}
+                scroll = {true}
+                loadingOverlayActive={loading}
             >
                 <Button onPress={userSelectFile} title="Pick a CSV File" disabled={isUploadingData} />
             

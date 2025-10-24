@@ -1,6 +1,6 @@
 // Author(s): Rhys Cleary
 
-import { View, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity, Keyboard } from "react-native";
 import Header from "../../components/layout/Header";
 import { commonStyles } from "../../assets/styles/stylesheets/common";
 import { useRouter } from "expo-router";
@@ -61,6 +61,7 @@ const CreateWorkspace = () => {
     }
 
     async function handleCreate() {
+        Keyboard.dismiss();
         setCreating(true);
 
         const newErrors = {
@@ -137,6 +138,7 @@ const CreateWorkspace = () => {
                 backIcon="logout"
                 onBackPress={handleBackSignOut}
             />}
+            loadingOverlayActive={creating}
         >
             <View>
                 <TextField 

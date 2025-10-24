@@ -1,6 +1,6 @@
 // Author(s): Noah Bradley
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, use } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Header from "../../../../../../../components/layout/Header";
 import {
@@ -263,6 +263,7 @@ const EditMetric = () => {
 		    />}
             center={false} padded 
             tapToDismissKeyboard={false}
+            loadingOverlayActive={saving}
         >
             <DropDown
                 title="Data Source"

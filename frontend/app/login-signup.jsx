@@ -4,7 +4,7 @@ import { useRouter, Link, useLocalSearchParams } from "expo-router";
 import { Text, Snackbar, Portal, ActivityIndicator } from 'react-native-paper';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useState } from "react";
-import { View, Linking, Modal, TextInput, Keyboard, StyleSheet } from 'react-native';
+import { View, Linking, Modal, TextInput, Keyboard, StyleSheet, Pressable } from 'react-native';
 import TextField from '../components/common/input/TextField';
 import BasicButton from '../components/common/buttons/BasicButton';
 import { useTheme } from 'react-native-paper';
@@ -52,6 +52,8 @@ function LoginSignup() {
     const [loading, setLoading] = useState(false);
     const [socialLoading, setSocialLoading] = useState({ google: false, microsoft: false });
     const [signedOutForLinking, setSignedOutForLinking] = useState(!isLinking);
+    const [resendCooldown, setResendCooldown] = useState(0);
+    const [loadingNextPage, setLoadingNextPage] = useState(false);
 
     const router = useRouter();
     const theme = useTheme();
@@ -77,6 +79,12 @@ function LoginSignup() {
             }
         });
     }, [router, actions.login]);
+
+    useEffect(() => {
+        if (!showVerificationModal || resendCooldown <= 0) return;
+        const t = setTimeout(() => setResendCooldown((c) => Math.max(c - 1, 0)), 1000);
+        return () => clearTimeout(t);
+    }, [showVerificationModal, resendCooldown]);
 
     // Handle sign out for linking
     useEffect(() => {
@@ -244,7 +252,10 @@ function LoginSignup() {
             // Check if email confirmation still required
             if (!isSignedIn && nextStep.signInStep === "CONFIRM_SIGN_UP") {
                 setShowVerificationModal(true);
-                setResendCooldown(60);
+                if (resendCooldown === 0) {
+                    handleResend();
+                    setResendCooldown(60);
+                }
                 return;
             }
 
@@ -339,11 +350,12 @@ function LoginSignup() {
     };
 
     const handleConfirmCode = async () => {
+        setLoading(true);
+        setMessage('');
         const result = await accountService.completeSignUp(email, password, verificationCode);
         
         if (result.success) {
             setShowVerificationModal(false);
-            console.log("Confirmation successful! Please personalize your account.");
             
             if (isLinking) {
                 // If we're linking, navigate back to accounts after successful signup
@@ -352,6 +364,7 @@ function LoginSignup() {
                 }, 1000);
             }
         }
+        setLoading(false);
     };
 
     const handleToggleSignUp = () => {
@@ -386,7 +399,9 @@ function LoginSignup() {
     };
 
     return (
-        <ResponsiveScreen>
+        <ResponsiveScreen
+            loadingOverlayActive={loading}
+        >
             {(isLinking || fromAccountsBool) && (
                 <Header
                     title={isLinking ? "Link Account" : ""}
@@ -559,6 +574,16 @@ function LoginSignup() {
                                     style={{ marginLeft: 10 }}
                                 />
                             </View>
+                            <Pressable onPress={handleResend} disabled={resendCooldown > 0}>
+                                <Text
+                                    style={{
+                                        color: resendCooldown > 0 ? theme.colors.onSurfaceVariant : theme.colors.primary,
+                                        opacity: resendCooldown > 0 ? 0.5 : 1,
+                                    }}
+                                >
+                                    {resendCooldown > 0 ? `Resend Code (${resendCooldown}s)` : 'Resend Code'}
+                                </Text>
+                            </Pressable>
                         </View>
                     </View>
                 </Modal>
