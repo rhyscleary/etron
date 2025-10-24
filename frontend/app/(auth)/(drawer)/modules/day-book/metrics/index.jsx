@@ -6,7 +6,7 @@ import { View, Button, ActivityIndicator, ScrollView, TouchableOpacity, StyleShe
 import Header from "../../../../../../components/layout/Header.jsx";
 import { useRouter } from "expo-router";
 import { Text, useTheme, Card } from "react-native-paper";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage.jsx";
 import GraphTypes from "./graph-types.jsx";
 import endpoints from "../../../../../../utils/api/endpoints.js";
@@ -17,7 +17,6 @@ import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScre
 const MetricManagement = () => {
     const router = useRouter();
     const theme = useTheme();
-    const [metrics, setMetrics] = useState([]);
     const [metricsUser, setMetricsUser] = useState([]);
     const [metricsOther, setMetricsOther] = useState([]);
     const [loadingMetrics, setLoadingMetrics] = useState(true);
@@ -47,6 +46,18 @@ const MetricManagement = () => {
         setRefreshing(false);
     }, []);
 
+    const filteredUser = useMemo(() => {
+        const query = (searchQuery || "").trim().toLowerCase();
+        if (!query) return metricsUser;
+        return metricsUser.filter(metric => (metric.name ?? "").toLowerCase().includes(query));
+    }, [metricsUser, searchQuery]);
+
+    const filteredOther = useMemo(() => {
+        const query = (searchQuery || "").trim().toLowerCase();
+        if (!query) return metricsOther;
+        return metricsOther.filter(metric => (metric.name ?? "").toLowerCase().includes(query));
+    }, [metricsOther, searchQuery]);
+
     useEffect(() => {
         getWorkspaceMetrics();
     }, [])
@@ -67,7 +78,7 @@ const MetricManagement = () => {
         >
             <View style={{ flex: 1 }}>
                 <SearchBar 
-                    placeholder="Search boards"
+                    placeholder="Search metrics"
                     onSearch={setSearchQuery}
                 />
 
@@ -79,80 +90,91 @@ const MetricManagement = () => {
                     alwaysBounceVertical = {true}
                     overScrollMode = "always"
                 >
-                    <View style={{ paddingHorizontal: 20, gap: 30 }}>
-                        <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
-                            Created by you
-                        </Text>
-                        {loadingMetrics && <ActivityIndicator />}
-                        {metricCardList(loadingMetrics, metricsUser)}
+                    {loadingMetrics ? <ActivityIndicator size={"large"}/> :
+                        <View style={{ paddingHorizontal: 20, gap: 30 }}>
+                            <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
+                                Created by you
+                            </Text>
+                            <MetricCardList metrics={filteredUser} searchQuery={searchQuery} />
 
-                        <Divider/>
-                        
-                        <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
-                            Created by others
-                        </Text>
-                        {loadingMetrics && <ActivityIndicator />}
-                        {metricCardList(loadingMetrics, metricsOther)}
-                    </View>
+                            <Divider/>
+                            
+                            <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
+                                Created by others
+                            </Text>
+                            <MetricCardList metrics={filteredOther} searchQuery={searchQuery} />
+                        </View>
+                    }
                 </ScrollView>
             </View>
         </ResponsiveScreen>
     )
 }
 
-const metricCardList = (loadingMetrics, metrics) => {
+const MetricCardList = ({ metrics, searchQuery }) => {
     const theme = useTheme();
     const router = useRouter();
+
+    if (metrics.length === 0) {
+        const query = (searchQuery || "").trim();
+        return (
+            <Text style={{ color: theme.colors.onSurfaceVariant }}>
+                {query ? `No metrics found for "${query}".` : "No metrics to display."}
+            </Text>
+        );
+    }
+
     return (
         <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
-            {!loadingMetrics &&
-                metrics.map((metric) => {
-                    const previewImage = GraphTypes[metric.config.type]?.previewImage;
+            {metrics.map((metric) => {
+                const previewImage = GraphTypes[metric.config.type]?.previewImage;
 
-                    return (
-                        <TouchableOpacity
-                            key={metric.metricId}
+                return (
+                    <TouchableOpacity
+                        key={metric.metricId}
+                        style={{
+                            width: "48%"
+                        }}
+                        onPress={() =>
+                            router.navigate(`/modules/day-book/metrics/view-metric/${metric.metricId}`)
+                        }
+                    >
+                        <Card
                             style={{
-                                width: "48%"
+                                borderRadius: 5,
+                                padding: 10,
+                                overflow: "hidden"
                             }}
-                            onPress={() =>
-                                router.navigate(`/modules/day-book/metrics/view-metric/${metric.metricId}`)
-                            }
                         >
-                            <Card
+                            {previewImage && (
+                                <Card.Cover
+                                    source={previewImage}
+                                    style={{ height: 100, backgroundColor: theme.colors.placeholder, opacity: 0.5 }}
+                                />
+                            )}
+                            <Card.Content
                                 style={{
-                                    borderRadius: 5,
-                                    padding: 10,
-                                    overflow: "hidden"
+                                    position: "absolute",
+                                    bottom: 10
                                 }}
                             >
-                                {previewImage && (
-                                    <Card.Cover
-                                        source={previewImage}
-                                        style={{ height: 100, backgroundColor: theme.colors.placeholder, opacity: 0.5 }}
-                                    />
-                                )}
-                                <Card.Content
+                                <Text
                                     style={{
+                                        color: "white",
+                                        fontSize: 16,
+                                        fontWeight: "bold",
                                         position: "absolute",
-                                        bottom: 10
+                                        bottom: 10,
+                                        alignItems: "baseline"
                                     }}
                                 >
-                                    <Text
-                                        style={{
-                                            color: "white",
-                                            fontSize: 16,
-                                            fontWeight: "bold",
-                                        }}
-                                    >
-                                        {metric.name}
-                                    </Text>
-                                </Card.Content>
-                            </Card>
-                        </TouchableOpacity>
-                    );
-                })
-            }
+                                    {metric.name}
+                                </Text>
+                            </Card.Content>
+                        </Card>
+                    </TouchableOpacity>
+                );
+            })}
         </View>
     )
 }

@@ -66,7 +66,6 @@ const Settings = () => {
                 <Header title="Workspace Settings" showMenu />
             }
             center={false}
-            padded={false}
             scroll={true}
         >
             <StackLayout spacing={12}>

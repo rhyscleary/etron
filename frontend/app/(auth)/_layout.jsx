@@ -4,16 +4,15 @@ import { useAuthenticator } from '@aws-amplify/ui-react-native';
 import { fetchAuthSession, fetchUserAttributes, getCurrentUser, signOut, updateUserAttributes } from 'aws-amplify/auth';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useVerification } from '../../contexts/VerificationContext';
-import { getWorkspaceId } from '../../storage/workspaceStorage';
-import { saveUserInfo } from '../../storage/userStorage';
+import { getWorkspaceId, saveWorkspaceInfo } from '../../storage/workspaceStorage';
+import { saveUserInfo, removeWorkspaceInfo } from '../../storage/userStorage';
 import { saveRole, getRole, getPermissions } from '../../storage/permissionsStorage';
 import { apiGet } from '../../utils/api/apiClient';
 import endpoints from '../../utils/api/endpoints';
 
 export default function AuthLayout() {
     const { authStatus } = useAuthenticator();
-    const { verifyingPassword } = useVerification();// temp until backend
-    // const [checked, setChecked] = useState(false);
+    const { verifyingPassword } = useVerification();
 
     const setHasWorkspaceAttribute = async (value) => {
         try {
@@ -28,6 +27,7 @@ export default function AuthLayout() {
     }
 
     const checkWorkspaceExists = async () => {
+        console.log("checking if workspace exists");
         let hasWorkspaceAttribute = null;
         try {
             const userAttributes = await fetchUserAttributes();
@@ -52,9 +52,8 @@ export default function AuthLayout() {
 
             let workspace;
             try {
-                workspace = await apiGet(
-                    endpoints.workspace.core.getByUserId(userId)
-                );
+                const result = await apiGet(endpoints.workspace.core.getByUserId(userId));
+                workspace = result.data;
             } catch (error) {
                 if (error.message.includes("Workspace not found")) {
                     console.log("No workspace yet, resetting attribute...");
@@ -70,17 +69,8 @@ export default function AuthLayout() {
                 return false;
             }
             
-            if (workspace.data?.workspaceId) {
-                console.log("WorkspaceId received from server:", workspace.data.workspaceId);
-
-                // Save user's role details
-                try {
-                    const userRole = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspace.data.workspaceId));
-                    await saveRole(userRole.data);
-                } catch (error) {
-                    console.error("Error saving user's role details into local storage:", error);
-                }      
-
+            if (workspace.workspaceId) {
+                console.log("WorkspaceId received from server:", workspace.workspaceId);
                 return true;
             }
 
@@ -99,84 +89,78 @@ export default function AuthLayout() {
             const hasGivenName = userAttributes["given_name"];
             const hasFamilyName = userAttributes["family_name"];
 
-            // Save user's info into local storage
-            const workspaceId = await getWorkspaceId();
-            try {
-                const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
-                await saveUserInfo(userInfo);  // Saves into local storage
-            } catch (error) {
-                console.error("Error saving user info into storage:", error);
-            }
-
             // if the name attributes don't exist, return false
-            if (!hasGivenName || !hasFamilyName) {
-                return false;
+            if (hasGivenName && hasFamilyName) {
+                return true;
             }
     
-            return true;
+            return false;
         } catch (error) {
             console.error("Error fetching user attributes:", error);
             return false;
         }
     }
 
-    const saveUserInfoIntoStorage = async() => {
+    const saveInfoIntoStorage = async() => {
         const workspaceId = await getWorkspaceId();
         const userAttributes = await fetchUserAttributes();
         try {
-            const userInfo = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
-            await saveUserInfo(userInfo.data);  // Saves into local storage
+            const result = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
+            await saveUserInfo(result.data);  // Saves into local storage
         } catch (error) {
             console.error("Error saving user info into storage:", error);
+        }
+
+        try {
+            const result = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
+            await saveRole(result.data);
+        } catch (error) {
+            console.error("Error saving user's role details into local storage:", error);
+        }
+        
+        try {
+            const result = await apiGet(endpoints.workspace.core.getByUserId(userAttributes.sub));
+            await saveWorkspaceInfo(result.data);
+        } catch (error) {
+            console.error("Error saving workspace info into storage:", error);
+        }
+    }
+
+    const checkAuthStatus = async () => {
+        console.log("(AuthLayout) Auth status:", authStatus);
+
+        if (authStatus === 'authenticated') {
+            const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
+            if (!personalDetailsExists) {
+                router.replace("/(auth)/personalise-account");
+                return;
+            }
+
+            const workspaceExists = await checkWorkspaceExists().catch(() => false);
+            if (!workspaceExists) {
+                router.replace("/(auth)/workspace-choice")
+                return;
+            }
+            
+            saveInfoIntoStorage();
+            router.replace("/(auth)/dashboard")
+        } else if (authStatus === `configuring`) {
+            console.log("Auth status configuring...")
+        } else {
+            if (!verifyingPassword) {  // temp until backend
+                console.log("Redirecting to root page.");
+                if (router.canDismiss()) router.dismissAll();
+                router.replace('/landing');
+            } else {
+                console.log("Paused redirect due to verifying password.");
+            }
         }
     }
 
     useEffect(() => {
-        //if (checked) return;
+        checkAuthStatus();
+    }, [authStatus, verifyingPassword]);
 
-        const loadLayout = async () => {
-            console.log("(AuthLayout) Auth status:", authStatus);
-
-            if (authStatus === 'authenticated') {
-                const workspaceExists = await checkWorkspaceExists().catch(() => false);
-                const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
-
-                saveUserInfoIntoStorage();
-
-                if (!workspaceExists && !personalDetailsExists) {
-                    await unloadProfilePhoto();
-                    console.log("User authenticated but no workspace or personal details found. Redirecting to personalise account page...");
-                    router.replace("/(auth)/personalise-account");
-                } else if (!workspaceExists) {
-                    console.log("User authenticated but no workspace found. Redirecting to workspace choice page...");
-                    router.replace("/(auth)/workspace-choice");
-                } else {
-                    saveUserInfoIntoStorage();
-                    console.log("User authenticated, has workspace, and has personal details. Redirecting to workspace dashboard...");
-                    router.replace("/(auth)/dashboard")
-                }
-
-            } else if (authStatus === `configuring`) {
-                console.log("Auth status configuring...")
-            } else {
-                if (!verifyingPassword) {  // temp until backend
-                    console.log("Redirecting to root page.");
-                    if (router.canDismiss()) router.dismissAll();
-                    router.replace('/landing');
-                } else {
-                    console.log("Paused redirect due to verifying password.");
-                }
-            }
-
-            //setChecked(true);
-        }
-        loadLayout();
-
-     }, [authStatus, verifyingPassword]); // temp until backend
-
-     /*if (!checked) {
-        return <ActivityIndicator size="large" />
-     }*/
 
     return (         
         <>

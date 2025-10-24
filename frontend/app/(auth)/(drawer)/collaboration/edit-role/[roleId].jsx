@@ -2,7 +2,7 @@
 
 import { View, StyleSheet, Alert } from "react-native";
 import Header from "../../../../../components/layout/Header";
-import { ActivityIndicator, Card, Checkbox, Chip, List, Snackbar, Text, Portal } from "react-native-paper";
+import { ActivityIndicator, Card, Checkbox, Chip, List, Snackbar, Text, Portal, Dialog, Button } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
@@ -14,6 +14,7 @@ import TextField from "../../../../../components/common/input/TextField";
 import ItemNotFound from "../../../../../components/common/errors/MissingItem";
 import StackLayout from "../../../../../components/layout/StackLayout";
 
+const MANAGE_ROLES = "app.collaboration.manage_roles";
 
 function buildPermissionGroups(tree) {
 	const permissionGroups = [];
@@ -64,7 +65,7 @@ export default function EditRole() {
 	const { roleId } = useLocalSearchParams();
 
 	const [workspaceId, setWorkspaceId] = useState(null);
-	const [loading, setLoading] = useState(false);
+	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 
 	const [notFound, setNotFound] = useState(false);
@@ -79,6 +80,8 @@ export default function EditRole() {
 	const [boards, setBoards] = useState([]);
 
 	const [openAccordions, setOpenAccordions] = useState({});
+	const [currentUserRoleId, setCurrentUserRoleId] = useState(null);
+	const [confirmSelfLock, setConfirmSelfLock] = useState(false);
 
 	const initialRef = useRef({ name: "", perms: [], boards: [] });
 
@@ -121,6 +124,7 @@ export default function EditRole() {
 				return;
 			}
 			setRole(role);
+			console.log("Role:", role);
 
 			result = await apiGet(endpoints.workspace.core.getDefaultPermissions);
 			const allCategories = buildPermissionGroups(result.data);
@@ -128,6 +132,13 @@ export default function EditRole() {
 			
 			result = await apiGet(endpoints.workspace.boards.getBoards(workspaceId));
 			setBoards(result.data);
+
+			try {
+				result = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspaceId));
+				setCurrentUserRoleId(result.data.roleId);
+			} catch (error) {
+				console.warn("Could not determine current user's role:", error);
+			}
 
 			const initialName = role.name;
 			const initialPerms = role.permissions;
@@ -169,9 +180,22 @@ export default function EditRole() {
 		);
 	};
 
+	const willSelfLoseManageRoles = useMemo(() => {
+		if (!currentUserRoleId) return false;
+		if (currentUserRoleId !== roleId) return false;
+		const hadManage = (initialRef.current.perms).includes(MANAGE_ROLES);
+		const willHaveManage = selectedPerms.includes(MANAGE_ROLES);
+		return hadManage && !willHaveManage;
+	}, [currentUserRoleId, roleId, selectedPerms]);
+
 
 	const handleSave = async () => {
 		try {
+			if (willSelfLoseManageRoles) {
+				setConfirmSelfLock(true);
+				return;
+			}
+			
 			setSaving(true);
 			await apiPatch(endpoints.workspace.roles.update(workspaceId, roleId), {
 				name: name.trim(),
@@ -193,6 +217,27 @@ export default function EditRole() {
 		} finally {
 			setSaving(false);
 		}
+	};
+
+	const confirmProceedSelfLock = async () => {
+		setConfirmSelfLock(false);
+		await (async () => {
+		try {
+			setSaving(true);
+			await apiPatch(endpoints.workspace.roles.update(workspaceId, roleId), {
+				name: name.trim(),
+				permissions: selectedPerms,
+				hasAccess: { boards: selectedBoards },
+			});
+			initialRef.current = { name: name.trim(), perms: selectedPerms, boards: selectedBoards };
+			setSnack({ visible: true, text: "Role updated" });
+		} catch (error) {
+			console.error("Error saving role (confirmed):", error);
+			setSnack({ visible: true, text: "Failed to save role" });
+		} finally {
+			setSaving(false);
+		}
+		})();
 	};
 
 	const handleBack = async () => {
@@ -238,6 +283,11 @@ export default function EditRole() {
 					listRoute="/collaboration/roles"
 				/>
 			) : (<StackLayout>
+				{willSelfLoseManageRoles && (
+					<Chip icon="alert" style={{ marginBottom: 16 }} selected>
+						You're removing your own “Manage Roles” permission.
+					</Chip>
+				)}
 				<Card style={styles.card}>
 					<TextField
 						label="Role Name"
@@ -247,93 +297,95 @@ export default function EditRole() {
 					/>
 				</Card>
 
-				<Card style={styles.card}>
-					<Card.Title title="Board Access"/>
-					<Card.Content>
-					{boards.length > 0 ? (
-						<View style={styles.chipsWrap}>
-							{boards.map((board) => {
-								const active = selectedBoards.includes(board.boardId);
-								return (
-									<Chip
-										key={board.boardId}
-										mode={active ? "flat" : "outlined"}
-										selected={active}
-										onPress={() => toggleBoard(board.boardId)}
-										style={styles.chip}
-									>
-										{board.name}
-									</Chip>
-								);
-							})}
-						</View>
-					) : (
-						<Text>The workspace has no boards.</Text>
-					)}
-					</Card.Content>
-				</Card>
-
-				<Card style={styles.card}>
-					<Card.Title title={`Permissions (${selectedPerms.length})`} />
-					<Card.Content>
-						{Object.entries(permissions.reduce((acc, category) => {
-							(acc[category.section] ||= []).push(category);
-							return acc;
-						}, {})).map(([sectionLabel, categories]) => (
-							<View key={sectionLabel} style={{ marginBottom: 8 }}>
-								<Text style={{ marginBottom: 6 }}>{sectionLabel}</Text>
-
-								{categories.map((category) => {
-									const open = !!openAccordions[category.categoryKey];
-									const keys = category.permissions.map((permission) => permission.key);
-									const allSelected = keys.every((key) => selectedPerms.includes(key));
-
-									const handleBulkToggle = () => {
-										if (allSelected) setSelectedPerms(prev => prev.filter(key => !keys.includes(key)));
-										else setSelectedPerms(prev => Array.from(new Set([...prev, ...keys])));
-									};
-
+				{!role.owner && (<>
+					<Card style={styles.card}>
+						<Card.Title title="Board Access"/>
+						<Card.Content>
+						{boards.length > 0 ? (
+							<View style={styles.chipsWrap}>
+								{boards.map((board) => {
+									const active = selectedBoards.includes(board.boardId);
 									return (
-										<View key={category.categoryKey} style={{ marginBottom: 6 }}>
-											<List.Accordion
-												title={category.categoryLabel}
-												expanded={open}
-												onPress={() => setOpenAccordions(s => ({ ...s, [category.categoryKey]: !s[category.categoryKey] }))}
-											>
-												<View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
-													<Chip compact onPress={handleBulkToggle}>
-														{allSelected ? 'Clear' : 'Select All'}
-													</Chip>
-												</View>
-
-												<View style={{ paddingLeft: 4 }}>
-													{category.permissions.map(perm => {
-														const checked = selectedPerms.includes(perm.key);
-														return (
-															<Checkbox.Item
-																key={perm.key}
-																status={checked ? 'checked' : 'unchecked'}
-																onPress={() => setSelectedPerms(prev => checked ? prev.filter(k => k !== perm.key) : [...prev, perm.key] )}
-																label={perm.label}
-																position="leading"
-																labelVariant="bodyMedium"
-																description={perm.description || undefined}
-															/>
-														);
-													})}
-												</View>
-											</List.Accordion>
-										</View>
+										<Chip
+											key={board.boardId}
+											mode={active ? "flat" : "outlined"}
+											selected={active}
+											onPress={() => toggleBoard(board.boardId)}
+											style={styles.chip}
+										>
+											{board.name}
+										</Chip>
 									);
 								})}
 							</View>
-						))}
-
-						{permissions.length === 0 && (
-							<Text>No available permissions.</Text>
+						) : (
+							<Text>The workspace has no boards.</Text>
 						)}
-					</Card.Content>
-				</Card>
+						</Card.Content>
+					</Card>
+
+					<Card style={styles.card}>
+						<Card.Title title={`Permissions (${selectedPerms.length})`} />
+						<Card.Content>
+							{Object.entries(permissions.reduce((acc, category) => {
+								(acc[category.section] ||= []).push(category);
+								return acc;
+							}, {})).map(([sectionLabel, categories]) => (
+								<View key={sectionLabel} style={{ marginBottom: 8 }}>
+									<Text style={{ marginBottom: 6 }}>{sectionLabel}</Text>
+
+									{categories.map((category) => {
+										const open = !!openAccordions[category.categoryKey];
+										const keys = category.permissions.map((permission) => permission.key);
+										const allSelected = keys.every((key) => selectedPerms.includes(key));
+
+										const handleBulkToggle = () => {
+											if (allSelected) setSelectedPerms(prev => prev.filter(key => !keys.includes(key)));
+											else setSelectedPerms(prev => Array.from(new Set([...prev, ...keys])));
+										};
+
+										return (
+											<View key={category.categoryKey} style={{ marginBottom: 6 }}>
+												<List.Accordion
+													title={category.categoryLabel}
+													expanded={open}
+													onPress={() => setOpenAccordions(s => ({ ...s, [category.categoryKey]: !s[category.categoryKey] }))}
+												>
+													<View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
+														<Chip compact onPress={handleBulkToggle}>
+															{allSelected ? 'Clear' : 'Select All'}
+														</Chip>
+													</View>
+
+													<View style={{ paddingLeft: 4 }}>
+														{category.permissions.map(perm => {
+															const checked = selectedPerms.includes(perm.key);
+															return (
+																<Checkbox.Item
+																	key={perm.key}
+																	status={checked ? 'checked' : 'unchecked'}
+																	onPress={() => setSelectedPerms(prev => checked ? prev.filter(k => k !== perm.key) : [...prev, perm.key] )}
+																	label={perm.label}
+																	position="leading"
+																	labelVariant="bodyMedium"
+																	description={perm.description || undefined}
+																/>
+															);
+														})}
+													</View>
+												</List.Accordion>
+											</View>
+										);
+									})}
+								</View>
+							))}
+
+							{permissions.length === 0 && (
+								<Text>No available permissions.</Text>
+							)}
+						</Card.Content>
+					</Card>
+				</>)}
 			</StackLayout>)}
 
 			<Portal>
@@ -349,6 +401,20 @@ export default function EditRole() {
 				>
 					{snack.text}
 				</Snackbar>
+
+				<Dialog visible={confirmSelfLock} onDismiss={() => setConfirmSelfLock(false)}>
+					<Dialog.Icon icon="shield-alert" />
+					<Dialog.Title>Remove your own ability to manage roles?</Dialog.Title>
+					<Dialog.Content>
+						<Text>
+							You’re removing the “Manage Roles” permission from the role you currently hold. After saving, you won't able to continue editing roles.
+						</Text>
+					</Dialog.Content>
+					<Dialog.Actions>
+						<Button onPress={() => setConfirmSelfLock(false)}>Cancel</Button>
+						<Button onPress={confirmProceedSelfLock} textColor="#b00020">Proceed</Button>
+					</Dialog.Actions>
+				</Dialog>
 			</Portal>
 		</ResponsiveScreen>
 	);

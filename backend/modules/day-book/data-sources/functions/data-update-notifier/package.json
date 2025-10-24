@@ -1,0 +1,15 @@
+{
+  "name": "data-update-notifier",
+  "version": "1.0.0",
+  "description": "The backend for eTRON's data update notifier function",
+  "author": "InSync",
+  "dependencies": {
+    "axios": ">=1.6.0",
+    "uuid": "^11.1.0",
+    "@etron/day-book-shared": "file:../../../day-book-shared/etron-day-book-shared-1.0.0.tgz"
+  },
+  "scripts": {},
+  "main": "dataUpdateHandler.js",
+  "keywords": [],
+  "license": "ISC"
+}

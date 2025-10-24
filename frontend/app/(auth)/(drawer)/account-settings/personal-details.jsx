@@ -1,28 +1,31 @@
 // Author(s): Holly Wyatt, Noah Bradley, Rhys Cleary
 
-import { useEffect, useState } from "react";
-import { commonStyles } from '../../../../assets/styles/stylesheets/common';
-import Header from '../../../../components/layout/Header';
+import { useEffect, useMemo, useState } from "react";
+import { View, ActivityIndicator, Keyboard } from "react-native";
+import { Text, useTheme, Snackbar, Portal } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Header from "../../../../components/layout/Header";
 import StackLayout from "../../../../components/layout/StackLayout";
 import TextField from "../../../../components/common/input/TextField";
 import BasicButton from "../../../../components/common/buttons/BasicButton";
-import { Text, useTheme } from "react-native-paper";
-import { View, Button, ActivityIndicator } from "react-native";
+import AvatarButton from "../../../../components/common/buttons/AvatarButton";
+import { commonStyles } from "../../../../assets/styles/stylesheets/common";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { Buffer } from 'buffer';
-import { apiPut} from "../../../../utils/api/apiClient";
+import { Buffer } from "buffer";
+import { apiPut } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
-import { router } from 'expo-router';
-
+import { router } from "expo-router";
 import {
-    fetchUserAttributes,
-    updateUserAttribute,
-    confirmUserAttribute,
-    getCurrentUser
-} from 'aws-amplify/auth';
-import { loadProfilePhoto, removeProfilePhotoFromLocalStorage, uploadProfilePhoto, getPhotoFromDevice, saveProfilePhoto } from "../../../../utils/profilePhoto";
-import AvatarButton from "../../../../components/common/buttons/AvatarButton";
+  fetchUserAttributes,
+  getCurrentUser,
+} from "aws-amplify/auth";
+import {
+  loadProfilePhoto,
+  removeProfilePhotoFromLocalStorage,
+  getPhotoFromDevice,
+  saveProfilePhoto,
+} from "../../../../utils/profilePhoto";
 import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import UnsavedChangesDialog from "../../../../components/overlays/UnsavedChangesDialog";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
@@ -31,26 +34,32 @@ global.Buffer = global.Buffer || Buffer
 
 const PersonalDetails = () => {
     const theme = useTheme();
+    const insets = useSafeAreaInsets();
 
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
     const [phoneNumber, setPhoneNumber] = useState("");
+    const [profilePhotoUri, setProfilePhotoUri] = useState(null);
+
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
-    const [message, setMessage] = useState("");
-    const [confirmationCode, setConfirmationCode] = useState("");
-    const [needsPhoneConfirmation, setNeedsPhoneConfirmation] = useState(false);
-    const [isLoadingPhoto, setIsLoadingPhoto] = useState(false);
-    const [profilePhotoUri, setProfilePhotoUri] = useState(null);
+
     const [photoChanged, setPhotoChanged] = useState(false);
     const [originalData, setOriginalData] = useState({});
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+
     const [errors, setErrors] = useState({
         firstName: false,
         lastName: false,
         phoneNumber: false,
     })
+
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+
+    const [snack, setSnack] = useState({
+        visible: false,
+        text: "",
+    });
 
     useEffect(() => {
         loadProfileData();
@@ -60,32 +69,31 @@ const PersonalDetails = () => {
         setLoading(true);
         try {
             const userAttributes = await fetchUserAttributes();
-            console.log("User Attributes:", userAttributes);
             
-            setFirstName(userAttributes.given_name || "");
-            setLastName(userAttributes.family_name || "");
-            // remove country code from phone number
-            const phoneNumber = userAttributes.phone_number || "";
-            const cleanPhone = phoneNumber.startsWith('+61') ? 
-                phoneNumber.substring(3) : phoneNumber;
+            const given = userAttributes.given_name || "";
+            const family = userAttributes.family_name || "";
+            const rawPhone = userAttributes.phone_number || "";
+            const cleanPhone = rawPhone.startsWith("+61") ? rawPhone.substring(3) : rawPhone;
+
+            const photo = await loadProfilePhoto();
+            
+            setFirstName(given);
+            setLastName(family);
             setPhoneNumber(cleanPhone);
+            setProfilePhotoUri(photo || null);
 
-            const profilePhotoUri = await loadProfilePhoto();
-            setProfilePhotoUri(profilePhotoUri || null);
-
-            // set original values
             setOriginalData({
-                firstName: userAttributes.given_name || "",
-                lastName: userAttributes.family_name || "",
-                phoneNumber: cleanPhone || "",
-                profilePhotoUri: profilePhotoUri || null
+                firstName: given,
+                lastName: family,
+                phoneNumber: cleanPhone,
+                profilePhotoUri: photo || null,
             });
-            
         } catch (error) {
             console.error("Error loading personal details: ", error);
-            setMessage("Error loading personal details");
+            setSnack({ visible:true, text:"Error loading personal details"});
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }
 
     // Function for uploading photo to S3
@@ -96,11 +104,11 @@ const PersonalDetails = () => {
             setPhotoChanged(true);
         } catch (error) {
             console.error("Error uploading photo s3:", error.message);
+            setSnack({ visible: true, text: "Could not pick a photo" });
         }
-    }
+    };
 
     const handleRemovePhoto = () => {
-        // this will show initials
         setProfilePhotoUri(null);
         setPhotoChanged(true);
     };
@@ -114,42 +122,30 @@ const PersonalDetails = () => {
         setHasUnsavedChanges(changed);
     }, [firstName, lastName, phoneNumber, profilePhotoUri, originalData]);
 
+    const phoneValid = !phoneNumber || (phoneNumber.length >= 9 && phoneNumber.length <= 10);
 
-    // TODO: change this to whatever toast/alert method we're using
-    /*async function handleConfirmPhoneNumber(userAttributeKey, confirmationCode) {
-        try {
-            await confirmUserAttribute({ userAttributeKey, confirmationCode });
-            setMessage("Phone number confirmation successful");
-            setNeedsPhoneConfirmation(false);
-            setConfirmationCode("");
-        } catch (error) {
-            console.error("Error confirming user attribute:", error);
-            setMessage(`Error confirming phone number: ${error.message}`);
-        }
-    }*/
+    const canSave = useMemo(() => {
+        const requiredOk = firstName.trim().length > 0 && lastName.trim().length > 0;
+        return !updating && hasUnsavedChanges && requiredOk && phoneValid;
+    }, [updating, hasUnsavedChanges, firstName, lastName, phoneValid]);
 
     async function handleUpdate() {
-        // Initialise the beginning of the update process
-        setMessage("");
-        setUpdating(true);
-        
-        // Array of potential errors; false unless there's an error
+        Keyboard.dismiss();
+
         const newErrors = {
-            firstName: !firstName.trim(), // True (error) if empty
+            firstName: !firstName.trim(),
             lastName: !lastName.trim(),
-            phoneNumber: phoneNumber && (phoneNumber.length < 9 || phoneNumber.length > 10),
+            phoneNumber: !phoneValid,
         };
         setErrors(newErrors);
 
-        // Stops update if any errors are present
         if (Object.values(newErrors).some(Boolean)) {
-            setUpdating(false);
+            setSnack({ visible: true, text: "Please fix the highlighted fields" });
             return;
         }
         
-        // Performs updates
+        setUpdating(true);
         try {
-            // Goes through each potential update, adding them to a json list if changed
             const updateData = {};
 
             if (firstName.trim() !== originalData.firstName) {
@@ -175,9 +171,8 @@ const PersonalDetails = () => {
                 }
             }
 
-            // If there are no changed fields, don't update anything
             if (Object.keys(updateData).length === 0) {
-                setMessage("There are no changed fields to update");
+                setSnack({ visible: true, text: "No changes to update" });
                 setUpdating(false);
                 return;
             }
@@ -185,42 +180,27 @@ const PersonalDetails = () => {
             let workspaceId = await getWorkspaceId();
             let { userId } = await getCurrentUser();
             
-            await apiPut(
-                endpoints.user.core.updateUser(userId, workspaceId),
-                updateData
-            );
+            await apiPut(endpoints.user.core.updateUser(userId, workspaceId), updateData);
 
             setOriginalData({
-                firstName,
-                lastName,
-                phoneNumber,
-                profilePhotoUri
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+                phoneNumber: phoneNumber.trim(),
+                profilePhotoUri,
             });
             setPhotoChanged(false);
-            setMessage("Personal details updated successfully");
+            setSnack({ visible: true, text: "Personal details updated" });
         } catch (error) {
             console.error("Error updating personal details: ", error);
-            setMessage(`Error updating personal details: ${error.message}`);
+            setSnack({ visible: true, text: "Update failed" });
+        } finally {
+            setUpdating(false);
         }
-
-        setUpdating(false);
-    }
-
-    // Handles the confirmation code for updating phone number
-    async function handlePhoneConfirmation() {
-        if (!confirmationCode.trim()) {
-            setMessage("Please enter the confirmation code");
-            return;
-        }
-        await handleConfirmPhoneNumber("phone_number", confirmationCode);
     }
 
     function handleBackPress() {
-        if (hasUnsavedChanges) {
-            setShowUnsavedDialog(true);
-        } else {
-            router.back();
-        }
+        if (hasUnsavedChanges) setShowUnsavedDialog(true);
+        else router.back();
     }
 
     function handleDiscardChanges() {
@@ -230,7 +210,14 @@ const PersonalDetails = () => {
 
     return (
         <ResponsiveScreen
-            header = {<Header title="Personal Details" showBack onBackPress={handleBackPress}/>}
+            header = {<Header
+                title="Personal Details"
+                showBack
+                showCheck={canSave}
+                onBackPress={handleBackPress}
+                onRightIconPress={handleUpdate}
+            />}
+            center={false}
         >
             { loading ? (
                 <View style={commonStyles.centeredContainer}>
@@ -249,18 +236,17 @@ const PersonalDetails = () => {
                                 onPress={handleUploadPhoto}
                             />
                         </View>
-                        <Button title="Remove Photo" onPress={handleRemovePhoto} />
+                        <BasicButton label="Remove Photo" mode="outlined" onPress={handleRemovePhoto} />
 
                         <TextField 
                             label="First Name"
                             value={firstName}
                             placeholder="First Name"
                             textContentType="givenName"
+                            error={errors.firstName}
                             onChangeText={(text) => {
                                 setFirstName(text);
-                                if (text.trim()) {
-                                    setErrors((prev) => ({ ...prev, first: false }));
-                                }
+                                if (text.trim()) setErrors((prev) => ({ ...prev, first: false }));
                             }}
                         />
                         {errors.firstName && (
@@ -272,11 +258,10 @@ const PersonalDetails = () => {
                             value={lastName}
                             textContentType="familyName"
                             placeholder="Last Name"
+                            error={errors.lastName}
                             onChangeText={(text) => {
                                 setLastName(text);
-                                if (text.trim()) {
-                                    setErrors((prev) => ({ ...prev, last: false }));
-                                }
+                                if (text.trim()) setErrors((prev) => ({ ...prev, last: false }));
                             }}
                         />
                         {errors.lastName && (
@@ -290,58 +275,57 @@ const PersonalDetails = () => {
                             maxLength={10}
                             keyboardType="numeric"
                             textContentType="telephoneNumber"
+                            error={errors.phoneNumber}
                             onChangeText={(text) => {
                                 setPhoneNumber(text);
-                                if (text.length >= 9 && text.length <= 10) {
-                                    setErrors((prev) => ({ ...prev, phoneNumber: false }));
-                                }
+                                if (text.length >= 9 && text.length <= 10) setErrors((prev) => ({ ...prev, phoneNumber: false }));
                             }}
                         />
                         {errors.phoneNumber && (
                             <Text style={{ color: theme.colors.error }}>Phone number must be 9-10 digits</Text>
                         )}
-
-                        {needsPhoneConfirmation && (
-                            <>
-                                <TextField 
-                                    label="Phone Confirmation Code"
-                                    value={confirmationCode}
-                                    placeholder="Confirmation Code"
-                                    keyboardType="numeric"
-                                    onChangeText={setConfirmationCode}
-                                />
-                                <BasicButton 
-                                    label="Confirm Phone Number" 
-                                    onPress={handlePhoneConfirmation}
-                                />
-                            </>
-                        )}
                     </StackLayout>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'center'}}>
-                        {message && (
-                            <View style={{ marginTop: 20, paddingHorizontal: 20 }}>
-                                <Text style={{ 
-                                    color: message.includes('Error') || message.includes('error') ? 
-                                        theme.colors.error : theme.colors.primary,
-                                    textAlign: 'center'
-                                }}>
-                                    {message}
-                                </Text>
-                            </View>
-                        )}
-                        <View style={commonStyles.inlineButtonContainer}>
-                            <BasicButton 
-                                label={updating ? "Updating..." : "Update"} 
-                                onPress={handleUpdate}
-                                disabled={updating}
-                            />
-                        </View>
-                    </View>
-
-                    
                 </View>
             )}
+
+            <Portal>
+                <Snackbar
+                    visible={snack.visible}
+                    onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
+                    duration={2200}
+                    wrapperStyle={{
+                        bottom: (insets?.bottom ?? 0) + 12,
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                    style={{
+                        alignSelf: "center",
+                        maxWidth: 520,
+                        width: "90%",
+                    }}
+                >
+                    {snack.text}
+                </Snackbar>
+
+                {updating && (
+                    <View
+                        pointerEvents="auto"
+                        style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: "rgba(0,0,0,0.25)",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 1000,
+                        }}
+                    >
+                        <ActivityIndicator size="large" />
+                    </View>
+                )}
+            </Portal>
 
             <UnsavedChangesDialog
                 visible={showUnsavedDialog}

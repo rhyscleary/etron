@@ -1,6 +1,6 @@
 // Author(s): Noah Bradley
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, use } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Header from "../../../../../../../components/layout/Header";
 import {
@@ -42,7 +42,6 @@ const EditMetric = () => {
 	const [dataSourceMappings, setDataSourceMappings] = useState([]);
 	const [loadingSources, setLoadingSources] = useState(true);
 
-	const [metricSettings, setMetricSettings] = useState(null);
 	const [loadingMetric, setLoadingMetric] = useState(true);
 
 	const [metricName, setMetricName] = useState("");
@@ -103,7 +102,6 @@ const EditMetric = () => {
 				const workspaceId = await getWorkspaceId();
 				const metricRes = await apiGet(endpoints.modules.day_book.metrics.getMetric(metricId), { workspaceId });
 				const metric = metricRes.data;
-				setMetricSettings(metric);
 
 				// Seed UI with existing metric config
 				setMetricName(metric.name || "");
@@ -265,6 +263,7 @@ const EditMetric = () => {
 		    />}
             center={false} padded 
             tapToDismissKeyboard={false}
+            loadingOverlayActive={saving}
         >
             <DropDown
                 title="Data Source"
