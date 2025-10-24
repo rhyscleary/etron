@@ -90,6 +90,7 @@ const DataManagement = () => {
 			const result = await apiGet(endpoints.modules.day_book.data_sources.getDataSources, {workspaceId});
 
 			setDataSourcesList(result.data);
+			console.log("Fetched data sources:", result.data);
 			prevCountRef.current = result.data.length;
 		} catch (error) {
 			console.error("Error fetching data sources", error);
@@ -213,29 +214,35 @@ const DataManagement = () => {
 
 	const groupedSources = groupSourcesByCategory();
 
-	const renderDataSourceCard = useCallback(
-		(source) => {
-			const adapterInfo = getAdapterInfo(source.sourceType || source.type);
-			if (!adapterInfo) return null;
+	const renderDataSourceCard = useCallback((source) => {
+		const adapterInfo = getAdapterInfo(source.sourceType || source.type);
+		if (!adapterInfo) return null;
 
-			return (
-				<View key={source.dataSourceId} style={{ marginBottom: 12 }}>
-					<DataConnectionCard
-						label={source.name}
-						height={60}
-						subtitle={source.lastUpdate ? `Last sync: ${formatLastSync(source.lastUpdate)}` : undefined}
-						status={source.status}
-						onNavigate={() => router.navigate(`/modules/day-book/data-management/view-data-source/${source.dataSourceId}`)}
-						onSync={() => handleSyncSource(source)}
-						onDelete={() => handleDisconnectSource(source)}
-						onTest={() => handleTestConnection(source)}
-						onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.dataSourceId}`)}
-					/>
-				</View>
-			);
-		},
-		[formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection]
-	);
+		const typeLabel =
+		adapterInfo.displayName ||
+		adapterInfo.name ||
+		(source.sourceType || source.type);
+		const lastSyncText = source.lastUpdate
+			? `Last sync: ${formatLastSync(source.lastUpdate)}`
+			: undefined;
+
+		const subtitle = lastSyncText ? `${typeLabel} - ${lastSyncText}` : typeLabel;
+		return (
+			<View key={source.dataSourceId} style={{ marginBottom: 12 }}>
+				<DataConnectionCard
+					label={source.name}
+					height={60}
+					subtitle={subtitle}
+					status={source.status}
+					onNavigate={() => router.navigate(`/modules/day-book/data-management/view-data-source/${source.dataSourceId}`)}
+					onSync={() => handleSyncSource(source)}
+					onDelete={() => handleDisconnectSource(source)}
+					onTest={() => handleTestConnection(source)}
+					onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.dataSourceId}`)}
+				/>
+			</View>
+		);
+	}, [formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection]);
 
 	let body = null;
 
