@@ -23,7 +23,6 @@ const Header = ({
     onRightIconPress,
     onLeftIconPress,
     onEllipsisPress,
-    customBackAction,
     onBackPress,
     backIcon
 }) => {
@@ -38,7 +37,7 @@ const Header = ({
             icon={showPlus ? "plus"
                 : showEdit ? "pencil"
                 : showCheck ? "check"
-                : "line"}
+                : null }
             color={rightIconPermission ? undefined : theme.colors.onSurfaceDisabled ?? theme.colors.onSurfaceVariant}  // Dims when user doesn't have permission
             style={!rightIconPermission ? { opacity: 0.6 } : null}
             onPress={async () => {

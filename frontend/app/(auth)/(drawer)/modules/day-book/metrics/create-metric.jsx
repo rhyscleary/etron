@@ -476,7 +476,7 @@ const CreateMetric = () => {
 
     return (
 		<ResponsiveScreen
-			header={<Header title="New Metric" showBack customBackAction={handleBack} />}
+			header={<Header title="New Metric" showBack onBackPress={handleBack} />}
 			center={false}
 			padded
             scroll={true}
