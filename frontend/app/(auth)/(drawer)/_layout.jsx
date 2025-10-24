@@ -11,7 +11,7 @@ import { commonStyles } from "../../../assets/styles/stylesheets/common";
 const generalOptions = [
     { name: "account-settings", label: "My Account", icon: "account" },
     { name: "collaboration", label: "Collaboration", icon: "account-group" },
-    { name: "settings", label: "Workspace Settings", icon: "cog" }
+    { name: "settings", label: "Settings", icon: "cog" }
 ]
 
 const dayBookOptions = [

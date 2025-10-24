@@ -128,6 +128,7 @@ export default function EditWorkspace() {
 			center={false}
 			padded
 			scroll={false}
+			loadingOverlayActive={saving}
 		>
 			<View style={styles.contentContainer}>
 				{loading ? (
@@ -171,13 +172,6 @@ export default function EditWorkspace() {
 					</View>
 				)}
 			</View>
-
-			{/* Saving overlay */}
-			{saving && (
-				<View pointerEvents="none" style={styles.savingOverlay}>
-					<ActivityIndicator size="large" />
-				</View>
-			)}
 
 			<UnsavedChangesDialog
 				visible={showUnsavedDialog}
