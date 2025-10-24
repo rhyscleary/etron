@@ -12,6 +12,7 @@ import GraphTypes from "../metrics/graph-types.jsx";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage.jsx";
 import ViewShot from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
+import * as FileSystem from "expo-file-system";
 import BasicButton from "../../../../../../components/common/buttons/BasicButton.jsx";
 
 const ViewMetrics = () => {
@@ -21,6 +22,7 @@ const ViewMetrics = () => {
     const [loading, setLoading] = useState(true);
     const [metricsData, setMetricsData] = useState([]);
     const [hasPermission, setHasPermission] = useState(null);
+    const [imageUrls, setImageUrls] = useState([]);
     const selectedIds = ids ? JSON.parse(ids) : [];
 
     const metricRefs = useRef([]);
@@ -55,10 +57,8 @@ const ViewMetrics = () => {
                         { workspaceId }
                     );
 
-                    // convert and then apply selectedRows filtering (like ViewMetric does)
                     let filteredData = convertToGraphData(dataResult.data.data, settings);
 
-                    // apply selectedRows filter if present
                     const selRows = settings?.config?.selectedRows;
                     const indep = settings?.config?.independentVariable;
                     if (Array.isArray(selRows) && selRows.length > 0 && indep) {
@@ -88,13 +88,19 @@ const ViewMetrics = () => {
             return;
         }
 
+        const urls = [];
+
         for (const ref of metricRefs.current) {
             if (ref?.exportGraph) {
-                await ref.exportGraph();
+                const url = await ref.exportGraph();
+                if (url) urls.push(url);
             }
         }
-        Alert.alert("Success", "All graphs exported to Camera Roll!");
-        
+
+        setImageUrls(urls);
+        Alert.alert("Success", "All graphs exported and URLs generated!");
+
+        console.log("Image URLs:", urls);
     };
 
     if (loading) {
@@ -162,7 +168,6 @@ export default ViewMetrics;
 const MetricCard = forwardRef(({ metricSettings, filteredData }, ref) => {
     const theme = useTheme();
     const viewShotRef = useRef();
-
     const coloursState = ["red", "blue", "green", "purple"];
 
     useImperativeHandle(ref, () => ({
@@ -171,12 +176,18 @@ const MetricCard = forwardRef(({ metricSettings, filteredData }, ref) => {
                 const uri = await viewShotRef.current.capture({ format: "png", quality: 1 });
                 if (uri) {
                     const asset = await MediaLibrary.createAssetAsync(uri);
-                    // createAlbumAsync will ignore if album exists (false = don't copy if exists)
                     await MediaLibrary.createAlbumAsync("My Metrics", asset, false);
+
+                    const newPath = `${FileSystem.documentDirectory}${Date.now()}_metric.png`;
+                    await FileSystem.copyAsync({ from: uri, to: newPath });
+
+                    console.log("Image saved to Camera Roll and accessible at:", newPath);
+                    return newPath;
                 }
             } catch (error) {
                 console.error("Error exporting graph:", error);
             }
+            return null;
         },
     }));
 
