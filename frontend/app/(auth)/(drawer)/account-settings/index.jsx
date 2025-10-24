@@ -295,6 +295,12 @@ const Account = () => {
                         setPasswordError(false);
                     }
                 }}
+                onDismiss={() => {
+                    setDialogVisible(false);
+                    setPassword("");
+                    setPasswordError(false);
+                }}
+                title="Delete Account"
                 inputError={passwordError}
                 inputErrorMessage={"Incorrect password"}
                 secureTextEntry={true}

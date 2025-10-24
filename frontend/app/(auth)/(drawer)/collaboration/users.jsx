@@ -29,10 +29,7 @@ const Users = () => {
 
     useFocusEffect(
         useCallback(() => {
-            if (!loading) {
-                setRefreshing(true);
-                loadUsersAndRoles();
-            }
+            loadUsersAndRoles();
         }, [loadUsersAndRoles])
     );
 
