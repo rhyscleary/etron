@@ -89,7 +89,7 @@ const CreateMetric = () => {
     const [selectedReadyData, setSelectedReadyData] = useState(null);
 
     // This stuff is for the data preview that appears on the page
-    const rowLoadAmount = 5;  // How many rows are loaded at a time in the data preview
+    const rowLoadAmount = 20;  // How many rows are loaded at a time in the data preview
     const [rowLimit, setRowLimit] = useState(rowLoadAmount);  // How many roads are loaded total (will update over time)
     const displayedRows = useMemo(() => dataSourceData.slice(0, rowLimit), [dataSourceData, rowLimit]);  // Loads only the data that will be displayed in the "view data" popup
     const [loadingMoreRows, setLoadingMoreRows] = useState(false);

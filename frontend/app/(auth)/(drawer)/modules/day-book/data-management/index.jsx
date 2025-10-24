@@ -1,8 +1,8 @@
 // Author(s): Holly Wyatt, Noah Bradley
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { RefreshControl, Alert, ScrollView, View, StyleSheet, Pressable } from "react-native";
-import { Text, ActivityIndicator, Card, Chip, IconButton, useTheme } from "react-native-paper";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { RefreshControl, Alert, ScrollView, View, StyleSheet, Pressable, FlatList, Dimensions } from "react-native";
+import { Text, ActivityIndicator, Card, Chip, IconButton, useTheme, Modal, Portal, DataTable } from "react-native-paper";
 import { router, useFocusEffect } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
 import { getAdapterInfo, getCategoryDisplayName } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
@@ -45,6 +45,7 @@ const DataConnectionCard = ({
 	onDelete,
 	onTest,
 	onSettings,
+	onViewData,
 	height = 60,
 }) => {
 	const theme = useTheme();
@@ -58,9 +59,10 @@ const DataConnectionCard = ({
 			/>
 			<Card.Actions style={{ justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 8 }}>
 				<View style={{ flexDirection: "row" }}>
-				<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />
-				<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
-				<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
+					<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />
+					<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
+					<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
+					<IconButton icon="table-eye" accessibilityLabel="View Data" onPress={onViewData} />
 				</View>
 				<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
 			</Card.Actions>
@@ -77,8 +79,24 @@ const DataManagement = () => {
 	const [lastManualRefresh, setLastManualRefresh] = useState(0);
 	const [workspaceId, setWorkspaceId] = useState(null);
 
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewStatus, setPreviewStatus] = useState('idle');
+	const [previewColumns, setPreviewColumns] = useState([]);
+	const [previewRows, setPreviewRows] = useState([]);
+	const ROW_CHUNK = 20;
+	const [rowLimit, setRowLimit] = useState(ROW_CHUNK);
+	const [loadingMoreRows, setLoadingMoreRows] = useState(false);
+	const displayedRows = useMemo(
+		() => previewRows.slice(0, rowLimit),
+		[previewRows, rowLimit]
+	);
+
 	const prevCountRef = useRef(0);
 	const hasInitiallyLoadedRef = useRef(false);
+
+	const { width, height } = Dimensions.get("window");
+	const MODAL_MAX_W = Math.min(width * 0.95, 900);
+	const MODAL_MAX_H = Math.min(height * 0.8, 520);
 
 	const fetchDataSources = useCallback(async () => {
 		setHasError(false);
@@ -201,6 +219,35 @@ const DataManagement = () => {
 		}
 	}, []);
 
+	const handleViewData = useCallback(async (source) => {
+		try {
+			setPreviewOpen(true);
+			setPreviewStatus('loading');
+			setRowLimit(ROW_CHUNK);
+			const res = await apiGet(
+				endpoints.modules.day_book.data_sources.viewData(source.dataSourceId),
+				{ workspaceId }
+			);
+			const { data = [], schema = [] } = res.data || {};
+			setPreviewRows(Array.isArray(data) ? data : []);
+			setPreviewColumns(schema.map(s => s.name));
+			setPreviewStatus('ready');
+		} catch (err) {
+			console.error("Error loading preview data:", err);
+			setPreviewStatus('error');
+		}
+	}, [workspaceId]);
+
+	const onPreviewBottomReached = useCallback(() => {
+		if (loadingMoreRows) return;
+		if (rowLimit >= previewRows.length) return;
+		setLoadingMoreRows(true);
+		requestAnimationFrame(() => {
+			setRowLimit(prev => Math.min(prev + ROW_CHUNK, previewRows.length));
+			setLoadingMoreRows(false);
+		});
+	}, [previewRows.length, rowLimit, loadingMoreRows]);
+
 	const groupSourcesByCategory = useCallback(() => {
 		const grouped = {};
 		dataSourcesList.forEach((source) => {
@@ -239,10 +286,11 @@ const DataManagement = () => {
 					onDelete={() => handleDisconnectSource(source)}
 					onTest={() => handleTestConnection(source)}
 					onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.dataSourceId}`)}
+					onViewData={() => handleViewData(source)}
 				/>
 			</View>
 		);
-	}, [formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection]);
+	}, [formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection, handleViewData]);
 
 	let body = null;
 
@@ -323,22 +371,92 @@ const DataManagement = () => {
 		);
 	}
 
+	
+
 	return (
 		<ResponsiveScreen
-		header={
-			<Header
-			title="Data Management"
-			showMenu
-			showPlus
-			onRightIconPress={() =>
-				router.navigate("/modules/day-book/data-management/create-data-connection")
-			}
-			/>
-		}
-		center={false}
-		scroll={true}
+			header={<Header
+				title="Data Management"
+				showMenu
+				showPlus
+				onRightIconPress={() =>
+					router.navigate("/modules/day-book/data-management/create-data-connection")
+				}
+			/>}
+			center={false}
+			scroll={true}
 		>
-		{body}
+			{body}
+			<Portal>
+				<Modal
+					visible={previewOpen}
+					onDismiss={() => {
+						setPreviewOpen(false);
+						setPreviewStatus('idle');
+						setPreviewColumns([]);
+						setPreviewRows([]);
+						setRowLimit(ROW_CHUNK);
+					}}
+					contentContainerStyle={{ alignSelf: "center" }}
+				>
+					<Card style={{ width: MODAL_MAX_W, maxHeight: MODAL_MAX_H, borderRadius: 12 }}>
+						<Card.Title title="Data Preview" />
+						<Card.Content>
+							{previewStatus === 'loading' && (
+								<View style={{ height: MODAL_MAX_H - 120, alignItems: 'center', justifyContent: 'center' }}>
+									<ActivityIndicator size="large" />
+								</View>
+							)}
+							{previewStatus === 'error' && (
+								<Text>Couldn't load data. Please try again.</Text>
+							)}
+							{previewStatus === 'ready' && (
+								<ScrollView horizontal showsHorizontalScrollIndicator>
+									<View
+										style={{
+											minWidth: previewColumns.length * 120,
+											maxHeight: MODAL_MAX_H - 120,
+										}}
+									>
+										<DataTable>
+											<DataTable.Header>
+												{previewColumns.map((col, i) => (
+												<DataTable.Title key={i} numberOfLines={1}>
+													<Text>{String(col)}</Text>
+												</DataTable.Title>
+												))}
+											</DataTable.Header>
+											<FlatList
+												data={displayedRows}
+												keyExtractor={(_, idx) => String(idx)}
+												renderItem={({ item }) => (
+													<DataTable.Row>
+														{previewColumns.map((col, j) => (
+															<DataTable.Cell key={j} style={{ width: 120 }} numberOfLines={1}>
+																<Text>{String(item?.[col])}</Text>
+															</DataTable.Cell>
+														))}
+													</DataTable.Row>
+												)}
+												nestedScrollEnabled
+												style={{ maxHeight: MODAL_MAX_H - 160 }}
+												initialNumToRender={20}
+												windowSize={10}
+												removeClippedSubviews
+												onEndReached={onPreviewBottomReached}
+												onEndReachedThreshold={0.1}
+												ListFooterComponent={
+												loadingMoreRows ? <ActivityIndicator size="small" /> : null
+												}
+											/>
+										</DataTable>
+									</View>
+								</ScrollView>
+							)}
+						</Card.Content>
+					</Card>
+				</Modal>
+			</Portal>
 		</ResponsiveScreen>
 	);
 };
