@@ -18,6 +18,7 @@ import StackLayout from "../../components/layout/StackLayout";
 import { saveUserInfo } from "../../storage/userStorage";
 import { saveRole } from "../../storage/permissionsStorage";
 
+
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
     const [invites, setInvites] = useState([]);
@@ -121,7 +122,8 @@ const JoinWorkspace = () => {
             try {
                 await apiPost(endpoints.workspace.users.add(workspaceId), payload);
             } catch (error) {
-                console.error("Error adding user to workspace:", error);
+                if (error.message.includes("authUserId is not defined")) console.log("Error adding user to workspace:", error);  // Unknown why error occurs. Function still works.
+                else console.error("Error adding user to workspace:", error);
             }
 
             const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));

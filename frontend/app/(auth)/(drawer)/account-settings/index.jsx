@@ -7,12 +7,14 @@ import StackLayout from '../../../../components/layout/StackLayout';
 import DescriptiveButton from '../../../../components/common/buttons/DescriptiveButton';
 import { router } from 'expo-router';
 import { useEffect, useState } from "react";
-import { apiDelete } from '../../../../utils/api/apiClient';
+import { apiDelete, apiGet, apiPut } from '../../../../utils/api/apiClient';
 import BasicDialog from '../../../../components/overlays/BasicDialog';
-import { useTheme } from "react-native-paper";
+import { useTheme, Text } from "react-native-paper";
 import { useVerification } from '../../../../contexts/VerificationContext';
 import { verifyPassword } from '../../../../utils/verifyPassword';
 import endpoints from '../../../../utils/api/endpoints';
+import { isOwnerRole } from '../../../../storage/permissionsStorage';
+import DropDown from '../../../../components/common/input/DropDown';
 
 import {
     getCurrentUser,
@@ -38,22 +40,50 @@ const Account = () => {
     const [leavePassword, setLeavePassword] = useState("");
     const [leavePasswordError, setLeavePasswordError] = useState(false);
     const [leavePasswordErrorMessage, setLeavePasswordErrorMessage] = useState("");
+    const [isOwner, setIsOwner] = useState(false);
+    const [ownerFlowVisible, setOwnerFlowVisible] = useState(false);
+    const [ownerPassword, setOwnerPassword] = useState("");
+    const [ownerPasswordError, setOwnerPasswordError] = useState(false);
+    const [ownerPasswordErrorMessage, setOwnerPasswordErrorMessage] = useState("");
+    const [users, setUsers] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [selectedNewOwner, setSelectedNewOwner] = useState("");
 
     useEffect(() => {
         setLoading(true);
-        async function loadAccountEmail() {
-            try {
-                // load the current users email from Cognito
-                const { username, userId, signInDetails } = await getCurrentUser();
-                setEmail(signInDetails.loginId);
-            } catch (error) {
-                console.error("Error loading email: ", error);
-                setEmail("Error accessing email.");
-            }
-            setLoading(false);
-        }
         loadAccountEmail();
+        (async () => {
+            try {
+                const owner = await isOwnerRole();
+                setIsOwner(!!owner);
+            if (owner) {
+                const workspaceId = await getWorkspaceId();
+                const { userId: currentUserId } = await getCurrentUser();
+                let result = await apiGet(endpoints.workspace.users.getUsers(workspaceId));
+                const candidates = (result.data || []).filter(u => u.userId !== currentUserId);
+                setUsers(candidates);
+
+                result = await apiGet(endpoints.workspace.roles.getRoles(workspaceId));
+                setRoles((result.data || []).filter(r => !r.owner));
+            }
+            } catch (error) {
+                console.error("Ownership preload failed:", error);
+            } finally {
+                setLoading(false);
+            }
+        })();
     }, []);
+
+    async function loadAccountEmail() {
+        try {
+            const { username, userId, signInDetails } = await getCurrentUser();
+            setEmail(signInDetails.loginId);
+        } catch (error) {
+            console.error("Error loading email: ", error);
+            setEmail("Error accessing email.");
+        }
+        setLoading(false);
+    }
 
     const accountSettingsButtons = [
         { label: "Personal Details", description: "Update first and last name, phone number, and avatar", onPress: () => router.navigate("account-settings/personal-details")},
@@ -67,12 +97,10 @@ const Account = () => {
 
         if (!validPassword) {
             setPasswordError(true);
-            console.log("INVALID PASSWORD");
             setDeleting(false);
             return;
         }
 
-        console.log("HERE");
 
         try {
             const workspaceId = await getWorkspaceId();
@@ -80,7 +108,7 @@ const Account = () => {
             try {  // Deletes user details from workspace
                 await apiDelete(endpoints.workspace.users.remove(workspaceId, userId));
             } catch (error) {
-                console.log("Error deleting user details in workspace:", error);
+                console.error("Error deleting user details in workspace:", error);
                 return;
             }
             await deleteUser();  // Deletes user from Cognito
@@ -95,11 +123,9 @@ const Account = () => {
     }
 
     async function handleLeaveWorkspace() {
-        console.log("TEST0");
         Keyboard.dismiss();
         setLeaving(true);
 
-        console.log("TEST1");
 
         if (!leavePassword) {
             setLeavePasswordErrorMessage("Please enter your password.");
@@ -109,7 +135,6 @@ const Account = () => {
         }
         const valid = await verifyPassword(leavePassword);
 
-        console.log("TEST2");
 
         if (!valid) {
             setLeavePasswordErrorMessage("The password entered is invalid.");
@@ -131,6 +156,55 @@ const Account = () => {
             setLeavePassword("");
             setLeavePasswordError(false);
             setLeavePasswordErrorMessage("");
+        }
+    }
+
+    async function handleOwnerTransferAndLeave() {
+        Keyboard.dismiss?.();
+        if (!ownerPassword) {
+            setOwnerPasswordErrorMessage("Please enter your password.");
+            setOwnerPasswordError(true);
+            return;
+        }
+        setLeaving(true);
+        const valid = await verifyPassword(ownerPassword);
+        if (!valid) {
+            setOwnerPasswordErrorMessage("The password entered is invalid.");
+            setOwnerPasswordError(true);
+            setLeaving(false);
+            return;
+        }
+        try {
+            const workspaceId = await getWorkspaceId();
+            const { userId: currentUserId } = await getCurrentUser();
+            if (!selectedNewOwner) {
+            setOwnerPasswordErrorMessage("Select a new owner to continue.");
+            setOwnerPasswordError(true);
+            setLeaving(false);
+            return;
+            }
+            // pick a reasonable non-owner role for the leaving owner
+            const nonOwnerRole = roles[0];
+            if (!nonOwnerRole) {
+            throw new Error("No non-owner roles available to assign.");
+            }
+            // 1) transfer ownership
+            await apiPut(endpoints.workspace.core.transfer(workspaceId), {
+            receipientUserId: selectedNewOwner,
+            newRoleId: nonOwnerRole.roleId,
+            });
+            // 2) now leave workspace
+            await apiDelete(endpoints.workspace.users.remove(workspaceId, currentUserId));
+            setOwnerFlowVisible(false);
+            // go to choice screen
+            router.navigate("/workspace-choice");
+        } catch (err) {
+            console.error("Transfer & leave failed:", err);
+        } finally {
+            setLeaving(false);
+            setOwnerPassword("");
+            setOwnerPasswordError(false);
+            setOwnerPasswordErrorMessage("");
         }
     }
 
@@ -169,7 +243,10 @@ const Account = () => {
                     <BasicButton
                         label={"Leave Workspace"}
                         danger
-                        onPress={() => setLeaveDialogVisible(true)}
+                        onPress={() => {
+                            if (isOwner) setOwnerFlowVisible(true);
+                            else setLeaveDialogVisible(true);
+                        }}
                     />
                 </View>
             </StackLayout>
@@ -240,6 +317,61 @@ const Account = () => {
                     onSubmitEditing: handleLeaveWorkspace,
                 }}
             />
+
+            <BasicDialog
+                visible={ownerFlowVisible}
+                onDismiss={() => {
+                    setOwnerFlowVisible(false);
+                    setOwnerPassword("");
+                    setOwnerPasswordError(false);
+                    setOwnerPasswordErrorMessage("");
+                    setSelectedNewOwner("");
+                }}
+                title="You're the owner"
+                message="To leave, you must transfer ownership to another user or delete the workspace."
+                showInput
+                inputLabel="Password"
+                inputPlaceholder="Enter your password"
+                inputValue={ownerPassword}
+                inputOnChangeText={(text) => {
+                    setOwnerPassword(text);
+                    if (text) setOwnerPasswordError(false);
+                }}
+                inputError={ownerPasswordError}
+                inputErrorMessage={ownerPasswordErrorMessage}
+                secureTextEntry
+                leftActionLabel="Delete Workspace"
+                leftDanger
+                handleLeftAction={() => {
+                    // chain to your existing delete dialog flow
+                    setOwnerFlowVisible(false);
+                    setDialogVisible(true);
+                }}
+                rightActionLabel="Transfer & Leave"
+                rightDanger
+                rightDisabled={!ownerPassword || !selectedNewOwner}
+                handleRightAction={handleOwnerTransferAndLeave}
+                inputProps={{
+                    autoCapitalize: 'none',
+                    autoCorrect: false,
+                    keyboardType: Platform.OS === 'android' ? 'visible-password' : 'default',
+                    onSubmitEditing: handleOwnerTransferAndLeave,
+                }}
+            >
+                <View style={{ marginTop: 12 }}>
+                    <Text style={{ marginBottom: 6 }}>Select new owner</Text>
+                    <DropDown
+                        title="Choose user"
+                        items={users.map(u => ({
+                            label: `${u.given_name ?? ''} ${u.family_name ?? ''}`.trim() || u.email,
+                            value: u.userId
+                        }))}
+                        value={selectedNewOwner}
+                        onSelect={setSelectedNewOwner}
+                        showRouterButton={false}
+                    />
+                </View>
+            </BasicDialog>
         </ResponsiveScreen>
     )
 }
