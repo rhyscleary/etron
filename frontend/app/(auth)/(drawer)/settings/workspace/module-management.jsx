@@ -209,6 +209,7 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
                             !loading ? (
                                 <View style={styles.emptyContainer}>
                                     <Text style={styles.emptyText}>No Modules Installed.</Text>
+                                    <Text style={styles.emptyText}>This feature is for demonstration purposes only. When additional modules beyond the Day Book are implemented, this will be made functional.</Text>
                                 </View>
                             ) : null
                         }

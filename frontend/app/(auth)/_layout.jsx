@@ -27,7 +27,6 @@ export default function AuthLayout() {
     }
 
     const checkWorkspaceExists = async () => {
-        console.log("checking if workspace exists");
         let hasWorkspaceAttribute = null;
         try {
             const userAttributes = await fetchUserAttributes();
@@ -102,8 +101,17 @@ export default function AuthLayout() {
     }
 
     const saveInfoIntoStorage = async() => {
-        const workspaceId = await getWorkspaceId();
         const userAttributes = await fetchUserAttributes();
+
+        let workspaceId;
+        try {
+            const result = await apiGet(endpoints.workspace.core.getByUserId(userAttributes.sub));
+            await saveWorkspaceInfo(result.data);
+            workspaceId = result.data.workspaceId;
+        } catch (error) {
+            console.error("Error saving workspace info into storage:", error);
+        }
+
         try {
             const result = await apiGet(endpoints.workspace.users.getUser(workspaceId, userAttributes.sub));
             await saveUserInfo(result.data);  // Saves into local storage
@@ -121,6 +129,7 @@ export default function AuthLayout() {
         try {
             const result = await apiGet(endpoints.workspace.core.getByUserId(userAttributes.sub));
             await saveWorkspaceInfo(result.data);
+            console.log("saved workspace info:", result.data);
         } catch (error) {
             console.error("Error saving workspace info into storage:", error);
         }

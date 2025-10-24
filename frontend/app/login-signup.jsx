@@ -259,50 +259,8 @@ function LoginSignup() {
                 return;
             }
 
-            if (isSignedIn) {
-                const user = await getCurrentUser();
-                const userAttributes = await fetchUserAttributes();
-                
-                const hasGivenName = userAttributes["given_name"];
-                const hasFamilyName = userAttributes["family_name"];
-                const hasWorkspace = userAttributes["custom:has_workspace"] == 'true';
-
-                if (!hasWorkspace) {
-                    if (!hasGivenName || !hasFamilyName) {
-                        router.dismissAll();
-                        router.replace("(auth)/personalise-account");
-                        return;
-                    } else {
-                        router.dismissAll();
-                        router.replace("(auth)/workspace-choice");
-                        return;
-                    }
-                } else {
-                    try {
-                        const workspace = await apiGet(endpoints.workspace.core.getByUserId(user.userId));
-
-                        if (!workspace.data || !workspace.data.workspaceId) {
-                            await setHasWorkspaceAttribute(false);
-                            router.dismissAll();
-                            router.replace("(auth)/workspace-choice");
-                            return;
-                        }
-
-                        await saveWorkspaceInfo(workspace.data);
-                        router.dismissAll();
-                        router.replace("(auth)/authenticated-loading");
-                    } catch (error) {
-                        if (error.message.includes("No user found")) {
-                            await setHasWorkspaceAttribute(false);
-                            router.dismissAll();
-                            router.replace("(auth)/workspace-choice");
-                        } else {
-                            console.error("Error fetching workspace:", error);
-                            setMessage("Unable to locate workspace. Please try again.");
-                        }
-                    }
-                }
-            }
+            router.replace("(auth)/authenticated-loading");
+            return;
         } catch (error) {
             if (error.message.includes("Incorrect username or password")) {
                 showSnack("Incorrect email or password", 'error');

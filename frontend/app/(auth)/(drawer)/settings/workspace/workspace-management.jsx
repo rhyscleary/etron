@@ -261,7 +261,7 @@ const WorkspaceManagement = () => {
 
     return (
 		<ResponsiveScreen
-			header={<Header title="Workspace" showBack />}
+			header={<Header title="Workspace Settings" showBack />}
 			center={false}
             scroll={true}
             loadingOverlayActive={loading}

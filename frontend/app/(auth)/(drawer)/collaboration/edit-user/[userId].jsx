@@ -57,7 +57,7 @@ const EditUser = () => {
 			setLoading(true);
 
 			const loggedInUser = await getUserInfo();
-			if (loggedInUser.userId = userId) {
+			if (loggedInUser.userId == userId) {
 				setIsSelf(true);
 			}
 
@@ -239,7 +239,6 @@ const EditUser = () => {
 					showRouterButton={false}
 				/>)}
 
-				{/* Remove User Button */}
 				<BasicButton 
 					label="Remove User"
 					danger={true}
@@ -247,7 +246,6 @@ const EditUser = () => {
 					onPress={() => setRemoveDialogVisible(true)}
 				/>
 
-				{/* Remove Confirmation Dialog */}
 				<Portal>
 					<Dialog visible={removeDialogVisible} onDismiss={() => setRemoveDialogVisible(false)}>
 						<Dialog.Title>Confirm Removal</Dialog.Title>
