@@ -9,11 +9,15 @@ import InviteCard from "../../components/cards/inviteCard";
 import BasicButton from "../../components/common/buttons/BasicButton";
 import { apiGet, apiPost } from "../../utils/api/apiClient";
 import endpoints from "../../utils/api/endpoints";
-import { fetchUserAttributes, getCurrentUser, updateUserAttribute } from "aws-amplify/auth";
+import { fetchUserAttributes, getCurrentUser, updateUserAttribute, signOut } from "aws-amplify/auth";
 import formatTTLDate from "../../utils/format/formatTTLDate";
 import { saveWorkspaceInfo } from "../../storage/workspaceStorage";
 import { router } from "expo-router";
 import ResponsiveScreen from "../../components/layout/ResponsiveScreen";
+import StackLayout from "../../components/layout/StackLayout";
+import { saveUserInfo } from "../../storage/userStorage";
+import { saveRole } from "../../storage/permissionsStorage";
+
 
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
@@ -31,26 +35,26 @@ const JoinWorkspace = () => {
                 const email = userAttributes.email;
                 console.log(email);
 
-                const inviteResult = await apiGet(
-                    endpoints.user.invites.getUserInvites,
-                    { email }
-                );
-                console.log(inviteResult.data);
+                const inviteResult = await apiGet(endpoints.user.invites.getUserInvites, { email });
+                console.log("inviteResult.data:", inviteResult.data);
                 if (inviteResult.data && inviteResult.data.length > 0) {
-                    const processedInvites = await Promise.all(inviteResult.data.map(async invite => {
-                        const expireAt = formatTTLDate(invite.expireAt);
-                        console.log(invite.workspaceId);
-                        const workspace = await apiGet(
-                            endpoints.workspace.core.getWorkspace(invite.workspaceId)
-                        );
-
-                        return {
-                            ...invite,
-                            expireAt,
-                            workspaceName: workspace.data.name,
-                            workspaceDescription: workspace.data.description
-                        };
-                    }));
+                    const processedInvites = (await Promise.all(
+                        inviteResult.data.map(async invite => {
+                            try {
+                                const workspace = await apiGet(endpoints.workspace.core.getWorkspace(invite.workspaceId));
+                                return {
+                                    ...invite,
+                                    expireAt: formatTTLDate(invite.expireAt),
+                                    workspaceName: workspace.data.name,
+                                    workspaceDescription: workspace.data.description
+                                };
+                            } catch (error) {
+                                if (error.message.includes("Workspace not found")) return null;
+                                console.error(`Error retrieving workspace of id ${invite.workspaceId}"`, error);
+                                return null;
+                            }
+                        })
+                    )).filter(Boolean);  // Removes all invites that returned errors.
 
                     setInvites(processedInvites);
                 }
@@ -113,27 +117,39 @@ const JoinWorkspace = () => {
             const payload = {
                 inviteId
             }
-
+            
             // try adding user to the workspace
-            await apiPost(
-                endpoints.workspace.users.add(workspaceId),
-                payload
-            )
+            try {
+                await apiPost(endpoints.workspace.users.add(workspaceId), payload);
+            } catch (error) {
+                if (error.message.includes("authUserId is not defined")) console.log("Error adding user to workspace:", error);  // Unknown why error occurs. Function still works.
+                else console.error("Error adding user to workspace:", error);
+            }
 
-            // if successful store workspace info
-            const workspace = await apiGet(
-                endpoints.workspace.core.getWorkspace(workspaceId)
-            )
+            const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
 
-            // save workspace info to local storage
-            saveWorkspaceInfo(workspace.data);
+            // save workspace and user info to local storage
+            const workspace = result.data;
+            saveWorkspaceInfo(workspace);
 
-            // update user attribute to be in a workspace
+            const userAttributes = await fetchUserAttributes();
+            try {
+                const result = await apiGet(endpoints.workspace.users.getUser(workspace.workspaceId, userAttributes.sub));
+                await saveUserInfo(result.data);  // Saves into local storage
+            } catch (error) {
+                console.error("Error saving user info into storage:", error);
+            }
+
+            try {
+                const result = await apiGet(endpoints.workspace.roles.getRoleOfUser(workspace.workspaceId));
+                await saveRole(result.data);
+            } catch (error) {
+                console.error("Error saving user's role details into local storage:", error);
+            }
+
             await handleUpdateUserAttribute('custom:has_workspace', "true");
 
-            console.log('Join response:', workspace.data);
             setJoining(false);
-
 
             // navigate to the profile
             router.navigate("/dashboard");
@@ -164,42 +180,43 @@ const JoinWorkspace = () => {
                 backIcon="logout"
                 onBackPress={handleBackSignOut}
             />}
+            center={false}
             scroll={false}
+            loadingOverlayActive={joining}
         >
-            <View style={styles.contentContainer}>
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" />
-                        <Text>Loading invites...</Text>
-                    </View>
-                ) : invites.length === 0 ? (
-                    <View style={styles.noInvitesContainer}>
-                        <Text style={{ fontSize: 16, textAlign: "center"}}>
-                            You currently have no pending invites.
-                        </Text>
-                        <Text style={{ fontSize: 16, textAlign: "center"}}>
-                            Ask your workplace to invite you.
-                        </Text>
-                    </View>
-                ) : (
+            {loading ? (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" />
+                    <Text>Loading invites...</Text>
+                </View>
+            ) : invites.length === 0 ? (
+                <View style={styles.noInvitesContainer}>
+                    <Text style={{ fontSize: 16, textAlign: "center"}}>
+                        You currently have no pending invites.
+                    </Text>
+                    <Text style={{ fontSize: 16, textAlign: "center"}}>
+                        Ask your workplace to invite you.
+                    </Text>
+                </View>
+            ) : (<>
                     <FlatList
                         data={invites}
                         renderItem={renderInvites}
                         keyExtractor={item => item.inviteId}
                         ItemSeparatorComponent={() => <View style={{height: 12}} />}
-                        ListFooterComponent={() => (
-                            <View style={commonStyles.inlineButtonContainer}>
+                        contentContainerStyle={{ paddingBottom: 16 }}
+                        ListFooterComponent={
+                            <View style={styles.listFooter}>
                                 <BasicButton 
                                     label={joining ? "Joining..." : "Join"} 
                                     onPress={handleJoin}
-                                    disabled={joining} 
+                                    disabled={joining || !selectedInvite}
                                 />
                             </View>
-                        )}
+                        }
                     />
-                )}
-
-            </View>
+                </>
+            )}
             <BasicButton
                 label={"Create Workspace"}
                 onPress={navigateToCreateWorkspace}
@@ -224,7 +241,11 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         gap: 20
-    }
+    },
+    listFooter: {
+        marginTop: 12,
+        alignItems: 'flex-end',
+    },
 })
 
 export default JoinWorkspace;

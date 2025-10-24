@@ -183,6 +183,7 @@ const PersonaliseAccount = () => {
                 backIcon="logout"
                 onBackPress={handleBackSignOut}
 			/>}
+			loadingOverlayActive={saving}
 		>
 			<View style={{ alignItems: "center"}}>
 				<AvatarButton 
@@ -210,29 +211,29 @@ const PersonaliseAccount = () => {
 			)}
 
 			<TextField
-					label="Last Name"
-					placeholder="Last Name"
-					value={lastName}
-					onChangeText={setLastName}
+				label="Last Name"
+				placeholder="Last Name"
+				value={lastName}
+				onChangeText={setLastName}
 			/>
 
 			{errors.lastName && (
-					<Text style={{ color: theme.colors.error }}>Please enter your last name</Text>
+				<Text style={{ color: theme.colors.error }}>Please enter your last name</Text>
 			)}
 
 			<TextField
-					label="Phone Number (Optional)"
-					placeholder="Phone Number"
-					value={phoneNumber}
-					maxLength={10}
-					keyboardType="numeric"
-					textContentType="telephoneNumber"
-					onChangeText={(text) => {
-						setPhoneNumber(text);
-						if (text.length >= 9 && text.length <= 10) {
-							setErrors((prev) => ({ ...prev, phoneNumber: false }));
-						}
-					}}
+				label="Phone Number (Optional)"
+				placeholder="Phone Number"
+				value={phoneNumber}
+				maxLength={10}
+				keyboardType="numeric"
+				textContentType="telephoneNumber"
+				onChangeText={(text) => {
+					setPhoneNumber(text);
+					if (text.length >= 9 && text.length <= 10) {
+						setErrors((prev) => ({ ...prev, phoneNumber: false }));
+					}
+				}}
 			/>
 
 			{errors.phoneNumber && (

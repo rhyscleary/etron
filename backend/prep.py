@@ -24,8 +24,10 @@ TARGET_FOLDERS = [
     "modules/day-book/data-sources/functions/polling/data-source-poller",
     "modules/day-book/data-sources/functions/polling/data-source-poller-initialiser",
     "modules/day-book/data-sources/functions/data-source-upload-processor",
+    "modules/day-book/data-sources/functions/data-source-update-notifier",
     "audit/functions/audit-core",
-    "audit/functions/archive-audit-logs"
+    "audit/functions/archive-audit-logs",
+    "audit/functions/audit-processor"
 ]
 
 SHARED_FOLDERS = [
@@ -33,8 +35,7 @@ SHARED_FOLDERS = [
     "modules/day-book/reports/reports-shared",
     "modules/day-book/data-sources/data-sources-shared",
     "modules/day-book/metrics/metrics-shared",
-    "modules/day-book/day-book-shared",
-    "audit/audit-shared"
+    "modules/day-book/day-book-shared"
 ]
 
 # === FUNCTIONS ===

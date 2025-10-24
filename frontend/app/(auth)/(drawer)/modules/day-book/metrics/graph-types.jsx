@@ -80,11 +80,21 @@ const GraphTypes = {
                             >
                                 <VictoryAxis
                                     crossAxis
-                                    {...xAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                    }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
-                                    {...yAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                    }}
                                 />
 
                                 {yKeys.map((yKey, index) => (
@@ -137,11 +147,21 @@ const GraphTypes = {
                             >
                                 <VictoryAxis
                                     crossAxis
-                                    {...xAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                    }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
-                                    {...yAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                    }}
                                 />
 
                                 {yKeys.map((yKey, index) => (
@@ -193,7 +213,7 @@ const GraphTypes = {
                                 colorScale={colours && colours.length > 0 ? colours : "qualitative"}
                                 labels={({ datum }) => `${datum.x}: ${datum.y}`}
                                 style={{
-                                    labels: { fontSize: 12, fill: "white" },
+                                    labels: { fontSize: 12, fill: "black" },
                                 }}
                                 padding={{ top: 30, bottom: 30, left: 20, right: 20 }}
                             />
@@ -209,9 +229,7 @@ const GraphTypes = {
         label: "Area Chart",
         value: "area",
         previewImage: require("../../../../../../assets/images/placeholder.png"),
-        render: ({ data, xKey, yKeys, colours, axisOptions }) => {
-            const xAxisProps = buildAxisProps(DEFAULT_X_AXIS_STYLE, axisOptions?.x);
-            const yAxisProps = buildAxisProps(DEFAULT_Y_AXIS_STYLE, axisOptions?.y);
+        render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
                 
@@ -235,13 +253,23 @@ const GraphTypes = {
                                 {/* X Axis */}
                                 <VictoryAxis
                                     crossAxis
-                                    {...xAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                    }}
                                 />
 
                                 {/* Y Axis */}
                                 <VictoryAxis
                                     dependentAxis
-                                    {...yAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                    }}
                                 />
 
                                 {/* Area(s) */}
@@ -276,9 +304,7 @@ const GraphTypes = {
         label: "Scatter Plot",
         value: "scatter",
         previewImage: require("../../../../../../assets/images/placeholder.png"),
-        render: ({ data, xKey, yKeys, colours, axisOptions }) => {
-            const xAxisProps = buildAxisProps(DEFAULT_X_AXIS_STYLE, axisOptions?.x);
-            const yAxisProps = buildAxisProps(DEFAULT_Y_AXIS_STYLE, axisOptions?.y);
+        render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
 
@@ -302,13 +328,23 @@ const GraphTypes = {
                                 {/* X Axis */}
                                 <VictoryAxis
                                     crossAxis
-                                    {...xAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                    }}
                                 />
 
                                 {/* Y Axis */}
                                 <VictoryAxis
                                     dependentAxis
-                                    {...yAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                    }}
                                 />
 
                                 {/* Scatter points */}
@@ -338,9 +374,7 @@ const GraphTypes = {
         label: "Box Plot",
         value: "box",
               previewImage: require("../../../../../../assets/images/placeholder.png"),
-        render: ({ data, xKey, yKeys, colours, axisOptions }) => {
-            const xAxisProps = buildAxisProps(DEFAULT_X_AXIS_STYLE, axisOptions?.x);
-            const yAxisProps = buildAxisProps(DEFAULT_Y_AXIS_STYLE, axisOptions?.y);
+        render: ({ data, xKey, yKeys, colours }) => {
             const ChartComponent = () => {
               const [size, setSize] = React.useState({ width: 0, height: 0 });
               const yKey = Array.isArray(yKeys) ? yKeys[0] : yKeys; // boxplot usually uses a single dependent variable
@@ -365,12 +399,22 @@ const GraphTypes = {
                         >
                             {/* X Axis */}
                             <VictoryAxis
-                                {...xAxisProps}
+                                style={{
+                                    axis: { stroke: "white" },
+                                    ticks: { stroke: "white" },
+                                    tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                    axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                }}
                             />
                             {/* Y Axis */}
                             <VictoryAxis
                                 dependentAxis
-                                {...yAxisProps}
+                                style={{
+                                    axis: { stroke: "white" },
+                                    ticks: { stroke: "white" },
+                                    tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                    axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                }}
                             />
 
                             <VictoryBoxPlot
@@ -401,9 +445,7 @@ const GraphTypes = {
         label: "Histogram",
         value: "histogram",
         previewImage: require("../../../../../../assets/images/placeholder.png"),
-        render: ({ data, xKey, colours, axisOptions }) => {
-            const xAxisProps = buildAxisProps(DEFAULT_X_AXIS_STYLE, axisOptions?.x);
-            const yAxisProps = buildAxisProps(DEFAULT_Y_AXIS_STYLE, axisOptions?.y);
+        render: ({ data, xKey, colours }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
 
@@ -425,11 +467,21 @@ const GraphTypes = {
                                 containerComponent={<VictoryContainer responsive={false} />}
                             >
                                 <VictoryAxis
-                                    {...xAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                    }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
-                                    {...yAxisProps}
+                                    style={{
+                                        axis: { stroke: "white" },
+                                        ticks: { stroke: "white" },
+                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                    }}
                                 />
 
                                 <VictoryHistogram
@@ -440,7 +492,7 @@ const GraphTypes = {
                                     style={{
                                         data: {
                                             fill: colours[0] || "#4f83cc",
-                                            stroke: "white",
+                                            stroke: "black",
                                             strokeWidth: 1,
                                         },
                                     }}
@@ -455,10 +507,10 @@ const GraphTypes = {
     },
 
 
-    progress: {
+    progressBar: {
     label: "Progress Bar",
-    value: "progress",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+    value: "progressBar",
+        previewImage: require("../../../../../../assets/images/progressCircle.png"),
     render: ({ data, yKeys, colours }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -486,9 +538,9 @@ const GraphTypes = {
                         >
                             <VictoryAxis
                                 style={{
-                                    axis: { stroke: "white" },
-                                    ticks: { stroke: "white" },
-                                    tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                    axis: { stroke: "black" },
+                                    ticks: { stroke: "black" },
+                                    tickLabels: { fill: "black", fontSize: 10, padding: 5 },
                                 }}
                             />
                             {/* No dependent axis needed (progress is just a bar) */}
@@ -512,10 +564,10 @@ const GraphTypes = {
     },
 },
 
-progress: {
+progressCircle: {
     label: "Progress Circle",
-    value: "progress",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+    value: "progressCircle",
+        previewImage: require("../../../../../../assets/images/progressCircle.png"),
     render: ({ data, yKeys, colours }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
@@ -562,7 +614,7 @@ progress: {
                                 x={size.width / 2}
                                 y={size.height / 2}
                                 text={`${Math.round(percent)}%`}
-                                style={{ fontSize: 24, fill: "white" }}
+                                style={{ fontSize: 24, fill: "black" }}
                             />
                         </Svg>
                     )}
@@ -577,13 +629,13 @@ progress: {
     numbers: {
     label: "Numbers",
     value: "numbers",
-        previewImage: require("../../../../../../assets/images/placeholder.png"),
+        previewImage: require("../../../../../../assets/images/numbers.png"),
     render: ({ data, yKeys, colours }) => {
         const ChartComponent = () => {
             if (!data || data.length === 0 || !yKeys || yKeys.length === 0) {
                 return (
                     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ color: "white" }}>No data available</Text>
+                        <Text style={{ color: "black" }}>No data available</Text>
                     </View>
                 );
             }
@@ -599,7 +651,7 @@ progress: {
                             style={{
                                 fontSize: 18,
                                 fontWeight: "bold",
-                                color: colours[index] || "white",
+                                color: colours[index] || "black",
                                 marginVertical: 4,
                             }}
                         >

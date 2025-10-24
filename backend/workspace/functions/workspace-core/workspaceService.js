@@ -6,7 +6,7 @@ const appConfigRepo = require("@etron/shared/repositories/appConfigBucketReposit
 const { getUserById } = require("@etron/shared/utils/auth");
 const {v4 : uuidv4} = require('uuid');
 const { hasPermission } = require("@etron/shared/utils/permissions");
-const { logAuditEvent } = require("@etron/audit-shared/utils/auditLogger");
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -212,8 +212,10 @@ async function updateWorkspace(authUserId, workspaceId, payload) {
     await logAuditEvent({
         workspaceId,
         userId: authUserId,
-        action: "Updated workspace details",
-        type: "SETTINGS"
+        action: "Updated",
+        filters: ["settings"],
+        itemType: "workspace details",
+        itemId: workspaceId,
     });
 
     return updatedWorkspace;

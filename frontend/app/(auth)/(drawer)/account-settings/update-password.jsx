@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { View, ScrollView } from 'react-native'
-import { commonStyles } from '../../../../../assets/styles/stylesheets/common';
-import Header from '../../../../../components/layout/Header';
-import StackLayout from '../../../../../components/layout/StackLayout';
+import { commonStyles } from '../../../../assets/styles/stylesheets/common';
+import Header from '../../../../components/layout/Header';
+import StackLayout from '../../../../components/layout/StackLayout';
 import { Text, useTheme } from "react-native-paper";
-import TextField from "../../../../../components/common/input/TextField";
-import BasicButton from "../../../../../components/common/buttons/BasicButton";
+import TextField from "../../../../components/common/input/TextField";
+import BasicButton from "../../../../components/common/buttons/BasicButton";
 
 import { updatePassword } from 'aws-amplify/auth';
-import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
+import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 
 const UpdatePassword = () => {
     const theme = useTheme();

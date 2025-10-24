@@ -16,6 +16,7 @@ const { runQuery } = require("@etron/data-sources-shared/utils/athenaService");
 const { castDataToSchema } = require("@etron/data-sources-shared/utils/castDataToSchema");
 const { hasPermission } = require("@etron/shared/utils/permissions");
 const { LambdaClient, InvokeCommand } = require('@aws-sdk/client-lambda');
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -113,6 +114,18 @@ async function createRemoteDataSource(authUserId, payload) {
         console.error("Failed to trigger the polling lambda");
     }
 
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Created",
+        filters: ["modules", "created"],
+        module: "daybook",
+        itemType: "dataSource",
+        itemId: dataSourceId,
+        itemName: name
+    });
+
     return {
         ...dataSourceItem,
         secrets
@@ -176,6 +189,18 @@ async function createLocalDataSource(authUserId, payload) {
 
     await dataSourceRepo.addDataSource(dataSourceItem);
     const uploadUrl = await getUploadUrl(workspaceId, dataSourceId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Created",
+        filters: ["modules", "created"],
+        module: "daybook",
+        itemType: "dataSource",
+        itemId: dataSourceId,
+        itemName: name
+    });
 
     return {
         ...dataSourceItem,
@@ -248,6 +273,18 @@ async function updateDataSourceInWorkspace(authUserId, dataSourceId, payload) {
     if (secrets) {
         await dataSourceSecretsRepo.saveSecrets(workspaceId, dataSourceId, secrets);
     }
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated",
+        filters: ["modules", "updated"],
+        module: "daybook",
+        itemType: "dataSource",
+        itemId: dataSourceId,
+        itemName: updatedDataSource.name
+    });
 
     return {
         ...updatedDataSource,
@@ -369,6 +406,18 @@ async function deleteDataSourceInWorkspace(authUserId, workspaceId, dataSourceId
     // remove data source from repo and secrets
     await dataSourceRepo.removeDataSource(workspaceId, dataSourceId);
     await dataSourceSecretsRepo.removeSecrets(workspaceId, dataSourceId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Deleted",
+        filters: ["modules", "deleted"],
+        module: "daybook",
+        itemType: "dataSource",
+        itemId: dataSourceId,
+        itemName: dataSource.name
+    });
 
     return {message: "Data source successfully deleted"};
 }

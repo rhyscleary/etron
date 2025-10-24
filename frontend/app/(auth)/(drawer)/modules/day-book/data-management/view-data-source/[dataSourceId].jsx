@@ -24,6 +24,7 @@ import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
 import { getPermissions } from "../../../../../../../storage/permissionsStorage";
 import { getUserInfo } from "../../../../../../../storage/userStorage";
+import ItemNotFound from "../../../../../../../components/common/errors/MissingItem";
 
 const SelectDataSource = () => {
 	const theme = useTheme();
@@ -31,6 +32,7 @@ const SelectDataSource = () => {
 	const { getDataSource, fetchDataSource, dataSourceService } = useDataSources();
 	const lastFetchedIdRef = React.useRef(null);
 
+	const [dataSourceExists, setDataSourceExists] = useState(true);
 	const [workspaceId, setWorkspaceId] = useState(null);
 	const [dataSource, setDataSource] = useState(null);
 	//const [adapters, setAdapters] = useState([]);
@@ -72,8 +74,8 @@ const SelectDataSource = () => {
 			const workspaceId = await getWorkspaceId();
 			const result = await apiGet(endpoints.modules.day_book.data_sources.getDataSource(dataSourceId), { workspaceId });
 			const source = result.data;
-			console.log("source:", source);
 			setDataSource(source);
+			if (!null) setDataSourceExists(false);
 			setLoadingSource(false);
 		} catch (error) {
 			console.error("Error loading data source:", error);
@@ -207,14 +209,14 @@ const SelectDataSource = () => {
 	return (
 		<ResponsiveScreen
 			header={<Header title={"View Data Source"} showBack />}
-			center={false}
+			center={dataSourceExists ? false : true}
 			tapToDismissKeyboard={false}
 		>
 			{ loadingSource ? (
 				<View style={[commonStyles.screen, styles.center]}>
 					<ActivityIndicator size="large" />
 				</View>
-			) : (<>
+			) : dataSourceExists ? (<>
 				<Card style={styles.card}>
 					<Card.Title
 						title={dataSource.name}
@@ -244,7 +246,14 @@ const SelectDataSource = () => {
 						</View>
 					</Card>
 				) : null}
-			</>)}
+			</>) : (
+				<ItemNotFound
+					icon = "database-off"
+					item = "data source"
+					itemId = {dataSourceId}
+					listRoute = "/modules/day-book/data-management"
+				/>
+			)}
 		</ResponsiveScreen>
 	);
 };

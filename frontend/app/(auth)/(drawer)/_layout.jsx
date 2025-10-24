@@ -9,9 +9,9 @@ import DescriptiveButton from "../../../components/common/buttons/DescriptiveBut
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
 
 const generalOptions = [
-    { name: "settings-account", label: "Account", icon: "account" },
+    { name: "account-settings", label: "My Account", icon: "account" },
     { name: "collaboration", label: "Collaboration", icon: "account-group" },
-    { name: "settings", label: "Settings", icon: "cog" }
+    { name: "settings", label: "Workspace and App Settings", icon: "cog" }
 ]
 
 const dayBookOptions = [

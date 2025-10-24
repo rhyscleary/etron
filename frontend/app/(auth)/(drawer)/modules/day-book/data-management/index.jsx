@@ -1,118 +1,133 @@
 // Author(s): Holly Wyatt, Noah Bradley
 
-// DataManagement.js
 import { useState, useEffect, useRef, useCallback } from "react";
-import { RefreshControl } from "react-native";
-import { Pressable, ScrollView, View, StyleSheet, Alert, TouchableOpacity, Button } from "react-native";
-import { Card } from "react-native-paper";
-import { Text, ActivityIndicator } from "react-native-paper";
+import { RefreshControl, Alert, ScrollView, View, StyleSheet, Pressable } from "react-native";
+import { Text, ActivityIndicator, Card, Chip, IconButton, useTheme } from "react-native-paper";
 import { router, useFocusEffect } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
-import { getAdapterInfo, getCategoryDisplayName, } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
-import { useApp } from "../../../../../../contexts/AppContext";
+import { getAdapterInfo, getCategoryDisplayName } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
 
-import DataConnectionButton from "../../../../../../components/common/buttons/DataConnectionButton";
-
-import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import endpoints from "../../../../../../utils/api/endpoints";
-import { apiGet } from "../../../../../../utils/api/apiClient";
+import { apiGet, apiPut, apiDelete, apiPost } from "../../../../../../utils/api/apiClient";
+import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
-import useDataSource from "../../../../../../hooks/useDataSource";
+
+const StatusPill = ({ status }) => {
+	if (!status) return null;
+	const s = String(status).toLowerCase();
+	let mode = "outlined";
+	let label = status;
+	let style = { marginLeft: 8 };
+
+	if (s === "active" || s === "connected") {
+		mode = "flat";
+		style = [{ marginLeft: 8 }, { backgroundColor: "#E6F7EE" }];
+		label = "Active";
+	} else if (s === "pending_upload" || s === "pending") {
+		mode = "flat";
+		style = [{ marginLeft: 8 }, { backgroundColor: "#FFF6E5" }];
+		label = "Pending";
+	} else if (s === "error" || s === "failed") {
+		mode = "flat";
+		style = [{ marginLeft: 8 }, { backgroundColor: "#FDECEC" }];
+		label = "Error";
+	}
+
+	return <Chip compact mode={mode} style={style}>{label}</Chip>;
+};
+
+const DataConnectionCard = ({
+	label,
+	subtitle,
+	status,
+	onNavigate,
+	onSync,
+	onDelete,
+	onTest,
+	onSettings,
+	height = 60,
+}) => {
+	const theme = useTheme();
+	return (
+		<Card style={{ borderRadius: 12, overflow: "hidden" }}>
+			<Card.Title
+				title={label}
+				subtitle={subtitle}
+				right={() => <StatusPill status={status} />}
+				onPress={onNavigate}
+			/>
+			<Card.Actions style={{ justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 8 }}>
+				<View style={{ flexDirection: "row" }}>
+				<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />
+				<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
+				<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
+				</View>
+				<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
+			</Card.Actions>
+		</Card>
+	);
+};
 
 const DataManagement = () => {
-	// Use the app context
-	const { dataSources, system, actions } = useApp();
-	
-	const {
-		list: dataSourcesList,
-		count,
-		connected,
-		errors,
-		isDemoMode,
-		updateTrigger
-	} = dataSources;
-
-	const {
-		isLoading: loading,
-		hasError,
-		error
-	} = system;
-
-	const {
-		disconnectDataSource,
-		refreshDataSources: refresh,
-		connectDataSource,
-		connectProvider,
-		forceUpdate
-	} = actions;
-
-	// Track previous data sources count for change detection
-	const prevCountRef = useRef(count);
+	const [dataSourcesList, setDataSourcesList] = useState([]);
+	const [loading, setLoading] = useState(true);
+	const [hasError, setHasError] = useState(false);
+	const [error, setError] = useState("");
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [lastManualRefresh, setLastManualRefresh] = useState(0);
+	const [workspaceId, setWorkspaceId] = useState(null);
+
+	const prevCountRef = useRef(0);
 	const hasInitiallyLoadedRef = useRef(false);
 
-	// refresh data sources list (used by pull-to-refresh and retry)
-	const handleRefresh = useCallback(async () => {
+	const fetchDataSources = useCallback(async () => {
+		setHasError(false);
+		setError("");
 		try {
-			setIsRefreshing(true);
-			console.log('[DataManagement] manual refresh triggered');
-			await refresh();
-			setLastManualRefresh(Date.now());
-		} catch (err) {
-			console.error('[DataManagement] handleRefresh error', err);
-			Alert.alert('Refresh failed', 'Unable to refresh data sources.');
+			const workspaceId = await getWorkspaceId();
+			setWorkspaceId(workspaceId);
+
+			const result = await apiGet(endpoints.modules.day_book.data_sources.getDataSources, {workspaceId});
+
+			setDataSourcesList(result.data);
+			prevCountRef.current = result.data.length;
+		} catch (error) {
+			console.error("Error fetching data sources", error);
+			setHasError(true);
+			setError(error);
 		} finally {
-			setIsRefreshing(false);
+			setLoading(false);
 		}
-	}, [refresh]);
+  }, [workspaceId]);
 
-	// Auto-refresh when data sources count changes
-	useEffect(() => {
-		if (prevCountRef.current !== count) {
-			console.log(`Data sources count changed: ${prevCountRef.current} -> ${count}`);
-			prevCountRef.current = count;
-			
-			// Optional: Show a brief success message when new source is added
-			if (count > prevCountRef.current) {
-				console.log('New data source added successfully!');
-			}
-		}
-	}, [count]);
-
-	// Auto-refresh when updateTrigger changes
-	useEffect(() => {
-		console.log('Update trigger changed, refreshing UI...');
-	}, [updateTrigger]);
-
-	// Trace local system/loading state
-	useEffect(() => {
-		console.log('[DataManagement] system loading ->', loading, 'hasError ->', hasError, 'error ->', error ?? null);
-	}, [loading, hasError, error]);
-
-	// Trace list changes as seen by the screen
-	useEffect(() => {
-		console.log('[DataManagement] dataSourcesList length ->', dataSourcesList.length);
-	}, [dataSourcesList.length]);
-
-	// FIXED: Only refresh on initial focus, not every time
 	useFocusEffect(
 		useCallback(() => {
 			if (!hasInitiallyLoadedRef.current) {
-				console.log('DataManagement screen focused for first time, refreshing data...', { existingCount: dataSourcesList.length });
-				refresh();
+				fetchDataSources();
 				hasInitiallyLoadedRef.current = true;
-				console.log('DataManagement initial focus load flag set');
-			} else {
-				console.log('DataManagement screen focused, skipping refresh (already loaded)');
-				console.log('[DataManagement] Current data sources on focus:', dataSourcesList.length, 'total');
-				console.log('[DataManagement] Data sources on screen focus:');
-				dataSourcesList.forEach((source, index) => {
-					console.log(`	[${index + 1}] ID: ${source.id}, Type: ${source.type}, Name: ${source.name}, Status: ${source.status}`);
-				});
 			}
-		}, [dataSourcesList]) // Include dataSourcesList to log current state
+		}, [fetchDataSources])
 	);
+
+	const handleRefresh = useCallback(async () => {
+		try {
+			setIsRefreshing(true);
+			await fetchDataSources();
+			setLastManualRefresh(Date.now());
+		} catch (error) {
+			console.error("Error refreshing:", error);
+			Alert.alert("Refresh failed", "Unable to refresh data sources.");
+		} finally {
+			setIsRefreshing(false);
+		}
+	}, [fetchDataSources]);
+
+	const count = dataSourcesList.length;
+	const connected = dataSourcesList.filter((s) => {
+		const st = (s.status || "").toLowerCase();
+		return st === "active" || st === "connected";
+	});
+	const errorsArr = dataSourcesList.filter((s) => (s.status || "").toLowerCase() === "error");
 
 	const formatLastSync = useCallback((dateString) => {
 		if (!dateString) return "Unknown";
@@ -129,110 +144,107 @@ const DataManagement = () => {
 		return `${diffDays}d ago`;
 	}, []);
 
-
-	const { dataSourceService } = useDataSource();
-
-	// request sync for a data source; use dataSourceService to fetch preview then refresh state
-	const handleSyncSource = useCallback(async (sourceId) => {
-		setIsRefreshing(true);
-		try {
-			if (dataSourceService && typeof dataSourceService.syncDataSource === 'function') {
-				await dataSourceService.syncDataSource(sourceId);
-			} else if (dataSourceService && typeof dataSourceService.viewData === 'function') {
-				await dataSourceService.viewData(sourceId);
-			} else {
-				console.warn('[DataManagement] No dataSourceService.syncDataSource available, falling back to refresh');
+	const handleSyncSource = useCallback(
+		async (source) => {
+			try {
+				setIsRefreshing(true);
+				await apiPut(endpoints.modules.day_book.data_sources.updateData(source.dataSourceId), { workspaceId });
+				await fetchDataSources();
+				Alert.alert("Sync complete", "Data source sync completed successfully.");
+			} catch (error) {
+				console.error("Error attempting sync:", error);
+				Alert.alert("Error trying to sync", String(error));
+			} finally {
+				setIsRefreshing(false);
 			}
+		}, [fetchDataSources, workspaceId]
+	);
 
-			if (typeof forceUpdate === 'function') {
-				try { await forceUpdate(sourceId); } catch (err) { await forceUpdate(); }
-			} else {
-				refresh();
-			}
+	const handleDisconnectSource = useCallback(
+		(source) => {
+			Alert.alert(
+				"Disconnect data source",
+				`Are you sure you want to disconnect "${source.name || source.dataSourceId}"?`,
+				[
+					{ text: "Cancel", style: "cancel" },
+					{
+						text: "Disconnect",
+						style: "destructive",
+						onPress: async () => {
+							try {
+								await apiDelete(endpoints.modules.day_book.data_sources.removeDataSource(source.dataSourceId), {workspaceId});
+								await fetchDataSources();
+							} catch (error) {
+								console.error("Error disconnecting data source", error);
+								Alert.alert("Error", String(error));
+							}
+						},
+					},
+				]
+			);
+		}, [fetchDataSources, workspaceId]
+	);
 
-			Alert.alert('Sync complete', 'Data source sync/preview completed successfully.');
-		} catch (err) {
-			console.error('[DataManagement] handleSyncSource error', err);
-			Alert.alert('Error', 'Could not complete sync.');
-		} finally {
-			setIsRefreshing(false);
-		}
-	}, [dataSourceService, forceUpdate, refresh]);
-
-	// confirm and disconnect a data source
-	const handleDisconnectSource = useCallback((sourceId, sourceName) => {
-		Alert.alert(
-			'Disconnect data source',
-			`Are you sure you want to disconnect "${sourceName || sourceId}"?`,
-			[
-				{ text: 'Cancel', style: 'cancel' },
-				{ text: 'Disconnect', style: 'destructive', onPress: async () => {
-					try {
-						await disconnectDataSource(sourceId);
-					} catch (err) {
-						console.error('[DataManagement] disconnectDataSource error', err);
-						Alert.alert('Error', 'Failed to disconnect data source.');
-					}
-				} }
-			]
-		);
-	}, [disconnectDataSource]);
-
-	// test connection (placeholder)
-	const handleTestConnection = useCallback(async (sourceId) => {
+	const handleTestConnection = useCallback(async (source) => {
 		try {
-			refresh();
-			Alert.alert('Test Connection', 'Connection test requested.');
-		} catch (err) {
-			console.error('[DataManagement] handleTestConnection error', err);
-			Alert.alert('Error', 'Connection test failed.');
+			const body = {
+				sourceType: source.sourceType || source.type,
+				config: source.config ?? {},
+				secrets: source.secrets ?? {},
+			};
+			await apiPost(endpoints.modules.day_book.data_sources.testConnection, body);
+			Alert.alert("Test Connection", "Connection test requested.");
+		} catch (error) {
+			console.error("[DataManagement] handleTestConnection error", error);
+			Alert.alert("Error", String(error));
 		}
-	}, [refresh]);
-
-	const renderDataSourceCard = useCallback((source) => {
-		const adapterInfo = getAdapterInfo(source.type);
-		if (!adapterInfo) return null;
-
-		return (
-			<View key={source.id} style={{ marginBottom: 12 }}>
-				<DataConnectionButton
-					label={source.name}
-					height={60}
-					onNavigate={() => router.navigate(`/modules/day-book/data-management/select-data-source/${source.id}`)}
-					onSync={() => handleSyncSource(source.id)}
-					onDelete={() => handleDisconnectSource(source.id, source.name)}
-					onTest={() => handleTestConnection(source.id)}
-					onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.id}`)}
-				/>
-			</View>
-		);
-	}, [handleSyncSource, handleDisconnectSource, handleTestConnection]);
+	}, []);
 
 	const groupSourcesByCategory = useCallback(() => {
 		const grouped = {};
 		dataSourcesList.forEach((source) => {
-			const adapterInfo = getAdapterInfo(source.type);
-			if (adapterInfo) {
-				const category = adapterInfo.category;
-				if (!grouped[category]) {
-					grouped[category] = [];
-				}
-				grouped[category].push(source);
-			}
+			const adapterInfo = getAdapterInfo(source.sourceType || source.type);
+			const category = adapterInfo?.category || "other";
+			if (!grouped[category]) grouped[category] = [];
+			grouped[category].push(source);
 		});
 		return grouped;
 	}, [dataSourcesList]);
 
 	const groupedSources = groupSourcesByCategory();
 
-	// Build the body based on loading/error/normal states
+	const renderDataSourceCard = useCallback(
+		(source) => {
+			const adapterInfo = getAdapterInfo(source.sourceType || source.type);
+			if (!adapterInfo) return null;
+
+			return (
+				<View key={source.dataSourceId} style={{ marginBottom: 12 }}>
+					<DataConnectionCard
+						label={source.name}
+						height={60}
+						subtitle={source.lastUpdate ? `Last sync: ${formatLastSync(source.lastUpdate)}` : undefined}
+						status={source.status}
+						onNavigate={() => router.navigate(`/modules/day-book/data-management/view-data-source/${source.dataSourceId}`)}
+						onSync={() => handleSyncSource(source)}
+						onDelete={() => handleDisconnectSource(source)}
+						onTest={() => handleTestConnection(source)}
+						onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.dataSourceId}`)}
+					/>
+				</View>
+			);
+		},
+		[formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection]
+	);
+
 	let body = null;
+
 	if (loading && !isRefreshing) {
 		body = (
-			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" />
-				<Text style={styles.loadingText}>Loading data sources...</Text>
-			</View>
+		<View style={styles.loadingContainer}>
+			<ActivityIndicator size="large" />
+			<Text style={styles.loadingText}>Loading data sources...</Text>
+		</View>
 		);
 	} else if (hasError) {
 		body = (
@@ -261,7 +273,7 @@ const DataManagement = () => {
 					/>
 				}
 			>
-				{/* Data Sources Summary */}
+				
 				{dataSourcesList.length > 0 && (
 					<View style={styles.summarySection}>
 						<Text variant="titleMedium" style={styles.summaryTitle}>
@@ -269,10 +281,9 @@ const DataManagement = () => {
 						</Text>
 						<View style={styles.summaryRow}>
 							<Text>Total Sources: {count}</Text>
-							<Text>Connected: {connected.length}</Text>
-							<Text>Errors: {errors.length}</Text>
+							<Text>Active: {connected.length}</Text>
+							<Text>Errors: {errorsArr.length}</Text>
 						</View>
-						{/* Show last manual refresh time */}
 						{lastManualRefresh > 0 && (
 							<Text style={styles.lastUpdateText}>
 								Last refreshed: {new Date(lastManualRefresh).toLocaleTimeString()}
@@ -283,7 +294,7 @@ const DataManagement = () => {
 
 				{/* Grouped Data Sources */}
 				{Object.entries(groupedSources).map(([category, sources]) => (
-					<View key={category} style={styles.categorySection}>
+					<View key={category}>
 						<Text variant="titleMedium" style={styles.categoryTitle}>
 							{getCategoryDisplayName(category)} ({sources.length})
 						</Text>
@@ -291,7 +302,6 @@ const DataManagement = () => {
 					</View>
 				))}
 
-				{/* Empty State */}
 				{dataSourcesList.length === 0 && !loading && (
 					<View style={styles.emptyState}>
 						<Text variant="headlineSmall" style={styles.emptyStateTitle}>
@@ -302,45 +312,26 @@ const DataManagement = () => {
 						</Text>
 					</View>
 				)}
-
-				{/* Debug info in development */}
-				{__DEV__ && (
-					<View style={styles.debugSection}>
-						<Text style={styles.debugText}>
-							Debug: Update Trigger = {updateTrigger}, Sources = {count}
-						</Text>
-						<Text style={styles.debugText}>
-							Initial Load: {hasInitiallyLoadedRef.current ? 'Yes' : 'No'}
-						</Text>
-					</View>
-				)}
 			</ScrollView>
 		);
 	}
 
 	return (
 		<ResponsiveScreen
-			header={<Header
-				title="Data Management"
-				showMenu
-				showPlus
-				onRightIconPress={() => router.navigate("/modules/day-book/data-management/create-data-connection")}
-			/>}
-			center={false}
-			padded={false}
-			scroll={true}
+		header={
+			<Header
+			title="Data Management"
+			showMenu
+			showPlus
+			onRightIconPress={() =>
+				router.navigate("/modules/day-book/data-management/create-data-connection")
+			}
+			/>
+		}
+		center={false}
+		scroll={true}
 		>
-
-			{/* Demo Mode Indicator */}
-			{isDemoMode && (
-				<View style={styles.demoModeIndicator}>
-					<Text style={styles.demoModeText}>
-						Demo Mode - Sign in to sync your data sources
-					</Text>
-				</View>
-			)}
-
-			{body}
+		{body}
 		</ResponsiveScreen>
 	);
 };
@@ -348,118 +339,78 @@ const DataManagement = () => {
 export default DataManagement;
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		padding: 16,
-	},
-	loadingContainer: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	loadingText: {
-		marginTop: 16,
-	},
-	errorContainer: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		paddingHorizontal: 32,
-	},
-	retryButton: {
-		paddingHorizontal: 24,
-		paddingVertical: 12,
-		borderRadius: 8,
-	},
-	categorySection: {
-		marginBottom: 24,
-	},
-	categoryTitle: {
-		marginBottom: 12,
-	},
-	demoModeIndicator: {
-		backgroundColor: '#FFF3CD',
-		borderColor: '#FFEAA7',
-		borderWidth: 1,
-		padding: 12,
-		marginHorizontal: 16,
-		marginBottom: 8,
-		borderRadius: 8,
-	},
-	demoModeText: {
-		color: '#856404',
-		textAlign: 'center',
-		fontSize: 14,
-	},
-	summarySection: {
-		marginBottom: 24,
-		padding: 16,
-		borderRadius: 8,
-	},
-	summaryTitle: {
-		marginBottom: 8,
-	},
-	summaryRow: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		marginBottom: 8,
-	},
-	lastUpdateText: {
-		fontSize: 12,
-		color: '#666',
-		fontStyle: 'italic',
-	},
-	refreshButtonContainer: {
-		marginBottom: 16,
-		alignItems: 'center',
-	},
-	manualRefreshButton: {
-		paddingHorizontal: 24,
-		paddingVertical: 12,
-		backgroundColor: '#f0f0f0',
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: '#ddd',
-	},
-	refreshButtonText: {
-		color: '#333',
-		fontWeight: '500',
-	},
-	emptyState: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-		paddingHorizontal: 32,
-		paddingVertical: 48,
-	},
-	emptyStateTitle: {
-		marginBottom: 8,
-		textAlign: 'center',
-	},
-	emptyStateMessage: {
-		marginBottom: 24,
-		textAlign: 'center',
-		color: '#666',
-	},
-	addButton: {
-		paddingHorizontal: 24,
-		paddingVertical: 12,
-		backgroundColor: '#007AFF',
-		borderRadius: 8,
-	},
-	addButtonText: {
-		color: 'white',
-		fontWeight: 'bold',
-	},
-	debugSection: {
-		padding: 10,
-		backgroundColor: '#f0f0f0',
-		borderRadius: 5,
-		marginTop: 20,
-		marginBottom: 50,
-	},
-	debugText: {
-		fontSize: 12,
-		color: '#666',
-	},
+  container: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    color: "#007AFF",
+    fontWeight: "600",
+  },
+  categoryTitle: {
+    marginBottom: 12,
+  },
+  summarySection: {
+    marginBottom: 24,
+    padding: 16,
+    borderRadius: 8,
+  },
+  summaryTitle: {
+    marginBottom: 8,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  lastUpdateText: {
+    fontSize: 12,
+    color: "#666",
+    fontStyle: "italic",
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+    paddingVertical: 48,
+  },
+  emptyStateTitle: {
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyStateMessage: {
+    marginBottom: 24,
+    textAlign: "center",
+    color: "#666",
+  },
+  debugSection: {
+    padding: 10,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 5,
+    marginTop: 20,
+    marginBottom: 50,
+  },
+  debugText: {
+    fontSize: 12,
+    color: "#666",
+  },
 });

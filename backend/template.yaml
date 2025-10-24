@@ -19,7 +19,14 @@ Parameters:
   AthenaDatabaseName:
     Type: String
     Default: etron_day_book_db
-    
+  AuditQueueArn:
+    Type: String
+  AuditQueueUrl:
+    Type: String
+  AppSyncUrl:
+    Type: String
+  AppSyncApiKey:
+    Type: String
 
 Resources:
 
@@ -37,6 +44,7 @@ Resources:
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
+        AuditQueueUrl: !Ref AuditQueueUrl
 
   AuditDomainFunctions:
     Type: AWS::CloudFormation::Stack
@@ -45,6 +53,8 @@ Resources:
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
+        AuditQueueArn: !Ref AuditQueueArn
+        AuditQueueUrl: !Ref AuditQueueUrl
         
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
@@ -52,6 +62,7 @@ Resources:
       TemplateURL: ./user/template.yaml
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
+        AuditQueueUrl: !Ref AuditQueueUrl
         
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
@@ -61,3 +72,6 @@ Resources:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
         AthenaDatabaseName: !Ref AthenaDatabaseName
+        AuditQueueUrl: !Ref AuditQueueUrl
+        AppSyncUrl: !Ref AppSyncUrl
+        AppSyncApiKey: !Ref AppSyncApiKey

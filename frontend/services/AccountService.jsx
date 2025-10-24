@@ -55,39 +55,39 @@ class AccountService {
     }
 
     // Helper method to handle authentication success
-        async handleAuthSuccess(provider = 'Cognito') {
-    try {
-      if (this.callbacks.onAuthSuccess) {
-        await this.callbacks.onAuthSuccess(provider);
-      }
+    async handleAuthSuccess(provider = 'Cognito') {
+        try {
+            if (this.callbacks.onAuthSuccess) {
+                await this.callbacks.onAuthSuccess(provider);
+            }
             // After app-level auth success, fetch and store the user's workspace
             try {
                 await workspaceService.fetchAndSetWorkspaceForCurrentUser();
             } catch (wsErr) {
                 console.warn('[AccountService] Could not fetch/set workspace after login:', wsErr?.message || wsErr);
             }
-      
-      // If we were linking, add the account to storage
-      if (this.isLinking) {
-        try {
-          const userInfo = await AuthService.getCurrentUserInfo();
-          if (userInfo.email) {
-            // Add to linked accounts with user attributes
-            await AccountStorage.addLinkedAccount(userInfo.email, provider, userInfo.attributes);
-            console.log(`Successfully linked account: ${userInfo.email}`);
-            this.showMessage(`Successfully linked ${userInfo.email}`);
-          }
-        } catch (storageError) {
-          console.error('Failed to store linked account:', storageError);
-          this.showMessage('Account linked but failed to save locally', true);
+        
+            // If we were linking, add the account to storage
+            if (this.isLinking) {
+                try {
+                const userInfo = await AuthService.getCurrentUserInfo();
+                if (userInfo.email) {
+                    // Add to linked accounts with user attributes
+                    await AccountStorage.addLinkedAccount(userInfo.email, provider, userInfo.attributes);
+                    console.log(`Successfully linked account: ${userInfo.email}`);
+                    this.showMessage(`Successfully linked ${userInfo.email}`);
+                }
+                } catch (storageError) {
+                console.error('Failed to store linked account:', storageError);
+                this.showMessage('Account linked but failed to save locally', true);
+                }
+                this.isLinking = false;
+            }
+        } catch (error) {
+            console.error('Error handling auth success:', error);
+            this.showMessage('Authentication successful but failed to update account info', true);
         }
-        this.isLinking = false;
-      }
-    } catch (error) {
-      console.error('Error handling auth success:', error);
-      this.showMessage('Authentication successful but failed to update account info', true);
     }
-  }
 
     // Sign out user (useful for linking accounts)
     async signOutUser() {
@@ -126,7 +126,6 @@ class AccountService {
     async signUpWithEmail(email, password, confirmPassword) {
         try {
             if (password !== confirmPassword) {
-                this.showMessage("Error: Passwords do not match.", true);
                 return { success: false, error: "Passwords do not match" };
             }
 
@@ -141,11 +140,9 @@ class AccountService {
             });
 
             console.log('Sign up successful:', result);
-            this.showMessage("Sign up successful! Check your email to confirm.");
             return { success: true, result };
         } catch (error) {
             console.log('Error signing up:', error);
-            this.showMessage(`Error: ${error.message}`, true);
             return { success: false, error: error.message };
         }
     }

@@ -16,11 +16,6 @@ const Settings = () => {
 
     // container for different setting options
     const settingButtonMap = [
-        { 
-            icon: "account", 
-            label: "Account", 
-            onPress: () => router.navigate("/settings/account")
-        },
         {
             permKey: "app.workspace.view_workspace_settings", 
             icon: "briefcase-outline", 
@@ -68,10 +63,9 @@ const Settings = () => {
     return (
         <ResponsiveScreen
             header={
-                <Header title="Settings" showMenu />
+                <Header title="Workspace Settings" showMenu />
             }
             center={false}
-            padded={false}
             scroll={true}
         >
             <StackLayout spacing={12}>

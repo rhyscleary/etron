@@ -27,7 +27,6 @@ const Collaboration = () => {
                 <Header title="Collaboration" showMenu />
             }
 			center={false}
-			padded={false}
             scroll={true}
 		>
             <StackLayout spacing={12}>
