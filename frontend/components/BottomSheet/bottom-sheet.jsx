@@ -73,8 +73,8 @@ const CustomBottomSheetInner = (props, ref) => {
     // Footer configuration
     footer = {},
     
-    // List configuration
-    data = [1, 2, 3],
+  // List configuration
+    data = [],
     renderItem,
     keyExtractor,
     getItem,
@@ -85,6 +85,7 @@ const CustomBottomSheetInner = (props, ref) => {
     
     // Custom content (alternative to list)
     customContent,
+    children,
     
     ...restProps
   } = props;
@@ -333,6 +334,9 @@ const CustomBottomSheetInner = (props, ref) => {
     return overrideContainerStyle ? [...base, overrideContainerStyle] : base;
   }, [theme.colors?.shadow, overrideContainerStyle]);
 
+  const resolvedCustomContent = customContent ?? children;
+  const hasCustomContent = resolvedCustomContent !== undefined && resolvedCustomContent !== null;
+
   return (
     <BottomSheet
       ref={bottomSheetRef}
@@ -355,11 +359,11 @@ const CustomBottomSheetInner = (props, ref) => {
       containerStyle={combinedContainerStyle}
       {...restProps}
     >
-      {customContent ? (
+      {hasCustomContent ? (
         <BottomSheetView
           style={{ flex: 1, paddingHorizontal: 16, paddingBottom: bottomPadding, paddingTop: 12 }}
         >
-          {customContent}
+          {resolvedCustomContent}
         </BottomSheetView>
       ) : (
         <Contents

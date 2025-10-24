@@ -15,6 +15,7 @@ TODO:
 
 const Header = ({
     title,
+    subtitle,
     showBack,
     showMenu,
     showEdit,
@@ -27,7 +28,8 @@ const Header = ({
     onEllipsisPress,
     customBackAction,
     onBackPress,
-    backIcon
+    backIcon,
+    rightActions = []
 }) => {
     const router = useRouter();
     const theme = useTheme();
@@ -55,19 +57,26 @@ const Header = ({
                 ) : null
             }
             
-            <Appbar.Content title={title} />
+            <Appbar.Content title={title} subtitle={subtitle} />
             {showEllipsis && (
                 <Appbar.Action icon="dots-vertical" onPress={onEllipsisPress} />
             )}
-            {
-                showPlus ? (
+            {rightActions.length > 0
+                ? rightActions.map((action, index) => (
+                    <Appbar.Action
+                        key={action.key || index}
+                        icon={action.icon}
+                        onPress={action.onPress}
+                        disabled={action.disabled}
+                    />
+                ))
+                : showPlus ? (
                     <Appbar.Action icon="plus" onPress={onRightIconPress} />
                 ) : showEdit ? (
                     <Appbar.Action icon="pencil" onPress={onRightIconPress} />
                 ) : showCheck ? (
                     <Appbar.Action icon="check" onPress={onRightIconPress} />
-                ) : null
-            }
+                ) : null}
 
         </Appbar.Header>
     );

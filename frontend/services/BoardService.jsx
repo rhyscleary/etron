@@ -1,0 +1,344 @@
+import * as BoardStorage from '../storage/boardStorage';
+import endpoints from '../utils/api/endpoints';
+import apiClient from '../utils/api/apiClient';
+import { getWorkspaceId } from '../storage/workspaceStorage';
+
+class BoardService {
+    async getAllBoards() {
+        try {
+            const workspaceId = await getWorkspaceId();
+            if (!workspaceId) {
+                console.error('[BoardService] No workspace ID available');
+                return [];
+            }
+
+            console.log('[BoardService] Fetching boards for workspace:', workspaceId);
+            const url = endpoints.workspace.boards.getBoards(workspaceId);
+            const response = await apiClient.get(url);
+            
+            // Transform backend response to frontend format
+            const boards = Array.isArray(response.data) ? response.data : [];
+            return boards.map(board => this._transformBoardFromBackend(board));
+        } catch (error) {
+            console.error('[BoardService] getAllBoards error:', error);
+            return [];
+        }
+    }
+
+    async getBoard(boardId) {
+        try {
+            const workspaceId = await getWorkspaceId();
+            if (!workspaceId) {
+                console.error('[BoardService] No workspace ID available');
+                return null;
+            }
+
+            console.log('[BoardService] Fetching board:', boardId);
+            const url = endpoints.workspace.boards.getBoard(workspaceId, boardId);
+            const response = await apiClient.get(url);
+            
+            return this._transformBoardFromBackend(response.data);
+        } catch (error) {
+            console.error('[BoardService] getBoard error:', error);
+            return null;
+        }
+    }
+
+    async createBoard(boardData) {
+        try {
+            const workspaceId = await getWorkspaceId();
+            if (!workspaceId) {
+                console.error('[BoardService] No workspace ID available');
+                return null;
+            }
+
+            // Transform frontend format to backend format
+            const backendPayload = {
+                name: boardData.name || 'Untitled Board',
+                config: {
+                    description: boardData.description || '',
+                    items: boardData.items || [],
+                    settings: {
+                        cols: boardData.cols || 12,
+                        rowHeight: boardData.rowHeight || 100,
+                        margin: boardData.margin || [12, 12],
+                        backgroundColor: boardData.backgroundColor || null,
+                        ...boardData.settings
+                    }
+                },
+                isDashboard: boardData.isDashboard || false
+            };
+
+            console.log('[BoardService] Creating board:', backendPayload);
+            const url = endpoints.workspace.boards.create(workspaceId);
+            const response = await apiClient.post(url, backendPayload);
+            
+            return this._transformBoardFromBackend(response.data);
+        } catch (error) {
+            console.error('[BoardService] createBoard error:', error);
+            return null;
+        }
+    }
+
+    async updateBoard(boardId, updates) {
+        try {
+            const workspaceId = await getWorkspaceId();
+            if (!workspaceId) {
+                console.error('[BoardService] No workspace ID available');
+                return null;
+            }
+
+            // Get current board to merge updates
+            const board = await this.getBoard(boardId);
+            if (!board) {
+                console.error('[BoardService] Board not found:', boardId);
+                return null;
+            }
+
+            // Prepare backend update payload
+            const backendPayload = {};
+            
+            if (updates.name) {
+                backendPayload.name = updates.name;
+            }
+            
+            if (updates.isDashboard !== undefined) {
+                backendPayload.isDashboard = updates.isDashboard;
+            }
+
+            // Merge config updates
+            if (updates.items || updates.settings || updates.description) {
+                backendPayload.config = {
+                    ...board.config,
+                    items: updates.items !== undefined ? updates.items : board.config?.items || [],
+                    settings: updates.settings ? { ...board.config?.settings, ...updates.settings } : board.config?.settings,
+                    description: updates.description !== undefined ? updates.description : board.config?.description
+                };
+            }
+
+            // Check if thumbnail was updated
+            if (updates.thumbnail || updates.thumbnailUpdated) {
+                backendPayload.isThumbnailUpdated = true;
+            }
+
+            console.log('[BoardService] Updating board:', boardId, backendPayload);
+            const url = endpoints.workspace.boards.update(workspaceId, boardId);
+            const response = await apiClient.patch(url, backendPayload);
+            
+            return this._transformBoardFromBackend(response.data);
+        } catch (error) {
+            console.error('[BoardService] updateBoard error:', error);
+            return null;
+        }
+    }
+
+    async deleteBoard(boardId) {
+        try {
+            const workspaceId = await getWorkspaceId();
+            if (!workspaceId) {
+                console.error('[BoardService] No workspace ID available');
+                return false;
+            }
+
+            console.log('[BoardService] Deleting board:', boardId);
+            const url = endpoints.workspace.boards.delete(workspaceId, boardId);
+            await apiClient.delete(url);
+            
+            return true;
+        } catch (error) {
+            console.error('[BoardService] deleteBoard error:', error);
+            return false;
+        }
+    }
+
+    async duplicateBoard(boardId) {
+        try {
+            // Get the original board
+            const board = await this.getBoard(boardId);
+            if (!board) {
+                console.error('[BoardService] Board not found for duplication:', boardId);
+                return null;
+            }
+
+            // Create a copy with modified name
+            const duplicateData = {
+                name: `${board.name} (Copy)`,
+                description: board.description,
+                items: board.items,
+                settings: board.settings,
+                isDashboard: false // Duplicates are not dashboards by default
+            };
+
+            return await this.createBoard(duplicateData);
+        } catch (error) {
+            console.error('[BoardService] duplicateBoard error:', error);
+            return null;
+        }
+    }
+
+    _transformBoardFromBackend(backendBoard) {
+        if (!backendBoard) return null;
+
+        return {
+            id: backendBoard.boardId,
+            name: backendBoard.name,
+            description: backendBoard.config?.description || '',
+            items: backendBoard.config?.items || [],
+            settings: backendBoard.config?.settings || {
+                cols: 12,
+                rowHeight: 100,
+                margin: [12, 12],
+                backgroundColor: null
+            },
+            isDashboard: backendBoard.isDashboard || false,
+            thumbnailUrl: backendBoard.thumbnailUrl,
+            thumbnailUploadUrl: backendBoard.thumbnailUploadUrl,
+            metadata: {
+                createdAt: backendBoard.createdAt,
+                updatedAt: backendBoard.updatedAt,
+                createdBy: backendBoard.createdBy,
+                editedBy: backendBoard.editedBy || [],
+                version: 1
+            },
+            // Keep original backend data for reference
+            _backend: backendBoard
+        };
+    }
+
+    async addItem(boardId, item) {
+        const board = await this.getBoard(boardId);
+        if (!board) return null;
+
+        const newItem = {
+            id: item.id || `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: item.type || 'metric',
+            x: item.x ?? 0,
+            y: item.y ?? 0,
+            w: item.w || 6,
+            h: item.h || 2,
+            config: item.config || {},
+            style: item.style || {},
+            metadata: {
+                addedAt: new Date().toISOString(),
+                ...item.metadata
+            }
+        };
+
+        const updatedItems = [...(board.items || []), newItem];
+        const updatedBoard = await this.updateBoard(boardId, { items: updatedItems });
+        
+        return updatedBoard;
+    }
+
+    async updateItem(boardId, itemId, updates) {
+        const board = await this.getBoard(boardId);
+        if (!board) return null;
+
+        const items = board.items || [];
+        const itemIndex = items.findIndex(i => i.id === itemId);
+        
+        if (itemIndex === -1) {
+            console.error('[BoardService] Item not found:', itemId);
+            return null;
+        }
+
+        items[itemIndex] = {
+            ...items[itemIndex],
+            ...updates,
+            id: itemId // Preserve ID
+        };
+
+        const updatedBoard = await this.updateBoard(boardId, { items });
+        return updatedBoard;
+    }
+
+    async removeItem(boardId, itemId) {
+        const board = await this.getBoard(boardId);
+        if (!board) return null;
+
+        const items = (board.items || []).filter(i => i.id !== itemId);
+        const updatedBoard = await this.updateBoard(boardId, { items });
+        
+        return updatedBoard;
+    }
+
+    async updateLayout(boardId, newLayout) {
+        const board = await this.getBoard(boardId);
+        if (!board) return null;
+
+        // Merge layout updates with existing item data
+        const updatedItems = newLayout.map(layoutItem => {
+            const existingItem = (board.items || []).find(i => i.id === layoutItem.id);
+            return existingItem ? {
+                ...existingItem,
+                x: layoutItem.x,
+                y: layoutItem.y,
+                w: layoutItem.w,
+                h: layoutItem.h
+            } : layoutItem;
+        });
+
+        return await this.updateBoard(boardId, { items: updatedItems });
+    }
+
+    async setAsActiveDashboard(boardId) {
+        try {
+            await this.updateBoard(boardId, { isDashboard: true });
+            return await BoardStorage.setActiveBoard(boardId);
+        } catch (error) {
+            console.error('[BoardService] setAsActiveDashboard error:', error);
+            return await BoardStorage.setActiveBoard(boardId);
+        }
+    }
+
+    async getActiveDashboard() {
+        const boardId = await BoardStorage.getActiveBoardId();
+        if (!boardId) return null;
+        return await this.getBoard(boardId);
+    }
+
+    async getActiveDashboardId() {
+        return await BoardStorage.getActiveBoardId();
+    }
+
+    async markAsViewed(boardId) {
+        const board = await this.getBoard(boardId);
+        if (!board) return false;
+        return true;
+    }
+
+    async saveDraft(boardId, draftData) {
+        try {
+            const draft = {
+                boardId,
+                data: draftData,
+                savedAt: new Date().toISOString()
+            };
+            return await BoardStorage.saveDraft(draft);
+        } catch (error) {
+            console.error('[BoardService] saveDraft error:', error);
+            return false;
+        }
+    }
+
+    async loadDraft(boardId) {
+        try {
+            return await BoardStorage.loadDraft(boardId);
+        } catch (error) {
+            console.error('[BoardService] loadDraft error:', error);
+            return null;
+        }
+    }
+
+    async clearDraft(boardId) {
+        try {
+            return await BoardStorage.clearDraft(boardId);
+        } catch (error) {
+            console.error('[BoardService] clearDraft error:', error);
+            return false;
+        }
+    }
+}
+
+const boardService = new BoardService();
+export default boardService;

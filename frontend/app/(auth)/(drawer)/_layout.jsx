@@ -23,6 +23,7 @@ const dayBookOptions = [
 
 const boardOptions = [
     { name: "dashboard", label: "Dashboard", icon: "view-compact" },
+    { name: "boards", label: "Boards", icon: "view-grid-plus" },
 ]
 
 const DrawerRow = ({ label, icon, onPress, active = false, style }) => {
@@ -71,20 +72,15 @@ const CustomDrawer = (props) => {
 
     let generalRoutes = [];
     let dayBookRoutes = [];
-    let boardRoutes = [];
     state.routes.map((route) => {
         if (generalOptions.some(page => page.name == route.name)) generalRoutes.push(route);
         else if (dayBookOptions.some(page => page.name == route.name)) dayBookRoutes.push(route);
-        else if (boardOptions.some(page => page.name == route.name)) boardRoutes.push(route);
     })
 
     let displayedRoutes;
     switch (String(drawerState)) {
         case "day-book":
             displayedRoutes = dayBookRoutes;
-            break;
-        case "boards":
-            displayedRoutes = boardRoutes;
             break;
         default:
             displayedRoutes = []
@@ -101,10 +97,25 @@ const CustomDrawer = (props) => {
                 {drawerState == "default" ? (
                     <View>
                         <DrawerRow
-                            label="Boards"
+                            label="Dashboard"
                             icon="view-dashboard"
-                            onPress={() => setDrawerState("boards")}
+                            onPress={() => {
+                                setDrawerState("default");
+                                navigation.navigate("dashboard");
+                                navigation.closeDrawer();
+                            }}
                             style={{ marginTop: 6 }}
+                            active={activeRouteName === "dashboard"}
+                        />
+                        <DrawerRow
+                            label="Boards"
+                            icon="view-grid-plus"
+                            onPress={() => {
+                                setDrawerState("default");
+                                navigation.navigate("boards");
+                                navigation.closeDrawer();
+                            }}
+                            active={activeRouteName === "boards"}
                         />
                         <View style={styles.divider} />
                         <DrawerRow
