@@ -98,7 +98,7 @@ export function useAccount() {
             await AccountStorage.signOutUser();
             router.push({
                 pathname: '/login-signup',
-                params: { email: targetEmail, fromAccounts: 'true' },
+                params: { emailParam: targetEmail, fromAccounts: 'true' },
             });
         } catch (err) {
             //console.error("Error switching account:", err);

@@ -22,29 +22,29 @@ const Settings = () => {
             label: "Workspace", 
             onPress: () => router.navigate("/settings/workspace/workspace-management") 
         },
-        { 
+        /*{ 
             icon: "palette-outline", 
             label: "Themes", 
             onPress: () => router.navigate("/settings/theme-settings") 
-        },
-        { 
+        },*/
+        /*{ 
             image: require("../../../../assets/icons/menu/accessibility.png"), 
             label: "Accessibility", 
             onPress: () => router.navigate("/settings/accessibility-settings") 
-        },
-        { 
+        },*/
+        /*{ 
             icon: "information-outline", 
             label: "Support", 
             onPress: () => router.navigate("/settings/support-settings") 
-        },
-        { 
+        },*/
+        /*{ 
             image: require("../../../../assets/icons/menu/privacy_policy.png"), 
             label: "Privacy Policy", 
-        },
-        { 
+        },*/
+        /*{ 
             icon: "file-document-multiple-outline", 
             label: "Terms and Conditions",
-        },
+        },*/
     ];
 
     useEffect(() => {
@@ -63,7 +63,7 @@ const Settings = () => {
     return (
         <ResponsiveScreen
             header={
-                <Header title="Workspace Settings" showMenu />
+                <Header title="Settings" showMenu />
             }
             center={false}
             scroll={true}
@@ -79,6 +79,7 @@ const Settings = () => {
                         onPress={item.onPress}
                     />
                 ))}
+                <Text>More options will be added to this page in the future.</Text>
             </StackLayout>
         </ResponsiveScreen>
     )

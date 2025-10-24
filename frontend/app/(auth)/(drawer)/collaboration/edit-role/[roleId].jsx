@@ -282,7 +282,7 @@ export default function EditRole() {
 					itemId={roleId}
 					listRoute="/collaboration/roles"
 				/>
-			) : (<StackLayout>
+			) : (<StackLayout spacing={16}>
 				{willSelfLoseManageRoles && (
 					<Chip icon="alert" style={{ marginBottom: 16 }} selected>
 						You're removing your own “Manage Roles” permission.
@@ -421,7 +421,7 @@ export default function EditRole() {
 }
 
 const styles = StyleSheet.create({
-	card: { marginBottom: 16 },
+	card: { marginTop: 16 },
 	chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
 	chip: { marginBottom: 8 },
 });
