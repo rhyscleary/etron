@@ -121,6 +121,7 @@ const LocalCSV = () => {
             <ResponsiveScreen
                 header = {<Header title="Upload CSV" showBack />}
                 scroll = {true}
+                center = {false}
                 loadingOverlayActive={loading}
             >
                 <Button onPress={userSelectFile} title="Pick a CSV File" disabled={isUploadingData} />
