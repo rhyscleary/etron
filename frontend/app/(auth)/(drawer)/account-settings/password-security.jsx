@@ -18,10 +18,6 @@ const PasswordSecurity = () => {
         >
             <ScrollView contentContainerStyle={commonStyles.scrollableContentContainer} >
                 <StackLayout spacing={20}>
-                    <StackLayout spacing={4}>
-                        <Text style={commonStyles.listItemText}>Login and Recovery</Text>
-                        <Text style={commonStyles.captionText}>Update your password and recovery methods</Text>
-                    </StackLayout>
                     <DescriptiveButton 
                         key={"Update Password"}
                         label={"Update Password"}
