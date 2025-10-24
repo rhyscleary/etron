@@ -30,8 +30,10 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
   const position = getFirstAvailablePosition(existingLayout, 2, 1, cols);
 
   // Handle both old format (destination object) and new format (buttonConfig)
-  const label = buttonConfig.label || buttonConfig.destination?.label || "Button";
-  const route = buttonConfig.destination?.route || buttonConfig.destination || null;
+  const label =
+    buttonConfig.label || buttonConfig.destination?.label || "Button";
+  const route =
+    buttonConfig.destination?.route || buttonConfig.destination || null;
   const color = buttonConfig.color || "#2979FF";
 
   return {
