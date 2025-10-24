@@ -34,19 +34,19 @@ const GraphTypes = {
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
                                     }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -99,19 +99,19 @@ const GraphTypes = {
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
                                     }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -164,7 +164,7 @@ const GraphTypes = {
                                 colorScale={colours && colours.length > 0 ? colours : "qualitative"}
                                 labels={({ datum }) => `${datum.x}: ${datum.y}`}
                                 style={{
-                                    labels: { fontSize: 12, fill: "white" },
+                                    labels: { fontSize: 12, fill: "black" },
                                 }}
                                 padding={{ top: 30, bottom: 30, left: 20, right: 20 }}
                             />
@@ -205,10 +205,10 @@ const GraphTypes = {
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
                                     }}
                                 />
 
@@ -216,10 +216,10 @@ const GraphTypes = {
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -280,10 +280,10 @@ const GraphTypes = {
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
                                     }}
                                 />
 
@@ -291,10 +291,10 @@ const GraphTypes = {
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -351,20 +351,20 @@ const GraphTypes = {
                             {/* X Axis */}
                             <VictoryAxis
                                 style={{
-                                    axis: { stroke: "white" },
-                                    ticks: { stroke: "white" },
-                                    tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                    axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                    axis: { stroke: "black" },
+                                    ticks: { stroke: "black" },
+                                    tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                    axisLabel: { fill: "black", fontSize: 12, padding: 30 },
                                 }}
                             />
                             {/* Y Axis */}
                             <VictoryAxis
                                 dependentAxis
                                 style={{
-                                    axis: { stroke: "white" },
-                                    ticks: { stroke: "white" },
-                                    tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                    axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                    axis: { stroke: "black" },
+                                    ticks: { stroke: "black" },
+                                    tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                    axisLabel: { fill: "black", fontSize: 12, padding: 40 },
                                 }}
                             />
 
@@ -419,19 +419,19 @@ const GraphTypes = {
                             >
                                 <VictoryAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 30 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
                                     }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "white" },
-                                        ticks: { stroke: "white" },
-                                        tickLabels: { fill: "white", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "white", fontSize: 12, padding: 40 },
+                                        axis: { stroke: "black" },
+                                        ticks: { stroke: "black" },
+                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -443,7 +443,7 @@ const GraphTypes = {
                                     style={{
                                         data: {
                                             fill: colours[0] || "#4f83cc",
-                                            stroke: "white",
+                                            stroke: "black",
                                             strokeWidth: 1,
                                         },
                                     }}
@@ -489,9 +489,9 @@ const GraphTypes = {
                         >
                             <VictoryAxis
                                 style={{
-                                    axis: { stroke: "white" },
-                                    ticks: { stroke: "white" },
-                                    tickLabels: { fill: "white", fontSize: 10, padding: 5 },
+                                    axis: { stroke: "black" },
+                                    ticks: { stroke: "black" },
+                                    tickLabels: { fill: "black", fontSize: 10, padding: 5 },
                                 }}
                             />
                             {/* No dependent axis needed (progress is just a bar) */}
@@ -565,7 +565,7 @@ progress: {
                                 x={size.width / 2}
                                 y={size.height / 2}
                                 text={`${Math.round(percent)}%`}
-                                style={{ fontSize: 24, fill: "white" }}
+                                style={{ fontSize: 24, fill: "black" }}
                             />
                         </Svg>
                     )}
@@ -586,7 +586,7 @@ progress: {
             if (!data || data.length === 0 || !yKeys || yKeys.length === 0) {
                 return (
                     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ color: "white" }}>No data available</Text>
+                        <Text style={{ color: "black" }}>No data available</Text>
                     </View>
                 );
             }
@@ -602,7 +602,7 @@ progress: {
                             style={{
                                 fontSize: 18,
                                 fontWeight: "bold",
-                                color: colours[index] || "white",
+                                color: colours[index] || "black",
                                 marginVertical: 4,
                             }}
                         >
