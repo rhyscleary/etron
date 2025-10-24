@@ -103,6 +103,7 @@ const PersonalDetails = () => {
             setProfilePhotoUri(newUri);
             setPhotoChanged(true);
         } catch (error) {
+            if (error.message.includes("User cancelled image picker")) return;
             console.error("Error uploading photo s3:", error.message);
             setSnack({ visible: true, text: "Could not pick a photo" });
         }
