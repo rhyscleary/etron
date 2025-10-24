@@ -176,28 +176,61 @@ const Account = () => {
             const workspaceId = await getWorkspaceId();
             const { userId: currentUserId } = await getCurrentUser();
             if (!selectedNewOwner) {
-            setOwnerPasswordErrorMessage("Select a new owner to continue.");
-            setOwnerPasswordError(true);
-            setLeaving(false);
-            return;
+                setOwnerPasswordErrorMessage("Select a new owner to continue.");
+                setOwnerPasswordError(true);
+                setLeaving(false);
+                return;
             }
-            // pick a reasonable non-owner role for the leaving owner
+            
             const nonOwnerRole = roles[0];
             if (!nonOwnerRole) {
-            throw new Error("No non-owner roles available to assign.");
+                throw new Error("No non-owner roles available to assign.");
             }
-            // 1) transfer ownership
+            
             await apiPut(endpoints.workspace.core.transfer(workspaceId), {
-            receipientUserId: selectedNewOwner,
-            newRoleId: nonOwnerRole.roleId,
+                receipientUserId: selectedNewOwner,
+                newRoleId: nonOwnerRole.roleId,
             });
-            // 2) now leave workspace
+            
             await apiDelete(endpoints.workspace.users.remove(workspaceId, currentUserId));
             setOwnerFlowVisible(false);
-            // go to choice screen
+            
             router.navigate("/workspace-choice");
         } catch (err) {
             console.error("Transfer & leave failed:", err);
+        } finally {
+            setLeaving(false);
+            setOwnerPassword("");
+            setOwnerPasswordError(false);
+            setOwnerPasswordErrorMessage("");
+        }
+    }
+
+    async function handleOwnerDeleteWorkspace() {
+        Keyboard.dismiss?.();
+
+        if (!ownerPassword) {
+            setOwnerPasswordErrorMessage("Please enter your password.");
+            setOwnerPasswordError(true);
+            return;
+        }
+        setLeaving(true);
+
+        const valid = await verifyPassword(ownerPassword);
+        if (!valid) {
+            setOwnerPasswordErrorMessage("The password entered is invalid.");
+            setOwnerPasswordError(true);
+            setLeaving(false);
+            return;
+        }
+
+        try {
+            const workspaceId = await getWorkspaceId();
+            await apiDelete(endpoints.workspace.core.delete(workspaceId));
+            setOwnerFlowVisible(false);
+            router.navigate("/workspace-choice");
+        } catch (error) {
+            console.error("Workspace delete failed:", error);
         } finally {
             setLeaving(false);
             setOwnerPassword("");
@@ -340,11 +373,7 @@ const Account = () => {
                 secureTextEntry
                 leftActionLabel="Delete Workspace"
                 leftDanger
-                handleLeftAction={() => {
-                    // chain to your existing delete dialog flow
-                    setOwnerFlowVisible(false);
-                    setDialogVisible(true);
-                }}
+                handleLeftAction={handleOwnerDeleteWorkspace}
                 rightActionLabel="Transfer & Leave"
                 rightDanger
                 rightDisabled={!ownerPassword || !selectedNewOwner}
