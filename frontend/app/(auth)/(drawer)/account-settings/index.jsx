@@ -31,7 +31,8 @@ const Account = () => {
     const [passwordError, setPasswordError] = useState(false);
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
-    const { verifyingPassword, setVerifyingPassword } = useVerification();
+    const [verifyingPassword, setVerifyingPassword] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -56,16 +57,19 @@ const Account = () => {
     ]
 
     async function handleDelete() {
+        setDeleting(true);
         setVerifyingPassword(true); // pause any redirect behavior
-
         const validPassword = await verifyPassword(password); // verify the password before deleting
-
         setVerifyingPassword(false);
 
         if (!validPassword) {
             setPasswordError(true);
+            console.log("INVALID PASSWORD");
+            setDeleting(false);
             return;
         }
+
+        console.log("HERE");
 
         try {
             const workspaceId = await getWorkspaceId();
@@ -82,6 +86,8 @@ const Account = () => {
             router.replace("/landing");
         } catch (error) {
             console.error("Error deleting account: ", error);
+        } finally {
+            setDeleting(false);
         }
     }
 
@@ -89,6 +95,7 @@ const Account = () => {
         <ResponsiveScreen
             header = {<Header title="My Account" showMenu />}
             center = {false}
+            loadingOverlayActive={deleting}
         >
             <StackLayout spacing={12}>
                 {loading ? (
