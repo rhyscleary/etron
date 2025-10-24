@@ -1,6 +1,6 @@
-// Author(s): Holly Wyatt
+// Author(s): Holly Wyatt, Noah Bradley
 
-import { View, ScrollView, ActivityIndicator, StyleSheet } from 'react-native'
+import { View, ScrollView, ActivityIndicator, StyleSheet, Platform, Keyboard } from 'react-native'
 import { commonStyles } from '../../../../assets/styles/stylesheets/common';
 import Header from '../../../../components/layout/Header';
 import StackLayout from '../../../../components/layout/StackLayout';
@@ -17,7 +17,8 @@ import endpoints from '../../../../utils/api/endpoints';
 import {
     getCurrentUser,
     deleteUser,
-    signOut
+    signOut,
+    updateUserAttribute,
 } from 'aws-amplify/auth';
 import BasicButton from '../../../../components/common/buttons/BasicButton';
 import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
@@ -27,12 +28,16 @@ const Account = () => {
     const theme = useTheme();
 
     const [dialogVisible, setDialogVisible] = useState(false);
+    const [leaveDialogVisible, setLeaveDialogVisible] = useState(false);
     const [password, setPassword] = useState("");
     const [passwordError, setPasswordError] = useState(false);
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
-    const [verifyingPassword, setVerifyingPassword] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [leaving, setLeaving] = useState(false);
+    const [leavePassword, setLeavePassword] = useState("");
+    const [leavePasswordError, setLeavePasswordError] = useState(false);
+    const [leavePasswordErrorMessage, setLeavePasswordErrorMessage] = useState("");
 
     useEffect(() => {
         setLoading(true);
@@ -58,9 +63,7 @@ const Account = () => {
 
     async function handleDelete() {
         setDeleting(true);
-        setVerifyingPassword(true); // pause any redirect behavior
         const validPassword = await verifyPassword(password); // verify the password before deleting
-        setVerifyingPassword(false);
 
         if (!validPassword) {
             setPasswordError(true);
@@ -91,11 +94,51 @@ const Account = () => {
         }
     }
 
+    async function handleLeaveWorkspace() {
+        console.log("TEST0");
+        Keyboard.dismiss();
+        setLeaving(true);
+
+        console.log("TEST1");
+
+        if (!leavePassword) {
+            setLeavePasswordErrorMessage("Please enter your password.");
+            setLeavePasswordError(true);
+            setLeaving(false);
+            return;
+        }
+        const valid = await verifyPassword(leavePassword);
+
+        console.log("TEST2");
+
+        if (!valid) {
+            setLeavePasswordErrorMessage("The password entered is invalid.");
+            setLeavePasswordError(true);
+            setLeaving(false);
+            return;
+        }
+
+        try {
+            const workspaceId = await getWorkspaceId();
+            const { userId } = await getCurrentUser();
+            await apiDelete(endpoints.workspace.users.remove(workspaceId, userId));
+            setLeaveDialogVisible(false);
+            router.navigate("/workspace-choice");
+        } catch (error) {
+            console.error("Error leaving workspace:", error);
+        } finally {
+            setLeaving(false);
+            setLeavePassword("");
+            setLeavePasswordError(false);
+            setLeavePasswordErrorMessage("");
+        }
+    }
+
     return(
         <ResponsiveScreen
             header = {<Header title="My Account" showMenu />}
             center = {false}
-            loadingOverlayActive={deleting}
+            loadingOverlayActive={deleting || leaving}
         >
             <StackLayout spacing={12}>
                 {loading ? (
@@ -118,10 +161,17 @@ const Account = () => {
                         onPress={item.onPress}
                     />
                 ))}
-                <BasicButton
-                    label={"Sign Out"}
-                    onPress={() => signOut()}
-                />
+                <View style={[commonStyles.inlineButtonContainer, { justifyContent: 'space-between' }]}>
+                    <BasicButton
+                        label={"Sign Out"}
+                        onPress={() => signOut()}
+                    />
+                    <BasicButton
+                        label={"Leave Workspace"}
+                        danger
+                        onPress={() => setLeaveDialogVisible(true)}
+                    />
+                </View>
             </StackLayout>
                 
             <BasicDialog
@@ -149,6 +199,46 @@ const Account = () => {
                 rightActionLabel={"Confirm"}
                 rightDanger
                 handleRightAction={handleDelete}
+            />
+
+            <BasicDialog
+                visible={leaveDialogVisible}
+                onDismiss={() => {
+                    setLeaveDialogVisible(false);
+                    setLeavePassword("");
+                    setLeavePasswordError(false);
+                    setLeavePasswordErrorMessage("");
+                }}
+                title="Leave Workspace"
+                message="Enter your password to confirm leaving this workspace."
+                showInput
+                inputLabel="Password"
+                inputPlaceholder="Enter your password"
+                inputValue={leavePassword}
+                inputOnChangeText={(text) => {
+                    setLeavePassword(text);
+                    if (text) setLeavePasswordError(false);
+                }}
+                inputError={leavePasswordError}
+                inputErrorMessage={leavePasswordErrorMessage}
+                secureTextEntry
+                leftActionLabel="Cancel"
+                handleLeftAction={() => {
+                    setLeaveDialogVisible(false);
+                    setLeavePassword("");
+                    setLeavePasswordError(false);
+                    setLeavePasswordErrorMessage("");
+                }}
+                rightActionLabel="Leave Workspace"
+                rightDanger
+                rightDisabled={!leavePassword}
+                handleRightAction={handleLeaveWorkspace}
+                inputProps={{
+                    autoCapitalize: 'none',
+                    autoCorrect: false,
+                    keyboardType: Platform.OS === 'android' ? 'visible-password' : 'default',
+                    onSubmitEditing: handleLeaveWorkspace,
+                }}
             />
         </ResponsiveScreen>
     )
