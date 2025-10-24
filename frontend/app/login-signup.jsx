@@ -259,6 +259,9 @@ function LoginSignup() {
                 return;
             }
 
+            router.replace("(auth)/authenticated-loading");
+            return;
+
             if (isSignedIn) {
                 const user = await getCurrentUser();
                 const userAttributes = await fetchUserAttributes();
