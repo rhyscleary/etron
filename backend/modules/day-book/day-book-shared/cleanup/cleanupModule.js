@@ -6,6 +6,7 @@ const {
     StartQueryExecutionCommand, 
     GetQueryExecutionCommand 
 } = require("@aws-sdk/client-athena");
+const { removeAllReports } = require("../repositories/reportRepository");
 
 const athena = new AthenaClient({});
 const glue = new GlueClient({});

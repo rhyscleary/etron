@@ -71,9 +71,9 @@ export async function uploadUpdatedTemplate({
             }
         );
 
-        console.log("Update template result:", updateResult);
+        console.log("Update template result:", updateResult.data);
 
-        fileUploadUrl = updateResult.fileUploadUrl;
+        fileUploadUrl = updateResult.data.fileUploadUrl;
 
         if (!fileUploadUrl) {
             console.error("No fileUploadUrl returned from the API (Template)");
@@ -127,8 +127,8 @@ export async function createNewTemplate({
 
         console.log("Create template result:", createResult);
 
-        fileUploadUrl = createResult.fileUploadUrl;
-        newTemplateId = createResult.templateId;
+        fileUploadUrl = createResult.data.fileUploadUrl;
+        newTemplateId = createResult.data.templateId;
 
         if (!fileUploadUrl || !newTemplateId) {
             console.error("Invalid create template response");

@@ -6,6 +6,7 @@ const { getDefaultPermissions } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -61,6 +62,17 @@ async function createRoleInWorkspace(authUserId, workspaceId, payload) {
 
     await workspaceRepo.addRole(roleItem);
 
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Created",
+        filters: ["role", "settings"],
+        itemType: "role",
+        itemId: roleId,
+        itemName: name
+    });
+
     return roleItem;
 }
 
@@ -85,6 +97,17 @@ async function deleteRoleInWorkspace(authUserId, workspaceId, roleId) {
     }
 
     await workspaceRepo.removeRole(workspaceId, roleId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Removed",
+        filters: ["removed", "settings"],
+        itemType: "role",
+        itemId: roleId,
+        itemName: role.name
+    });
 
     return {message: "Role successfully deleted"};
 }
@@ -194,7 +217,20 @@ async function updateRoleInWorkspace(authUserId, workspaceId, roleId, payload) {
         updatedFields.hasAccess = mergedAccess;
     }
 
-    return workspaceRepo.updateRole(workspaceId, roleId, updatedFields);
+    const updatedRole = await workspaceRepo.updateRole(workspaceId, roleId, updatedFields);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated",
+        filters: ["role", "settings"],
+        itemType: "role",
+        itemId: roleId,
+        itemName: updatedRole.name
+    });
+
+    return updatedRole;
 }
 
 module.exports = {

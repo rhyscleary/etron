@@ -163,6 +163,9 @@ const MetricCardList = ({ metrics, searchQuery }) => {
                                         color: "white",
                                         fontSize: 16,
                                         fontWeight: "bold",
+                                        position: "absolute",
+                                        bottom: 10,
+                                        alignItems: "baseline"
                                     }}
                                 >
                                     {metric.name}
