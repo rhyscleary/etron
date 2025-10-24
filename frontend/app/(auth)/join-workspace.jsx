@@ -18,6 +18,7 @@ import StackLayout from "../../components/layout/StackLayout";
 import { saveUserInfo } from "../../storage/userStorage";
 import { saveRole } from "../../storage/permissionsStorage";
 
+
 const JoinWorkspace = () => {
     const [loading, setLoading] = useState(false);
     const [invites, setInvites] = useState([]);
@@ -34,26 +35,26 @@ const JoinWorkspace = () => {
                 const email = userAttributes.email;
                 console.log(email);
 
-                const inviteResult = await apiGet(
-                    endpoints.user.invites.getUserInvites,
-                    { email }
-                );
-                console.log(inviteResult.data);
+                const inviteResult = await apiGet(endpoints.user.invites.getUserInvites, { email });
+                console.log("inviteResult.data:", inviteResult.data);
                 if (inviteResult.data && inviteResult.data.length > 0) {
-                    const processedInvites = await Promise.all(inviteResult.data.map(async invite => {
-                        const expireAt = formatTTLDate(invite.expireAt);
-                        console.log(invite.workspaceId);
-                        const workspace = await apiGet(
-                            endpoints.workspace.core.getWorkspace(invite.workspaceId)
-                        );
-
-                        return {
-                            ...invite,
-                            expireAt,
-                            workspaceName: workspace.data.name,
-                            workspaceDescription: workspace.data.description
-                        };
-                    }));
+                    const processedInvites = (await Promise.all(
+                        inviteResult.data.map(async invite => {
+                            try {
+                                const workspace = await apiGet(endpoints.workspace.core.getWorkspace(invite.workspaceId));
+                                return {
+                                    ...invite,
+                                    expireAt: formatTTLDate(invite.expireAt),
+                                    workspaceName: workspace.data.name,
+                                    workspaceDescription: workspace.data.description
+                                };
+                            } catch (error) {
+                                if (error.message.includes("Workspace not found")) return null;
+                                console.error(`Error retrieving workspace of id ${invite.workspaceId}"`, error);
+                                return null;
+                            }
+                        })
+                    )).filter(Boolean);  // Removes all invites that returned errors.
 
                     setInvites(processedInvites);
                 }
@@ -121,7 +122,8 @@ const JoinWorkspace = () => {
             try {
                 await apiPost(endpoints.workspace.users.add(workspaceId), payload);
             } catch (error) {
-                console.error("Error adding user to workspace:", error);
+                if (error.message.includes("authUserId is not defined")) console.log("Error adding user to workspace:", error);  // Unknown why error occurs. Function still works.
+                else console.error("Error adding user to workspace:", error);
             }
 
             const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
@@ -180,6 +182,7 @@ const JoinWorkspace = () => {
             />}
             center={false}
             scroll={false}
+            loadingOverlayActive={joining}
         >
             {loading ? (
                 <View style={styles.loadingContainer}>

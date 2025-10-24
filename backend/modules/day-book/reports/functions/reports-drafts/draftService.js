@@ -5,6 +5,7 @@ const {v4 : uuidv4} = require('uuid');
 const { deleteFolder, getUploadUrl, getDownloadUrl } = require("@etron/reports-shared/repositories/reportsBucketRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -57,6 +58,18 @@ async function createDraftReport(authUserId, payload) {
     });
 
     await reportRepo.addDraft(draftItem);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Created",
+        filters: ["modules", "created"],
+        module: "daybook",
+        itemType: "report",
+        itemId: draftId,
+        itemName: name
+    });
 
     return {
         ...draftItem,
@@ -114,6 +127,18 @@ async function updateDraftReport(authUserId, draftId, payload) {
 
     const fileUrl = draft.fileKey ? await getDownloadUrl(draft.fileKey) : null;
     const thumbnailUrl = draft.fileKey ? await getDownloadUrl(draft.thumbnailKey) : null;
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated",
+        filters: ["modules", "updated"],
+        module: "daybook",
+        itemType: "report",
+        itemId: draftId,
+        itemName: updatedDraft.name
+    });
     
     return {
         ...updatedDraft,
@@ -205,6 +230,18 @@ async function deleteDraftReport(authUserId, workspaceId, draftId) {
     await deleteFolder(folderPrefix);
 
     await reportRepo.deleteDraft(workspaceId, draftId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Deleted",
+        filters: ["modules", "deleted"],
+        module: "daybook",
+        itemType: "report",
+        itemId: draftId,
+        itemName: draft.name
+    });
 
     return {message: "Draft successfully deleted"};
 }

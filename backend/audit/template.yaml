@@ -8,9 +8,11 @@ Parameters:
     Type: String
   WorkspaceBucketName:
     Type: String
-  AuditQueue:
+  AuditQueueArn:
     Type: String
-    
+  AuditQueueUrl:
+    Type: String
+
 Globals:
   Function:
     Timeout: 5
@@ -22,22 +24,22 @@ Globals:
         APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
         AUDIT_QUEUE_ARN: !Ref AuditQueueArn
+        AUDIT_QUEUE_URL: !Ref AuditQueueUrl
 
 Resources:
 
   eTRONApi:
-      Type: AWS::Serverless::Api
-      Properties:
-        StageName: dev
-        Auth:
-          DefaultAuthorizer: CognitoAuthorizer
-          Authorizers:
-            CognitoAuthorizer:
-              UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
-              Identity:
-                Header: Authorization
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+            Identity:
+              Header: Authorization
 
-  # Core Audit Lambda 
   AuditCoreFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -51,39 +53,24 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: AuditLogs
         - Statement:
-          - Effect: Allow
-            Action:
-              - s3:GetObject
-              - s3:PutObject
-              - s3:ListBucket
-              - s3:DeleteObject
-            Resource: "*"
-          - Effect: Allow
-            Action:
-              - cognito-idp:ListUsers
-              - cognito-idp:AdminUpdateUserAttributes
-            Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
-
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:DeleteObject
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - cognito-idp:ListUsers
+                - cognito-idp:AdminUpdateUserAttributes
+              Resource:
+                - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
       Events:
         GetAudits:
-          Type: Api 
+          Type: Api
           Properties:
             Path: /audits
-            Method: get
-            RestApiId: !Ref eTRONApi
-
-        GetUserAuditsDownloadUrl:
-          Type: Api 
-          Properties: 
-            Path: /audits/download/user
-            Method: get
-            RestApiId: !Ref eTRONApi
-
-        GetWorkspaceAuditsDownloadUrl:
-          Type: Api 
-          Properties: 
-            Path: /audits/download/workspace
             Method: get
             RestApiId: !Ref eTRONApi
 
@@ -117,19 +104,17 @@ Resources:
                 - sqs:ReceiveMessage
                 - sqs:DeleteMessage
                 - sqs:GetQueueAttributes
-              Resource: !Sub arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${AuditQueueName}
+                - sqs:GetQueueUrl
+              Resource: !Ref AuditQueueArn
             - Effect: Allow
               Action:
                 - dynamodb:GetItem
-              Resource: "*"  
-            - Effect: Allow
-              Action:
                 - dynamodb:PutItem
-              Resource: "*"  
+              Resource: "*"
       Events:
         AuditQueueEvent:
-          Type: SQS
+          Type: SQS 
           Properties:
-            Queue: !Ref AuditQueue
-            BatchSize: 10          # process up to 10 messages at a time
-            MaximumRetryAttempts: 2
+            Queue: !Ref AuditQueueArn
+            BatchSize: 10
+

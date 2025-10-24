@@ -23,6 +23,7 @@ const ViewMetric = () => {
     const [metricSettings, setMetricSettings] = useState(null);
     const [metricData, setMetricData] = useState(null);
     const [metricExists, setMetricExists] = useState(true);
+    const [deleting, setDeleting] = useState(false);
 
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
     const router = useRouter();
@@ -139,6 +140,7 @@ const ViewMetric = () => {
         if (!confirmed) return;
 
         try {
+            setDeleting(true);
             const workspaceId = await getWorkspaceId();
             await apiDelete(
                 endpoints.modules.day_book.metrics.removeMetric(metricId),
@@ -148,6 +150,8 @@ const ViewMetric = () => {
         } catch (error) {
             console.error("Error deleting metric:", error);
             Alert.alert("Error", "Failed to delete the metric. Please try again.");
+        } finally {
+            setDeleting(false);
         }
     }
 
@@ -172,6 +176,7 @@ const ViewMetric = () => {
                     />
                 }
                 center={false}
+                loadingOverlayActive={deleting}
             >
                 <Card style={[styles.card]}>
                     <Card.Title title={metricSettings.name}/>

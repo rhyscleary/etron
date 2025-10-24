@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, InteractionManager } from 'react-native';
 import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
 
@@ -40,7 +40,10 @@ const DropDown = ({
             <List.Accordion
                 title={selectedItem ? selectedItem.label : title}
                 expanded={expanded}
-                onPress={() => setExpanded(prev => !prev)}
+                onPress={() => {
+                    if (!expanded) Keyboard.dismiss();
+                    setExpanded(prev => !prev)
+                }}
                 style={[
                     expanded ? styles.containerExpanded : styles.containerCollapsed,
                     { borderColor: theme.colors.outline }
@@ -59,8 +62,11 @@ const DropDown = ({
                         theme={{ roundness: 0 }}
                     />
                 </View>
-                
-                <ScrollView style={{ macHeight: 200}}>
+
+                <ScrollView
+                    style={{ maxHeight: 200 }}
+                    keyboardShouldPersistTaps="handled"
+                >
                     {filteredItems.map((item, index) => {
                         const isLastItem = index === filteredItems.length - 1 && !showRouterButton;
                         
@@ -73,7 +79,10 @@ const DropDown = ({
                                     isLastItem && styles.lastItem,
                                     { borderColor: theme.colors.outline }
                                 ]}
-                                onPress={() => handleItemSelect(item)}
+                                onPress={() => {
+                                    Keyboard.dismiss();
+                                    handleItemSelect(item);
+                                }}
                             />                        
                         );
                     })}

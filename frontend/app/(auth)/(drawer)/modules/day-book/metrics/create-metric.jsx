@@ -26,6 +26,7 @@ const CreateMetric = () => {
     const router = useRouter();
     const theme = useTheme();
 
+    const [loading, setLoading] = useState(false);
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
     const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     
@@ -64,6 +65,7 @@ const CreateMetric = () => {
         console.log('Downloading ready data:', source);
         setDataSourceId(source);
         setDataSourceDataDownloadStatus("downloading");
+        console.log("downloading");
 
         const workspaceId = await getWorkspaceId();
         try {
@@ -75,6 +77,7 @@ const CreateMetric = () => {
             setDataSourceData(result.data);
             setDataSourceVariableNames(result.schema.map(variable => variable.name));
             setDataSourceDataDownloadStatus("downloaded");
+            console.log("downloaded");
         } catch (error) {
             console.error("Error downloading data source's data:", error);
             setDataSourceDataDownloadStatus("unstarted");
@@ -183,19 +186,14 @@ const CreateMetric = () => {
     }, []);
 
     const handleFinish = async () => {
-
-        //TODO: Upload metric pruned data
-
-        /*
-        try { await uploadPrunedData() } catch (error) {
-            console.log("Error uploading pruned data:", error);
-            return;
-        }*/
+        setLoading(true);
         try { await uploadMetricSettings() } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;
-        }  
-        
+        } finally {
+            setLoading(false);
+        }
+
         console.log("Form completed");
         router.navigate("/modules/day-book/metrics"); 
     }
@@ -219,6 +217,11 @@ const CreateMetric = () => {
             ? [chosenDependentVariables]
             : [];
 
+    const formContinueDisabled =
+        (step == 0 && (chosenIndependentVariable.length == 0 || !selectedMetric)) ||
+        (step == 1 && (!metricName))
+
+
     const renderFormStep = () => {
         switch (step) {
             case 0:
@@ -234,114 +237,112 @@ const CreateMetric = () => {
                             value = {selectedReadyData}
                         />
 
-                        <Button icon="file" mode="text" onPress={showDataModal}>
-                            View Data
-                        </Button>
+                        {dataSourceDataDownloadStatus == "unstarted" && (
+                            <Text>No data source selected</Text>
+                        )}
+                        {dataSourceDataDownloadStatus == "downloading" && (
+                            <ActivityIndicator size="large"/>
+                        )}
+                        {dataSourceDataDownloadStatus == "downloaded" && (<>
+                            <Button icon="file" mode="text" onPress={showDataModal}>
+                                View Data
+                            </Button>
 
-                        <DropDown
-                            title = "Select Metric"
-                            items={Object.values(GraphTypes).map((g) => ({
-                                value: g.value,
-                                label: g.label,
-                            }))}
-                            showRouterButton={false}
-                            onSelect={(item) => setSelectedMetric(item)}
-                            value={selectedMetric}
-                        />
+                            <DropDown
+                                title = "Select Metric"
+                                items={Object.values(GraphTypes).map((g) => ({
+                                    value: g.value,
+                                    label: g.label,
+                                }))}
+                                showRouterButton={false}
+                                onSelect={(item) => setSelectedMetric(item)}
+                                value={selectedMetric}
+                            />
 
-                        <Text>Select Independent Variable (X-Axis)</Text>
-                        <MetricRadioButton
-                            items={dataSourceVariableNames}
-                            selected={chosenIndependentVariable}
-                            onChange={(selection) => {
-                                setChosenIndependentVariable(selection);
-                            }}
-                        />
-
-                        <Text style={{ marginTop: 12 }}>Select Dependent Variables (Y-Axis)</Text>
-                        {["bar", "pie"].includes(selectedMetric) ? (
+                            <Text>Select Independent Variable (X-Axis)</Text>
                             <MetricRadioButton
                                 items={dataSourceVariableNames}
-                                selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables[0] : chosenDependentVariables}
+                                selected={chosenIndependentVariable}
                                 onChange={(selection) => {
-                                    const next = selection ? [selection] : [];
-                                    setChosenDependentVariables(next);
+                                    setChosenIndependentVariable(selection);
                                 }}
                             />
-                        ) : (
-                            <MetricCheckbox
-                                items={dataSourceVariableNames}
-                                selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables : []}
-                                onChange={(selection) => {
-                                    const next = Array.isArray(selection) ? selection : selection ? [selection] : [];
-                                    setChosenDependentVariables(next);
-                                }}
-                            />
-                        )}
 
-                        {/* Row Selection */}
-                        <View 
-                            style={{ 
-                                flexDirection: "row", 
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                marginBottom: -7
-                            }}
-                        >
-                            <Text>Select Data Points (Optional)</Text>
-                            
-                            <Chip
-                                onPress={() => {
-                                    const rowIds = dataSourceData.map((row) => row[dataSourceVariableNames[0]]);
-                                    if (selectedRows.length === rowIds.length) {
-                                        setSelectedRows([]);
-                                    } else {
-                                        setSelectedRows(rowIds);
-                                    }
-                                }}
-                                style={{
-                                    backgroundColor: theme.colors.background,
-                                }}
-                                textStyle={{
-                                    color: theme.colors.primary
+                            <Text style={{ marginTop: 12 }}>Select Dependent Variables (Y-Axis)</Text>
+                            {["bar", "pie"].includes(selectedMetric) ? (
+                                <MetricRadioButton
+                                    items={dataSourceVariableNames}
+                                    selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables[0] : chosenDependentVariables}
+                                    onChange={(selection) => {
+                                        const next = selection ? [selection] : [];
+                                        setChosenDependentVariables(next);
+                                    }}
+                                />
+                            ) : (
+                                <MetricCheckbox
+                                    items={dataSourceVariableNames}
+                                    selected={Array.isArray(chosenDependentVariables) ? chosenDependentVariables : []}
+                                    onChange={(selection) => {
+                                        const next = Array.isArray(selection) ? selection : selection ? [selection] : [];
+                                        setChosenDependentVariables(next);
+                                    }}
+                                />
+                            )}
+
+                            {/* Row Selection */}
+                            <View 
+                                style={{ 
+                                    flexDirection: "row", 
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                    marginBottom: -7
                                 }}
                             >
-                                {selectedRows.length === dataSourceData.length ? "Deselect All" : "Select All"}
-                            </Chip>
+                                <Text>Select Data Points (Optional)</Text>
+                                
+                                <Chip
+                                    onPress={() => {
+                                        const rowIds = dataSourceData.map((row) => row[dataSourceVariableNames[0]]);
+                                        if (selectedRows.length === rowIds.length) {
+                                            setSelectedRows([]);
+                                        } else {
+                                            setSelectedRows(rowIds);
+                                        }
+                                    }}
+                                    style={{
+                                        backgroundColor: theme.colors.background,
+                                    }}
+                                    textStyle={{
+                                        color: theme.colors.primary
+                                    }}
+                                >
+                                    {selectedRows.length === dataSourceData.length ? "Deselect All" : "Select All"}
+                                </Chip>
 
-                            <IconButton
-                                icon={showChecklist ? "chevron-up" : "chevron-down"}
-                                size={20}
-                                onPress={() => setShowChecklist(!showChecklist)}
-                            />
-                        </View>
+                                <IconButton
+                                    icon={showChecklist ? "chevron-up" : "chevron-down"}
+                                    size={20}
+                                    onPress={() => setShowChecklist(!showChecklist)}
+                                />
+                            </View>
 
-                        {showChecklist && (
-                            <MetricCheckbox
-                                items={dataSourceData.map((row) => row[dataSourceVariableNames[0]])}
-                                selected={selectedRows}
-                                onChange={(selection) => setSelectedRows(selection)}
-                            />
-                        )}
-                                                   
-                        <Portal>
-                            <Modal 
-                                visible={dataVisible} 
-                                onDismiss={hideDataModal} 
-                                style={styles.modalContainer}
-                            >
-                                <Card style={styles.card}>
-                                    <Card.Content>
-                                        {dataSourceDataDownloadStatus == "unstarted" && (
-                                            <Text>No data source selected</Text>
-                                        )}
-                                        {dataSourceDataDownloadStatus == "downloading" && (
-                                            <ActivityIndicator size="large" color="#0000ff" />
-                                        )}
-                                        {dataSourceDataDownloadStatus == "downloaded" && (
-                                            <ScrollView horizontal
-                                                showsHorizontalScrollIndicator
-                                            >
+                            {showChecklist && (
+                                <MetricCheckbox
+                                    items={dataSourceData.map((row) => row[dataSourceVariableNames[0]])}
+                                    selected={selectedRows}
+                                    onChange={(selection) => setSelectedRows(selection)}
+                                />
+                            )}
+                                                    
+                            <Portal>
+                                <Modal 
+                                    visible={dataVisible} 
+                                    onDismiss={hideDataModal} 
+                                    style={styles.modalContainer}
+                                >
+                                    <Card style={styles.card}>
+                                        <Card.Content>
+                                            <ScrollView horizontal showsHorizontalScrollIndicator >
                                                 <View style={{ minWidth: (dataSourceVariableNames.length) * 100 }}>
                                                     <DataTable>{/* Displays a preview of the data as a table */} 
                                                         <DataTable.Header>
@@ -378,11 +379,11 @@ const CreateMetric = () => {
                                                     </DataTable>
                                                 </View>
                                             </ScrollView>
-                                        )}
-                                    </Card.Content>
-                                </Card>
-                            </Modal>
-                        </Portal>
+                                        </Card.Content>
+                                    </Card>
+                                </Modal>
+                            </Portal>
+                        </>)}
                     </ScrollView>
                 )
             case 1:
@@ -480,10 +481,11 @@ const CreateMetric = () => {
 
     return (
 		<ResponsiveScreen
-			header={<Header title="New Metric" showBack customBackAction={handleBack} />}
+			header={<Header title="New Metric" showBack onBackPress={handleBack} />}
 			center={false}
 			padded
             scroll={true}
+            loadingOverlayActive={loading}
 		>
             <View style={styles.content}>
                 {renderFormStep()}
@@ -492,6 +494,7 @@ const CreateMetric = () => {
                     <BasicButton
                         label={step < totalSteps - 1 ? "Continue" : "Finish"}
                         onPress={step < totalSteps - 1 ? handleContinue : handleFinish}
+                        disabled={formContinueDisabled}
                         style={styles.button}
                     />
                 </View>

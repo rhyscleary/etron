@@ -84,6 +84,23 @@
             "defaultStatus": true
           }
         ]
+      },
+      "audit": {
+        "label": "Audit Logs",
+        "permissions": [
+          {
+            "key": "app.audit.view_user_audit_log",
+            "label": "View User Audit Log",
+            "description": "Allows viewing of user-specific audit logs",
+            "defaultStatus": false
+          },
+          {
+            "key": "app.audit.view_workspace_audit_log",
+            "label": "View Workspace Audit Log",
+            "description": "Allows viewing of workspace-level audit logs",
+            "defaultStatus": false
+          }
+        ]
       }
     }
   },

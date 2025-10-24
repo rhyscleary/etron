@@ -6,6 +6,7 @@ const workspaceRepo = require("@etron/shared/repositories/workspaceRepository");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { getUserByEmail } = require("@etron/shared/utils/auth");
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -60,6 +61,17 @@ async function addUserToWorkspace(workspaceId, payload) {
         await workspaceInvitesRepo.removeInviteById(item.workspaceId, item.inviteId);
     }
 
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Added",
+        filters: ["user", "joined"],
+        itemType: "user",
+        itemId: userProfile.userId,
+        itemName: `${userProfile.given_name} ${userProfile.family_name}`
+    });
+
     return userItem;
 }
 
@@ -96,6 +108,17 @@ async function updateUserInWorkspace(authUserId, workspaceId, userId, payload) {
     const updatedUserItem = {
         roleId 
     };
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated",
+        filters: ["user", "settings", "updated"],
+        itemType: "user",
+        itemId: userId,
+        itemName: `${user.given_name} ${user.family_name}`
+    });
 
     return workspaceUsersRepo.updateUser(workspaceId, userId, updatedUserItem);
 }

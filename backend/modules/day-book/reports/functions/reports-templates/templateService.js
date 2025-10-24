@@ -5,6 +5,7 @@ const {v4 : uuidv4} = require('uuid');
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const { deleteFolder, getUploadUrl, getDownloadUrl } = require("@etron/reports-shared/repositories/reportsBucketRepository");
 const { hasPermission } = require("@etron/shared/utils/permissions");
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -57,6 +58,18 @@ async function createTemplateReport(authUserId, payload) {
     });
 
     await reportRepo.addTemplate(templateItem);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Created",
+        filters: ["modules", "created"],
+        module: "daybook",
+        itemType: "template",
+        itemId: templateId,
+        itemName: name
+    });
 
     return {
         ...templateItem,
@@ -114,6 +127,18 @@ async function updateTemplateReport(authUserId, templateId, payload) {
 
     const fileUrl = template.fileKey ? await getDownloadUrl(template.fileKey) : null;
     const thumbnailUrl = template.fileKey ? await getDownloadUrl(template.thumbnailKey) : null;
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated",
+        filters: ["modules", "updated"],
+        module: "daybook",
+        itemType: "template",
+        itemId: templateId,
+        itemName: updatedTemplate.name
+    });
     
     return {
         ...updatedTemplate,
@@ -205,6 +230,18 @@ async function deleteTemplateReport(authUserId, workspaceId, templateId) {
     await deleteFolder(folderPrefix);
 
     await reportRepo.deleteTemplate(workspaceId, templateId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Deleted",
+        filters: ["modules", "deleted"],
+        module: "daybook",
+        itemType: "template",
+        itemId: templateId,
+        itemName: updatedTemplate.name
+    });
 
     return {message: "Template successfully deleted"};
 }

@@ -6,6 +6,7 @@ const { getUploadUrl, getDownloadUrl } = require("@etron/metrics-shared/reposito
 const { hasPermission } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
+const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
 
 // Permissions for this service
 const PERMISSIONS = {
@@ -54,6 +55,18 @@ async function createMetricInWorkspace(authUserId, payload) {
     // add metricId to the associated data source
     await dataSourceRepo.addMetricToDataSource(workspaceId, dataSourceId, metricId);
 
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Created",
+        filters: ["modules", "created"],
+        module: "daybook",
+        itemType: "metric",
+        itemId: metricId,
+        itemName: name
+    });
+
     return {
         ...metricItem,
         thumbnailUrl
@@ -96,6 +109,17 @@ async function updateMetricInWorkspace(authUserId, metricId, payload) {
 
     const thumbnailUrl = await getDownloadUrl(metric.thumbnailKey);
 
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Updated",
+        filters: ["modules", "created"],
+        module: "daybook",
+        itemType: "metric",
+        itemId: metricId,
+        itemName: updatedMetric.name
+    });
 
     return {
         ...updatedMetric,
@@ -157,6 +181,18 @@ async function deleteMetricInWorkspace(authUserId, workspaceId, metricId) {
 
     // remove metric from repo
     await metricRepo.removeMetric(workspaceId, metricId);
+
+    // log audit
+    await logAuditEvent({
+        workspaceId,
+        userId: authUserId,
+        action: "Deleted",
+        filters: ["modules", "deleted"],
+        module: "daybook",
+        itemType: "metric",
+        itemId: metricId,
+        itemName: metric.name
+    });
 
     return {message: "Metric successfully deleted"};
 }

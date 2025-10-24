@@ -36,7 +36,7 @@ const ReportsAndExportsManagement = () => {
             icon: "", 
             label: "Export Metrics", 
             description: "Export selected metrics as an image", 
-            onPress: () => router.navigate("/modules/day-book/metrics") 
+            onPress: () => router.navigate("/modules/day-book/reports/metric-selection") 
         },
         { 
             permKey: "modules.daybook.reports.view_exports",

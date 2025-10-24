@@ -126,7 +126,6 @@ class AccountService {
     async signUpWithEmail(email, password, confirmPassword) {
         try {
             if (password !== confirmPassword) {
-                this.showMessage("Error: Passwords do not match.", true);
                 return { success: false, error: "Passwords do not match" };
             }
 
@@ -141,11 +140,9 @@ class AccountService {
             });
 
             console.log('Sign up successful:', result);
-            this.showMessage("Sign up successful! Check your email to confirm.");
             return { success: true, result };
         } catch (error) {
             console.log('Error signing up:', error);
-            this.showMessage(`Error: ${error.message}`, true);
             return { success: false, error: error.message };
         }
     }
