@@ -11,6 +11,8 @@ import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet, apiPut, apiDelete, apiPost } from "../../../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 
 const StatusPill = ({ status }) => {
 	if (!status) return null;
@@ -46,6 +48,8 @@ const DataConnectionCard = ({
 	onTest,
 	onSettings,
 	onViewData,
+	onUpload,
+	uploading = false,
 	height = 60,
 }) => {
 	const theme = useTheme();
@@ -59,10 +63,18 @@ const DataConnectionCard = ({
 			/>
 			<Card.Actions style={{ justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 8 }}>
 				<View style={{ flexDirection: "row" }}>
-					<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />
+					{onSync && (<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />)}
 					<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
 					<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
 					<IconButton icon="table-eye" accessibilityLabel="View Data" onPress={onViewData} />
+					{onUpload && (
+						<IconButton
+							icon={uploading ? "progress-upload" : "upload"}
+							accessibilityLabel="Upload CSV"
+							onPress={onUpload}
+							disabled={uploading}
+						/>
+					)}
 				</View>
 				<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
 			</Card.Actions>
@@ -77,6 +89,7 @@ const DataManagement = () => {
 	const [error, setError] = useState("");
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [lastManualRefresh, setLastManualRefresh] = useState(0);
+	const [uploadingMap, setUploadingMap] = useState({});
 	const [workspaceId, setWorkspaceId] = useState(null);
 
 	const [previewOpen, setPreviewOpen] = useState(false);
@@ -117,7 +130,7 @@ const DataManagement = () => {
 		} finally {
 			setLoading(false);
 		}
-  }, [workspaceId]);
+  	}, [workspaceId]);
 
 	useFocusEffect(
 		useCallback(() => {
@@ -127,6 +140,45 @@ const DataManagement = () => {
 			}
 		}, [fetchDataSources])
 	);
+
+	const handleUploadLocalCsv = useCallback(async (source) => {
+		try {
+			const pick = await DocumentPicker.getDocumentAsync({
+				type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
+				copyToCacheDirectory: true,
+			});
+			if (pick.canceled) return;
+			const file = pick.assets?.[0];
+			if (!file?.uri) return;
+
+			setUploadingMap(prev => ({ ...prev, [source.dataSourceId]: true }));
+			const res = await apiGet(
+				endpoints.modules.day_book.data_sources.getUploadUrl(source.dataSourceId),
+				{ workspaceId }
+			);
+			
+			const uploadUrl = res?.data?.uploadUrl ?? res?.data;
+			if (!uploadUrl) throw new Error("No uploadUrl returned.");
+
+			const blobResp = await fetch(file.uri);
+			const blob = await blobResp.blob();
+			
+			await fetch(uploadUrl, {
+				method: 'PUT',
+				body: blob,
+				headers: { 'Content-Type': 'text/csv' },
+			});
+
+			await apiPut(endpoints.modules.day_book.data_sources.updateData(source.dataSourceId), { workspaceId });
+			await fetchDataSources();
+			Alert.alert("Upload complete", "Your CSV has been uploaded.");
+		} catch (error) {
+			console.error("Upload CSV failed:", error);
+			Alert.alert("Upload failed", String(error?.message || error));
+		} finally {
+			setUploadingMap(prev => ({ ...prev, [source.dataSourceId]: false }));
+		}
+	}, [workspaceId, fetchDataSources]);
 
 	const handleRefresh = useCallback(async () => {
 		try {
@@ -282,15 +334,19 @@ const DataManagement = () => {
 					subtitle={subtitle}
 					status={source.status}
 					onNavigate={() => router.navigate(`/modules/day-book/data-management/view-data-source/${source.dataSourceId}`)}
-					onSync={() => handleSyncSource(source)}
+					//onSync={() => handleSyncSource(source)}
 					onDelete={() => handleDisconnectSource(source)}
 					onTest={() => handleTestConnection(source)}
 					onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.dataSourceId}`)}
 					onViewData={() => handleViewData(source)}
+					/*{...( (source.sourceType || source.type) === 'local-csv'
+						? { onUpload: () => handleUploadLocalCsv(source),
+							uploading: !!uploadingMap[source.dataSourceId] }
+						: {} )}*/
 				/>
 			</View>
 		);
-	}, [formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection, handleViewData]);
+	}, [formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection, handleViewData, handleUploadLocalCsv, uploadingMap]);
 
 	let body = null;
 
@@ -446,7 +502,7 @@ const DataManagement = () => {
 												onEndReached={onPreviewBottomReached}
 												onEndReachedThreshold={0.1}
 												ListFooterComponent={
-												loadingMoreRows ? <ActivityIndicator size="small" /> : null
+													loadingMoreRows ? <ActivityIndicator size="small" /> : null
 												}
 											/>
 										</DataTable>
