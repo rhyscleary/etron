@@ -33,7 +33,6 @@ const CreateMetric = () => {
     useEffect(() => {  // When page loads, load a list of all data sources
         async function initialiseDataSourceList() {
             const workspaceId = await getWorkspaceId();
-            const filePathPrefix = `workspaces/${workspaceId}/day-book/dataSources/`
             try {
                 let dataSourcesFromApiResult = await apiGet(
                     endpoints.modules.day_book.data_sources.getDataSources,

@@ -579,12 +579,16 @@ async function viewData(authUserId, workspaceId, dataSourceId, options = {}) {  
         options
     );
 
+    const filteredSchema = schema.filter(
+        column => column.name !== 'rowId'
+    );
+
     // cast received data to schema
-    const castedData = castDataToSchema(data, schema);
+    const castedData = castDataToSchema(data, filteredSchema);
 
     return {
         data: castedData,
-        schema,
+        schema: filteredSchema,
         tableName,
         nextToken,
         queryExecutionId
@@ -605,7 +609,10 @@ async function viewDataForMetric(authUserId, workspaceId, dataSourceId, metricId
     // get the metric columns
     const metricColumns = await metricRepo.getMetricVariableNames(workspaceId, metricId);
 
-    const filteredSchema = schema.filter(column => metricColumns.includes(column.name))
+    const filteredSchema = schema.filter(
+        column => metricColumns.includes(column.name)
+    );
+
     const columns = filteredSchema.map(column => sanitiseIdentifier(column.name)).join(", ");
     const tableName = sanitiseIdentifier(`ds_${dataSourceId}`);
     const database = process.env.ATHENA_DATABASE;
@@ -620,12 +627,16 @@ async function viewDataForMetric(authUserId, workspaceId, dataSourceId, metricId
         options
     );
 
+    filteredSchema = schema.filter(
+        column => column.name !== 'rowId'
+    );
+
     // cast received data to schema
     const castedData = castDataToSchema(data, filteredSchema);
 
     return {
         data: castedData,
-        schema,
+        schema: filteredSchema,
         tableName,
         nextToken,
         queryExecutionId
