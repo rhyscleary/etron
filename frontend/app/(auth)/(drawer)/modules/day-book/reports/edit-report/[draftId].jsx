@@ -126,7 +126,14 @@ const EditReport = () => {
 						actionBar.appendChild(metricButton);
 
 						metricButton.onclick = () => {
-							window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'openMetricSheet' }));
+							//window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'openMetricSheet' }));
+							const img = document.createElement('img');
+							img.src = "https://d329j4s0vk14u1.cloudfront.net/public/workspaces/e905ae63-ab3d-4487-8def-35c8141ffb89/day-book/metrics/metric1.png";
+							img.style.maxWidth = '100%';
+							img.style.display = 'block';
+							img.style.margin = '10px 0';
+							editor.content.appendChild(img);
+							window.ReactNativeWebView.postMessage(editor.content.innerHTML);
 						};
 
 						function receiveMessage(event) {

@@ -627,16 +627,16 @@ async function viewDataForMetric(authUserId, workspaceId, dataSourceId, metricId
         options
     );
 
-    filteredSchema = schema.filter(
+    const finalSchema = filteredSchema.filter(
         column => column.name !== 'rowId'
     );
 
     // cast received data to schema
-    const castedData = castDataToSchema(data, filteredSchema);
+    const castedData = castDataToSchema(data, finalSchema);
 
     return {
         data: castedData,
-        schema: filteredSchema,
+        schema: finalSchema,
         tableName,
         nextToken,
         queryExecutionId
