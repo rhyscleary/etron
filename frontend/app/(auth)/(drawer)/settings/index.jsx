@@ -20,7 +20,7 @@ const Settings = () => {
             permKey: "app.workspace.view_workspace_settings", 
             icon: "briefcase-outline", 
             label: "Workspace", 
-            onPress: () => router.navigate("/settings/workspace/workspace-management") 
+            onPress: () => router.navigate("/settings/workspace/workspace-settings") 
         },
         /*{ 
             icon: "palette-outline", 
