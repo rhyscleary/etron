@@ -20,6 +20,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import DescriptiveButton from "../../../../../components/common/buttons/DescriptiveButton";
 import AvatarDisplay from "../../../../../components/icons/AvatarDisplay";
 import ItemNotFound from "../../../../../components/common/errors/MissingItem";
+import { hasPermission } from "../../../../../utils/permissions";
+
 
 const ViewUser = () => {
 	const { userId } = useLocalSearchParams();
@@ -35,12 +37,19 @@ const ViewUser = () => {
 	const [profilePicture, setProfilePicture] = useState(null);
     const [loading, setLoading] = useState(true);
     const [userExists, setUserExists] = useState(true);
+    const [manageUserPermission, setManageUserPermission] = useState(false)
 
     useFocusEffect(
         useCallback(() => {
+            loadPermission();
             loadUser();
         }, [loadUser])
     );
+
+    async function loadPermission() {
+        const manageUserPermission = await hasPermission("app.collaboration.manage_users")
+        setManageUserPermission(manageUserPermission);
+    }
 
     const loadUser = useCallback(async () => {
         setLoading(true);
@@ -88,6 +97,7 @@ const ViewUser = () => {
                     showBack 
                     showEdit 
                     onRightIconPress={() => router.navigate(`/collaboration/edit-user/${userId}`)} 
+                    rightIconPermission={manageUserPermission}
                 />
             }
 			center={userExists ? false : true}
