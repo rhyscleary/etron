@@ -28,6 +28,10 @@ const WorkspaceDetails = () => {
 
     const loadWorkspaceDetails = useCallback(async () => {
         setLoading(true);
+
+        const editWorkspacePermission = await hasPermission("app.workspace.update_workspace")
+        setEditWorkspacePermission(editWorkspacePermission);
+        
         try {
             const workspaceId = await getWorkspaceId();
             const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
@@ -38,8 +42,6 @@ const WorkspaceDetails = () => {
         } finally {
             setLoading(false);
         }
-
-        setEditWorkspacePermission(await hasPermission("app.workspace.update_workspace"));
     }, []);
 
     useFocusEffect(

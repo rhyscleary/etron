@@ -20,7 +20,7 @@ const Settings = () => {
             permKey: "app.workspace.view_workspace_settings", 
             icon: "briefcase-outline", 
             label: "Workspace", 
-            onPress: () => router.navigate("/settings/workspace/workspace-management") 
+            onPress: () => router.navigate("/settings/workspace/workspace-settings") 
         },
         /*{ 
             icon: "palette-outline", 
@@ -48,7 +48,7 @@ const Settings = () => {
     ];
 
     useEffect(() => {
-        async function filterButtions() {
+        async function filterButtons() {
             const filteredOptions = [];
             for (const option of settingButtonMap) {
                 const allowed = option.permKey ? await hasPermission(option.permKey) : true;
@@ -57,7 +57,7 @@ const Settings = () => {
             setMenuOptions(filteredOptions);
         }
 
-        filterButtions();
+        filterButtons();
     }, []);
 
     return (
