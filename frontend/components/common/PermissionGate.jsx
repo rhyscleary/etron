@@ -1,4 +1,5 @@
 import React, { Children, cloneElement, useEffect, useMemo, useRef, useState } from "react";
+import { View } from "react-native";
 import { Menu, Text, useTheme } from "react-native-paper";
 
 const PermissionGate = ({
@@ -7,6 +8,7 @@ const PermissionGate = ({
 	onAllowed,
 	message = "You don't have permission to do this.",
 	duration = 1600,
+	dimOpacity = 0.6, 
 	dimWhenBlocked = true,
 	menuProps,
 	contentStyle,
@@ -47,17 +49,27 @@ const PermissionGate = ({
 			: child.props.color;
 
 		return cloneElement(child, {
-			onPress: handlePress,
-			style: maybeDimStyle,
-			color: maybeColor,
+			onPress: handlePress
 		});
 	}, [allowed, child, duration, dimWhenBlocked, onAllowed, theme]);
+
+	const dimmedAnchor = (
+		<View style={{ opacity: allowed ? 1 : dimOpacity }}>
+			{mergedChild}
+		</View>
+	);
 
 	return (
 		<Menu
 			visible={visible}
-			onDismiss={() => setVisible(false)}
-			anchor={mergedChild}
+			onDismiss={() => {
+				if (timeoutRef.current) {
+					clearTimeout(timeoutRef.current);
+					timeoutRef.current = null;
+				}
+				setVisible(false);
+			}}
+			anchor={dimmedAnchor}
 			contentStyle={{
 				paddingVertical: 6,
 				paddingHorizontal: 10,
