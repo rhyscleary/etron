@@ -29,9 +29,8 @@ const WorkspaceDetails = () => {
     const loadWorkspaceDetails = useCallback(async () => {
         setLoading(true);
 
-        const permission = await hasPermission("app.workspace.dsasadupdate_workspace")
-        console.log("permission:", permission);
-        setEditWorkspacePermission(permission);
+        const editWorkspacePermission = await hasPermission("app.workspace.update_workspace")
+        setEditWorkspacePermission(editWorkspacePermission);
         
         try {
             const workspaceId = await getWorkspaceId();
