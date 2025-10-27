@@ -54,10 +54,10 @@ export default function AuthLayout() {
                 const result = await apiGet(endpoints.workspace.core.getByUserId(userId));
                 workspace = result.data;
             } catch (error) {
+                await setHasWorkspaceAttribute(false);
                 if (error.message.includes("Workspace not found")) {
-                    console.log("No workspace yet, resetting attribute...");
+                    console.log("No workspace yet.");
                     await removeWorkspaceInfo();
-                    await setHasWorkspaceAttribute(false);
                     return false;
                 } else if (error.message.includes("No user found")) {
                     console.log("No user found, rerouting to landing page...")
@@ -141,12 +141,14 @@ export default function AuthLayout() {
         if (authStatus === 'authenticated') {
             const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
             if (!personalDetailsExists) {
+                "No personal details"
                 router.replace("/(auth)/personalise-account");
                 return;
             }
 
             const workspaceExists = await checkWorkspaceExists().catch(() => false);
             if (!workspaceExists) {
+                console.log("No workplace")
                 router.replace("/(auth)/workspace-choice")
                 return;
             }
