@@ -7,7 +7,7 @@ const PermissionGate = ({
 	children,
 	onAllowed,
 	message = "You don't have permission to do this.",
-	duration = 1600,
+	duration = 3000,
 	dimOpacity = 0.6, 
 	dimWhenBlocked = true,
 	menuProps,
