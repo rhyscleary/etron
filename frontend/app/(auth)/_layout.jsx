@@ -1,12 +1,11 @@
 import { Slot, router } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
-import { fetchAuthSession, fetchUserAttributes, getCurrentUser, signOut, updateUserAttributes } from 'aws-amplify/auth';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { fetchUserAttributes, signOut, updateUserAttributes } from 'aws-amplify/auth';
 import { useVerification } from '../../contexts/VerificationContext';
-import { getWorkspaceId, saveWorkspaceInfo } from '../../storage/workspaceStorage';
+import { saveWorkspaceInfo } from '../../storage/workspaceStorage';
 import { saveUserInfo, removeWorkspaceInfo } from '../../storage/userStorage';
-import { saveRole, getRole, getPermissions } from '../../storage/permissionsStorage';
+import { saveRole } from '../../storage/permissionsStorage';
 import { apiGet } from '../../utils/api/apiClient';
 import endpoints from '../../utils/api/endpoints';
 
