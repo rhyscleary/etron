@@ -34,6 +34,7 @@ const dayBookOptions = [
         name: "modules/day-book/reports",
         label: "Reports",
         icon: "file-chart",
+        permKey: "modules.daybook.reports.view_reports"
     },
     {
         name: "modules/day-book/data-management",
