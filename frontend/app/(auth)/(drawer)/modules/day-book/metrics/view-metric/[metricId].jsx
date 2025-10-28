@@ -196,22 +196,24 @@ const ViewMetric = () => {
                     </Card.Content>
                 </Card>
 
-                <BasicButton
-                    label="Export"
-                    onPress={exportGraphToCameraRoll}
-                    style={styles.exportButton}
-                    disabled={exporting}
-                />
+                <View style={[commonStyles.inlineButtonContainer, {justifyContent: 'center'}]}>
+                    <BasicButton
+                        label="Delete"
+                        onPress={deleteMetric}
+                        style={styles.button}
+                        danger
+                    />
+                    <BasicButton
+                        label="Export"
+                        onPress={exportGraphToCameraRoll}
+                        style={styles.exportButton}
+                        disabled={exporting}
+                    />
+                </View>
 
-                <BasicButton
-                    label="Delete"
-                    onPress={deleteMetric}
-                    style={styles.button}
-                    danger
-                />
             </ResponsiveScreen>
         );
-    };
+    }; 
 };
 
 export default ViewMetric;
