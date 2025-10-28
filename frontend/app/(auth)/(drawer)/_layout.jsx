@@ -45,6 +45,7 @@ const dayBookOptions = [
         name: "modules/day-book/metrics",
         label: "Metrics",
         icon: "chart-line",
+        permKey: "modules.daybook.metrics.view_metrics"
     },
     {
         name: "modules/day-book/notifications",

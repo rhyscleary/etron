@@ -16,6 +16,8 @@ import ResponsiveScreen from "../../../../../../../components/layout/ResponsiveS
 import ItemNotFound from "../../../../../../../components/common/errors/MissingItem";
 import ViewShot from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
+import { hasPermission } from "../../../../../../../utils/permissions";
+import PermissionGate from "../../../../../../../components/common/PermissionGate";
 
 const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
@@ -26,13 +28,21 @@ const ViewMetric = () => {
     const [deleting, setDeleting] = useState(false);
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
     const [exporting, setExporting] = useState(false);
+    const [manageMetricsPermission, setManageMetricsPermission] = useState(false);
 
     const router = useRouter();
     const viewShotRef = useRef();
 
     useEffect(() => {
+        loadPermission();
         getMetricSettings();
     }, [metricId]);
+
+    async function loadPermission() {
+        const manageMetricsPermission = await hasPermission("modules.daybook.metrics.manage_metrics");
+        console.log("managemetricspermission:", manageMetricsPermission);
+        setManageMetricsPermission(manageMetricsPermission);
+    }
 
     async function getMetricSettings() {
         setLoading(true);
@@ -168,6 +178,7 @@ const ViewMetric = () => {
                         onRightIconPress={() =>
                             router.navigate(`/modules/day-book/metrics/edit-metric/${metricId}`)
                         }
+                        rightIconPermission={manageMetricsPermission}
                     />
                 }
                 center={false}
@@ -196,19 +207,27 @@ const ViewMetric = () => {
                     </Card.Content>
                 </Card>
 
-                <BasicButton
-                    label="Export"
-                    onPress={exportGraphToCameraRoll}
-                    style={styles.exportButton}
-                    disabled={exporting}
-                />
+                <PermissionGate
+                    allowed={manageMetricsPermission}
+                >
+                    <BasicButton
+                        label="Export"
+                        onPress={exportGraphToCameraRoll}
+                        style={styles.exportButton}
+                        disabled={exporting}
+                    />
+                </PermissionGate>
 
-                <BasicButton
-                    label="Delete"
-                    onPress={deleteMetric}
-                    style={styles.button}
-                    danger
-                />
+                <PermissionGate
+                    allowed={manageMetricsPermission}
+                >
+                    <BasicButton
+                        label="Delete"
+                        onPress={deleteMetric}
+                        style={styles.button}
+                        danger
+                    />
+                </PermissionGate>
             </ResponsiveScreen>
         );
     };
