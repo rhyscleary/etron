@@ -47,7 +47,7 @@ const Collaboration = () => {
 
     useEffect(() => {
         evaluateWorkspaceOptions();
-    })    
+    }, [])    
 
     async function evaluateWorkspaceOptions() {
         const evaluatedWorkspaceOptions = [];
