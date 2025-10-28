@@ -13,6 +13,8 @@ import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+import PermissionGate from "../../../../../../components/common/PermissionGate";
+import { hasPermission } from "../../../../../../utils/permissions";
 
 const StatusPill = ({ status }) => {
 	if (!status) return null;
@@ -50,6 +52,8 @@ const DataConnectionCard = ({
 	onViewData,
 	onUpload,
 	uploading = false,
+	viewDataAllowed = false,
+	manageDataSourceAllowed = false,
 	height = 60,
 }) => {
 	const theme = useTheme();
@@ -64,9 +68,18 @@ const DataConnectionCard = ({
 			<Card.Actions style={{ justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 8 }}>
 				<View style={{ flexDirection: "row" }}>
 					{onSync && (<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />)}
-					<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
-					<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
-					<IconButton icon="table-eye" accessibilityLabel="View Data" onPress={onViewData} />
+					<PermissionGate allowed={manageDataSourceAllowed} >
+						<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
+					</PermissionGate>
+					<PermissionGate allowed={manageDataSourceAllowed} >
+						<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
+					</PermissionGate>
+					<PermissionGate
+						allowed={viewDataAllowed}
+						onAllowed={onViewData}
+					>
+						<IconButton icon="table-eye" accessibilityLabel="View Data" />
+					</PermissionGate>
 					{onUpload && (
 						<IconButton
 							icon={uploading ? "progress-upload" : "upload"}
@@ -76,7 +89,9 @@ const DataConnectionCard = ({
 						/>
 					)}
 				</View>
-				<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
+				<PermissionGate allowed={manageDataSourceAllowed} >
+					<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
+				</PermissionGate>
 			</Card.Actions>
 		</Card>
 	);
@@ -91,6 +106,8 @@ const DataManagement = () => {
 	const [lastManualRefresh, setLastManualRefresh] = useState(0);
 	const [uploadingMap, setUploadingMap] = useState({});
 	const [workspaceId, setWorkspaceId] = useState(null);
+	const [viewDataPermission, setViewDataPermission] = useState(false);
+	const [manageDataSourcesPermission, setManageDataSourcesPermission] = useState(false);
 
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const [previewStatus, setPreviewStatus] = useState('idle');
@@ -134,12 +151,20 @@ const DataManagement = () => {
 
 	useFocusEffect(
 		useCallback(() => {
+			loadPermission();
 			if (!hasInitiallyLoadedRef.current) {
 				fetchDataSources();
 				hasInitiallyLoadedRef.current = true;
 			}
-		}, [fetchDataSources])
+		}, [loadPermission, fetchDataSources])
 	);
+
+	async function loadPermission() {
+		const viewDataPermission = await hasPermission("modules.daybook.datasources.view_data");
+		setViewDataPermission(viewDataPermission);
+		const manageDataSourcesPermission = await hasPermission("modules.daybook.datasources.manage_dataSources");
+		setManageDataSourcesPermission(manageDataSourcesPermission);
+	}
 
 	const handleUploadLocalCsv = useCallback(async (source) => {
 		try {
@@ -343,10 +368,12 @@ const DataManagement = () => {
 						? { onUpload: () => handleUploadLocalCsv(source),
 							uploading: !!uploadingMap[source.dataSourceId] }
 						: {} )}*/
+					viewDataAllowed={viewDataPermission}
+					manageDataSourceAllowed={manageDataSourcesPermission}
 				/>
 			</View>
 		);
-	}, [formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection, handleViewData, handleUploadLocalCsv, uploadingMap]);
+	}, [formatLastSync, handleSyncSource, viewDataPermission, manageDataSourcesPermission, handleDisconnectSource, handleTestConnection, handleViewData, handleUploadLocalCsv, uploadingMap]);
 
 	let body = null;
 
@@ -438,6 +465,7 @@ const DataManagement = () => {
 				onRightIconPress={() =>
 					router.navigate("/modules/day-book/data-management/create-data-connection")
 				}
+				rightIconPermission={manageDataSourcesPermission}
 			/>}
 			center={false}
 			scroll={true}

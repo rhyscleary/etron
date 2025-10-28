@@ -20,6 +20,8 @@ import { apiGet, apiPost } from '../../../../../../utils/api/apiClient';
 
 import ColorPicker from 'react-native-wheel-color-picker';
 import ResponsiveScreen from '../../../../../../components/layout/ResponsiveScreen';
+import { hasPermission } from '../../../../../../utils/permissions';
+import PermissionGate from '../../../../../../components/common/PermissionGate';
 
 
 const CreateMetric = () => {
@@ -29,31 +31,39 @@ const CreateMetric = () => {
     const [loading, setLoading] = useState(false);
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
     const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
-    
+    const [viewDataPermission, setViewDataPermission] = useState(false);
+
     useEffect(() => {  // When page loads, load a list of all data sources
-        async function initialiseDataSourceList() {
-            const workspaceId = await getWorkspaceId();
-            try {
-                let dataSourcesFromApiResult = await apiGet(
-                    endpoints.modules.day_book.data_sources.getDataSources,
-                    { workspaceId }
-                )
-                let dataSourcesFromApi = dataSourcesFromApiResult.data;
-                console.log(dataSourcesFromApi);
-                setDataSourceMappings(dataSourcesFromApi.map(
-                    dataSource => ({
-                        id: dataSource.dataSourceId,
-                        name: dataSource.name
-                    })
-                ));
-                setLoadingDataSourceMappings(false);
-            } catch (error) {
-                console.error('Error retrieving ready data:', error);
-                return;
-            }
-        }
+        loadPermission();
         initialiseDataSourceList();
     }, []);
+    
+    async function loadPermission() {
+        const viewDataPermission = hasPermission("modules.daybook.datasources.view_data");
+        setViewDataPermission(viewDataPermission);
+    }
+
+    async function initialiseDataSourceList() {
+        const workspaceId = await getWorkspaceId();
+        try {
+            let dataSourcesFromApiResult = await apiGet(
+                endpoints.modules.day_book.data_sources.getDataSources,
+                { workspaceId }
+            )
+            let dataSourcesFromApi = dataSourcesFromApiResult.data;
+            console.log(dataSourcesFromApi);
+            setDataSourceMappings(dataSourcesFromApi.map(
+                dataSource => ({
+                    id: dataSource.dataSourceId,
+                    name: dataSource.name
+                })
+            ));
+            setLoadingDataSourceMappings(false);
+        } catch (error) {
+            console.error('Error retrieving ready data:', error);
+            return;
+        }
+    }
 
     const [dataSourceId, setDataSourceId] = useState();  // Id of data source chosen by user
     const [dataSourceData, setDataSourceData] = useState([]);  // Data from the chosen data source
@@ -243,9 +253,13 @@ const CreateMetric = () => {
                             <ActivityIndicator size="large"/>
                         )}
                         {dataSourceDataDownloadStatus == "downloaded" && (<>
-                            <Button icon="file" mode="text" onPress={showDataModal}>
-                                View Data
-                            </Button>
+                            <PermissionGate
+                                allowed={viewDataPermission}
+                            >
+                                <Button icon="file" mode="text" onPress={showDataModal}>
+                                    View Data
+                                </Button>
+                            </PermissionGate>
 
                             <DropDown
                                 title = "Select Metric"

@@ -39,6 +39,7 @@ const dayBookOptions = [
         name: "modules/day-book/data-management",
         label: "Data Management",
         icon: "database",
+        permKey: "modules.daybook.datasources.view_dataSources"
     },
     {
         name: "modules/day-book/metrics",
