@@ -1,5 +1,5 @@
 import React, { Children, cloneElement, useEffect, useMemo, useRef, useState } from "react";
-import { View } from "react-native";
+import { View, Pressable } from "react-native";
 import { Menu, Text, useTheme } from "react-native-paper";
 
 const PermissionGate = ({
@@ -17,47 +17,47 @@ const PermissionGate = ({
 	const theme = useTheme();
 	const [visible, setVisible] = useState(false);
     const timeoutRef = useRef(null);
+
     useEffect(() => () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
     }, []);
 
 	const child = Children.only(children);
+	const originalOnPress = child.props?.onPress;
 
-	const mergedChild = useMemo(() => {
-		const originalOnPress = child.props.onPress;
+	const handlePress = async (...args) => {
+		if (!allowed) {
+			setVisible(true);
+			if (timeoutRef.current) clearTimeout(timeoutRef.current);
+			timeoutRef.current = setTimeout(() => {
+				setVisible(false);
+				timeoutRef.current = null;
+			}, duration);
+			return;
+		}
+		if (onAllowed) return await onAllowed(...args);
+		if (originalOnPress) return await originalOnPress(...args);
+	};
 
-		const handlePress = async (...args) => {
-			if (!allowed) {
-                setVisible(true);
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                timeoutRef.current = setTimeout(() => {
-                    setVisible(false);
-                    timeoutRef.current = null;
-                }, duration);
-                return;
-            }
-			if (onAllowed) return await onAllowed(...args);
-			if (originalOnPress) return await originalOnPress(...args);
-		};
+	const wrapperStyle = dimWhenBlocked ? { opacity: allowed ? 1 : dimOpacity } : undefined;
 
-		const maybeDimStyle = dimWhenBlocked
-			? [{ opacity: allowed ? 1 : 0.6 }, child.props.style].flat()
-			: child.props.style;
+	const renderedChild = useMemo(() => {
+		const extraProps = {};
+    	if ("disabled" in (child.props ?? {})) extraProps.disabled = !allowed;
 
-		const maybeColor = !allowed
-			? (theme.colors?.onSurfaceDisabled ?? theme.colors?.onSurfaceVariant)
-			: child.props.color;
+    	return cloneElement(child, { ...extraProps });
+	}, [child, allowed]);
 
-		return cloneElement(child, {
-			onPress: handlePress
-		});
-	}, [allowed, child, duration, dimWhenBlocked, onAllowed, theme]);
-
-	const dimmedAnchor = (
-		<View style={{ opacity: allowed ? 1 : dimOpacity }}>
-			{mergedChild}
-		</View>
-	);
+	const anchor = (
+		<Pressable
+			onPress={handlePress}
+			style={wrapperStyle}
+			collapsable={false}
+			onStartShouldSetResponder={() => true}
+		>
+			<View pointerEvents="none">{renderedChild}</View>
+		</Pressable>
+  );
 
 	return (
 		<Menu
@@ -69,7 +69,7 @@ const PermissionGate = ({
 				}
 				setVisible(false);
 			}}
-			anchor={dimmedAnchor}
+			anchor={anchor}
 			contentStyle={{
 				paddingVertical: 6,
 				paddingHorizontal: 10,

@@ -21,6 +21,7 @@ import DescriptiveButton from "../../../../../components/common/buttons/Descript
 import AvatarDisplay from "../../../../../components/icons/AvatarDisplay";
 import ItemNotFound from "../../../../../components/common/errors/MissingItem";
 import { hasPermission } from "../../../../../utils/permissions";
+import PermissionGate from "../../../../../components/common/PermissionGate";
 
 
 const ViewUser = () => {
@@ -37,18 +38,23 @@ const ViewUser = () => {
 	const [profilePicture, setProfilePicture] = useState(null);
     const [loading, setLoading] = useState(true);
     const [userExists, setUserExists] = useState(true);
-    const [manageUserPermission, setManageUserPermission] = useState(false)
+    const [manageUserPermission, setManageUserPermission] = useState(false);
+    const [viewUserAuditLogPermission, setViewUserAuditLogPermission] = useState(false);
 
     useFocusEffect(
         useCallback(() => {
-            loadPermission();
-            loadUser();
+            (async () => {
+                await loadPermission();
+                await loadUser();
+            })();
         }, [loadUser])
     );
 
     async function loadPermission() {
-        const manageUserPermission = await hasPermission("app.collaboration.manage_users")
+        const manageUserPermission = await hasPermission("app.collaboration.manage_users");
         setManageUserPermission(manageUserPermission);
+        const viewUserAuditLogPermission = await hasPermission("app.audit.view_user_audit_log");
+        setViewUserAuditLogPermission(viewUserAuditLogPermission);
     }
 
     const loadUser = useCallback(async () => {
@@ -61,6 +67,7 @@ const ViewUser = () => {
             user = result.data;
         } catch (error) {
             console.error("Error fetching user:", error);
+            setLoading(false);
             return;
         }
         
@@ -76,6 +83,7 @@ const ViewUser = () => {
             roleName = result.data.name;
         } catch (error) {
             console.error("Error fetching role details:", error);
+            setLoading(false);
             return;
         }
 
@@ -126,10 +134,12 @@ const ViewUser = () => {
                             <List.Item title="Joined" description={joinDate} />
                         </List.Section>
 
-                        <DescriptiveButton 
-                            label="User Activity Log" 
-                            onPress={() => router.navigate(`/collaboration/user-log/${userId}`)}
-                        />
+                        <PermissionGate
+                            allowed={false}
+                            onAllowed={() => router.navigate(`/collaboration/user-log/${userId}`)}
+                        >
+                            <DescriptiveButton label="User Activity Log" />
+                        </PermissionGate>
                     </StackLayout>
                 </StackLayout>
             ) : (
