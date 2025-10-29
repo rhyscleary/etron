@@ -40,93 +40,61 @@ const DropDown = ({
     return (
         <List.Section>
             <List.Accordion
-                title={selectedItem ? selectedItem.label : title}
-                expanded={expanded}
+    title={selectedItem ? selectedItem.label : title}
+    expanded={expanded}
+    onPress={() => {
+        if (!expanded) Keyboard.dismiss();
+        setExpanded(prev => !prev)
+    }}
+    style={[expanded ? styles.containerExpanded : styles.containerCollapsed, { borderColor: theme.colors.outline }]}
+>
+    <View style={styles.searchContainer}>
+        <TextInput
+            mode="outlined"
+            placeholder="Search..."
+            placeholderTextColor={theme.colors.placeholderText}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={styles.searchInput}
+            outlineColor={theme.colors.outline}
+            activeOutlineColor={theme.colors.primary}
+            theme={{ roundness: 0 }}
+        />
+    </View>
+
+    <ScrollView
+        style={{ maxHeight: 500 }}   // <-- THIS IS THE CUT-OFF HEIGHT
+        keyboardShouldPersistTaps="handled"
+    >
+        {filteredItems.map((item, index) => (
+            <List.Item
+                key={index}
+                title={item.label}
+                style={[styles.items, { borderColor: theme.colors.outline }]}
                 onPress={() => {
-                    if (!expanded) Keyboard.dismiss();
-                    setExpanded(prev => !prev)
+                    Keyboard.dismiss();
+                    handleItemSelect(item);
                 }}
-                style={[
-                    expanded ? styles.containerExpanded : styles.containerCollapsed,
-                    { borderColor: theme.colors.outline }
-                ]}
+            />
+        ))}
+    </ScrollView>
+
+    {showRouterButton && (
+        <PermissionGate allowed={allowed}>
+            <TouchableOpacity
+                style={[styles.routerButton, { borderColor: theme.colors.outline }]}
+                onPress={() => router.navigate('/modules/day-book/data-management/create-data-connection')}
             >
-                <View style={styles.searchContainer}>
-                    <TextInput
-                        mode="outlined"
-                        placeholder="Search..."
-                        placeholderTextColor={theme.colors.placeholderText}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        style={styles.searchInput}
-                        outlineColor={theme.colors.outline}
-                        activeOutlineColor={theme.colors.primary}
-                        theme={{ roundness: 0 }}
-                    />
+                <View style={styles.routerButtonContent}>
+                    <IconButton icon="plus" size={20} style={styles.routerIcon} iconColor={theme.colors.icon} />
+                    <Text style={[styles.routerText, { color: theme.colors.placeholderText }]}>
+                        New Data Source
+                    </Text>
                 </View>
-
-                <ScrollView
-                    style={{ maxHeight: 200 }}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    {filteredItems.map((item, index) => {
-                        const isLastItem = index === filteredItems.length - 1 && !showRouterButton;
-                        
-                        return (
-                            <List.Item 
-                                key={index}
-                                title={item.label}
-                                style={[
-                                    styles.items,
-                                    isLastItem && styles.lastItem,
-                                    { borderColor: theme.colors.outline }
-                                ]}
-                                onPress={() => {
-                                    Keyboard.dismiss();
-                                    handleItemSelect(item);
-                                }}
-                            />                        
-                        );
-                    })}
-                </ScrollView>
-
-                {showRouterButton && (
-                    <PermissionGate
-                        allowed={allowed}
-                    >
-                        <TouchableOpacity
-                            style={[
-                                styles.routerButton,
-                                { borderColor: theme.colors.outline }
-                            ]}
-                            onPress={() => { //TODO: MAKE THIS HAVE PROPER NAVIGATION SO THAT THE BACK BUTTON AFTER CREATING A DATA CONNECTION TAKES YOU BACK HERE
-                                router.navigate('/modules/day-book/data-management/create-data-connection')
-                            }}
-                        >
-                        
-                            <View
-                                style={styles.routerButtonContent}
-                            >
-                                <IconButton
-                                    icon="plus"
-                                    size={20}
-                                    style={styles.routerIcon}
-                                    iconColor={theme.colors.icon}
-                                />
-
-                                <Text 
-                                    style={[
-                                        styles.routerText,
-                                        { color: theme.colors.placeholderText, } 
-                                    ]}
-                                >
-                                    New Data Source {/*TODO: MAKE THIS A VARIABLE*/}
-                                </Text>
-                            </View>
-                        </TouchableOpacity>
-                    </PermissionGate>
-                )}
-            </List.Accordion>
+            </TouchableOpacity>
+        </PermissionGate>
+    )}
+</List.Accordion>
         </List.Section>
     );
 };
