@@ -11,9 +11,10 @@ const GraphTypes = {
         label: "Line Chart",
         value: "line",
         previewImage: require("../../../../../../assets/images/lineChart.png"),
-        render: ({ data, xKey, yKeys, colours }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = useState({ width: 0, height: 0 });
+                const axisColor = axisColorMode === "dark" ? "white" : "black";
                 return (
                     <View
                         style={{ flex: 1 }}
@@ -28,25 +29,25 @@ const GraphTypes = {
                                 height={size.height}
                                 theme={VictoryTheme.clean}
                                 scale={{ x: "linear", y: "linear" }}
-                                padding={{ top: 20, bottom: 30, left: 30, right: 20 }}
+                                padding={{ top: 10, bottom: 50, left: 40, right: 30 }}
                                 containerComponent={<VictoryContainer responsive={false} />}
                             >
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5, angle: 45, textAnchor: "start" },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 30 },
                                     }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -75,9 +76,10 @@ const GraphTypes = {
         label: "Bar Chart",
         value: "bar",
         previewImage: require("../../../../../../assets/images/barChart.png"),
-        render: ({ data, xKey, yKeys, colours }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = useState({ width: 0, height: 0 });
+                const axisColor = axisColorMode === "dark" ? "white" : "black";
                 return (
                     <View
                         style={{ flex: 1 }}
@@ -93,25 +95,25 @@ const GraphTypes = {
                                 theme={VictoryTheme.clean}
                                 domainPadding={{ x: 25, y: 10 }}
                                 scale={{ x: "linear", y: "linear" }}
-                                padding={{ top: 20, bottom: 30, left: 30, right: 20 }}
+                                padding={{ top: 10, bottom: 50, left: 40, right: 30 }}
                                 containerComponent={<VictoryContainer responsive={false} />}
                             >
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5, angle: 45, textAnchor: "start" },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 30 },
                                     }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -140,9 +142,10 @@ const GraphTypes = {
         label: "Pie Chart",
         value: "pie",
         previewImage: require("../../../../../../assets/images/pieChart.png"),
-        render: ({ data, xKey, yKeys, colours }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
+                const axisColor = axisColorMode === "dark" ? "white" : "black";
                 const yKey = Array.isArray(yKeys) ? yKeys[0] : yKeys;
                 return (
                     <View
@@ -164,7 +167,7 @@ const GraphTypes = {
                                 colorScale={colours && colours.length > 0 ? colours : "qualitative"}
                                 labels={({ datum }) => `${datum.x}: ${datum.y}`}
                                 style={{
-                                    labels: { fontSize: 12, fill: "black" },
+                                    labels: { fontSize: 12, fill: axisColor },
                                 }}
                                 padding={{ top: 30, bottom: 30, left: 20, right: 20 }}
                             />
@@ -180,10 +183,10 @@ const GraphTypes = {
         label: "Area Chart",
         value: "area",
         previewImage: require("../../../../../../assets/images/areaChart.png"),
-        render: ({ data, xKey, yKeys, colours }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
-                
+                const axisColor = axisColorMode === "dark" ? "white" : "black";
                 return (
                     <View
                         style={{ flex: 1 }}
@@ -198,17 +201,17 @@ const GraphTypes = {
                                 height={size.height}
                                 theme={VictoryTheme.clean}
                                 scale={{ x: "linear", y: "linear" }}
-                                padding={{ top: 20, bottom: 30, left: 40, right: 20 }}
+                                padding={{ top: 10, bottom: 50, left: 40, right: 30 }}
                                 containerComponent={<VictoryContainer responsive={false} />}
                             >
                                 {/* X Axis */}
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5, angle: 45, textAnchor: "start" },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 30 },
                                     }}
                                 />
 
@@ -216,10 +219,10 @@ const GraphTypes = {
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -255,10 +258,10 @@ const GraphTypes = {
         label: "Scatter Plot",
         value: "scatter",
         previewImage: require("../../../../../../assets/images/scatterPlot.png"),
-        render: ({ data, xKey, yKeys, colours }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
-
+                const axisColor = axisColorMode === "dark" ? "white" : "black";
                 return (
                     <View
                     style={{ flex: 1 }}
@@ -273,17 +276,17 @@ const GraphTypes = {
                                 height={size.height}
                                 theme={VictoryTheme.clean}
                                 scale={{ x: "linear", y: "linear" }}
-                                padding={{ top: 20, bottom: 30, left: 40, right: 20 }}
+                                padding={{ top: 10, bottom: 50, left: 40, right: 30 }}
                                 containerComponent={<VictoryContainer responsive={false} />}
                             >
                                 {/* X Axis */}
                                 <VictoryAxis
                                     crossAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5, angle: 45, textAnchor: "start" },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 30 },
                                     }}
                                 />
 
@@ -291,10 +294,10 @@ const GraphTypes = {
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -325,11 +328,11 @@ const GraphTypes = {
         label: "Box Plot",
         value: "box",
               previewImage: require("../../../../../../assets/images/boxPlot.png"),
-        render: ({ data, xKey, yKeys, colours }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
             const ChartComponent = () => {
               const [size, setSize] = React.useState({ width: 0, height: 0 });
               const yKey = Array.isArray(yKeys) ? yKeys[0] : yKeys; // boxplot usually uses a single dependent variable
-
+                const axisColor = axisColorMode === "dark" ? "white" : "black";
               return (
                 <View
                     style={{ flex: 1 }}
@@ -345,26 +348,26 @@ const GraphTypes = {
                             theme={VictoryTheme.clean}
                             domainPadding={20}
                             scale={{ x: "linear", y: "linear" }}
-                            padding={{ top: 20, bottom: 30, left: 40, right: 20 }}
+                            padding={{ top: 10, bottom: 50, left: 40, right: 30 }}
                             containerComponent={<VictoryContainer responsive={false} />}
                         >
                             {/* X Axis */}
                             <VictoryAxis
                                 style={{
-                                    axis: { stroke: "black" },
-                                    ticks: { stroke: "black" },
-                                    tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                    axisLabel: { fill: "black", fontSize: 12, padding: 30 },
+                                    axis: { stroke: axisColor },
+                                    ticks: { stroke: axisColor },
+                                    tickLabels: { fill: axisColor, fontSize: 10, padding: 5, angle: 45, textAnchor: "start" },
+                                    axisLabel: { fill: axisColor, fontSize: 12, padding: 30 },
                                 }}
                             />
                             {/* Y Axis */}
                             <VictoryAxis
                                 dependentAxis
                                 style={{
-                                    axis: { stroke: "black" },
-                                    ticks: { stroke: "black" },
-                                    tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                    axisLabel: { fill: "black", fontSize: 12, padding: 40 },
+                                    axis: { stroke: axisColor },
+                                    ticks: { stroke: axisColor },
+                                    tickLabels: { fill: axisColor, fontSize: 10, padding: 5 },
+                                    axisLabel: { fill: axisColor, fontSize: 12, padding: 40 },
                                 }}
                             />
 
@@ -396,10 +399,10 @@ const GraphTypes = {
         label: "Histogram",
         value: "histogram",
         previewImage: require("../../../../../../assets/images/histogram.png"),
-        render: ({ data, xKey, colours }) => {
+        render: ({ data, xKey, colours, axisColorMode = "light" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
-
+                const axisColor = axisColorMode === "dark" ? "white" : "black";
                 return (
                     <View
                         style={{ flex: 1 }}
@@ -414,24 +417,24 @@ const GraphTypes = {
                                 height={size.height}
                                 theme={VictoryTheme.clean}
                                 domainPadding={20}
-                                padding={{ top: 20, bottom: 30, left: 30, right: 20 }}
+                                padding={{ top: 10, bottom: 50, left: 40, right: 30 }}
                                 containerComponent={<VictoryContainer responsive={false} />}
                             >
                                 <VictoryAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 30 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5, angle: 45, textAnchor: "start" },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 30 },
                                     }}
                                 />
                                 <VictoryAxis
                                     dependentAxis
                                     style={{
-                                        axis: { stroke: "black" },
-                                        ticks: { stroke: "black" },
-                                        tickLabels: { fill: "black", fontSize: 10, padding: 5 },
-                                        axisLabel: { fill: "black", fontSize: 12, padding: 40 },
+                                        axis: { stroke: axisColor },
+                                        ticks: { stroke: axisColor },
+                                        tickLabels: { fill: axisColor, fontSize: 10, padding: 5 },
+                                        axisLabel: { fill: axisColor, fontSize: 12, padding: 40 },
                                     }}
                                 />
 
@@ -443,7 +446,7 @@ const GraphTypes = {
                                     style={{
                                         data: {
                                             fill: colours[0] || "#4f83cc",
-                                            stroke: "black",
+                                            stroke: axisColor,
                                             strokeWidth: 1,
                                         },
                                     }}
@@ -462,10 +465,10 @@ const GraphTypes = {
     label: "Progress Bar",
     value: "progress",
         previewImage: require("../../../../../../assets/images/progressCircle.png"),
-    render: ({ data, yKeys, colours }) => {
+    render: ({ data, yKeys, colours, axisColorMode = "light" }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
-
+            const axisColor = axisColorMode === "dark" ? "white" : "black";
             // Assume single value in data[0][yKeys[0]] for progress
             const progressValue = data.length > 0 ? data[0][yKeys[0]] : 0;
             const maxValue = 100; // adjust if dynamic range is needed
@@ -489,9 +492,9 @@ const GraphTypes = {
                         >
                             <VictoryAxis
                                 style={{
-                                    axis: { stroke: "black" },
-                                    ticks: { stroke: "black" },
-                                    tickLabels: { fill: "black", fontSize: 10, padding: 5 },
+                                    axis: { stroke: axisColor },
+                                    ticks: { stroke: axisColor },
+                                    tickLabels: { fill: axisColor, fontSize: 10, padding: 5 },
                                 }}
                             />
                             {/* No dependent axis needed (progress is just a bar) */}
@@ -519,10 +522,10 @@ progress: {
     label: "Progress Circle",
     value: "progress",
         previewImage: require("../../../../../../assets/images/progressCircle.png"),
-    render: ({ data, yKeys, colours }) => {
+    render: ({ data, yKeys, colours, axisColorMode = "light" }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
-
+            const axisColor = axisColorMode === "dark" ? "white" : "black";
             // take first yKey value from first row of data
             const progressValue = data.length > 0 && yKeys.length > 0 ? data[0][yKeys[0]] : 0;
             const percent = Math.min(Math.max(progressValue, 0), 100); // clamp 0–100
@@ -565,7 +568,7 @@ progress: {
                                 x={size.width / 2}
                                 y={size.height / 2}
                                 text={`${Math.round(percent)}%`}
-                                style={{ fontSize: 24, fill: "black" }}
+                                style={{ fontSize: 24, fill: axisColor }}
                             />
                         </Svg>
                     )}
@@ -581,12 +584,14 @@ progress: {
     label: "Numbers",
     value: "numbers",
         previewImage: require("../../../../../../assets/images/numbers.png"),
-    render: ({ data, yKeys, colours }) => {
+    render: ({ data, yKeys, colours, axisColorMode = "light" }) => {
         const ChartComponent = () => {
+            const axisColor = axisColorMode === "dark" ? "white" : "black";
+
             if (!data || data.length === 0 || !yKeys || yKeys.length === 0) {
                 return (
                     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <Text style={{ color: "black" }}>No data available</Text>
+                        <Text style={{ color: axisColor }}>No data available</Text>
                     </View>
                 );
             }
@@ -602,7 +607,7 @@ progress: {
                             style={{
                                 fontSize: 18,
                                 fontWeight: "bold",
-                                color: colours[index] || "black",
+                                color: colours[index] || axisColor,
                                 marginVertical: 4,
                             }}
                         >
