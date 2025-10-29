@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { IconButton } from 'react-native-paper';
+import { IconButton, useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
 import BasicButton from '../common/buttons/BasicButton';
 
@@ -13,7 +13,12 @@ const alignmentMap = {
     stretch: 'stretch'
 };
 
-const ButtonCard = ({ item, isEditing, onRemove }) => {
+const ButtonCard = ({ item, isEditing, onEdit }) => {
+    const theme = useTheme();
+    const editIconColor = theme.colors?.primary ?? '#1d4ed8';
+    const editContainerColor = theme.colors?.surfaceVariant
+        ?? (theme.dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)');
+
     const config = item.config || {};
     const {
         label = 'Button',
@@ -80,10 +85,13 @@ const ButtonCard = ({ item, isEditing, onRemove }) => {
             {isEditing && (
                 <View style={styles.editOverlay}>
                     <IconButton
-                        icon="close"
-                        size={16}
-                        onPress={() => onRemove(item.id)}
+                        icon="pencil"
+                        size={18}
+                        onPress={() => onEdit?.(item)}
                         style={styles.removeButton}
+                        iconColor={editIconColor}
+                        containerColor={editContainerColor}
+                        accessibilityLabel="Edit board item"
                     />
                 </View>
             )}
@@ -129,7 +137,7 @@ const styles = StyleSheet.create({
     },
     removeButton: {
         margin: 0,
-        backgroundColor: 'rgba(255,255,255,0.9)',
+        borderRadius: 16,
     },
     buttonWrapper: {
         flex: 1,

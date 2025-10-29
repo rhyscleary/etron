@@ -5,7 +5,6 @@ import { Text, IconButton } from 'react-native-paper';
 const MetricDetailHeader = ({ 
     item, 
     onEdit, 
-    onPalette, 
     onDelete, 
     onClose, 
     styles 
@@ -41,13 +40,6 @@ const MetricDetailHeader = ({
                     disabled={!metricId}
                     style={styles.metricDetailHeaderIcon}
                     accessibilityLabel="Edit metric"
-                />
-                <IconButton
-                    icon="palette-outline"
-                    size={20}
-                    onPress={() => onPalette(item)}
-                    style={styles.metricDetailHeaderIcon}
-                    accessibilityLabel="Edit display"
                 />
                 <IconButton
                     icon="delete-outline"

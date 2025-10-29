@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Text, IconButton } from 'react-native-paper';
+import { Text, IconButton, useTheme } from 'react-native-paper';
 import GraphTypes from '../../app/(auth)/(drawer)/modules/day-book/metrics/graph-types';
 import { resolveAppearance, buildAxisOptionsFromAppearance, mergeAxisOptions } from '../../utils/boards/boardUtils';
 import { DEFAULT_CHART_COLOURS } from '../../utils/boards/boardConstants';
@@ -10,9 +10,14 @@ const MetricCard = ({
     metricState, 
     isEditing, 
     styles, 
-    onRemove, 
+    onEdit,
     onPress 
 }) => {
+    const theme = useTheme();
+    const editIconColor = theme.colors?.primary ?? '#1d4ed8';
+    const editContainerColor = theme.colors?.surfaceVariant
+        ?? (theme.dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)');
+
     const config = item.config || {};
     const isLoading = metricState ? metricState.loading : true;
     const errorMessage = metricState?.error;
@@ -133,10 +138,13 @@ const MetricCard = ({
                 {isEditing && (
                     <View style={styles.metricEditOverlay}>
                         <IconButton
-                            icon="close"
-                            size={16}
-                            onPress={() => onRemove(item.id)}
+                            icon="pencil"
+                            size={18}
+                            onPress={() => onEdit?.(item)}
                             style={styles.removeButton}
+                            iconColor={editIconColor}
+                            containerColor={editContainerColor}
+                            accessibilityLabel="Edit board item"
                         />
                     </View>
                 )}
@@ -154,7 +162,7 @@ const MetricCard = ({
     return (
         <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => onPress(item.id)}
+            onPress={() => onPress?.(item.id)}
             style={styles.metricCardTouchable}
         >
             {metricCard}

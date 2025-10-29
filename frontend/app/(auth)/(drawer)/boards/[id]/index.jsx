@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { Text, IconButton, Menu, ActivityIndicator, FAB } from 'react-native-paper';
+import { Text, IconButton, Menu, ActivityIndicator, FAB, List, Divider, useTheme } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header from '../../../../../components/layout/Header';
 import { GridLayout } from '../../../../../components/layout/Grid';
@@ -18,12 +18,14 @@ import MetricDetailHeader from '../../../../../components/boards/MetricDetailHea
 import MetricDetailContent from '../../../../../components/boards/MetricDetailContent';
 import DisplaySettingsSheet from '../../../../../components/boards/DisplaySettingsSheet';
 import { createMetricItem, createButtonItem, mapItemsToLayout, calculateButtonGridWidth } from '../../../../../utils/boards/itemHandlers';
+import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const GRID_COLS = 12;
-import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const BoardView = () => {
     const { id } = useLocalSearchParams();
+    const theme = useTheme();
+
     const { 
         board, 
         loading, 
@@ -54,6 +56,8 @@ const BoardView = () => {
     const [activeMetricItemId, setActiveMetricItemId] = useState(null);
     const [showMetricDetails, setShowMetricDetails] = useState(false);
     const [showDisplaySettings, setShowDisplaySettings] = useState(false);
+    const [showEditOptions, setShowEditOptions] = useState(false);
+    const [editOptionsItem, setEditOptionsItem] = useState(null);
     
     const activeMetricItem = useMemo(() => {
         if (!board?.items || !activeMetricItemId) return null;
@@ -61,6 +65,13 @@ const BoardView = () => {
     }, [board?.items, activeMetricItemId]);
 
     const activeMetricState = activeMetricItem ? metricStates[activeMetricItem.id] : null;
+
+    useEffect(() => {
+        if (!isEditing) {
+            setShowEditOptions(false);
+            setEditOptionsItem(null);
+        }
+    }, [isEditing]);
 
     const handleMetricSelected = useCallback(async (metric) => {
         if (!board) return;
@@ -174,6 +185,36 @@ const BoardView = () => {
         handleRemoveItem(itemId);
     }, [handleCloseMetricDetails, handleRemoveItem]);
 
+    const handleOpenItemOptions = useCallback((item) => {
+        if (!item) return;
+        setEditOptionsItem(item);
+        setShowEditOptions(true);
+    }, []);
+
+    const handleCloseItemOptions = useCallback(() => {
+        setShowEditOptions(false);
+        setEditOptionsItem(null);
+    }, []);
+
+    const handleDisplaySettingsFromOptions = useCallback((item) => {
+        if (!item) return;
+        handleCloseItemOptions();
+        handleOpenDisplaySettings(item);
+    }, [handleCloseItemOptions, handleOpenDisplaySettings]);
+
+    const handleDeleteItemFromOptions = useCallback((item) => {
+        if (!item) return;
+        handleCloseItemOptions();
+        handleRemoveItem(item.id);
+    }, [handleCloseItemOptions, handleRemoveItem]);
+
+    const handleEditMetricFromOptions = useCallback((item) => {
+        const metricId = item?.config?.metricId;
+        handleCloseItemOptions();
+        if (!metricId) return;
+        handleEditMetric(metricId);
+    }, [handleCloseItemOptions, handleEditMetric]);
+
     const getGridItems = useCallback(() => {
         if (!board?.items) return [];
 
@@ -216,21 +257,21 @@ const BoardView = () => {
                                 metricState={metricStates[item.id]}
                                 isEditing={isEditing}
                                 styles={styles}
-                                onRemove={() => handleRemoveItem(item.id)}
-                                onPress={() => handleOpenMetricDetails(item.id)}
+                                onEdit={handleOpenItemOptions}
+                                onPress={handleOpenMetricDetails}
                             />
                         ) : item.type === 'button' ? (
                             <ButtonCard
                                 item={item}
                                 isEditing={isEditing}
-                                onRemove={() => handleRemoveItem(item.id)}
+                                onEdit={handleOpenItemOptions}
                             />
                         ) : null}
                     </TouchableOpacity>
                 )
             };
         });
-    }, [board?.items, isEditing, metricStates, handleOpenMetricDetails, handleRemoveItem]);
+    }, [board?.items, isEditing, metricStates, handleOpenMetricDetails, handleOpenItemOptions]);
 
     if (loading) {
         return (
@@ -325,6 +366,56 @@ const BoardView = () => {
                 </Menu>
             </ResponsiveScreen>
 
+            {showEditOptions && editOptionsItem && (
+                <CustomBottomSheet
+                    variant="standard"
+                    footer={{ variant: 'none' }}
+                    containerStyle={{ zIndex: 9999 }}
+                    header={{
+                        title: editOptionsItem.type === 'metric' ? 'Edit Metric' : 'Edit Button',
+                        showClose: true
+                    }}
+                    onChange={(index) => {
+                        if (index === -1) handleCloseItemOptions();
+                    }}
+                    onClose={handleCloseItemOptions}
+                >
+                    <View style={styles.editOptionsContainer}>
+                        <Text style={styles.editOptionsItemLabel} numberOfLines={1}>
+                            {editOptionsItem.config?.label || editOptionsItem.config?.name || 'Board Item'}
+                        </Text>
+                        <Divider style={styles.editOptionsDivider} />
+
+                        {editOptionsItem.type === 'metric' && (
+                            <View style={styles.editOptionsSection}>
+                                <List.Item
+                                    title="Edit Metric"
+                                    description="Modify the underlying metric configuration"
+                                    left={(props) => <List.Icon {...props} icon="pencil" />}
+                                    disabled={!editOptionsItem?.config?.metricId}
+                                    onPress={() => handleEditMetricFromOptions(editOptionsItem)}
+                                />
+                                <List.Item
+                                    title="Display Settings"
+                                    description="Adjust how this metric appears on the board"
+                                    left={(props) => <List.Icon {...props} icon="palette" />}
+                                    onPress={() => handleDisplaySettingsFromOptions(editOptionsItem)}
+                                />
+                                <Divider style={styles.editOptionsDivider} />
+                            </View>
+                        )}
+
+                        <List.Item
+                            title="Remove from Board"
+                            description="Delete this item from the current board"
+                            left={(props) => <List.Icon {...props} icon="trash-can-outline" color={theme.colors.error} />}
+                            titleStyle={[styles.editOptionDeleteText, { color: theme.colors.error }]}
+                            onPress={() => handleDeleteItemFromOptions(editOptionsItem)}
+                        />
+                    </View>
+                </CustomBottomSheet>
+            )}
+
             {showMetricDetails && activeMetricItem && (
                 <CustomBottomSheet
                     variant="standard"
@@ -336,7 +427,6 @@ const BoardView = () => {
                             <MetricDetailHeader
                                 item={activeMetricItem}
                                 onEdit={handleEditMetric}
-                                onPalette={handleOpenDisplaySettings}
                                 onDelete={handleRemoveMetricFromBoard}
                                 onClose={handleCloseMetricDetails}
                                 styles={styles}
@@ -473,6 +563,24 @@ const styles = StyleSheet.create({
         right: 16,
         bottom: 16
     },
+    editOptionsContainer: {
+        paddingTop: 4,
+        paddingBottom: 12
+    },
+    editOptionsItemLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        marginBottom: 4
+    },
+    editOptionsDivider: {
+        marginVertical: 4
+    },
+    editOptionsSection: {
+        marginBottom: 4
+    },
+    editOptionDeleteText: {
+        fontWeight: '600'
+    },
     // Metric Card Styles
     metricCardTouchable: {
         flex: 1,
@@ -502,7 +610,7 @@ const styles = StyleSheet.create({
     },
     removeButton: {
         margin: 0,
-        backgroundColor: 'rgba(255,255,255,0.9)'
+        borderRadius: 16
     },
     metricPreviewChart: {
         flex: 1,
