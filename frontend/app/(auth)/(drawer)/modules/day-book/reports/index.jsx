@@ -47,26 +47,23 @@ const ReportsAndExportsManagement = () => {
     const [allowedMap, setAllowedMap] = useState({});
 
     useEffect(() => {
-        let mounted = true;
-        async () => {
-            const entries = await Promise.all(
-                menuButtonMap.map(async (option) => {
-                    if (!option.permKey) return [option.label, true];
-                    try {
-                        const allowed = await hasPermission(option.permKey);
-                        return [option.permKey, !!allowed];
-                    } catch {
-                        return [option.permKey, false];
-                    }
-                })
-            );
-            if (mounted) setAllowedMap(Object.fromEntries(entries));
-        };
-
-        return () => {
-            mounted = false;
-        };
+        mapAllowedButtons();
     }, [menuButtonMap]);
+
+    async function mapAllowedButtons() {
+        const entries = await Promise.all(
+            menuButtonMap.map(async (option) => {
+                if (!option.permKey) return [option.label, true];
+                try {
+                    const allowed = await hasPermission(option.permKey);
+                    return [option.label, allowed];
+                } catch {
+                    return [option.label, false];
+                }
+            })
+        );
+        setAllowedMap(Object.fromEntries(entries));
+    }
 
     return (
         <ResponsiveScreen
@@ -76,7 +73,7 @@ const ReportsAndExportsManagement = () => {
         >
             <StackLayout spacing={12}>
                 {menuButtonMap.map((item) => {
-                    const allowed = item.permKey ? allowedMap[item.permKey] : true;
+                    const allowed = item.permKey ? allowedMap[item.label] : true;
                     return (
                         <PermissionGate
                             key={item.label}
