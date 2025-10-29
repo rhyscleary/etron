@@ -177,7 +177,7 @@ const CreateMetric = () => {
             endpoints.modules.day_book.metrics.add,
             metricDetails
         );
-        console.log("Uploaded metric details via API result:", result);
+        return(result.data.metricId);
     }
 
     const [userId, setUserId] = useState(null);
@@ -202,7 +202,10 @@ const CreateMetric = () => {
 
     const handleFinish = async () => {
         setLoading(true);
-        try { await uploadMetricSettings() } catch (error) {
+        let metricId;
+        try {
+            metricId = await uploadMetricSettings()
+        } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;
         } finally {
@@ -210,7 +213,8 @@ const CreateMetric = () => {
         }
 
         console.log("Form completed");
-        router.navigate("/modules/day-book/metrics"); 
+        router.navigate("/modules/day-book/metrics");
+        router.navigate(`/modules/day-book/metrics/view-metric/${metricId}`)
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
