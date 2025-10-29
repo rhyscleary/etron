@@ -179,7 +179,7 @@ const CreateMetric = () => {
             metricDetails
         );
 
-        const graphImageKey = await uploadGraphToS3(result.data.metricId);
+        const graphImageKey = await uploadGraphToS3(result.data.metricId, result.data.fileUploadUrl);
         console.log("Uploaded metric details via API result:", result);
     }
 
@@ -239,35 +239,40 @@ const CreateMetric = () => {
         (step == 0 && (chosenIndependentVariable.length == 0 || !selectedMetric)) ||
         (step == 1 && (!metricName))
 
-async function uploadGraphToS3(metricId) {
-    const workspaceId = await getWorkspaceId();
-    const fileName = `workspaces/${workspaceId}/metrics/${metricId}.png`;
 
-    // Capture ViewShot
-    const uri = await viewShotRef.current.capture({ format: 'png', result: 'tmpfile' });
-    if (!uri) throw new Error("Failed to capture graph.");
+    async function uploadGraphToS3(metricId, fileUploadUrl) {
+  try {
+    // Capture as a temporary file
+    const tmpUri = await viewShotRef.current.capture({
+      format: "png",
+      quality: 1.0,
+      result: "tmpfile",
+    });
 
     // Read file as binary
-    const file = await FileSystem.readAsStringAsync(uri, {
-        encoding: FileSystem.EncodingType.Base64,
+    const fileBinary = await FileSystem.readAsStringAsync(tmpUri, {
+      encoding: FileSystem.EncodingType.Base64,
     });
-    const s3Url = `https://etron-metrics.s3.amazonaws.com/${fileName}`;
 
-    // Convert Base64 to Uint8Array for fetch
-    const binary = Uint8Array.from(atob(file), c => c.charCodeAt(0));
+    // Convert Base64 to ArrayBuffer
+    const arrayBuffer = Buffer.from(fileBinary, "base64");
 
-    const response = await fetch(s3Url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'image/png' },
-        body: binary,  // Raw bytes, not Base64 string
+    // Upload to S3
+    const response = await fetch(fileUploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": "image/png" },
+      body: arrayBuffer,
     });
 
     if (!response.ok) {
-        throw new Error(`S3 upload failed: ${response.status}`);
+      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
     }
 
-    console.log("Graph uploaded successfully:", fileName);
-    return fileName;
+    console.log("✅ Graph uploaded successfully");
+  } catch (error) {
+    console.error("❌ Error uploading graph to S3:", error);
+    throw error;
+  }
 }
 
 

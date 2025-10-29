@@ -145,7 +145,7 @@ const EditReport = () => {
 
 							if (data?.type === 'insertMetric' && data.workspaceId && data.metricId) {
 								const img = document.createElement('img');
-								img.src = "https://etron-metrics.s3.ap-southeast-2.amazonaws.com/workspaces/" + data.workspaceId + "/metrics/" + data.metricId + ".png";
+								img.src = "https://etron-metrics.s3.ap-southeast-2.amazonaws.com/workspaces/" + data.workspaceId + "/metrics/" + data.metricId + "/" + "metric.png";
 								img.style.maxWidth = '100%';
 								img.style.display = 'block';
 								img.style.margin = '10px 0';
