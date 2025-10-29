@@ -25,15 +25,15 @@ const StatusPill = ({ status }) => {
 
 	if (s === "active" || s === "connected") {
 		mode = "flat";
-		style = [{ marginLeft: 8 }, { backgroundColor: "#E6F7EE" }];
+		style = [{ marginLeft: 8 }];
 		label = "Active";
 	} else if (s === "pending_upload" || s === "pending") {
 		mode = "flat";
-		style = [{ marginLeft: 8 }, { backgroundColor: "#FFF6E5" }];
+		style = [{ marginLeft: 8 }];
 		label = "Pending";
 	} else if (s === "error" || s === "failed") {
 		mode = "flat";
-		style = [{ marginLeft: 8 }, { backgroundColor: "#FDECEC" }];
+		style = [{ marginLeft: 8 }];
 		label = "Error";
 	}
 
