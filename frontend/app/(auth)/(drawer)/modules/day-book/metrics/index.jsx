@@ -100,7 +100,7 @@ const MetricManagement = () => {
                 <ScrollView
                     style = {{ flex: 1 }}
                     refreshControl = {<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                    contentContainerStyle= {{ flexGrow: 1 }}
+                    contentContainerStyle= {{ paddingBottom: 40 }}
                     bounces = {true}
                     alwaysBounceVertical = {true}
                     overScrollMode = "always"
@@ -112,12 +112,15 @@ const MetricManagement = () => {
                             </Text>
                             <MetricCardList metrics={filteredUser} searchQuery={searchQuery} />
 
-                            <Divider/>
-                            
-                            <Text style={{ fontSize: 16, color: theme.colors.placeholderText}}>
-                                Created by others
-                            </Text>
-                            <MetricCardList metrics={filteredOther} searchQuery={searchQuery} />
+                            {filteredOther.length > 0 && (
+                                <>
+                                    <Divider />
+                                    <Text style={{ fontSize: 16, color: theme.colors.placeholderText }}>
+                                        Created by others
+                                    </Text>
+                                    <MetricCardList metrics={filteredOther} searchQuery={searchQuery} />
+                                </>
+                            )}
                         </View>
                     }
                 </ScrollView>
