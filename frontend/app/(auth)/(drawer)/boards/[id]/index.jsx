@@ -237,11 +237,27 @@ const BoardView = () => {
 
     const handleItemLongPress = useCallback((itemId) => {
         if (!isEditing) return;
-        setActiveResizeItemId(prev => (prev === itemId ? null : itemId));
+        setActiveResizeItemId(prev => {
+            const nextId = prev === itemId ? null : itemId;
+            if (nextId !== prev) {
+                setShowEditOptions(false);
+                setEditOptionsItem(null);
+                setShowAddItemPicker(false);
+                setShowMetricPicker(false);
+                setShowButtonPicker(false);
+            }
+            return nextId;
+        });
     }, [isEditing]);
 
     const handleResizeSessionEnd = useCallback((itemId) => {
         setActiveResizeItemId(prev => (prev === itemId ? null : prev));
+    }, []);
+
+    const handleExitResizeMode = useCallback(() => {
+        setActiveResizeItemId(null);
+        setShowEditOptions(false);
+        setEditOptionsItem(null);
     }, []);
 
     const getGridItems = useCallback(() => {
@@ -406,13 +422,14 @@ const BoardView = () => {
                             isResizable={Boolean(activeResizeItemId)}
                             activeResizeItemId={activeResizeItemId}
                             onItemLongPress={isEditing ? handleItemLongPress : undefined}
+                            onBackgroundPress={handleExitResizeMode}
                             onResizeSessionEnd={handleResizeSessionEnd}
                             onLayoutChange={updateLayout}
                             containerStyle={styles.gridContainer}
                         />
                     )}
 
-                    {isEditing && (
+                    {isEditing && !isResizeActive && (
                         <FAB
                             icon="plus"
                             style={styles.fab}

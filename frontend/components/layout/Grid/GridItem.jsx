@@ -18,7 +18,8 @@ const GridItem = ({
     onResizeMove,
     onResizeEnd,
     content,
-    style
+    style,
+    showDragHandle = false
 }) => {
     const theme = useTheme();
     const [isPressed, setIsPressed] = useState(false);
@@ -120,6 +121,34 @@ const GridItem = ({
         }
     }), [clearLongPressTimeout, id, isDraggable, onDragEnd, onDragMove, onDragStart, onItemLongPress, startLongPressTimer]);
 
+    const dragHandlePanResponder = useMemo(() => {
+        if (!showDragHandle) {
+            return null;
+        }
+
+        return PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: () => true,
+            onPanResponderGrant: () => {
+                clearLongPressTimeout();
+                setIsPressed(true);
+                onDragStart?.(id, positionRef.current);
+            },
+            onPanResponderMove: (_, gestureState) => {
+                onDragMove?.(id, gestureState.dx, gestureState.dy);
+            },
+            onPanResponderTerminationRequest: () => false,
+            onPanResponderRelease: () => {
+                setIsPressed(false);
+                onDragEnd?.(id);
+            },
+            onPanResponderTerminate: () => {
+                setIsPressed(false);
+                onDragEnd?.(id);
+            }
+        });
+    }, [clearLongPressTimeout, showDragHandle, id, onDragStart, onDragMove, onDragEnd]);
+
     const resizePanResponders = useMemo(() => {
         if (!resizeEnabled) {
             return null;
@@ -175,6 +204,15 @@ const GridItem = ({
             <View style={styles.content}>
                 {content}
             </View>
+            {showDragHandle && dragHandlePanResponder && (
+                <View
+                    {...dragHandlePanResponder.panHandlers}
+                    style={styles.dragHandle}
+                >
+                    <View style={styles.dragHandleGrip} />
+                    <View style={[styles.dragHandleGrip, styles.dragHandleGripLower]} />
+                </View>
+            )}
             {resizeEnabled && resizePanResponders && (
                 <View pointerEvents="box-none" style={styles.resizeOverlay}>
                     <View
@@ -236,6 +274,28 @@ const styles = StyleSheet.create({
         height: 18,
         right: -9,
         bottom: -9
+    },
+    dragHandle: {
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: 'rgba(99, 102, 241, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 25
+    },
+    dragHandleGrip: {
+        width: 14,
+        height: 3,
+        borderRadius: 2,
+        backgroundColor: '#fff',
+        opacity: 0.9
+    },
+    dragHandleGripLower: {
+        marginTop: 3
     }
 });
 

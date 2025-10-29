@@ -20,6 +20,7 @@ const GridLayout = ({
     isResizable = false,
     activeResizeItemId = null,
     onItemLongPress,
+    onBackgroundPress,
     onResizeSessionEnd,
     onLayoutChange,
     containerStyle,
@@ -443,8 +444,33 @@ const GridLayout = ({
         return normalizedMaxY * rowHeight + Math.max(0, normalizedMaxY - 1) * marginY;
     }, [layout, dragPreview, resizePreview, rowHeight, marginY]);
 
+    const shouldCaptureBackground = Boolean(isResizable && activeResizeItemId && onBackgroundPress);
+
+    const isPointInsideActiveItem = useCallback((x, y, buffer = 0) => {
+        const activeLayoutItem = layoutRef.current.find(item => item.id === activeResizeItemId);
+        if (!activeLayoutItem) return false;
+        const rect = getItemPosition(activeLayoutItem);
+        const insideX = x >= rect.x - buffer && x <= rect.x + rect.width + buffer;
+        const insideY = y >= rect.y - buffer && y <= rect.y + rect.height + buffer;
+        return insideX && insideY;
+    }, [activeResizeItemId, getItemPosition]);
+
+    const shouldHandleBackgroundTouch = useCallback((evt) => {
+        if (!shouldCaptureBackground) return false;
+        const { locationX, locationY } = evt.nativeEvent;
+        return !isPointInsideActiveItem(locationX, locationY, 24);
+    }, [isPointInsideActiveItem, shouldCaptureBackground]);
+
+    const handleBackgroundRelease = useCallback(() => {
+        onBackgroundPress?.();
+    }, [onBackgroundPress]);
+
     return (
-        <View style={[styles.container, { height: containerHeight, width }, containerStyle]}>
+        <View
+            style={[styles.container, { height: containerHeight, width }, containerStyle]}
+            onStartShouldSetResponder={shouldHandleBackgroundTouch}
+            onResponderRelease={handleBackgroundRelease}
+        >
             {previewHighlightPosition && (
                 <View
                     pointerEvents="none"
@@ -494,6 +520,7 @@ const GridLayout = ({
                         onResizeMove={handleResizeMove}
                         onResizeEnd={handleResizeEnd}
                         onItemLongPress={onItemLongPress}
+                        showDragHandle={isItemResizeTarget}
                         content={sourceItem.content}
                         style={sourceItem.style}
                     />
