@@ -49,26 +49,23 @@ const Settings = () => {
     const [allowedMap, setAllowedMap] = useState({});
 
     useEffect(() => {
-        let mounted = true;
-        async () => {
-            const entries = await Promise.all(
-                settingButtonMap.map(async (option) => {
-                    if (!option.permKey) return [option.label, true];
-                    try {
-                        const allowed = await hasPermission(option.permKey);
-                        return [option.label, !!allowed];
-                    } catch {
-                        return [option.label, false];
-                    }
-                })
-            );
-            if (mounted) setAllowedMap(Object.fromEntries(entries));
-        };
-
-        return () => {
-            mounted = false;
-        };
+        mapAllowedButtons();
     }, [settingButtonMap]);
+
+    async function mapAllowedButtons() {
+        const entries = await Promise.all(
+            settingButtonMap.map(async (option) => {
+                if (!option.permKey) return [option.label, true];
+                try {
+                    const allowed = await hasPermission(option.permKey);
+                    return [option.label, allowed];
+                } catch {
+                    return [option.label, false];
+                }
+            })
+        );
+        setAllowedMap(Object.fromEntries(entries));
+    }
 
     return (
         <ResponsiveScreen

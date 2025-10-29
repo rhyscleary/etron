@@ -32,6 +32,7 @@ const CreateMetric = () => {
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
     const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     const [viewDataPermission, setViewDataPermission] = useState(false);
+    const [manageDataSourcesPermission, setManageDataSourcesPermission] = useState(false);
 
     useEffect(() => {  // When page loads, load a list of all data sources
         loadPermission();
@@ -41,6 +42,8 @@ const CreateMetric = () => {
     async function loadPermission() {
         const viewDataPermission = hasPermission("modules.daybook.datasources.view_data");
         setViewDataPermission(viewDataPermission);
+        const manageDataSourcesPermission = hasPermission("modules.daybook.datasources.manage_dataSources");
+        setManageDataSourcesPermission(manageDataSourcesPermission);
     }
 
     async function initialiseDataSourceList() {
@@ -77,6 +80,9 @@ const CreateMetric = () => {
         console.log("downloading");
 
         const workspaceId = await getWorkspaceId();
+
+        console.log("source:", source);
+        console.log("workspaceId:", workspaceId);
         try {
             let response = await apiGet(
                 endpoints.modules.day_book.data_sources.viewData(source),
@@ -171,7 +177,7 @@ const CreateMetric = () => {
             endpoints.modules.day_book.metrics.add,
             metricDetails
         );
-        console.log("Uploaded metric details via API result:", result);
+        return(result.data.metricId);
     }
 
     const [userId, setUserId] = useState(null);
@@ -196,7 +202,10 @@ const CreateMetric = () => {
 
     const handleFinish = async () => {
         setLoading(true);
-        try { await uploadMetricSettings() } catch (error) {
+        let metricId;
+        try {
+            metricId = await uploadMetricSettings()
+        } catch (error) {
             console.log("Error uploading metric settings:", error);
             return;
         } finally {
@@ -204,7 +213,8 @@ const CreateMetric = () => {
         }
 
         console.log("Form completed");
-        router.navigate("/modules/day-book/metrics"); 
+        router.navigate("/modules/day-book/metrics");
+        router.navigate(`/modules/day-book/metrics/view-metric/${metricId}`)
     }
 
     const [dataVisible, setDataVisible] = React.useState(false);
@@ -244,6 +254,7 @@ const CreateMetric = () => {
                                 setSelectedReadyData(item);
                             }}
                             value = {selectedReadyData}
+                            allowed={manageDataSourcesPermission}
                         />
 
                         {dataSourceDataDownloadStatus == "unstarted" && (
