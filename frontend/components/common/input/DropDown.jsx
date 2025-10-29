@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, InteractionManager } from 'react-native';
 import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
+import PermissionGate from '../PermissionGate';
 
 const DropDown = ({
     title,
@@ -9,6 +10,7 @@ const DropDown = ({
     showRouterButton=true,
     onSelect,
     value,
+    allowed=true,
 }) => {
     const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
@@ -89,35 +91,40 @@ const DropDown = ({
                 </ScrollView>
 
                 {showRouterButton && (
-                    <TouchableOpacity
-                        style={[
-                            styles.routerButton,
-                            { borderColor: theme.colors.outline }
-                        ]}
-                        onPress={() => { //TODO: MAKE THIS HAVE PROPER NAVIGATION SO THAT THE BACK BUTTON AFTER CREATING A DATA CONNECTION TAKES YOU BACK HERE
-                            router.navigate('/modules/day-book/data-management/create-data-connection')
-                        }}
+                    <PermissionGate
+                        allowed={allowed}
                     >
-                        <View
-                            style={styles.routerButtonContent}
+                        <TouchableOpacity
+                            style={[
+                                styles.routerButton,
+                                { borderColor: theme.colors.outline }
+                            ]}
+                            onPress={() => { //TODO: MAKE THIS HAVE PROPER NAVIGATION SO THAT THE BACK BUTTON AFTER CREATING A DATA CONNECTION TAKES YOU BACK HERE
+                                router.navigate('/modules/day-book/data-management/create-data-connection')
+                            }}
                         >
-                            <IconButton
-                                icon="plus"
-                                size={20}
-                                style={styles.routerIcon}
-                                iconColor={theme.colors.icon}
-                            />
-
-                            <Text 
-                                style={[
-                                    styles.routerText,
-                                    { color: theme.colors.placeholderText, } 
-                                ]}
+                        
+                            <View
+                                style={styles.routerButtonContent}
                             >
-                                New Data Source {/*TODO: MAKE THIS A VARIABLE*/}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
+                                <IconButton
+                                    icon="plus"
+                                    size={20}
+                                    style={styles.routerIcon}
+                                    iconColor={theme.colors.icon}
+                                />
+
+                                <Text 
+                                    style={[
+                                        styles.routerText,
+                                        { color: theme.colors.placeholderText, } 
+                                    ]}
+                                >
+                                    New Data Source {/*TODO: MAKE THIS A VARIABLE*/}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    </PermissionGate>
                 )}
             </List.Accordion>
         </List.Section>

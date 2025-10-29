@@ -32,6 +32,7 @@ const CreateMetric = () => {
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
     const [loadingDataSourceMappings, setLoadingDataSourceMappings] = useState(true);  // Flag so that the program knows that the data is still being downloaded
     const [viewDataPermission, setViewDataPermission] = useState(false);
+    const [manageDataSourcesPermission, setManageDataSourcesPermission] = useState(false);
 
     useEffect(() => {  // When page loads, load a list of all data sources
         loadPermission();
@@ -41,6 +42,8 @@ const CreateMetric = () => {
     async function loadPermission() {
         const viewDataPermission = hasPermission("modules.daybook.datasources.view_data");
         setViewDataPermission(viewDataPermission);
+        const manageDataSourcesPermission = hasPermission("modules.daybook.datasources.manage_dataSources");
+        setManageDataSourcesPermission(manageDataSourcesPermission);
     }
 
     async function initialiseDataSourceList() {
@@ -247,6 +250,7 @@ const CreateMetric = () => {
                                 setSelectedReadyData(item);
                             }}
                             value = {selectedReadyData}
+                            allowed={manageDataSourcesPermission}
                         />
 
                         {dataSourceDataDownloadStatus == "unstarted" && (
