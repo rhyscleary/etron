@@ -257,10 +257,7 @@ const EditTemplate = () => {
         base64: false,
       });
 
-      const downloadDir =
-        Platform.OS === "android"
-          ? RNFS.DownloadDirectoryPath
-          : RNFS.DocumentDirectoryPath;
+      const downloadDir = RNFS.DocumentDirectoryPath;
 
       const destPath = `${downloadDir}/${customFileName}.pdf`;
 

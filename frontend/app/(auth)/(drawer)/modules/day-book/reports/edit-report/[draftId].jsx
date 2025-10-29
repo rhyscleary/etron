@@ -203,14 +203,19 @@ const EditReport = () => {
 
 	// handle metric bottom sheet messages from webview
 	const handleWebViewMessage = (event) => {
+		const rawData = event.nativeEvent.data;
+		let data;
 		try {
-			const data = JSON.parse(event.nativeEvent.data);
-			if (data.type == "openMetricSheet") {
-				setMetricModalVisible(true);
-			} else if (isEditing) {
-				setEditorContent(event.nativeEvent.data);
-			}
-		} catch {}
+			data = JSON.parse(rawData);
+		} catch {
+			data = { type: "html", html: rawData };
+		}
+
+		if (data.type === "openMetricSheet") {
+			setMetricModalVisible(true);
+		} else if (isEditing) {
+			setEditorContent(data.html || rawData);
+		}
 	};
 
 	// when metric selected send message to pell to add in metric
