@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { getFirstAvailablePosition } from "../../../../../../components/layout/Grid/gridUtils";
+import { getFirstAvailablePosition } from "../../components/layout/Grid/gridUtils";
 
 export const createMetricItem = (metric, existingLayout, cols = 12) => {
   const position = getFirstAvailablePosition(existingLayout, 4, 3, cols);

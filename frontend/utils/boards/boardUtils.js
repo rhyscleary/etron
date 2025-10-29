@@ -1,10 +1,10 @@
-import { sanitizeHexColor, isValidHexColor } from "../../../../../utils/color";
+import { sanitizeHexColor, isValidHexColor } from "../color";
 import {
   DEFAULT_BOARD_COLOUR,
   BOARD_COLOUR_PALETTE,
   DEFAULT_CHART_APPEARANCE,
   INITIAL_DISPLAY_SETTINGS,
-} from "./constants";
+} from "./boardConstants";
 
 export const sanitizeColourValue = sanitizeHexColor;
 export const isValidHexColour = isValidHexColor;

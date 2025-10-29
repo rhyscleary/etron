@@ -2,15 +2,15 @@ import React, { useState, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, TextInput, Switch, Button, List, Divider } from 'react-native-paper';
 import ColorPicker from 'react-native-wheel-color-picker';
-import CustomBottomSheet from '../../../../../../components/BottomSheet';
+import CustomBottomSheet from '../BottomSheet';
 import { 
     DEFAULT_BOARD_COLOUR, 
     BOARD_COLOUR_PALETTE 
-} from '../../../../../../utils/boards/boardConstants';
+} from '../../utils/boards/boardConstants';
 import { 
     sanitizeColourValue, 
     isValidHexColour 
-} from '../../../../../../utils/boards/boardUtils';
+} from '../../utils/boards/boardUtils';
 
 const DisplaySettingsSheet = ({ 
     visible, 

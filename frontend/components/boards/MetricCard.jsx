@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Text, IconButton } from 'react-native-paper';
-import GraphTypes from '../../../modules/day-book/metrics/graph-types';
-import { resolveAppearance, buildAxisOptionsFromAppearance, mergeAxisOptions } from '../../../../../../utils/boards/boardUtils';
-import { DEFAULT_CHART_COLOURS } from '../../../../../../utils/boards/boardConstants';
+import GraphTypes from '../../app/(auth)/(drawer)/modules/day-book/metrics/graph-types';
+import { resolveAppearance, buildAxisOptionsFromAppearance, mergeAxisOptions } from '../../utils/boards/boardUtils';
+import { DEFAULT_CHART_COLOURS } from '../../utils/boards/boardConstants';
 
 const MetricCard = ({ 
     item, 

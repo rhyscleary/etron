@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { Text, Chip } from 'react-native-paper';
-import GraphTypes from '../../../modules/day-book/metrics/graph-types';
-import { resolveAppearance, buildAxisOptionsFromAppearance, formatMetricValue, formatRangeValue } from '../../../../../../utils/boards/boardUtils';
-import { DEFAULT_CHART_COLOURS } from '../../../../../../utils/boards/boardConstants';
-import metricDataService from '../../../../../../services/MetricDataService';
+import GraphTypes from '../../app/(auth)/(drawer)/modules/day-book/metrics/graph-types';
+import { resolveAppearance, buildAxisOptionsFromAppearance, formatMetricValue, formatRangeValue } from '../../utils/boards/boardUtils';
+import { DEFAULT_CHART_COLOURS } from '../../utils/boards/boardConstants';
+import metricDataService from '../../services/MetricDataService';
 
 const MetricDetailContent = ({ item, metricState, styles }) => {
     if (!item) {

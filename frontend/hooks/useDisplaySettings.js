@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
-import { DEFAULT_BOARD_COLOUR } from "../app/(auth)/(drawer)/boards/[id]/constants";
+import { DEFAULT_BOARD_COLOUR } from "../utils/boards/boardConstants";
 import {
   createDisplaySettingsDraft,
   buildDisplayColoursForItem,
-} from "../app/(auth)/(drawer)/boards/[id]/utils";
+} from "../utils/boards/boardUtils";
 
 export const useDisplaySettings = (board) => {
   const [displayConfigItemId, setDisplayConfigItemId] = useState(null);

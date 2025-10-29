@@ -11,14 +11,14 @@ import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen'
 import { useBoardData } from '../../../../../hooks/useBoardData';
 import { useMetricStates } from '../../../../../hooks/useMetricStates';
 import { useDisplaySettings } from '../../../../../hooks/useDisplaySettings';
-import MetricCard from './components/MetricCard';
-import ButtonCard from './components/ButtonCard';
-import AddItemPicker from './components/AddItemPicker';
-import MetricDetailHeader from './components/MetricDetailHeader';
-import MetricDetailContent from './components/MetricDetailContent';
-import DisplaySettingsSheet from './components/DisplaySettingsSheet';
-import { createMetricItem, createButtonItem, mapItemsToLayout } from './helpers/itemHandlers';
-import { sanitizeColourValue } from './utils';
+import MetricCard from '../../../../../components/boards/MetricCard';
+import ButtonCard from '../../../../../components/boards/ButtonCard';
+import AddItemPicker from '../../../../../components/boards/AddItemPicker';
+import MetricDetailHeader from '../../../../../components/boards/MetricDetailHeader';
+import MetricDetailContent from '../../../../../components/boards/MetricDetailContent';
+import DisplaySettingsSheet from '../../../../../components/boards/DisplaySettingsSheet';
+import { createMetricItem, createButtonItem, mapItemsToLayout } from '../../../../../utils/boards/itemHandlers';
+import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const BoardView = () => {
     const { id } = useLocalSearchParams();
