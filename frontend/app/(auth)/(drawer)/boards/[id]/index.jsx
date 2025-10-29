@@ -17,7 +17,9 @@ import AddItemPicker from '../../../../../components/boards/AddItemPicker';
 import MetricDetailHeader from '../../../../../components/boards/MetricDetailHeader';
 import MetricDetailContent from '../../../../../components/boards/MetricDetailContent';
 import DisplaySettingsSheet from '../../../../../components/boards/DisplaySettingsSheet';
-import { createMetricItem, createButtonItem, mapItemsToLayout } from '../../../../../utils/boards/itemHandlers';
+import { createMetricItem, createButtonItem, mapItemsToLayout, calculateButtonGridWidth } from '../../../../../utils/boards/itemHandlers';
+
+const GRID_COLS = 12;
 import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const BoardView = () => {
@@ -175,44 +177,60 @@ const BoardView = () => {
     const getGridItems = useCallback(() => {
         if (!board?.items) return [];
 
-        return board.items.map(item => ({
-            id: item.id,
-            x: item.x,
-            y: item.y,
-            w: item.w,
-            h: item.h,
-            content: (
-                <TouchableOpacity
-                    style={styles.itemContent}
-                    activeOpacity={isEditing ? 1 : 0.7}
-                    onPress={() => {
-                        if (isEditing) return;
-                        if (item.type === 'metric') {
-                            handleOpenMetricDetails(item.id);
-                        }
-                    }}
-                >
-                    {item.type === 'metric' ? (
-                        <MetricCard
-                            item={item}
-                            metricState={metricStates[item.id]}
-                            isEditing={isEditing}
-                            styles={styles}
-                            onRemove={() => handleRemoveItem(item.id)}
-                            onPress={() => handleOpenMetricDetails(item.id)}
-                        />
-                    ) : item.type === 'button' ? (
-                        <ButtonCard
-                            item={item}
-                            isEditing={isEditing}
-                            styles={styles}
-                            onRemove={() => handleRemoveItem(item.id)}
-                        />
-                    ) : null}
-                </TouchableOpacity>
-            )
-        }));
-    }, [board?.items, metricStates, isEditing, handleOpenMetricDetails, handleRemoveItem]);
+        return board.items.map(item => {
+            const baseWidth = typeof item.w === 'number' ? item.w : 1;
+            const baseHeight = typeof item.h === 'number' ? item.h : 1;
+            let widthUnits = baseWidth;
+            let xPosition = typeof item.x === 'number' ? item.x : 0;
+
+            if (item.type === 'button') {
+                const minWidthUnits = calculateButtonGridWidth(item.config?.label || 'Button', GRID_COLS);
+                widthUnits = Math.max(baseWidth, minWidthUnits);
+                widthUnits = Math.min(widthUnits, GRID_COLS);
+
+                if (xPosition + widthUnits > GRID_COLS) {
+                    xPosition = Math.max(0, GRID_COLS - widthUnits);
+                }
+            }
+
+            return {
+                id: item.id,
+                x: xPosition,
+                y: typeof item.y === 'number' ? item.y : 0,
+                w: widthUnits,
+                h: baseHeight,
+                content: (
+                    <TouchableOpacity
+                        style={styles.itemContent}
+                        activeOpacity={isEditing ? 1 : 0.7}
+                        onPress={() => {
+                            if (isEditing) return;
+                            if (item.type === 'metric') {
+                                handleOpenMetricDetails(item.id);
+                            }
+                        }}
+                    >
+                        {item.type === 'metric' ? (
+                            <MetricCard
+                                item={item}
+                                metricState={metricStates[item.id]}
+                                isEditing={isEditing}
+                                styles={styles}
+                                onRemove={() => handleRemoveItem(item.id)}
+                                onPress={() => handleOpenMetricDetails(item.id)}
+                            />
+                        ) : item.type === 'button' ? (
+                            <ButtonCard
+                                item={item}
+                                isEditing={isEditing}
+                                onRemove={() => handleRemoveItem(item.id)}
+                            />
+                        ) : null}
+                    </TouchableOpacity>
+                )
+            };
+        });
+    }, [board?.items, isEditing, metricStates, handleOpenMetricDetails, handleRemoveItem]);
 
     if (loading) {
         return (
@@ -273,7 +291,7 @@ const BoardView = () => {
                     ) : (
                         <GridLayout
                             items={getGridItems()}
-                            cols={12}
+                            cols={GRID_COLS}
                             rowHeight={100}
                             margin={[10, 10]}
                             isDraggable={isEditing}
@@ -510,38 +528,7 @@ const styles = StyleSheet.create({
     metricCompactStatusErrorText: {
         color: '#ff8a80'
     },
-    // Button Card Styles
-    buttonContainer: {
-        flex: 1,
-        width: '100%',
-        height: '100%',
-        position: 'relative'
-    },
-    buttonEditOverlay: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        zIndex: 10
-    },
-    buttonWrapper: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 8
-    },
-    buttonWrapperEditing: {
-        opacity: 0.7
-    },
-    button: {
-        width: '100%'
-    },
-    buttonContent: {
-        paddingVertical: 8
-    },
-    buttonLabel: {
-        fontSize: 14,
-        fontWeight: '600'
-    },
+    // Button Card Styles - now handled in ButtonCard component itself
     // Metric Detail Header Styles
     metricDetailHeader: {
         flexDirection: 'row',

@@ -1,6 +1,33 @@
 import { v4 as uuidv4 } from "uuid";
 import { getFirstAvailablePosition } from "../../components/layout/Grid/gridUtils";
 
+export const calculateButtonGridWidth = (label = "", cols = 12) => {
+  const textLength = label.length;
+
+  const widthThresholds = [
+    { max: 10, width: 4 },
+    { max: 20, width: 5 },
+    { max: 30, width: 6 },
+    { max: 40, width: 7 },
+    { max: 50, width: 8 },
+  ];
+
+  let width = 4;
+  for (const threshold of widthThresholds) {
+    if (textLength > threshold.max) {
+      width = threshold.width;
+    } else {
+      break;
+    }
+  }
+
+  if (textLength > 50) {
+    width = cols;
+  }
+
+  return Math.min(width, cols);
+};
+
 export const createMetricItem = (metric, existingLayout, cols = 12) => {
   const position = getFirstAvailablePosition(existingLayout, 4, 3, cols);
 
@@ -27,8 +54,6 @@ export const createMetricItem = (metric, existingLayout, cols = 12) => {
 };
 
 export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
-  const position = getFirstAvailablePosition(existingLayout, 2, 1, cols);
-
   // Handle both old format (destination object) and new format (buttonConfig)
   const label =
     buttonConfig.label || buttonConfig.destination?.label || "Button";
@@ -36,12 +61,23 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
     buttonConfig.destination?.route || buttonConfig.destination || null;
   const color = buttonConfig.color || "#2979FF";
 
+  // Calculate adaptive width based on text length
+  // Rough estimate: ~8-10 characters per grid unit
+  const buttonWidth = calculateButtonGridWidth(label, cols);
+
+  const position = getFirstAvailablePosition(
+    existingLayout,
+    buttonWidth,
+    1,
+    cols
+  );
+
   return {
     id: uuidv4(),
     type: "button",
     x: position.x,
     y: position.y,
-    w: 2,
+    w: buttonWidth,
     h: 1,
     config: {
       label: label,

@@ -133,10 +133,12 @@ const styles = StyleSheet.create({
         marginBottom: 32
     },
     cancelButton: {
-        flex: 1
+        flex: 1,
+        minWidth: 100
     },
     createButton: {
-        flex: 1
+        flex: 1,
+        minWidth: 140
     }
 });
 

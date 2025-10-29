@@ -1,13 +1,74 @@
 import React from 'react';
-import { View, TouchableOpacity } from 'react-native';
-import { Text, IconButton, Button } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { IconButton } from 'react-native-paper';
 import { router } from 'expo-router';
+import BasicButton from '../common/buttons/BasicButton';
 
-const ButtonCard = ({ item, isEditing, styles, onRemove }) => {
+const alignmentMap = {
+    left: 'flex-start',
+    start: 'flex-start',
+    center: 'center',
+    right: 'flex-end',
+    end: 'flex-end',
+    stretch: 'stretch'
+};
+
+const ButtonCard = ({ item, isEditing, onRemove }) => {
     const config = item.config || {};
-    const buttonLabel = config.label || 'Button';
-    const buttonColor = config.color || '#2979FF';
-    const destinationRoute = config.destination;
+    const {
+        label = 'Button',
+        destination,
+        width,
+        buttonWidth,
+        minWidth,
+        buttonMinWidth,
+        maxWidth,
+        buttonMaxWidth,
+        alignment,
+        align,
+        fullWidth,
+        buttonProps = {}
+    } = config;
+
+    const buttonLabel = label;
+    const destinationRoute = typeof destination === 'string'
+        ? destination
+        : destination?.route ?? null;
+
+    const resolvedWidth = buttonWidth ?? width;
+    const resolvedMinWidth = buttonMinWidth ?? minWidth;
+    const resolvedMaxWidth = buttonMaxWidth ?? maxWidth;
+    const resolvedAlignment = alignmentMap[(alignment ?? align ?? 'center')] ?? 'center';
+
+    const {
+        fullWidth: propsFullWidth,
+        onPress: _ignoredOnPress,
+        label: _ignoredLabel,
+        disabled: propsDisabled,
+        ...restButtonProps
+    } = buttonProps;
+
+    const shouldDisableButton = isEditing || Boolean(propsDisabled);
+    const shouldFullWidth = typeof propsFullWidth === 'boolean'
+        ? propsFullWidth
+        : typeof fullWidth === 'boolean'
+            ? fullWidth
+            : true;
+
+    const wrapperAlignmentStyle = resolvedAlignment === 'stretch'
+        ? { alignItems: 'stretch' }
+        : { alignItems: resolvedAlignment };
+
+    const widthStyle = {};
+    if (resolvedWidth !== undefined) {
+        widthStyle.width = resolvedWidth;
+    }
+    if (resolvedMinWidth !== undefined) {
+        widthStyle.minWidth = resolvedMinWidth;
+    }
+    if (resolvedMaxWidth !== undefined) {
+        widthStyle.maxWidth = resolvedMaxWidth;
+    }
 
     const handleButtonPress = () => {
         if (!destinationRoute) return;
@@ -15,9 +76,9 @@ const ButtonCard = ({ item, isEditing, styles, onRemove }) => {
     };
 
     return (
-        <View style={styles.buttonContainer}>
+        <View style={styles.container}>
             {isEditing && (
-                <View style={styles.buttonEditOverlay}>
+                <View style={styles.editOverlay}>
                     <IconButton
                         icon="close"
                         size={16}
@@ -26,28 +87,66 @@ const ButtonCard = ({ item, isEditing, styles, onRemove }) => {
                     />
                 </View>
             )}
-            <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={isEditing ? undefined : handleButtonPress}
-                disabled={isEditing}
+            <View
                 style={[
                     styles.buttonWrapper,
-                    isEditing && styles.buttonWrapperEditing
+                    wrapperAlignmentStyle,
+                    isEditing && styles.editingOpacity
                 ]}
             >
-                <Button
-                    mode="contained"
-                    buttonColor={buttonColor}
-                    contentStyle={styles.buttonContent}
-                    labelStyle={styles.buttonLabel}
-                    style={styles.button}
-                    disabled={isEditing}
+                <View
+                    style={[
+                        shouldFullWidth ? styles.buttonInnerFull : styles.buttonInnerAuto,
+                        widthStyle
+                    ]}
                 >
-                    {buttonLabel}
-                </Button>
-            </TouchableOpacity>
+                    <BasicButton
+                        label={buttonLabel}
+                        onPress={isEditing ? undefined : handleButtonPress}
+                        disabled={shouldDisableButton}
+                        fullWidth={shouldFullWidth}
+                        {...restButtonProps}
+                    />
+                </View>
+            </View>
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        padding: 12,
+        position: 'relative',
+    },
+    editOverlay: {
+        position: 'absolute',
+        top: 4,
+        right: 4,
+        zIndex: 10,
+    },
+    removeButton: {
+        margin: 0,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+    },
+    buttonWrapper: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    editingOpacity: {
+        opacity: 0.7,
+    },
+    buttonInnerFull: {
+        width: '100%',
+        minHeight: 48,
+    },
+    buttonInnerAuto: {
+        minHeight: 48,
+    },
+});
 
 export default ButtonCard;
