@@ -235,7 +235,9 @@ const CreateMetric = () => {
         switch (step) {
             case 0:
                 return (
-                    <ScrollView>
+                    <ScrollView
+                        nestedScrollEnabled
+                    >
                         <DropDown
                             title = "Select Data Source"
                             items = {loadingDataSourceMappings ? ["Loading..."] : dataSourceMappings.map(dataSource => ({value: dataSource.id, label: dataSource.name}))}
