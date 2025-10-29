@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getFirstAvailablePosition } from "../../components/layout/Grid/gridUtils";
 
 const METRIC_WIDTH_RATIO = 2 / 3;
+const METRIC_HEIGHT_UNITS = 2;
 
 export const calculateMetricGridWidth = (cols = 12) => {
   const minWidth = Math.ceil(cols * METRIC_WIDTH_RATIO);
@@ -41,9 +42,35 @@ export const createMetricItem = (metric, existingLayout, cols = 12) => {
   const position = getFirstAvailablePosition(
     existingLayout,
     metricWidth,
-    3,
+    METRIC_HEIGHT_UNITS,
     cols
   );
+
+  const rawConfig = metric?.config || {};
+  const chartType = rawConfig.type || metric?.chartType || "line";
+  const independentVariable =
+    rawConfig.independentVariable ?? metric?.independentVariable;
+  const dependentVariables = Array.isArray(rawConfig.dependentVariables)
+    ? rawConfig.dependentVariables
+    : Array.isArray(metric?.dependentVariables)
+    ? metric.dependentVariables
+    : [];
+  const selectedRows = Array.isArray(rawConfig.selectedRows)
+    ? rawConfig.selectedRows
+    : Array.isArray(metric?.selectedRows)
+    ? metric.selectedRows
+    : [];
+  const resolvedColours = Array.isArray(rawConfig.colours)
+    ? rawConfig.colours
+    : Array.isArray(rawConfig.colors)
+    ? rawConfig.colors
+    : Array.isArray(metric?.colours)
+    ? metric.colours
+    : Array.isArray(metric?.colors)
+    ? metric.colors
+    : [];
+  const appearance = rawConfig.appearance || metric?.appearance || {};
+  const label = rawConfig.label || metric?.label || metric?.name || "Metric";
 
   return {
     id: uuidv4(),
@@ -51,18 +78,19 @@ export const createMetricItem = (metric, existingLayout, cols = 12) => {
     x: position.x,
     y: position.y,
     w: metricWidth,
-    h: 3,
+    h: METRIC_HEIGHT_UNITS,
     config: {
       metricId: metric.metricId,
       dataSourceId: metric.dataSourceId,
       name: metric.name,
-      label: metric.name,
-      chartType: metric.config?.type || "line",
-      independentVariable: metric.config?.independentVariable,
-      dependentVariables: metric.config?.dependentVariables || [],
-      selectedRows: metric.config?.selectedRows || [],
-      colours: [],
-      appearance: {},
+      label,
+      chartType,
+      independentVariable,
+      dependentVariables,
+      selectedRows,
+      colours: resolvedColours,
+      colors: resolvedColours,
+      appearance,
     },
   };
 };
@@ -112,6 +140,9 @@ export const mapItemsToLayout = (items = [], cols = 12) => {
       item.type === "metric"
         ? Math.min(Math.max(item.w ?? 1, metricWidth), cols)
         : item.w,
-    h: item.h,
+    h:
+      item.type === "metric"
+        ? Math.max(item.h ?? METRIC_HEIGHT_UNITS, METRIC_HEIGHT_UNITS)
+        : item.h,
   }));
 };

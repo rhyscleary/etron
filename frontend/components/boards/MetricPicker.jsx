@@ -36,21 +36,48 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
             
             const transformedMetrics = metricsData
                 .filter(metric => metric && typeof metric === 'object' && metric.metricId)
-                .map(metric => ({
-                    id: metric.metricId,
-                    metricId: metric.metricId,
-                    name: metric.name || 'Unnamed Metric',
-                    type: 'metric',
-                    dataSourceId: metric.dataSourceId,
-                    dataSourceName: metric.dataSourceName || metric.dataSourceLabel || metric.dataSource?.name,
-                    chartType: metric.config?.type || 'line',
-                    independentVariable: metric.config?.independentVariable,
-                    dependentVariables: metric.config?.dependentVariables || [],
-                    colours: metric.config?.colours || [],
-                    selectedRows: metric.config?.selectedRows || [],
-                    createdAt: metric.createdAt,
-                    updatedAt: metric.updatedAt
-                }));
+                .map(metric => {
+                    const rawConfig = metric.config || {};
+                    const dependentVariables = Array.isArray(rawConfig.dependentVariables)
+                        ? rawConfig.dependentVariables
+                        : [];
+                    const selectedRows = Array.isArray(rawConfig.selectedRows)
+                        ? rawConfig.selectedRows
+                        : [];
+                    const colours = Array.isArray(rawConfig.colours)
+                        ? rawConfig.colours
+                        : Array.isArray(rawConfig.colors)
+                            ? rawConfig.colors
+                            : [];
+
+                    const chartType = rawConfig.type || 'line';
+                    const independentVariable = rawConfig.independentVariable;
+
+                    return {
+                        id: metric.metricId,
+                        metricId: metric.metricId,
+                        name: metric.name || 'Unnamed Metric',
+                        type: 'metric',
+                        dataSourceId: metric.dataSourceId,
+                        dataSourceName: metric.dataSourceName || metric.dataSourceLabel || metric.dataSource?.name,
+                        chartType,
+                        independentVariable,
+                        dependentVariables,
+                        colours,
+                        selectedRows,
+                        createdAt: metric.createdAt,
+                        updatedAt: metric.updatedAt,
+                        config: {
+                            ...rawConfig,
+                            type: chartType,
+                            independentVariable,
+                            dependentVariables,
+                            selectedRows,
+                            colours,
+                            colors: rawConfig.colors || colours
+                        }
+                    };
+                });
             
             setMetrics(transformedMetrics);
             setFilteredMetrics(transformedMetrics);
