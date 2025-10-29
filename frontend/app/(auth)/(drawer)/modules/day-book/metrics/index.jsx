@@ -2,7 +2,7 @@
 
 import SearchBar from "../../../../../../components/common/input/SearchBar.jsx";
 import Divider from "../../../../../../components/layout/Divider.jsx";
-import { View, Button, ActivityIndicator, ScrollView, TouchableOpacity, StyleSheet, RefreshControl, Platform } from "react-native";
+import { View, Flatlist, ActivityIndicator, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from "react-native";
 import Header from "../../../../../../components/layout/Header.jsx";
 import { useRouter } from "expo-router";
 import { Text, useTheme, Card } from "react-native-paper";
@@ -14,6 +14,7 @@ import { apiGet } from "../../../../../../utils/api/apiClient.jsx";
 import { getCurrentUser } from "aws-amplify/auth";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen.jsx";
 import { hasPermission } from "../../../../../../utils/permissions.js";
+import { FlatList } from "react-native-gesture-handler";
 
 const MetricManagement = () => {
     const router = useRouter();
@@ -138,60 +139,61 @@ const MetricCardList = ({ metrics, searchQuery }) => {
         );
     }
 
-    return (
-        <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
-            {metrics.map((metric) => {
-                const previewImage = GraphTypes[metric.config.type]?.previewImage;
+    const rows = [];
+    for (let i = 0; i < metrics.length; i += 2) {
+        rows.push(metrics.slice(i, i + 2));
+    }
 
-                return (
-                    <TouchableOpacity
-                        key={metric.metricId}
-                        style={{
-                            width: "48%"
-                        }}
-                        onPress={() =>
-                            router.navigate(`/modules/day-book/metrics/view-metric/${metric.metricId}`)
-                        }
-                    >
-                        <Card
-                            style={{
-                                borderRadius: 5,
-                                padding: 10,
-                                overflow: "hidden"
-                            }}
-                        >
-                            {previewImage && (
-                                <Card.Cover
-                                    source={previewImage}
-                                    style={{ height: 100, backgroundColor: theme.colors.placeholder, opacity: 0.5 }}
-                                />
-                            )}
-                            <Card.Content
-                                style={{
-                                    position: "absolute",
-                                    bottom: 10
-                                }}
+    return (
+        <View style={{ gap: 14 }}>
+            {rows.map((row, rowIdx) => (
+                <View
+                    key={`row-${rowIdx}`}
+                    style={{ flexDirection: "row", justifyContent: "space-between", gap: 12 }}
+                >
+                    {row.map((metric) => {
+                        const previewImage = GraphTypes[metric.config?.type]?.previewImage;
+                        return (
+                            <TouchableOpacity
+                                key={metric.metricId}
+                                style={{ flex: 1 }}
+                                onPress={() =>
+                                    router.navigate(`/modules/day-book/metrics/view-metric/${metric.metricId}`)
+                                }
                             >
-                                <Text
-                                    style={{
-                                        color: "white",
-                                        fontSize: 16,
-                                        fontWeight: "bold",
-                                        position: "absolute",
-                                        bottom: 10,
-                                        alignItems: "baseline"
-                                    }}
-                                >
-                                    {metric.name}
-                                </Text>
-                            </Card.Content>
-                        </Card>
-                    </TouchableOpacity>
-                );
-            })}
+                                <Card style={{ borderRadius: 6, overflow: "hidden" }}>
+                                    {previewImage && (
+                                        <Card.Cover
+                                            source={previewImage}
+                                            style={{
+                                                height: 120,
+                                                backgroundColor: theme.colors.placeholder,
+                                                opacity: 0.5,
+                                            }}
+                                        />
+                                    )}
+                                    <Card.Content style={{ paddingVertical: 10 }}>
+                                        <Text
+                                            style={{
+                                                color: theme.colors.onSurface,
+                                                fontSize: 16,
+                                                fontWeight: "bold",
+                                            }}
+                                            numberOfLines={1}
+                                        >
+                                            {metric.name}
+                                        </Text>
+                                    </Card.Content>
+                                </Card>
+                            </TouchableOpacity>
+                        );
+                    })}
+                    {row.length === 1 && <View style={{ flex: 1 }} />}
+                </View>
+            ))}
         </View>
-    )
-}
+    );
+};
 
 export default MetricManagement;
 
