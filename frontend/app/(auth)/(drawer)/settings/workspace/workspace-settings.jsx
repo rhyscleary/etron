@@ -57,12 +57,12 @@ const WorkspaceManagement = () => {
             description: "Add and remove modules from the workspace", 
             route: "settings/workspace/module-management",
         },
-        {
+        /*{
             permKey: "app.workspace.manage_boards",
             label: "Board Management", 
             description: "Edit boards within the workspace", 
             route: "settings/workspace/board-management",
-        },
+        },*/
     ];
 
     const [menuOptions, setMenuOptions] = useState([]);

@@ -44,6 +44,18 @@ const EditTemplate = () => {
   }, []);
 
   useEffect(() => {
+    if (isEditing && webViewRef.current) {
+      sendInitToWebView(editorContent); // always send current content
+    }
+  }, [isEditing, editorContent]);
+
+  useEffect(() => {
+    return () => {
+      initSentRef.current = false; // reset when component unmounts
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchTemplate = async () => {
       if (!templateId || !workspaceId) return;
 
@@ -245,10 +257,7 @@ const EditTemplate = () => {
         base64: false,
       });
 
-      const downloadDir =
-        Platform.OS === "android"
-          ? RNFS.DownloadDirectoryPath
-          : RNFS.DocumentDirectoryPath;
+      const downloadDir = RNFS.DocumentDirectoryPath;
 
       const destPath = `${downloadDir}/${customFileName}.pdf`;
 

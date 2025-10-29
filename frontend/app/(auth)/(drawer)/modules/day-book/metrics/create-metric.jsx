@@ -1,5 +1,5 @@
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
 import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip, useTheme, IconButton } from "react-native-paper";
@@ -9,6 +9,9 @@ import TextField from '../../../../../../components/common/input/TextField';
 import MetricCheckbox from '../../../../../../components/common/buttons/MetricCheckbox';
 import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
 import GraphTypes from './graph-types';
+import * as FileSystem from 'expo-file-system';
+import { Storage } from 'aws-amplify';
+
 
 import {
     fetchUserAttributes,
@@ -22,11 +25,14 @@ import ColorPicker from 'react-native-wheel-color-picker';
 import ResponsiveScreen from '../../../../../../components/layout/ResponsiveScreen';
 import { hasPermission } from '../../../../../../utils/permissions';
 import PermissionGate from '../../../../../../components/common/PermissionGate';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import axios from 'axios';
 
 
 const CreateMetric = () => {
     const router = useRouter();
     const theme = useTheme();
+    const viewShotRef = useRef();
 
     const [loading, setLoading] = useState(false);
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
@@ -149,6 +155,7 @@ const CreateMetric = () => {
         }
 
         let workspaceId = await getWorkspaceId();
+
         let metricDetails = {
             workspaceId,
             name: metricName,
@@ -171,6 +178,8 @@ const CreateMetric = () => {
             endpoints.modules.day_book.metrics.add,
             metricDetails
         );
+
+        const graphImageKey = await uploadGraphToS3(result.data.metricId, result.data.fileUploadUrl);
         console.log("Uploaded metric details via API result:", result);
     }
 
@@ -231,11 +240,49 @@ const CreateMetric = () => {
         (step == 1 && (!metricName))
 
 
+    async function uploadGraphToS3(metricId, fileUploadUrl) {
+  try {
+    // Capture as a temporary file
+    const tmpUri = await viewShotRef.current.capture({
+      format: "png",
+      quality: 1.0,
+      result: "tmpfile",
+    });
+
+    // Read file as binary
+    const fileBinary = await FileSystem.readAsStringAsync(tmpUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    // Convert Base64 to ArrayBuffer
+    const arrayBuffer = Buffer.from(fileBinary, "base64");
+
+    // Upload to S3
+    const response = await fetch(fileUploadUrl, {
+      method: "PUT",
+      headers: { "Content-Type": "image/png" },
+      body: arrayBuffer,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+    }
+
+    console.log("✅ Graph uploaded successfully");
+  } catch (error) {
+    console.error("❌ Error uploading graph to S3:", error);
+    throw error;
+  }
+}
+
+
     const renderFormStep = () => {
         switch (step) {
             case 0:
                 return (
-                    <ScrollView>
+                    <ScrollView
+                        nestedScrollEnabled
+                    >
                         <DropDown
                             title = "Select Data Source"
                             items = {loadingDataSourceMappings ? ["Loading..."] : dataSourceMappings.map(dataSource => ({value: dataSource.id, label: dataSource.name}))}
@@ -466,20 +513,26 @@ const CreateMetric = () => {
                         {/* Graph preview */}
                         <Card style={[styles.card]}>
                             <Card.Content>
-                                <View style={styles.graphCardContainer}>
-                                    {graphDef.render({
-                                        data: convertToGraphData(
-                                            selectedRows.length > 0
-                                                ? dataSourceData.filter(
-                                                    (row) => selectedRows.includes(row[dataSourceVariableNames[0]])
-                                                )
-                                                : dataSourceData
-                                        ),
-                                        xKey: chosenIndependentVariable,
-                                        yKeys: dependentArray,
-                                        colours: coloursState,
-                                    })}
-                                </View>
+                                <ViewShot
+                                    ref={viewShotRef}
+                                    options={{format: "png", quality: 1.0, result: "tmpfile"}}
+                                >
+                                    <View style={styles.graphCardContainer}>
+                                        {graphDef.render({
+                                            data: convertToGraphData(
+                                                selectedRows.length > 0
+                                                    ? dataSourceData.filter(
+                                                        (row) => selectedRows.includes(row[dataSourceVariableNames[0]])
+                                                    )
+                                                    : dataSourceData
+                                            ),
+                                            xKey: chosenIndependentVariable,
+                                            yKeys: dependentArray,
+                                            colours: coloursState,
+                                        })}
+                                    </View>
+                                </ViewShot>
+                             
                             </Card.Content>
                         </Card>
 

@@ -111,7 +111,7 @@ const GraphTypes = {
             yKeys,
             colours = [],
             axisOptions = {},
-            axisColorMode = "light"
+            axisColorMode = "dark"
         }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
@@ -162,7 +162,7 @@ const GraphTypes = {
             yKeys,
             colours = [],
             axisOptions = {},
-            axisColorMode = "light"
+            axisColorMode = "dark"
         }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
@@ -213,7 +213,7 @@ const GraphTypes = {
             xKey,
             yKeys,
             colours = [],
-            axisColorMode = "light",
+            axisColorMode = "dark",
             backgroundMode = "transparent"
         }) => {
             const ChartComponent = () => {
@@ -278,7 +278,7 @@ const GraphTypes = {
             yKeys,
             colours = [],
             axisOptions = {},
-            axisColorMode = "light"
+            axisColorMode = "dark"
         }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
@@ -332,7 +332,7 @@ const GraphTypes = {
             yKeys,
             colours = [],
             axisOptions = {},
-            axisColorMode = "light"
+            axisColorMode = "dark"
         }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
@@ -384,7 +384,7 @@ const GraphTypes = {
             yKeys,
             colours = [],
             axisOptions = {},
-            axisColorMode = "light"
+            axisColorMode = "dark"
         }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
@@ -456,7 +456,7 @@ const GraphTypes = {
             xKey,
             colours = [],
             axisOptions = {},
-            axisColorMode = "light"
+            axisColorMode = "dark"
         }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
@@ -503,7 +503,7 @@ const GraphTypes = {
         label: "Progress Bar",
         value: "progressBar",
         previewImage: require("../../../../../../assets/images/progressCircle.png"),
-        render: ({ data = [], yKeys = [], colours = [], axisColorMode = "light" }) => {
+        render: ({ data = [], yKeys = [], colours = [], axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
                 const primaryKey = normalizeKeys(yKeys)[0];
@@ -552,7 +552,7 @@ const GraphTypes = {
         label: "Progress Circle",
         value: "progressCircle",
         previewImage: require("../../../../../../assets/images/progressCircle.png"),
-        render: ({ data = [], yKeys = [], colours = [], axisColorMode = "light" }) => {
+        render: ({ data = [], yKeys = [], colours = [], axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const [size, handleLayout] = useChartSize();
                 const axisColor = resolveAxisColor(axisColorMode);
@@ -606,7 +606,7 @@ const GraphTypes = {
         label: "Numbers",
         value: "numbers",
         previewImage: require("../../../../../../assets/images/numbers.png"),
-        render: ({ data = [], yKeys = [], colours = [], axisColorMode = "light" }) => {
+        render: ({ data = [], yKeys = [], colours = [], axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const axisColor = resolveAxisColor(axisColorMode);
                 const safeYKeys = normalizeKeys(yKeys);
