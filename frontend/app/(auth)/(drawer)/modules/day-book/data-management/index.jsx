@@ -267,12 +267,15 @@ const DataManagement = () => {
 						text: "Disconnect",
 						style: "destructive",
 						onPress: async () => {
+							setLoading(true);
 							try {
 								await apiDelete(endpoints.modules.day_book.data_sources.removeDataSource(source.dataSourceId), {workspaceId});
 								await fetchDataSources();
 							} catch (error) {
 								console.error("Error disconnecting data source", error);
 								Alert.alert("Error", String(error));
+							} finally {
+								setLoading(false);
 							}
 						},
 					},
@@ -301,6 +304,8 @@ const DataManagement = () => {
 			setPreviewOpen(true);
 			setPreviewStatus('loading');
 			setRowLimit(ROW_CHUNK);
+			console.log("source.dataSourceId:", source.dataSourceId);
+			console.log("workspaceId:", workspaceId);
 			const res = await apiGet(
 				endpoints.modules.day_book.data_sources.viewData(source.dataSourceId),
 				{ workspaceId }
@@ -378,12 +383,6 @@ const DataManagement = () => {
 	let body = null;
 
 	if (loading && !isRefreshing) {
-		body = (
-		<View style={styles.loadingContainer}>
-			<ActivityIndicator size="large" />
-			<Text style={styles.loadingText}>Loading data sources...</Text>
-		</View>
-		);
 	} else if (hasError) {
 		body = (
 			<View style={styles.errorContainer}>
@@ -454,8 +453,6 @@ const DataManagement = () => {
 		);
 	}
 
-	
-
 	return (
 		<ResponsiveScreen
 			header={<Header
@@ -469,6 +466,7 @@ const DataManagement = () => {
 			/>}
 			center={false}
 			scroll={true}
+			loadingOverlayActive={loading}
 		>
 			{body}
 			<Portal>
@@ -548,78 +546,78 @@ const DataManagement = () => {
 export default DataManagement;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  retryButton: {
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  retryButtonText: {
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  categoryTitle: {
-    marginBottom: 12,
-  },
-  summarySection: {
-    marginBottom: 24,
-    padding: 16,
-    borderRadius: 8,
-  },
-  summaryTitle: {
-    marginBottom: 8,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  lastUpdateText: {
-    fontSize: 12,
-    color: "#666",
-    fontStyle: "italic",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 48,
-  },
-  emptyStateTitle: {
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  emptyStateMessage: {
-    marginBottom: 24,
-    textAlign: "center",
-    color: "#666",
-  },
-  debugSection: {
-    padding: 10,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 5,
-    marginTop: 20,
-    marginBottom: 50,
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#666",
-  },
+	container: {
+		flex: 1,
+	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	loadingText: {
+		marginTop: 16,
+	},
+	errorContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 32,
+	},
+	retryButton: {
+		paddingHorizontal: 24,
+		borderRadius: 8,
+		marginTop: 8,
+	},
+	retryButtonText: {
+		color: "#007AFF",
+		fontWeight: "600",
+	},
+	categoryTitle: {
+		marginBottom: 12,
+	},
+	summarySection: {
+		marginBottom: 24,
+		padding: 16,
+		borderRadius: 8,
+	},
+	summaryTitle: {
+		marginBottom: 8,
+	},
+	summaryRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		marginBottom: 8,
+	},
+	lastUpdateText: {
+		fontSize: 12,
+		color: "#666",
+		fontStyle: "italic",
+	},
+	emptyState: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 32,
+		paddingVertical: 48,
+	},
+	emptyStateTitle: {
+		marginBottom: 8,
+		textAlign: "center",
+	},
+	emptyStateMessage: {
+		marginBottom: 24,
+		textAlign: "center",
+		color: "#666",
+	},
+	debugSection: {
+		padding: 10,
+		backgroundColor: "#f0f0f0",
+		borderRadius: 5,
+		marginTop: 20,
+		marginBottom: 50,
+	},
+	debugText: {
+		fontSize: 12,
+		color: "#666",
+	},
 });

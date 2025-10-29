@@ -48,11 +48,11 @@ const dayBookOptions = [
         icon: "chart-line",
         permKey: "modules.daybook.metrics.view_metrics"
     },
-    {
+    /*{
         name: "modules/day-book/notifications",
         label: "Notifications",
         icon: "bell",
-    },
+    },*/
 ]
 
 const boardOptions = [
@@ -302,7 +302,6 @@ export default function DrawerLayout() {
 }
 
 const styles = StyleSheet.create({
-    // DrawerItem container
     itemContainer: {
         marginHorizontal: 10,
         marginVertical: 6,
@@ -334,7 +333,7 @@ const styles = StyleSheet.create({
 
     bottomSection: {
         paddingBottom: 30,
-        marginHorizontal: 14
+        marginHorizontal: 12
     },
     divider: {
         alignSelf: "center",
