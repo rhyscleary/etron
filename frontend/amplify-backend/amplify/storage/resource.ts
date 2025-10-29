@@ -14,6 +14,9 @@ export const workspacesStorage = defineStorage({
 	access: (allow) => ({
 		'workspaces/*': [
 			allow.authenticated.to(['read', 'write', 'delete'])
+		],
+		'public/workspaces/*': [
+    		allow.guest.to(['read'])
 		]
 	})
 })

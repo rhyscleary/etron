@@ -1,4 +1,4 @@
-import { View, ScrollView } from "react-native";
+import { View, ScrollView, StyleSheet, Image } from "react-native";
 import { useState, useCallback, useMemo } from "react";
 import Header from "../../../components/layout/Header";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
@@ -128,159 +128,40 @@ const Profile = () => {
             header={
                 <Header title="Dashboard" showMenu />
             }
-		center={false}
-		padded={false}
-        // prevent nesting virtualizedlists inside a scrollview to avoid the warning
-		scroll={false}
+            center={false}
+            padded={false}
+            // prevent nesting virtualizedlists inside a scrollview to avoid the warning
+            scroll={false}
         >         
-            <StackLayout spacing={12}>
-                {settingOptionButtons.map((item) => (
-                    <DescriptiveButton 
-                        key={item.label}
-                        icon={item.icon}
-                        label={item.label}
-                        description={item.description}
-                        onPress={item.onPress}
-                    />
-            ))}
-            </StackLayout>
-            {showSheet && (
-                <CustomBottomSheet
-                    variant="standard"
-                    header={{
-                        title: "Quick Actions",
-                        actionLabel: "Edit",
-                        onActionPress: () => {/* does nothing */},
-                        showClose: false,
-                        solidBackground: true,
-                    }}
-                    search={{
-                        enabled: true,
-                    }}
-                    footer={{
-                        variant: "minimal",
-                        placement: "right",
-                    }}
-                    onChange={(index) => {
-                        if (index === -1) setShowSheet(false);
-                    }}
-                    onClose={() => setShowSheet(false)}
-                    data={settingOptionButtons.filter((b) => !b.label.includes("Testing - Example Bottom Sheet"))}
-                    keyExtractor={(item) => item.label}
-                    itemTitleExtractor={(item) => item.label}
-                    onItemPress={(item) => {
-                        setShowSheet(false);
-                        if (typeof item.onPress === 'function') item.onPress();
-                    }}
+            <View style={styles.header}>
+                <Image
+                    source={require('../../../assets/images/eTRON_logo.png')}
+                    style={styles.logo}
                 />
-            )}
-            {showCompactSheet && (
-                <CustomBottomSheet
-                    variant="compact"
-                    header={{
-                        title: "Quick Actions",
-                        closeIcon: "close",
-                        solidBackground: true,
-                    }}
-                    footer={{
-                        variant: "translucent",
-                    }}
-                    onChange={(index) => {
-                        if (index === -1) setShowCompactSheet(false);
-                    }}
-                    onClose={() => setShowCompactSheet(false)}
-                    data={settingOptionButtons.filter((b) => !b.label.includes("Testing - Compact Bottom Sheet"))}
-                    keyExtractor={(item) => item.label}
-                    itemTitleExtractor={(item) => item.label}
-                    onItemPress={(item) => {
-                        setShowCompactSheet(false);
-                        if (typeof item.onPress === 'function') item.onPress();
-                    }}
-                />
-            )}
-           
-            {showProfileActionsSheet && (
-                <CustomBottomSheet
-                    variant="standard"
-                    header={{
-                        title: "dashboard",
-                        showClose: false,
-                        children: profileHeaderChildren,
-                    }}
-                    search={{
-                        enabled: true,
-                        placeholder: "Filter actions",
-                    }}
-                    initialIndex={1}
-                    data={profileActionItems}
-                    keyExtractor={(item) => item.label}
-                    itemTitleExtractor={(item) => item.label}
-                    renderItem={renderProfileActionItem}
-                    onChange={(index) => { if (index === -1) setShowProfileActionsSheet(false); }}
-                    onClose={() => setShowProfileActionsSheet(false)}
-                />
-            )}
-            
-            {showQuickIconSheet && (
-                <CustomBottomSheet
-                    variant="compact"
-                    header={{
-                        title: "Actions",
-                    }}
-                    footer={{
-                        variant: "minimal",
-                    }}
-                    data={quickIconActions}
-                    keyExtractor={(item) => item.label}
-                    itemTitleExtractor={(item) => item.label}
-                    renderItem={renderQuickIconItem}
-                    onChange={(index) => { if (index === -1) setShowQuickIconSheet(false); }}
-                    onClose={() => setShowQuickIconSheet(false)}
-                />
-            )}
-            
-            {showQuickNoteSheet && (
-                <CustomBottomSheet
-                    variant="standard"
-                    header={{
-                        title: "Quick Note",
-                        showClose: true,
-                    }}
-                    footer={{
-                        variant: "none",
-                    }}
-                    initialIndex={0}
-                    snapPoints={[320, 520]}
-                    customContent={quickNoteContent}
-                    onChange={(index) => { if (index === -1) setShowQuickNoteSheet(false); }}
-                    onClose={() => setShowQuickNoteSheet(false)}
-                />
-            )}
+            </View>
 
-            {showSearchFooterSheet && (
-                <CustomBottomSheet
-                    variant="standard"
-                    header={{
-                        title: "Search in Footer",
-                        showClose: true,
-                    }}
-                    search={{
-                        enabled: true,
-                        position: "bottom",
-                    }}
-                    data={settingOptionButtons}
-                    keyExtractor={(item) => item.label}
-                    itemTitleExtractor={(item) => item.label}
-                    onItemPress={(item) => {
-                        setShowSearchFooterSheet(false);
-                        if (typeof item.onPress === 'function') item.onPress();
-                    }}
-                    onChange={(index) => { if (index === -1) setShowSearchFooterSheet(false); }}
-                    onClose={() => setShowSearchFooterSheet(false)}
-                />
-            )}
         </ResponsiveScreen>
     )
 }
+
+const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+    },
+    container: {
+        flex: 1,
+        padding: 20,
+    },
+    header: {
+        width: '100%',
+        alignItems: 'center',
+        marginTop: 140,
+    },
+    logo: {
+        width: '100%',
+        height: 100,
+        resizeMode: 'contain',
+    },
+})
 
 export default Profile;

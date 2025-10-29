@@ -7,12 +7,38 @@ const { hasPermission } = require("@etron/shared/utils/permissions");
 const { validateWorkspaceId } = require("@etron/shared/utils/validation");
 const {v4 : uuidv4} = require('uuid');
 const { logAuditEvent } = require("@etron/shared/utils/auditLogger");
+const { GetObjectCommand, PutObjectCommand, ListObjectsV2Command, DeleteObjectsCommand, NoSuchKey, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
+const s3Client = new S3Client({});
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 // Permissions for this service
 const PERMISSIONS = {
     VIEW_METRICS: "modules.daybook.metrics.view_metrics",
     MANAGE_METRICS: "modules.daybook.metrics.manage_metrics",
 };
+
+function handleS3Error(error, message) {
+    if (error instanceof S3ServiceException) {
+        console.error(`${message}:`, error);
+        throw new Error(message);
+    } else {
+        throw error;
+    }
+}
+
+async function getFileUrl(key, { ContentType }) { 
+    try {
+        const command = new PutObjectCommand({
+            Bucket: "etron-metrics",
+            Key: key,
+            ContentType
+        });
+
+        return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    } catch (error) {
+        handleS3Error(error, `Error getting upload url from ${bucketName}`);
+    }
+}
 
 async function createMetricInWorkspace(authUserId, payload) {
     const workspaceId = payload.workspaceId;
@@ -42,9 +68,14 @@ async function createMetricInWorkspace(authUserId, payload) {
         updatedAt: date
     };
 
+    const fileKey = `workspaces/${workspaceId}/metrics/${metricId}/metric.png`;
     const thumbnailKey = `workspaces/${workspaceId}/day-book/metrics/${metricId}/thumbnail.jpeg`;
 
     metricItem.thumbnailKey = thumbnailKey;
+
+    const fileUploadUrl = await getFileUrl(fileKey, { 
+        ContentType: "image/png"
+    });
 
     const thumbnailUrl = await getUploadUrl(thumbnailKey, {
         ContentType: "image/jpeg"
@@ -69,6 +100,7 @@ async function createMetricInWorkspace(authUserId, payload) {
 
     return {
         ...metricItem,
+        fileUploadUrl,
         thumbnailUrl
     };
 }

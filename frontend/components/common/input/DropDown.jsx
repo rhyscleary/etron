@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, InteractionManager } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard } from 'react-native';
 import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
+import PermissionGate from '../PermissionGate';
+
+const ITEM_HEIGHT = 48;
+const SEARCH_HEIGHT = 56;
+const FOOTER_HEIGHT = 50; 
 
 const DropDown = ({
     title,
@@ -9,7 +14,10 @@ const DropDown = ({
     showRouterButton=true,
     onSelect,
     value,
+    allowed=true,
+    maxVisibleItems = 3.5,
 }) => {
+    const theme = useTheme();
     const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -24,16 +32,17 @@ const DropDown = ({
     const handleItemSelect = (item) => {
         setSelectedItem(item);
         setExpanded(false);
-        if (onSelect) {
-            onSelect(item.value);
-        }
+        if (onSelect) onSelect(item.value);
     }
 
     const filteredItems = items.filter((item) =>
         (item.label ?? "").toLowerCase().includes(searchQuery.toLowerCase())
     )
 
-    const theme = useTheme();
+    const listMaxHeight = Math.min(
+        ITEM_HEIGHT * maxVisibleItems,
+        ITEM_HEIGHT * filteredItems.length
+    );
 
     return (
         <List.Section>
@@ -44,10 +53,7 @@ const DropDown = ({
                     if (!expanded) Keyboard.dismiss();
                     setExpanded(prev => !prev)
                 }}
-                style={[
-                    expanded ? styles.containerExpanded : styles.containerCollapsed,
-                    { borderColor: theme.colors.outline }
-                ]}
+                style={[expanded ? styles.containerExpanded : styles.containerCollapsed, { borderColor: theme.colors.outline }]}
             >
                 <View style={styles.searchContainer}>
                     <TextInput
@@ -56,69 +62,57 @@ const DropDown = ({
                         placeholderTextColor={theme.colors.placeholderText}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        style={styles.searchInput}
+                        style={[styles.searchInput, { height: SEARCH_HEIGHT }]}
                         outlineColor={theme.colors.outline}
                         activeOutlineColor={theme.colors.primary}
                         theme={{ roundness: 0 }}
                     />
                 </View>
 
-                <ScrollView
-                    style={{ maxHeight: 200 }}
-                    keyboardShouldPersistTaps="handled"
+                <View
+                    style={[ styles.panelContainer, {borderColor: theme.colors.outline,} ]}
                 >
-                    {filteredItems.map((item, index) => {
-                        const isLastItem = index === filteredItems.length - 1 && !showRouterButton;
-                        
-                        return (
-                            <List.Item 
+                    <ScrollView
+                        nestedScrollEnabled
+                        style={{ maxHeight: listMaxHeight }}
+                        keyboardShouldPersistTaps="always"
+                        bounces
+                        onStartShouldSetResponderCapture={() => false}
+                        onMoveShouldSetResponderCapture={(e) => {
+                            const touches = e.nativeEvent?.touches;
+                            return touches && touches.length > 0;
+                        }}
+                    >
+                        {filteredItems.map((item, index) => (
+                            <List.Item
                                 key={index}
                                 title={item.label}
-                                style={[
-                                    styles.items,
-                                    isLastItem && styles.lastItem,
-                                    { borderColor: theme.colors.outline }
-                                ]}
+                                style={[styles.items, { borderColor: theme.colors.outline, height: ITEM_HEIGHT }]}
+                                titleStyle={{ lineHeight: 20 }}
                                 onPress={() => {
                                     Keyboard.dismiss();
                                     handleItemSelect(item);
                                 }}
-                            />                        
-                        );
-                    })}
-                </ScrollView>
-
-                {showRouterButton && (
-                    <TouchableOpacity
-                        style={[
-                            styles.routerButton,
-                            { borderColor: theme.colors.outline }
-                        ]}
-                        onPress={() => { //TODO: MAKE THIS HAVE PROPER NAVIGATION SO THAT THE BACK BUTTON AFTER CREATING A DATA CONNECTION TAKES YOU BACK HERE
-                            router.navigate('/modules/day-book/data-management/create-data-connection')
-                        }}
-                    >
-                        <View
-                            style={styles.routerButtonContent}
-                        >
-                            <IconButton
-                                icon="plus"
-                                size={20}
-                                style={styles.routerIcon}
-                                iconColor={theme.colors.icon}
                             />
+                        ))}
+                    </ScrollView>
 
-                            <Text 
-                                style={[
-                                    styles.routerText,
-                                    { color: theme.colors.placeholderText, } 
-                                ]}
+                    {showRouterButton && (
+                        <PermissionGate allowed={allowed}>
+                            <TouchableOpacity
+                                style={[styles.routerButton, { borderColor: theme.colors.outline, height: FOOTER_HEIGHT }]}
+                                onPress={() => router.navigate('/modules/day-book/data-management/create-data-connection')}
                             >
-                                New Data Source {/*TODO: MAKE THIS A VARIABLE*/}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                )}
+                                <View style={styles.routerButtonContent}>
+                                    <IconButton icon="plus" size={20} style={styles.routerIcon} iconColor={theme.colors.icon} />
+                                    <Text style={[styles.routerText, { color: theme.colors.placeholderText }]}>
+                                        New Data Source
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                        </PermissionGate>
+                    )}
+                </View>
             </List.Accordion>
         </List.Section>
     );
@@ -143,6 +137,16 @@ const styles = StyleSheet.create({
         height: 50,
         fontSize: 16,
     },
+
+    panelContainer: {
+        borderLeftWidth: 1,
+        borderRightWidth: 1,
+        borderBottomWidth: 1,
+        borderBottomLeftRadius: 10,
+        borderBottomRightRadius: 10,
+        overflow: 'hidden',
+    },
+
     items: {
         borderWidth: 1,
     },

@@ -1,12 +1,12 @@
-// Author(s): Rhys Cleary
+// Author(s): Rhys Cleary, Noah Bradley
 
-import { ScrollView, StyleSheet, View, Keyboard } from "react-native";
-import { router, useRouter } from "expo-router";
+import { View, Keyboard } from "react-native";
+import { useRouter } from "expo-router";
 import StackLayout from "../../../../../components/layout/StackLayout";
 import BasicDialog from "../../../../../components/overlays/BasicDialog";
 import { useEffect, useState } from "react";
 import { apiDelete, apiGet, apiPut } from "../../../../../utils/api/apiClient";
-import { useTheme, Menu, Text } from "react-native-paper";
+import { useTheme } from "react-native-paper";
 import { verifyPassword } from "../../../../../utils/verifyPassword";
 import Header from "../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../assets/styles/stylesheets/common";
@@ -22,6 +22,7 @@ import { isOwnerRole } from "../../../../../storage/permissionsStorage";
 import { hasPermission } from "../../../../../utils/permissions";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import { Platform } from "react-native";
+import PermissionGate from "../../../../../components/common/PermissionGate";
 
 const WorkspaceManagement = () => {
     const router = useRouter();
@@ -40,10 +41,7 @@ const WorkspaceManagement = () => {
     const [workspaceId, setWorkspaceId] = useState(null);
     const [isOwner, setIsOwner] = useState(false);
 
-    const [tooltipFor, setTooltipFor] = useState([]);
     const [loading, setLoading] = useState(false);
-    
-
 
     // container for different workspace management options
     const permissionButtonMap = [
@@ -59,16 +57,15 @@ const WorkspaceManagement = () => {
             description: "Add and remove modules from the workspace", 
             route: "settings/workspace/module-management",
         },
-        {
+        /*{
             permKey: "app.workspace.manage_boards",
             label: "Board Management", 
             description: "Edit boards within the workspace", 
             route: "settings/workspace/board-management",
-        },
+        },*/
     ];
 
     const [menuOptions, setMenuOptions] = useState([]);
-    const [noPermBoardsVisible, setNoPermBoardsVisible] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -216,45 +213,18 @@ const WorkspaceManagement = () => {
     }
 
     const renderOption = (option) => {
-        const isBlocked = !option.allowed;
-
         const anchor = (
-            <View key={option.key} style={{ opacity: isBlocked ? 0.6 : 1 }}>
+            <PermissionGate
+                allowed={option.allowed}
+                onAllowed={() => router.navigate(option.route)}
+                key={option.label}
+            >
                 <DescriptiveButton
                     label={option.label}
                     description={option.description}
-                    onPress={() => {
-                        if (isBlocked) {
-                            setTooltipFor(prev => [...prev, option.key]);
-                            setTimeout(() => setTooltipFor(prev => prev.filter(key => key !== option.key)), 1600);
-                            return;
-                        }
-                        router.navigate(option.route);
-                    }}
                 />
-            </View>
+            </PermissionGate>
         );
-
-        if (isBlocked) {
-            return (
-                <Menu
-                    key={`${option.key}`}
-                    visible={tooltipFor.includes(option.key)}
-                    onDismiss={() => setTooltipFor(prev => prev.filter(key => key !== option.key))}
-                    anchor={anchor}
-                    contentStyle={{
-                        paddingVertical: 6,
-                        paddingHorizontal: 10,
-                        borderRadius: 8,
-                        minWidth: 0,
-                    }}
-                >
-                    <Text style={{ color: theme.colors.onSurface, maxWidth: 240, lineHeight: 18 }}>
-                        You don't have permission to do this.
-                    </Text>
-                </Menu>
-            );
-        }
 
         return anchor;
     };

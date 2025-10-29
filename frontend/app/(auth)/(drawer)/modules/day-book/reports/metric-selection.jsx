@@ -14,7 +14,7 @@ import { apiGet } from "../../../../../../utils/api/apiClient.jsx";
 import { getCurrentUser } from "aws-amplify/auth";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen.jsx";
 
-const MetricSelection = () => {
+const MetricSelection = ({ asModal = false, onMetricSelect }) => {
     const router = useRouter();
     const theme = useTheme();
     const [metrics, setMetrics] = useState([]);
@@ -77,7 +77,9 @@ const MetricSelection = () => {
     return (
         <ResponsiveScreen
             header={
-                <Header title="Select Metric" showBack showPlus onRightIconPress={handleViewSelected}/>
+                !asModal && (
+                    <Header title="Select Metric" showBack showPlus onRightIconPress={handleViewSelected}/>
+                )
             }
             center={false}
             padded={false}
@@ -102,7 +104,7 @@ const MetricSelection = () => {
                             Created by you
                         </Text>
                         {loadingMetrics && <ActivityIndicator />}
-                        {metricCardList(loadingMetrics, metricsUser, selectedMetrics, toggleSelectedMetric)}
+                        {metricCardList(loadingMetrics, metricsUser, selectedMetrics, toggleSelectedMetric, asModal, onMetricSelect)}
 
                         <Divider/>
                         
@@ -110,7 +112,7 @@ const MetricSelection = () => {
                             Created by others
                         </Text>
                         {loadingMetrics && <ActivityIndicator />}
-                        {metricCardList(loadingMetrics, metricsOther, selectedMetrics, toggleSelectedMetric)}
+                        {metricCardList(loadingMetrics, metricsOther, selectedMetrics, toggleSelectedMetric, asModal, onMetricSelect)}
                     </View>
                 </ScrollView>
             </View>
@@ -118,13 +120,13 @@ const MetricSelection = () => {
     )
 }
 
-const metricCardList = (loadingMetrics, metrics, selectedMetrics, toggleSelectedMetric) => {
+const metricCardList = (loadingMetrics, metrics, selectedMetrics, toggleSelectedMetric, asModal, onMetricSelect) => {
     const theme = useTheme();
     return (
         <View style={{ flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
             {!loadingMetrics &&
                 metrics.map((metric) => {
-                    const previewImage = GraphTypes[metric.config.type]?.previewImage;
+                    const previewImage = metric?.config?.type ? GraphTypes[metric.config.type]?.previewImage : null;
                     const isSelected = selectedMetrics.includes(metric.metricId);
 
                     return (
@@ -134,7 +136,7 @@ const metricCardList = (loadingMetrics, metrics, selectedMetrics, toggleSelected
                                 width: "48%"
                             }}
                             onPress={() =>
-                                toggleSelectedMetric(metric.metricId)
+                                asModal ? onMetricSelect(metric) : toggleSelectedMetric(metric.metricId)
                             }
                         >
                             <Card

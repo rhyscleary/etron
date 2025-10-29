@@ -1,12 +1,11 @@
 import { Slot, router } from 'expo-router';
 import { useEffect } from 'react';
 import { useAuthenticator } from '@aws-amplify/ui-react-native';
-import { fetchAuthSession, fetchUserAttributes, getCurrentUser, signOut, updateUserAttributes } from 'aws-amplify/auth';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { fetchUserAttributes, signOut, updateUserAttributes } from 'aws-amplify/auth';
 import { useVerification } from '../../contexts/VerificationContext';
-import { getWorkspaceId, saveWorkspaceInfo } from '../../storage/workspaceStorage';
+import { saveWorkspaceInfo } from '../../storage/workspaceStorage';
 import { saveUserInfo, removeWorkspaceInfo } from '../../storage/userStorage';
-import { saveRole, getRole, getPermissions } from '../../storage/permissionsStorage';
+import { saveRole } from '../../storage/permissionsStorage';
 import { apiGet } from '../../utils/api/apiClient';
 import endpoints from '../../utils/api/endpoints';
 
@@ -54,10 +53,10 @@ export default function AuthLayout() {
                 const result = await apiGet(endpoints.workspace.core.getByUserId(userId));
                 workspace = result.data;
             } catch (error) {
+                await setHasWorkspaceAttribute(false);
                 if (error.message.includes("Workspace not found")) {
-                    console.log("No workspace yet, resetting attribute...");
+                    console.log("No workspace yet.");
                     await removeWorkspaceInfo();
-                    await setHasWorkspaceAttribute(false);
                     return false;
                 } else if (error.message.includes("No user found")) {
                     console.log("No user found, rerouting to landing page...")
@@ -141,12 +140,14 @@ export default function AuthLayout() {
         if (authStatus === 'authenticated') {
             const personalDetailsExists = await checkPersonalDetailsExists().catch(() => false);
             if (!personalDetailsExists) {
+                "No personal details"
                 router.replace("/(auth)/personalise-account");
                 return;
             }
 
             const workspaceExists = await checkWorkspaceExists().catch(() => false);
             if (!workspaceExists) {
+                console.log("No workplace")
                 router.replace("/(auth)/workspace-choice")
                 return;
             }

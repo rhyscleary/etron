@@ -7,7 +7,7 @@ import RNHTMLtoPDF from "react-native-html-to-pdf";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
-import { Portal, Dialog, Button, useTheme } from "react-native-paper";
+import { Portal, Dialog, Button, useTheme, Menu } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
@@ -17,6 +17,7 @@ import { createNewTemplate, uploadUpdatedTemplate } from "../../../../../../../u
 import { uploadExportFile } from "../../../../../../../utils/exportUploader";
 import CustomBottomSheet from "../../../../../../../components/BottomSheet/bottom-sheet";
 import ItemNotFound from "../../../../../../../components/common/errors/MissingItem";
+import MetricSelection from "../metric-selection";
 
 const EditReport = () => {
 	const { draftId } = useLocalSearchParams();
@@ -31,6 +32,9 @@ const EditReport = () => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [sheetVisible, setSheetVisible] = useState(false);
 	const [reportExists, setReportExists] = useState(true);
+	const [metricModalVisible, setMetricModalVisible] = useState(false);
+	const [menuVisible, setMenuVisible] = useState(false);
+	const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 }); // For menu positioning
 
 	const webViewRef = useRef(null);
 	const initSentRef = useRef(false);
@@ -82,6 +86,12 @@ const EditReport = () => {
 		fetchDraft();
 	}, [draftId, workspaceId]);
 
+	const openMenu = (event) => {
+	const { pageX, pageY } = event.nativeEvent;
+	setMenuAnchor({ x: pageX, y: pageY });
+	setMenuVisible(true);
+	};
+
 	// Editor HTML
 	const pellHtml = useMemo(() => `
 		<!DOCTYPE html>
@@ -108,8 +118,43 @@ const EditReport = () => {
 								try { window.ReactNativeWebView.postMessage(html); } catch (e) {}
 							},
 							defaultParagraphSeparator: 'p',
-							styleWithCSS: true
+							styleWithCSS: true,
+
+							classes: {
+								actionbar: 'pell-actionbar',
+								button: 'pell-button',
+								content: 'pell-content'
+							}
 						});
+
+						// Custom add metric button
+						const actionBar = document.querySelector('.pell-actionbar');
+						const metricButton = document.createElement('button');
+						metricButton.className = 'pell-button';
+						metricButton.title = 'Add Metric';
+						metricButton.textContent = '📊';
+						actionBar.appendChild(metricButton);
+
+						metricButton.onclick = () => {
+							window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'openMetricSheet' }));
+						};
+
+						function receiveMessage(event) {
+							let data = event.data;
+							try { data = JSON.parse(data); } catch (e) {}
+
+							if (data?.type === 'insertMetric' && data.workspaceId && data.metricId) {
+								const img = document.createElement('img');
+								img.src = "https://etron-metrics.s3.ap-southeast-2.amazonaws.com/workspaces/" + data.workspaceId + "/metrics/" + data.metricId + "/" + "metric.png";
+								img.style.maxWidth = '100%';
+								img.style.display = 'block';
+								img.style.margin = '10px 0';
+								editor.content.appendChild(img);
+								window.ReactNativeWebView.postMessage(editor.content.innerHTML);
+							} else if (data?.type === 'init' || data?.type === 'load') {
+								editor.content.innerHTML = data.html || data.content || '';
+							}
+						}
 
 						function setContent(html) {
 							editor.content.innerHTML = html || '';
@@ -119,12 +164,6 @@ const EditReport = () => {
 							const sel = window.getSelection();
 							sel.removeAllRanges();
 							sel.addRange(range);
-						}
-
-						function receiveMessage(event) {
-							let data = event.data;
-							try { data = JSON.parse(data); } catch (e) {}
-							if (data?.type === 'init' || data?.type === 'load') setContent(data.html || data.content || '');
 						}
 
 						document.addEventListener('message', receiveMessage);
@@ -162,6 +201,35 @@ const EditReport = () => {
 		if (isEditing && !initSentRef.current) sendInitToWebView(editorContent);
 	};
 
+	// handle metric bottom sheet messages from webview
+	const handleWebViewMessage = (event) => {
+		const rawData = event.nativeEvent.data;
+		let data;
+		try {
+			data = JSON.parse(rawData);
+		} catch {
+			data = { type: "html", html: rawData };
+		}
+
+		if (data.type === "openMetricSheet") {
+			setMetricModalVisible(true);
+		} else if (isEditing) {
+			setEditorContent(data.html || rawData);
+		}
+	};
+
+	// when metric selected send message to pell to add in metric
+	const onMetricSelected = (metric) => {
+		// Send metric URL to the WebView
+		webViewRef.current.postMessage(JSON.stringify({
+			type: "insertMetric",
+			workspaceId,
+			metricId: metric.metricId
+		}));
+
+		setMetricModalVisible(false); // close modal
+	};
+
 	// ✅ Generate and upload PDF
 	const exportAsPDF = async (customFileName, upload = false) => {
 		try {
@@ -192,7 +260,8 @@ const EditReport = () => {
 					Alert.alert("Error", "Failed to upload export.");
 				}
 			} else {
-				const destPath = `${Platform.OS === "android" ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath}/${customFileName}.pdf`;
+				const downloadDir = RNFS.DocumentDirectoryPath;
+				const destPath = `${downloadDir}/${customFileName}.pdf`;
 				if (await RNFS.exists(destPath)) await RNFS.unlink(destPath);
 				await RNFS.moveFile(pdf.filePath, destPath);
 				Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
@@ -259,8 +328,27 @@ const EditReport = () => {
 					showCheck={isEditing}
 					showEllipsis
 					onRightIconPress={() => (isEditing ? handleSaveReport() : setIsEditing(true))}
-					onEllipsisPress={() => setSheetVisible(true)}
+					onEllipsisPress={openMenu}
 				/>
+
+				<Menu
+				visible={menuVisible}
+				onDismiss={() => setMenuVisible(false)}
+				anchor={menuAnchor}
+				>
+				<Menu.Item
+					onPress={() => { setDialogVisible(true); setMenuVisible(false); }}
+					title="Export as PDF"
+				/>
+				<Menu.Item
+					onPress={() => { handleSaveReport(); setMenuVisible(false); }}
+					title="Save Report"
+				/>
+				<Menu.Item
+					onPress={() => { handleSaveAsTemplate(); setMenuVisible(false); }}
+					title="Save as Template"
+				/>
+				</Menu>
 
 				<WebView
 					key={isEditing ? "editor" : "viewer"}
@@ -270,17 +358,57 @@ const EditReport = () => {
 					style={styles.webview}
 					javaScriptEnabled
 					domStorageEnabled
-					onMessage={(e) => isEditing && setEditorContent(e.nativeEvent.data)}
+					onMessage={handleWebViewMessage}
 					onLoadEnd={handleWebViewLoadEnd}
 				/>
 
-				{/* ✅ Test button for upload */}
-				<TouchableOpacity
-					style={styles.testButton}
-					onPress={() => exportAsPDF(fileName, true)}
-				>
-					<Text style={{ color: "#fff" }}>Test Upload Export</Text>
-				</TouchableOpacity>
+				{/* Add bottom sheet to select metrics here */}
+				<Portal>
+					<View
+						style={[
+						StyleSheet.absoluteFill,
+						{
+							backgroundColor: theme.colors.background,
+							justifyContent: "flex-start",
+							alignItems: "center",
+							display: metricModalVisible ? "flex" : "none",
+						},
+						]}
+					>
+						{/* Header Bar */}
+						<View
+						style={{
+							width: "100%",
+							paddingTop: Platform.OS === "ios" ? 60 : 40,
+							paddingBottom: 16,
+							backgroundColor: theme.colors.primary,
+							flexDirection: "row",
+							justifyContent: "space-between",
+							alignItems: "center",
+							paddingHorizontal: 20,
+						}}
+						>
+						<Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
+							Select Metric
+						</Text>
+						<TouchableOpacity onPress={() => setMetricModalVisible(false)}>
+							<Text style={{ color: "#fff", fontSize: 18 }}>✕</Text>
+						</TouchableOpacity>
+						</View>
+
+						{/* Metric List */}
+						<View style={{ flex: 1, width: "100%", backgroundColor: theme.colors.background }}>
+						<MetricSelection
+							asModal={true}
+							onMetricSelect={(metric) => {
+							onMetricSelected(metric);
+							setMetricModalVisible(false); // ensure it closes
+							}}
+						/>
+						</View>
+					</View>
+					</Portal>
+
 
 				{/* Dialogs */}
 				<Portal>
@@ -313,6 +441,7 @@ const EditReport = () => {
 					<TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setSheetVisible(false)} />
 				)}
 
+				{/*
 				{sheetVisible && (
 					<CustomBottomSheet
 						variant="standard"
@@ -330,6 +459,7 @@ const EditReport = () => {
 						}}
 					/>
 				)}
+					*/}
 			</>) : (
 				<ItemNotFound
 					icon = "file-alert-outlinef"

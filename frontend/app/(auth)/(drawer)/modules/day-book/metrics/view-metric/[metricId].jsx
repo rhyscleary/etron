@@ -1,7 +1,7 @@
 // Author(s): Noah Bradley
 
-import { View, ScrollView, StyleSheet, Alert, ActivityIndicator } from "react-native";
-import { Card } from "react-native-paper";
+import { View, ScrollView, StyleSheet, Alert, ActivityIndicator, Modal, TouchableOpacity } from "react-native";
+import { Card, Text, Chip, useTheme } from "react-native-paper";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -16,6 +16,9 @@ import ResponsiveScreen from "../../../../../../../components/layout/ResponsiveS
 import ItemNotFound from "../../../../../../../components/common/errors/MissingItem";
 import ViewShot from "react-native-view-shot";
 import * as MediaLibrary from "expo-media-library";
+import { hasPermission } from "../../../../../../../utils/permissions";
+import PermissionGate from "../../../../../../../components/common/PermissionGate";
+import { captureRef } from "react-native-view-shot";
 
 const ViewMetric = () => {
     const { metricId } = useLocalSearchParams();
@@ -26,13 +29,25 @@ const ViewMetric = () => {
     const [deleting, setDeleting] = useState(false);
     const [coloursState, setColoursState] = useState(["red", "blue", "green", "purple"]);
     const [exporting, setExporting] = useState(false);
+    const [manageMetricsPermission, setManageMetricsPermission] = useState(false);
+    const [exportModalVisible, setExportModalVisible] = useState(false);
+    const [backgroundMode, setBackgroundMode] = useState("white");
+    const [axisColorModeState, setAxisColorModeState] = useState("dark");
 
     const router = useRouter();
     const viewShotRef = useRef();
+    const theme = useTheme();
 
     useEffect(() => {
+        loadPermission();
         getMetricSettings();
     }, [metricId]);
+
+    async function loadPermission() {
+        const manageMetricsPermission = await hasPermission("modules.daybook.metrics.manage_metrics");
+        console.log("managemetricspermission:", manageMetricsPermission);
+        setManageMetricsPermission(manageMetricsPermission);
+    }
 
     async function getMetricSettings() {
         setLoading(true);
@@ -72,9 +87,10 @@ const ViewMetric = () => {
             }
         
             // Wait briefly to ensure rendering completes
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 200));
         
-            const uri = await viewShotRef.current.capture();
+            await new Promise(resolve => setTimeout(resolve, 300));
+            const uri = await captureRef(viewShotRef, { format: "png", quality: 1.0 });
             if (!uri) throw new Error("Failed to capture graph view.");
         
             await MediaLibrary.saveToLibraryAsync(uri);
@@ -168,6 +184,7 @@ const ViewMetric = () => {
                         onRightIconPress={() =>
                             router.navigate(`/modules/day-book/metrics/edit-metric/${metricId}`)
                         }
+                        rightIconPermission={manageMetricsPermission}
                     />
                 }
                 center={false}
@@ -176,39 +193,147 @@ const ViewMetric = () => {
                 <Card style={[styles.card]}>
                     <Card.Title title={metricSettings.name} />
                     <Card.Content>
-                        <ViewShot
-                            ref={viewShotRef}
-                            options={{ format: "png", quality: 1.0, result: "tmpfile" }}
-                            style={{ backgroundColor: "white" }}
+                        <View
+                            collapsable={false}
+                            style={[styles.graphCardContainer, { backgroundColor: "transparent", padding: 10 }]}
                         >
-                            <View
-                                collapsable={false}
-                                style={[styles.graphCardContainer, { backgroundColor: "white", padding: 10 }]}
-                            >
-                                {graphDef.render({
-                                    data: filteredData,
-                                    xKey: metricSettings.config.independentVariable,
-                                    yKeys: metricSettings.config.dependentVariables,
-                                    colours: metricSettings.config.colours || coloursState,
-                                })}
-                            </View>
-                        </ViewShot>
+                            {graphDef.render({
+                                data: filteredData,
+                                xKey: metricSettings.config.independentVariable,
+                                yKeys: metricSettings.config.dependentVariables,
+                                colours: metricSettings.config.colours || coloursState,
+                                axisColorMode: "dark",
+                            })}
+                        </View>
                     </Card.Content>
                 </Card>
 
-                <BasicButton
-                    label="Export"
-                    onPress={exportGraphToCameraRoll}
-                    style={styles.exportButton}
-                    disabled={exporting}
-                />
+                <View style={styles.buttonRow}>
+                    <PermissionGate
+                        allowed={manageMetricsPermission}
+                    >
+                        <BasicButton
+                            label="Delete"
+                            onPress={deleteMetric}
+                            style={styles.button}
+                            danger
+                        />
+                    </PermissionGate>
+                    
+                    <PermissionGate
+                        allowed={manageMetricsPermission}
+                    >
+                        <BasicButton
+                            label="Export"
+                            onPress={() => setExportModalVisible(true)}
+                            style={styles.button}
+                            disabled={exporting}
+                        />
+                    </PermissionGate>
+                </View>
 
-                <BasicButton
-                    label="Delete"
-                    onPress={deleteMetric}
-                    style={styles.button}
-                    danger
-                />
+                {/* Export Preview Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={exportModalVisible}
+                    onRequestClose={() => setExportModalVisible(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+                            <Text style={styles.modalTitle}>Export Preview</Text>
+
+                            {/* Graph Preview */}
+                            <Card style={[styles.modalCard]}>
+                                <Card.Title title={metricSettings.name} />
+                                <Card.Content>
+                                    <ViewShot
+                                        ref={viewShotRef}
+                                        options={{ format: "png", quality: 1.0, result: "tmpfile" }}
+                                        style={{ backgroundColor: backgroundMode === "transparent" ? "transparent" : backgroundMode }}
+                                    >
+                                        <View
+                                            style={[
+                                                styles.graphCardContainer,
+                                                {
+                                                    backgroundColor:
+                                                        backgroundMode === "transparent"
+                                                            ? "transparent"
+                                                            : backgroundMode,
+                                                    padding: 10,
+                                                },
+                                            ]}
+                                        >
+                                            {graphDef.render({
+                                                data: filteredData,
+                                                xKey: metricSettings.config.independentVariable,
+                                                yKeys: metricSettings.config.dependentVariables,
+                                                colours: metricSettings.config.colours || coloursState,
+                                                axisColorMode: axisColorModeState,
+                                            })}
+                                        </View>
+                                    </ViewShot>
+                                </Card.Content>
+                            </Card>
+
+                            {/* Background Selector */}
+                            <View style={styles.backgroundSelectorContainer}>
+                                <Text style={styles.sectionHeader}>Choose Background</Text>
+                                <View style={styles.chipRow}>
+                                    {["white", "black", "transparent"].map((color) => (
+                                        <Chip
+                                            key={color}
+                                            selected={backgroundMode === color}
+                                            onPress={() => setBackgroundMode(color)}
+                                            style={{
+                                                marginHorizontal: 4,
+                                                backgroundColor: backgroundMode === color ? theme.colors.primary : "transparent",
+                                            }}
+                                        >
+                                            {color.charAt(0).toUpperCase() + color.slice(1)}
+                                        </Chip>
+                                    ))}
+                                </View>
+                            </View>
+
+                            {/* Axis Colour Selector */}
+                            <View style={styles.axisSelectorContainer}>
+                                <Text style={styles.sectionHeader}>Axis Colours</Text>
+                                <View style={styles.chipRow}>
+                                    {["dark", "light"].map((mode) => (
+                                        <Chip
+                                            key={mode}
+                                            selected={axisColorModeState === mode}
+                                            onPress={() => setAxisColorModeState(mode)}
+                                            style={{
+                                                marginHorizontal: 4,
+                                                backgroundColor: axisColorModeState === mode ? theme.colors.primary : "transparent",
+                                            }}
+                                        >
+                                            {mode === "dark" ? "White" : "Black"}
+                                        </Chip>
+                                    ))}
+                                </View>
+                            </View>
+
+                            <View style={styles.buttonRow}>
+                                <BasicButton
+                                    label="Cancel"
+                                    onPress={() => setExportModalVisible(false)}
+                                    style={styles.modalCloseButton}
+                                    danger
+                                />
+
+                                <BasicButton 
+                                    label="Export" 
+                                    onPress={exportGraphToCameraRoll} 
+                                    style={styles.exportButton} 
+                                    disabled={exporting} 
+                                />
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </ResponsiveScreen>
         );
     };
@@ -230,4 +355,65 @@ const styles = StyleSheet.create({
     },
     button: { 
         alignSelf: "flex-end" },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.6)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalContainer: {
+        width: "90%",
+        borderRadius: 16,
+        padding: 20,
+        alignItems: "center",
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginBottom: 12,
+    },
+    modalCard: {
+        width: "100%",
+        marginBottom: 20,
+    },
+    modalCloseButton: {
+        alignSelf: "center",
+        marginTop: 10,
+    },
+    backgroundSelectorContainer: {
+        width: "100%",
+        alignItems: "Left",
+        marginBottom: 16,
+    },
+    sectionHeader: {
+        fontSize: 16,
+        fontWeight: "600",
+        marginBottom: 8,
+    },
+    chipRow: {
+        flexDirection: "row",
+        justifyContent: "left",
+        flexWrap: "wrap",
+        gap: 8,
+    },
+    axisSelectorContainer: {
+        width: "100%",
+        alignItems: "left",
+        marginBottom: 16,
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        marginTop: 16,
+    },
+    exportButton: {
+        flex: 1,
+        marginRight: 8,
+    },
+    modalCloseButton: {
+        flex: 1,
+        marginLeft: 8,
+    },
 });

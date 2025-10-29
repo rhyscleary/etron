@@ -12,39 +12,38 @@ import { ActivityIndicator, Card, Chip, Divider, List, Text, useTheme, Button, }
 import formatDateTime from "../../../../../utils/format/formatISODate";
 import ItemNotFound from "../../../../../components/common/errors/MissingItem";
 import StackLayout from "../../../../../components/layout/StackLayout";
+import { hasPermission } from "../../../../../utils/permissions";
 
 function buildPermissionIndex(tree) {
-    const index = {}; // key -> { label, description, section, categoryLabel }
+    const index = {};  // key -> { label, description, section, categoryLabel }
 
-    // Core "app" permissions
     if (tree?.app?.categories) {
         const sectionLabel = tree.app.label || "Workspace";
         for (const [catKey, cat] of Object.entries(tree.app.categories)) {
-        const categoryLabel = cat.label || catKey;
-        for (const p of cat.permissions || []) {
-            index[p.key] = {
-            label: p.label || p.key,
-            description: p.description || "",
-            section: sectionLabel,
-            categoryLabel,
-            };
-        }
+            const categoryLabel = cat.label || catKey;
+            for (const p of cat.permissions || []) {
+                index[p.key] = {
+                label: p.label || p.key,
+                description: p.description || "",
+                section: sectionLabel,
+                categoryLabel,
+                };
+            }
         }
     }
 
-    // Modules (Day Book etc.)
     if (tree?.modules?.daybook?.categories) {
         const sectionLabel = tree.modules.daybook.label || "Day Book";
         for (const [catKey, cat] of Object.entries(tree.modules.daybook.categories)) {
-        const categoryLabel = cat.label || catKey;
-        for (const p of cat.permissions || []) {
-            index[p.key] = {
-            label: p.label || p.key,
-            description: p.description || "",
-            section: sectionLabel,
-            categoryLabel,
-            };
-        }
+            const categoryLabel = cat.label || catKey;
+            for (const p of cat.permissions || []) {
+                index[p.key] = {
+                label: p.label || p.key,
+                description: p.description || "",
+                section: sectionLabel,
+                categoryLabel,
+                };
+            }
         }
     }
 
@@ -58,8 +57,8 @@ function groupSelectedPermissions(selectedKeys = [], permIndex = {}) {
     for (const key of selectedKeys) {
         const meta = permIndex[key];
         if (!meta) {
-        unknown.push({ key, label: key, description: "" });
-        continue;
+            unknown.push({ key, label: key, description: "" });
+            continue;
         }
         const { section, categoryLabel, label, description } = meta;
         grouped[section] ||= {};
@@ -80,32 +79,10 @@ function groupSelectedPermissions(selectedKeys = [], permIndex = {}) {
     return Object.entries(grouped).map(([section, catObj]) => ({
         section,
         categories: Object.entries(catObj).map(([categoryLabel, perms]) => ({
-        categoryLabel,
-        permissions: perms.sort((a, b) => a.label.localeCompare(b.label)),
+            categoryLabel,
+            permissions: perms.sort((a, b) => a.label.localeCompare(b.label)),
         })),
     }));
-}
-
-function groupPermissions(permissions = []) {
-    const buckets = {
-        "Workspace": [],
-        "Collaboration": [],
-        "Day Book - Data Sources": [],
-        "Day Book - Metrics": [],
-        "Day Book - Reports": [],
-        "Other": [],
-    };
-
-    for (const permission of permissions) {
-        if (permission.startsWith("app.workspace.")) buckets["Workspace"].push(permission);
-        else if (permission.startsWith("app.collaboration.")) buckets["Collaboration"].push(permission);
-        else if (permission.startsWith("modules.daybook.datasources.")) buckets["Day Book - Data Sources"].push(permission);
-        else if (permission.startsWith("modules.daybook.metrics.")) buckets["Day Book - Metrics"].push(permission);
-        else if (permission.startsWith("modules.daybook.reports.")) buckets["Day Book - Reports"].push(permission);
-        else buckets["Other"].push(permission);
-    }
-
-    return Object.entries(buckets);
 }
 
 export default function ViewRole() {
@@ -114,10 +91,10 @@ export default function ViewRole() {
     const [role, setRole] = useState(null)
     const [permIndex, setPermIndex] = useState({});
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
     const [roleExists, setRoleExists] = useState(true);
     const [boards, setBoards] = useState([]);
     const [openAccordions, setOpenAccordions] = useState({});
+    const [manageRolePermission, setManageRolePermission] = useState(false);
 
     const loadRole = useCallback(async () => {
         try {
@@ -142,14 +119,19 @@ export default function ViewRole() {
             setRoleExists(false);
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
     }, [roleId])
 
     useEffect(() => {
         setLoading(true);
+        loadPermission();
         loadRole();
     }, [loadRole]);
+
+    async function loadPermission() {
+        const manageRolePermission = await hasPermission("app.collaboration.manage_roles")
+        setManageRolePermission(manageRolePermission);
+    }
 
     const groupedReadable = useMemo(
         () => groupSelectedPermissions(role?.permissions || [], permIndex),
@@ -167,9 +149,10 @@ export default function ViewRole() {
             header={
                 <Header
                     title="View Role"
-                    showEdit={!loading && roleExists}
+                    showEdit={roleExists}
                     showBack
                     onRightIconPress={() => router.navigate(`/collaboration/edit-role/${roleId}`)}
+                    rightIconPermission={manageRolePermission}
                 />
             }
             center={!roleExists}

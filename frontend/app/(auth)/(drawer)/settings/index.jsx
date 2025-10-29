@@ -1,26 +1,25 @@
 // Author(s): Rhys Cleary
 
-import { View, ScrollView, Pressable, Button } from 'react-native'
-import { Link, router } from 'expo-router';
-import StackLayout from '../../../../components/layout/StackLayout';
+import { useEffect, useState, useMemo } from 'react';
 import { Text } from 'react-native-paper';
-import Header from '../../../../components/layout/Header';
-import DescriptiveButton from '../../../../components/common/buttons/DescriptiveButton';
-import { commonStyles } from '../../../../assets/styles/stylesheets/common';
+import { router } from 'expo-router';
 import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
-import { useEffect, useState } from 'react';
+import Header from '../../../../components/layout/Header';
+import StackLayout from '../../../../components/layout/StackLayout';
+import DescriptiveButton from '../../../../components/common/buttons/DescriptiveButton';
+import PermissionGate from '../../../../components/common/PermissionGate';
 import { hasPermission } from '../../../../utils/permissions';
 
 const Settings = () => { 
     const [menuOptions, setMenuOptions] = useState([]);
 
-    // container for different setting options
-    const settingButtonMap = [
+
+    const settingButtonMap = useMemo(() => [
         {
-            permKey: "app.workspace.view_workspace_settings", 
-            icon: "briefcase-outline", 
-            label: "Workspace", 
-            onPress: () => router.navigate("/settings/workspace/workspace-management") 
+            permKey: 'app.workspace.view_workspace_settings',
+            icon: 'briefcase-outline',
+            label: 'Workspace',
+            onPress: () => router.navigate('/settings/workspace/workspace-settings'),
         },
         /*{ 
             icon: "palette-outline", 
@@ -45,20 +44,28 @@ const Settings = () => {
             icon: "file-document-multiple-outline", 
             label: "Terms and Conditions",
         },*/
-    ];
+    ], []);
+
+    const [allowedMap, setAllowedMap] = useState({});
 
     useEffect(() => {
-        async function filterButtions() {
-            const filteredOptions = [];
-            for (const option of settingButtonMap) {
-                const allowed = option.permKey ? await hasPermission(option.permKey) : true;
-                if (allowed) filteredOptions.push(option);
-            }
-            setMenuOptions(filteredOptions);
-        }
+        mapAllowedButtons();
+    }, [settingButtonMap]);
 
-        filterButtions();
-    }, []);
+    async function mapAllowedButtons() {
+        const entries = await Promise.all(
+            settingButtonMap.map(async (option) => {
+                if (!option.permKey) return [option.label, true];
+                try {
+                    const allowed = await hasPermission(option.permKey);
+                    return [option.label, allowed];
+                } catch {
+                    return [option.label, false];
+                }
+            })
+        );
+        setAllowedMap(Object.fromEntries(entries));
+    }
 
     return (
         <ResponsiveScreen
@@ -69,16 +76,23 @@ const Settings = () => {
             scroll={true}
         >
             <StackLayout spacing={12}>
-                {menuOptions.map((item) => (
-                    <DescriptiveButton 
-                        key={item.label}
-                        icon={item.icon}
-                        image={item.image}
-                        label={item.label}
-                        description={item.description}
-                        onPress={item.onPress}
-                    />
-                ))}
+                {settingButtonMap.map((item) => {
+                    const allowed = item.permKey ? allowedMap[item.label] : true;
+                    return (
+                        <PermissionGate
+                            key={item.label}
+                            allowed={allowed}
+                            onAllowed={item.onPress}
+                        >
+                            <DescriptiveButton
+                                icon={item.icon}
+                                image={item.image}
+                                label={item.label}
+                                description={item.description}
+                            />
+                        </PermissionGate>
+                    );
+                })}
                 <Text>More options will be added to this page in the future.</Text>
             </StackLayout>
         </ResponsiveScreen>

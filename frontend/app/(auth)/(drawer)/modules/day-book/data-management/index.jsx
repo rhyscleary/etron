@@ -13,6 +13,8 @@ import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
+import PermissionGate from "../../../../../../components/common/PermissionGate";
+import { hasPermission } from "../../../../../../utils/permissions";
 
 const StatusPill = ({ status }) => {
 	if (!status) return null;
@@ -23,15 +25,15 @@ const StatusPill = ({ status }) => {
 
 	if (s === "active" || s === "connected") {
 		mode = "flat";
-		style = [{ marginLeft: 8 }, { backgroundColor: "#E6F7EE" }];
+		style = [{ marginLeft: 8 }];
 		label = "Active";
 	} else if (s === "pending_upload" || s === "pending") {
 		mode = "flat";
-		style = [{ marginLeft: 8 }, { backgroundColor: "#FFF6E5" }];
+		style = [{ marginLeft: 8 }];
 		label = "Pending";
 	} else if (s === "error" || s === "failed") {
 		mode = "flat";
-		style = [{ marginLeft: 8 }, { backgroundColor: "#FDECEC" }];
+		style = [{ marginLeft: 8 }];
 		label = "Error";
 	}
 
@@ -50,6 +52,8 @@ const DataConnectionCard = ({
 	onViewData,
 	onUpload,
 	uploading = false,
+	viewDataAllowed = false,
+	manageDataSourceAllowed = false,
 	height = 60,
 }) => {
 	const theme = useTheme();
@@ -64,9 +68,18 @@ const DataConnectionCard = ({
 			<Card.Actions style={{ justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 8 }}>
 				<View style={{ flexDirection: "row" }}>
 					{onSync && (<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />)}
-					<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
-					<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
-					<IconButton icon="table-eye" accessibilityLabel="View Data" onPress={onViewData} />
+					<PermissionGate allowed={manageDataSourceAllowed} >
+						<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
+					</PermissionGate>
+					<PermissionGate allowed={manageDataSourceAllowed} >
+						<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
+					</PermissionGate>
+					<PermissionGate
+						allowed={viewDataAllowed}
+						onAllowed={onViewData}
+					>
+						<IconButton icon="table-eye" accessibilityLabel="View Data" />
+					</PermissionGate>
 					{onUpload && (
 						<IconButton
 							icon={uploading ? "progress-upload" : "upload"}
@@ -76,7 +89,9 @@ const DataConnectionCard = ({
 						/>
 					)}
 				</View>
-				<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
+				<PermissionGate allowed={manageDataSourceAllowed} >
+					<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
+				</PermissionGate>
 			</Card.Actions>
 		</Card>
 	);
@@ -91,6 +106,8 @@ const DataManagement = () => {
 	const [lastManualRefresh, setLastManualRefresh] = useState(0);
 	const [uploadingMap, setUploadingMap] = useState({});
 	const [workspaceId, setWorkspaceId] = useState(null);
+	const [viewDataPermission, setViewDataPermission] = useState(false);
+	const [manageDataSourcesPermission, setManageDataSourcesPermission] = useState(false);
 
 	const [previewOpen, setPreviewOpen] = useState(false);
 	const [previewStatus, setPreviewStatus] = useState('idle');
@@ -134,12 +151,20 @@ const DataManagement = () => {
 
 	useFocusEffect(
 		useCallback(() => {
+			loadPermission();
 			if (!hasInitiallyLoadedRef.current) {
 				fetchDataSources();
 				hasInitiallyLoadedRef.current = true;
 			}
-		}, [fetchDataSources])
+		}, [loadPermission, fetchDataSources])
 	);
+
+	async function loadPermission() {
+		const viewDataPermission = await hasPermission("modules.daybook.datasources.view_data");
+		setViewDataPermission(viewDataPermission);
+		const manageDataSourcesPermission = await hasPermission("modules.daybook.datasources.manage_dataSources");
+		setManageDataSourcesPermission(manageDataSourcesPermission);
+	}
 
 	const handleUploadLocalCsv = useCallback(async (source) => {
 		try {
@@ -242,12 +267,15 @@ const DataManagement = () => {
 						text: "Disconnect",
 						style: "destructive",
 						onPress: async () => {
+							setLoading(true);
 							try {
 								await apiDelete(endpoints.modules.day_book.data_sources.removeDataSource(source.dataSourceId), {workspaceId});
 								await fetchDataSources();
 							} catch (error) {
 								console.error("Error disconnecting data source", error);
 								Alert.alert("Error", String(error));
+							} finally {
+								setLoading(false);
 							}
 						},
 					},
@@ -276,6 +304,8 @@ const DataManagement = () => {
 			setPreviewOpen(true);
 			setPreviewStatus('loading');
 			setRowLimit(ROW_CHUNK);
+			console.log("source.dataSourceId:", source.dataSourceId);
+			console.log("workspaceId:", workspaceId);
 			const res = await apiGet(
 				endpoints.modules.day_book.data_sources.viewData(source.dataSourceId),
 				{ workspaceId }
@@ -343,20 +373,16 @@ const DataManagement = () => {
 						? { onUpload: () => handleUploadLocalCsv(source),
 							uploading: !!uploadingMap[source.dataSourceId] }
 						: {} )}*/
+					viewDataAllowed={viewDataPermission}
+					manageDataSourceAllowed={manageDataSourcesPermission}
 				/>
 			</View>
 		);
-	}, [formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection, handleViewData, handleUploadLocalCsv, uploadingMap]);
+	}, [formatLastSync, handleSyncSource, viewDataPermission, manageDataSourcesPermission, handleDisconnectSource, handleTestConnection, handleViewData, handleUploadLocalCsv, uploadingMap]);
 
 	let body = null;
 
 	if (loading && !isRefreshing) {
-		body = (
-		<View style={styles.loadingContainer}>
-			<ActivityIndicator size="large" />
-			<Text style={styles.loadingText}>Loading data sources...</Text>
-		</View>
-		);
 	} else if (hasError) {
 		body = (
 			<View style={styles.errorContainer}>
@@ -427,8 +453,6 @@ const DataManagement = () => {
 		);
 	}
 
-	
-
 	return (
 		<ResponsiveScreen
 			header={<Header
@@ -438,9 +462,11 @@ const DataManagement = () => {
 				onRightIconPress={() =>
 					router.navigate("/modules/day-book/data-management/create-data-connection")
 				}
+				rightIconPermission={manageDataSourcesPermission}
 			/>}
 			center={false}
 			scroll={true}
+			loadingOverlayActive={loading}
 		>
 			{body}
 			<Portal>
@@ -520,78 +546,78 @@ const DataManagement = () => {
 export default DataManagement;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  loadingText: {
-    marginTop: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-  },
-  retryButton: {
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 8,
-  },
-  retryButtonText: {
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  categoryTitle: {
-    marginBottom: 12,
-  },
-  summarySection: {
-    marginBottom: 24,
-    padding: 16,
-    borderRadius: 8,
-  },
-  summaryTitle: {
-    marginBottom: 8,
-  },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  lastUpdateText: {
-    fontSize: 12,
-    color: "#666",
-    fontStyle: "italic",
-  },
-  emptyState: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 32,
-    paddingVertical: 48,
-  },
-  emptyStateTitle: {
-    marginBottom: 8,
-    textAlign: "center",
-  },
-  emptyStateMessage: {
-    marginBottom: 24,
-    textAlign: "center",
-    color: "#666",
-  },
-  debugSection: {
-    padding: 10,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 5,
-    marginTop: 20,
-    marginBottom: 50,
-  },
-  debugText: {
-    fontSize: 12,
-    color: "#666",
-  },
+	container: {
+		flex: 1,
+	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	loadingText: {
+		marginTop: 16,
+	},
+	errorContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 32,
+	},
+	retryButton: {
+		paddingHorizontal: 24,
+		borderRadius: 8,
+		marginTop: 8,
+	},
+	retryButtonText: {
+		color: "#007AFF",
+		fontWeight: "600",
+	},
+	categoryTitle: {
+		marginBottom: 12,
+	},
+	summarySection: {
+		marginBottom: 24,
+		padding: 16,
+		borderRadius: 8,
+	},
+	summaryTitle: {
+		marginBottom: 8,
+	},
+	summaryRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		marginBottom: 8,
+	},
+	lastUpdateText: {
+		fontSize: 12,
+		color: "#666",
+		fontStyle: "italic",
+	},
+	emptyState: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 32,
+		paddingVertical: 48,
+	},
+	emptyStateTitle: {
+		marginBottom: 8,
+		textAlign: "center",
+	},
+	emptyStateMessage: {
+		marginBottom: 24,
+		textAlign: "center",
+		color: "#666",
+	},
+	debugSection: {
+		padding: 10,
+		backgroundColor: "#f0f0f0",
+		borderRadius: 5,
+		marginTop: 20,
+		marginBottom: 50,
+	},
+	debugText: {
+		fontSize: 12,
+		color: "#666",
+	},
 });
