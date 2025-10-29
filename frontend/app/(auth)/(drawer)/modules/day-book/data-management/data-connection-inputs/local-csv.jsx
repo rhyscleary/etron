@@ -94,6 +94,7 @@ const LocalCSV = () => {
     }
 
     const handleFinalise = async () => {
+        setLoading(true);
         try {
             const createResponse = await createDataSource();
             if (!createResponse) {
@@ -110,6 +111,8 @@ const LocalCSV = () => {
             router.navigate("modules/day-book/data-management");
         } catch (error) {
             console.error("Error finalising CSV upload:", error);
+        } finally {
+            setLoading(false);
         }
     }
     
@@ -122,7 +125,7 @@ const LocalCSV = () => {
                 header = {<Header title="Upload CSV" showBack />}
                 scroll = {true}
                 center = {false}
-                loadingOverlayActive={loading}
+                loadingOverlayActive={loading || isUploadingData}
             >
                 <Button onPress={userSelectFile} title="Pick a CSV File" disabled={isUploadingData} />
             

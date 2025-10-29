@@ -77,6 +77,9 @@ const CreateMetric = () => {
         console.log("downloading");
 
         const workspaceId = await getWorkspaceId();
+
+        console.log("source:", source);
+        console.log("workspaceId:", workspaceId);
         try {
             let response = await apiGet(
                 endpoints.modules.day_book.data_sources.viewData(source),
