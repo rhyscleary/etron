@@ -111,11 +111,21 @@ const UserLog = () => {
     const renderLogItem = ({ item }) => {
         const timestamp = new Date(item.timestamp).toLocaleString();
 
+        // build stirng description
+        let itemDescription = "";
+        if (item.itemType && item.itemName) {
+            itemDescription = ` ${item.itemType} ${item.itemName}`;
+        } else if (item.itemType) {
+            itemDescription = ` ${item.itemType}`;
+        } else if (item.itemName) {
+            itemDescription = ` ${item.itemName}`;
+        }
+        
         return (
             <View style={[styles.logItemContainer, { backgroundColor: theme.colors.buttonBackground }]}>
                 <View style={styles.logTextContainer}>
                 <Text style={[styles.actionText, { color: theme.colors.onSurface }]}>
-                    {item.action}
+                    {item.action}{itemDescription}
                 </Text>
                 <Text style={[styles.timestampText, { color: theme.colors.onSurfaceVariant }]}>
                     {timestamp}
