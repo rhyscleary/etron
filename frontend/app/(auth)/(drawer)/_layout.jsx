@@ -285,7 +285,6 @@ export default function DrawerLayout() {
 }
 
 const styles = StyleSheet.create({
-    // DrawerItem container
     itemContainer: {
         marginHorizontal: 10,
         marginVertical: 6,
@@ -317,7 +316,7 @@ const styles = StyleSheet.create({
 
     bottomSection: {
         paddingBottom: 30,
-        marginHorizontal: 14
+        marginHorizontal: 12
     },
     divider: {
         alignSelf: "center",
