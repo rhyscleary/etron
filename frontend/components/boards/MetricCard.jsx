@@ -11,7 +11,8 @@ const MetricCard = ({
     isEditing, 
     styles, 
     onEdit,
-    onPress 
+    onPress,
+    disableEditActions = false
 }) => {
     const theme = useTheme();
     const editIconColor = theme.colors?.primary ?? '#1d4ed8';
@@ -135,7 +136,7 @@ const MetricCard = ({
                 isEditing && styles.metricGraphCardEditing,
                 { backgroundColor: appearance.background }
             ]}>
-                {isEditing && (
+                {isEditing && !disableEditActions && (
                     <View style={styles.metricEditOverlay}>
                         <IconButton
                             icon="pencil"

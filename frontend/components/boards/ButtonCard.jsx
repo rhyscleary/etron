@@ -13,7 +13,7 @@ const alignmentMap = {
     stretch: 'stretch'
 };
 
-const ButtonCard = ({ item, isEditing, onEdit }) => {
+const ButtonCard = ({ item, isEditing, onEdit, disableEditActions = false }) => {
     const theme = useTheme();
     const editIconColor = theme.colors?.primary ?? '#1d4ed8';
     const editContainerColor = theme.colors?.surfaceVariant
@@ -82,7 +82,7 @@ const ButtonCard = ({ item, isEditing, onEdit }) => {
 
     return (
         <View style={styles.container}>
-            {isEditing && (
+            {isEditing && !disableEditActions && (
                 <View style={styles.editOverlay}>
                     <IconButton
                         icon="pencil"

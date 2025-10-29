@@ -22,6 +22,8 @@ import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const GRID_COLS = 12;
 const METRIC_MIN_WIDTH = calculateMetricGridWidth(GRID_COLS);
+const DEFAULT_METRIC_MAX_HEIGHT = 8;
+const DEFAULT_BUTTON_MAX_HEIGHT = 3;
 
 const BoardView = () => {
     const { id } = useLocalSearchParams();
@@ -59,7 +61,10 @@ const BoardView = () => {
     const [showDisplaySettings, setShowDisplaySettings] = useState(false);
     const [showEditOptions, setShowEditOptions] = useState(false);
     const [editOptionsItem, setEditOptionsItem] = useState(null);
+    const [activeResizeItemId, setActiveResizeItemId] = useState(null);
     
+    const isResizeActive = activeResizeItemId !== null;
+
     const activeMetricItem = useMemo(() => {
         if (!board?.items || !activeMetricItemId) return null;
         return board.items.find(item => item.id === activeMetricItemId) || null;
@@ -74,22 +79,36 @@ const BoardView = () => {
         }
     }, [isEditing]);
 
+    useEffect(() => {
+        if (!isEditing && activeResizeItemId !== null) {
+            setActiveResizeItemId(null);
+        }
+    }, [isEditing, activeResizeItemId]);
+
+    useEffect(() => {
+        if (!activeResizeItemId) return;
+        const hasItem = board?.items?.some(item => item.id === activeResizeItemId);
+        if (!hasItem) {
+            setActiveResizeItemId(null);
+        }
+    }, [activeResizeItemId, board?.items]);
+
     const handleMetricSelected = useCallback(async (metric) => {
         if (!board) return;
-        
-    const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
-    const newItem = createMetricItem(metric, existingLayout, GRID_COLS);
-        
+
+        const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
+        const newItem = createMetricItem(metric, existingLayout, GRID_COLS);
+
         await addItem(newItem);
         setShowMetricPicker(false);
     }, [board, addItem]);
 
     const handleButtonSelected = useCallback(async (destination) => {
         if (!board) return;
-        
-    const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
-    const newItem = createButtonItem(destination, existingLayout, GRID_COLS);
-        
+
+        const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
+        const newItem = createButtonItem(destination, existingLayout, GRID_COLS);
+
         await addItem(newItem);
         setShowButtonPicker(false);
     }, [board, addItem]);
@@ -187,10 +206,10 @@ const BoardView = () => {
     }, [handleCloseMetricDetails, handleRemoveItem]);
 
     const handleOpenItemOptions = useCallback((item) => {
-        if (!item) return;
+        if (!item || isResizeActive) return;
         setEditOptionsItem(item);
         setShowEditOptions(true);
-    }, []);
+    }, [isResizeActive]);
 
     const handleCloseItemOptions = useCallback(() => {
         setShowEditOptions(false);
@@ -216,36 +235,68 @@ const BoardView = () => {
         handleEditMetric(metricId);
     }, [handleCloseItemOptions, handleEditMetric]);
 
+    const handleItemLongPress = useCallback((itemId) => {
+        if (!isEditing) return;
+        setActiveResizeItemId(prev => (prev === itemId ? null : itemId));
+    }, [isEditing]);
+
+    const handleResizeSessionEnd = useCallback((itemId) => {
+        setActiveResizeItemId(prev => (prev === itemId ? null : prev));
+    }, []);
+
     const getGridItems = useCallback(() => {
         if (!board?.items) return [];
 
         return board.items.map(item => {
             const baseWidth = typeof item.w === 'number' ? item.w : 1;
             const baseHeight = typeof item.h === 'number' ? item.h : 1;
-            let widthUnits = baseWidth;
+            const config = item.config || {};
+
             let xPosition = typeof item.x === 'number' ? item.x : 0;
 
+            const configMinWidth = Math.max(1, config.minWidthUnits ?? 1);
+            const configMinHeight = Math.max(1, config.minHeightUnits ?? 1);
+
+            let minWidthUnits = configMinWidth;
+            let maxHeightFallback = config.maxHeightUnits ?? (configMinHeight + 4);
+
             if (item.type === 'metric') {
-                widthUnits = Math.max(baseWidth, METRIC_MIN_WIDTH);
-                widthUnits = Math.min(widthUnits, GRID_COLS);
-
-                if (xPosition + widthUnits > GRID_COLS) {
-                    xPosition = Math.max(0, GRID_COLS - widthUnits);
-                }
+                minWidthUnits = Math.max(minWidthUnits, METRIC_MIN_WIDTH);
+                maxHeightFallback = Math.max(configMinHeight, config.maxHeightUnits ?? DEFAULT_METRIC_MAX_HEIGHT);
             } else if (item.type === 'button') {
-                const minWidthUnits = calculateButtonGridWidth(item.config?.label || 'Button', GRID_COLS);
-                widthUnits = Math.max(baseWidth, minWidthUnits);
-                widthUnits = Math.min(widthUnits, GRID_COLS);
-
-                if (xPosition + widthUnits > GRID_COLS) {
-                    xPosition = Math.max(0, GRID_COLS - widthUnits);
-                }
+                const labelWidthUnits = calculateButtonGridWidth(item.config?.label || 'Button', GRID_COLS);
+                minWidthUnits = Math.max(minWidthUnits, labelWidthUnits);
+                maxHeightFallback = Math.max(configMinHeight, config.maxHeightUnits ?? DEFAULT_BUTTON_MAX_HEIGHT);
             }
+
+            let widthUnits = Math.max(baseWidth, minWidthUnits);
+            widthUnits = Math.min(widthUnits, GRID_COLS);
+
+            if (xPosition + widthUnits > GRID_COLS) {
+                xPosition = Math.max(0, GRID_COLS - widthUnits);
+            }
+
+            const availableWidth = Math.max(1, GRID_COLS - xPosition);
+            const configuredMaxWidth = config.maxWidthUnits ?? availableWidth;
+            const maxWidthUnits = Math.max(widthUnits, Math.min(configuredMaxWidth, availableWidth));
+
+            let heightUnits = Math.max(baseHeight, configMinHeight);
+            const configuredMaxHeight = Math.max(configMinHeight, config.maxHeightUnits ?? maxHeightFallback);
+            heightUnits = Math.min(heightUnits, configuredMaxHeight);
+
+            const resizeConstraints = {
+                minWidth: Math.max(1, minWidthUnits),
+                minHeight: Math.max(1, configMinHeight),
+                maxWidth: maxWidthUnits,
+                maxHeight: configuredMaxHeight
+            };
 
             const WrapperComponent = isEditing ? View : TouchableOpacity;
 
             const wrapperProps = isEditing
-                ? { style: styles.itemContent }
+                ? {
+                    style: styles.itemContent
+                }
                 : {
                     style: styles.itemContent,
                     activeOpacity: 0.7,
@@ -261,7 +312,8 @@ const BoardView = () => {
                 x: xPosition,
                 y: typeof item.y === 'number' ? item.y : 0,
                 w: widthUnits,
-                h: baseHeight,
+                h: heightUnits,
+                resizeConstraints,
                 content: (
                     <WrapperComponent {...wrapperProps}>
                         {item.type === 'metric' ? (
@@ -272,19 +324,21 @@ const BoardView = () => {
                                 styles={styles}
                                 onEdit={handleOpenItemOptions}
                                 onPress={handleOpenMetricDetails}
+                                disableEditActions={isResizeActive}
                             />
                         ) : item.type === 'button' ? (
                             <ButtonCard
                                 item={item}
                                 isEditing={isEditing}
                                 onEdit={handleOpenItemOptions}
+                                disableEditActions={isResizeActive}
                             />
                         ) : null}
                     </WrapperComponent>
                 )
             };
         });
-    }, [board?.items, isEditing, metricStates, handleOpenMetricDetails, handleOpenItemOptions]);
+    }, [board?.items, isEditing, metricStates, handleOpenMetricDetails, handleOpenItemOptions, isResizeActive]);
 
     if (loading) {
         return (
@@ -349,6 +403,10 @@ const BoardView = () => {
                             rowHeight={100}
                             margin={[10, 10]}
                             isDraggable={isEditing}
+                            isResizable={Boolean(activeResizeItemId)}
+                            activeResizeItemId={activeResizeItemId}
+                            onItemLongPress={isEditing ? handleItemLongPress : undefined}
+                            onResizeSessionEnd={handleResizeSessionEnd}
                             onLayoutChange={updateLayout}
                             containerStyle={styles.gridContainer}
                         />
