@@ -77,10 +77,6 @@ const Templates = () => {
     <View style={[commonStyles.screen, { backgroundColor: theme.colors.background }]}>
       <Header title="Templates" showBack />
 
-      <View style={{ padding: 16 }}>
-        <Button title="Create Test Template" onPress={handleCreateTestTemplate} />
-      </View>
-
       <SearchBar
         placeholder="Search..."
         onSearch={handleSearch}

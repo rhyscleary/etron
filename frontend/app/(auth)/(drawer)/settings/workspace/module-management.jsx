@@ -137,12 +137,12 @@ const ModuleManagement = ({ availableFilters = ['All', 'Financial', 'Employees',
             title={item.name}
             content={item.description}
             leftElement={item.icon || "puzzle"}
-            rightIcon="dots-horizontal"
-            onRightPress={() => {
+            //rightIcon="dots-horizontal"
+            /*onRightPress={() => {
                 setSelectedModule(item);
                 console.log(item);
                 setShowModuleActionsSheet(true);
-            }}
+            }}*/
             cardStyle={item.cardColor ? { backgroundColor: item.cardColor } : undefined }
             titleStyle={item.fontColor ? { color: item.fontColor } : undefined }
         />

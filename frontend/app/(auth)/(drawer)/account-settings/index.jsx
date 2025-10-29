@@ -246,18 +246,6 @@ const Account = () => {
             loadingOverlayActive={deleting || leaving}
         >
             <StackLayout spacing={12}>
-                {loading ? (
-                    <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" />
-                    </View>
-                ) : (
-                    <DescriptiveButton
-                        key={"Accounts"}
-                        label={"Accounts"}
-                        description={email}
-                        onPress={() => router.navigate("account-settings/accounts")}
-                    />
-                )}
                 {accountSettingsButtons.map((item) => (
                     <DescriptiveButton
                         key={item.label}

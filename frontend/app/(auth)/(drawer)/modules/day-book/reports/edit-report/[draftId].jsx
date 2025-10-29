@@ -7,7 +7,7 @@ import RNHTMLtoPDF from "react-native-html-to-pdf";
 import Header from "../../../../../../../components/layout/Header";
 import { commonStyles } from "../../../../../../../assets/styles/stylesheets/common";
 import RNFS from "react-native-fs";
-import { Portal, Dialog, Button, useTheme } from "react-native-paper";
+import { Portal, Dialog, Button, useTheme, Menu } from "react-native-paper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import endpoints from "../../../../../../../utils/api/endpoints";
 import { getWorkspaceId } from "../../../../../../../storage/workspaceStorage";
@@ -17,6 +17,7 @@ import { createNewTemplate, uploadUpdatedTemplate } from "../../../../../../../u
 import { uploadExportFile } from "../../../../../../../utils/exportUploader";
 import CustomBottomSheet from "../../../../../../../components/BottomSheet/bottom-sheet";
 import ItemNotFound from "../../../../../../../components/common/errors/MissingItem";
+import MetricSelection from "../metric-selection";
 
 const EditReport = () => {
 	const { draftId } = useLocalSearchParams();
@@ -31,6 +32,9 @@ const EditReport = () => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [sheetVisible, setSheetVisible] = useState(false);
 	const [reportExists, setReportExists] = useState(true);
+	const [metricModalVisible, setMetricModalVisible] = useState(false);
+	const [menuVisible, setMenuVisible] = useState(false);
+	const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 }); // For menu positioning
 
 	const webViewRef = useRef(null);
 	const initSentRef = useRef(false);
@@ -82,6 +86,12 @@ const EditReport = () => {
 		fetchDraft();
 	}, [draftId, workspaceId]);
 
+	const openMenu = (event) => {
+	const { pageX, pageY } = event.nativeEvent;
+	setMenuAnchor({ x: pageX, y: pageY });
+	setMenuVisible(true);
+	};
+
 	// Editor HTML
 	const pellHtml = useMemo(() => `
 		<!DOCTYPE html>
@@ -121,28 +131,21 @@ const EditReport = () => {
 						const actionBar = document.querySelector('.pell-actionbar');
 						const metricButton = document.createElement('button');
 						metricButton.className = 'pell-button';
-						metricButton.title = 'Insert Metric';
-						metricButton.textContent = '📊 Insert Metric';
+						metricButton.title = 'Add Metric';
+						metricButton.textContent = '📊';
 						actionBar.appendChild(metricButton);
 
 						metricButton.onclick = () => {
-							//window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'openMetricSheet' }));
-							const img = document.createElement('img');
-							img.src = "https://d329j4s0vk14u1.cloudfront.net/public/workspaces/e905ae63-ab3d-4487-8def-35c8141ffb89/day-book/metrics/metric1.png";
-							img.style.maxWidth = '100%';
-							img.style.display = 'block';
-							img.style.margin = '10px 0';
-							editor.content.appendChild(img);
-							window.ReactNativeWebView.postMessage(editor.content.innerHTML);
+							window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'openMetricSheet' }));
 						};
 
 						function receiveMessage(event) {
 							let data = event.data;
 							try { data = JSON.parse(data); } catch (e) {}
 
-							if (data?.type === 'insertMetric' && data.metricUrl) {
+							if (data?.type === 'insertMetric' && data.workspaceId && data.metricId) {
 								const img = document.createElement('img');
-								img.src = data.metricUrl;
+								img.src = "https://etron-metrics.s3.ap-southeast-2.amazonaws.com/workspaces/" + data.workspaceId + "/metrics/" + data.metricId + ".png";
 								img.style.maxWidth = '100%';
 								img.style.display = 'block';
 								img.style.margin = '10px 0';
@@ -203,7 +206,7 @@ const EditReport = () => {
 		try {
 			const data = JSON.parse(event.nativeEvent.data);
 			if (data.type == "openMetricSheet") {
-				console.log("Open metric sheet");
+				setMetricModalVisible(true);
 			} else if (isEditing) {
 				setEditorContent(event.nativeEvent.data);
 			}
@@ -212,7 +215,14 @@ const EditReport = () => {
 
 	// when metric selected send message to pell to add in metric
 	const onMetricSelected = (metric) => {
-		console.log("Metric selected"); // add metric
+		// Send metric URL to the WebView
+		webViewRef.current.postMessage(JSON.stringify({
+			type: "insertMetric",
+			workspaceId,
+			metricId: metric.metricId
+		}));
+
+		setMetricModalVisible(false); // close modal
 	};
 
 	// ✅ Generate and upload PDF
@@ -312,8 +322,27 @@ const EditReport = () => {
 					showCheck={isEditing}
 					showEllipsis
 					onRightIconPress={() => (isEditing ? handleSaveReport() : setIsEditing(true))}
-					onEllipsisPress={() => setSheetVisible(true)}
+					onEllipsisPress={openMenu}
 				/>
+
+				<Menu
+				visible={menuVisible}
+				onDismiss={() => setMenuVisible(false)}
+				anchor={menuAnchor}
+				>
+				<Menu.Item
+					onPress={() => { setDialogVisible(true); setMenuVisible(false); }}
+					title="Export as PDF"
+				/>
+				<Menu.Item
+					onPress={() => { handleSaveReport(); setMenuVisible(false); }}
+					title="Save Report"
+				/>
+				<Menu.Item
+					onPress={() => { handleSaveAsTemplate(); setMenuVisible(false); }}
+					title="Save as Template"
+				/>
+				</Menu>
 
 				<WebView
 					key={isEditing ? "editor" : "viewer"}
@@ -328,6 +357,52 @@ const EditReport = () => {
 				/>
 
 				{/* Add bottom sheet to select metrics here */}
+				<Portal>
+					<View
+						style={[
+						StyleSheet.absoluteFill,
+						{
+							backgroundColor: theme.colors.background,
+							justifyContent: "flex-start",
+							alignItems: "center",
+							display: metricModalVisible ? "flex" : "none",
+						},
+						]}
+					>
+						{/* Header Bar */}
+						<View
+						style={{
+							width: "100%",
+							paddingTop: Platform.OS === "ios" ? 60 : 40,
+							paddingBottom: 16,
+							backgroundColor: theme.colors.primary,
+							flexDirection: "row",
+							justifyContent: "space-between",
+							alignItems: "center",
+							paddingHorizontal: 20,
+						}}
+						>
+						<Text style={{ color: "#fff", fontSize: 20, fontWeight: "600" }}>
+							Select Metric
+						</Text>
+						<TouchableOpacity onPress={() => setMetricModalVisible(false)}>
+							<Text style={{ color: "#fff", fontSize: 18 }}>✕</Text>
+						</TouchableOpacity>
+						</View>
+
+						{/* Metric List */}
+						<View style={{ flex: 1, width: "100%", backgroundColor: theme.colors.background }}>
+						<MetricSelection
+							asModal={true}
+							onMetricSelect={(metric) => {
+							onMetricSelected(metric);
+							setMetricModalVisible(false); // ensure it closes
+							}}
+						/>
+						</View>
+					</View>
+					</Portal>
+
 
 				{/* Dialogs */}
 				<Portal>
@@ -360,6 +435,7 @@ const EditReport = () => {
 					<TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setSheetVisible(false)} />
 				)}
 
+				{/*
 				{sheetVisible && (
 					<CustomBottomSheet
 						variant="standard"
@@ -377,6 +453,7 @@ const EditReport = () => {
 						}}
 					/>
 				)}
+					*/}
 			</>) : (
 				<ItemNotFound
 					icon = "file-alert-outlinef"

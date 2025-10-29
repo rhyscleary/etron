@@ -1,5 +1,5 @@
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
 import { Text, Card, ActivityIndicator, DataTable, Modal, Portal, Button, Chip, useTheme, IconButton } from "react-native-paper";
@@ -9,6 +9,9 @@ import TextField from '../../../../../../components/common/input/TextField';
 import MetricCheckbox from '../../../../../../components/common/buttons/MetricCheckbox';
 import MetricRadioButton from '../../../../../../components/common/buttons/MetricRadioButton';
 import GraphTypes from './graph-types';
+import * as FileSystem from 'expo-file-system';
+import { Storage } from 'aws-amplify';
+
 
 import {
     fetchUserAttributes,
@@ -22,11 +25,14 @@ import ColorPicker from 'react-native-wheel-color-picker';
 import ResponsiveScreen from '../../../../../../components/layout/ResponsiveScreen';
 import { hasPermission } from '../../../../../../utils/permissions';
 import PermissionGate from '../../../../../../components/common/PermissionGate';
+import ViewShot, { captureRef } from 'react-native-view-shot';
+import axios from 'axios';
 
 
 const CreateMetric = () => {
     const router = useRouter();
     const theme = useTheme();
+    const viewShotRef = useRef();
 
     const [loading, setLoading] = useState(false);
     const [dataSourceMappings, setDataSourceMappings] = useState([]);  //Array of data source id + name pairs
@@ -149,6 +155,7 @@ const CreateMetric = () => {
         }
 
         let workspaceId = await getWorkspaceId();
+
         let metricDetails = {
             workspaceId,
             name: metricName,
@@ -171,6 +178,8 @@ const CreateMetric = () => {
             endpoints.modules.day_book.metrics.add,
             metricDetails
         );
+
+        const graphImageKey = await uploadGraphToS3(result.data.metricId);
         console.log("Uploaded metric details via API result:", result);
     }
 
@@ -229,6 +238,37 @@ const CreateMetric = () => {
     const formContinueDisabled =
         (step == 0 && (chosenIndependentVariable.length == 0 || !selectedMetric)) ||
         (step == 1 && (!metricName))
+
+async function uploadGraphToS3(metricId) {
+    const workspaceId = await getWorkspaceId();
+    const fileName = `workspaces/${workspaceId}/metrics/${metricId}.png`;
+
+    // Capture ViewShot
+    const uri = await viewShotRef.current.capture({ format: 'png', result: 'tmpfile' });
+    if (!uri) throw new Error("Failed to capture graph.");
+
+    // Read file as binary
+    const file = await FileSystem.readAsStringAsync(uri, {
+        encoding: FileSystem.EncodingType.Base64,
+    });
+    const s3Url = `https://etron-metrics.s3.amazonaws.com/${fileName}`;
+
+    // Convert Base64 to Uint8Array for fetch
+    const binary = Uint8Array.from(atob(file), c => c.charCodeAt(0));
+
+    const response = await fetch(s3Url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'image/png' },
+        body: binary,  // Raw bytes, not Base64 string
+    });
+
+    if (!response.ok) {
+        throw new Error(`S3 upload failed: ${response.status}`);
+    }
+
+    console.log("Graph uploaded successfully:", fileName);
+    return fileName;
+}
 
 
     const renderFormStep = () => {
@@ -468,20 +508,26 @@ const CreateMetric = () => {
                         {/* Graph preview */}
                         <Card style={[styles.card]}>
                             <Card.Content>
-                                <View style={styles.graphCardContainer}>
-                                    {graphDef.render({
-                                        data: convertToGraphData(
-                                            selectedRows.length > 0
-                                                ? dataSourceData.filter(
-                                                    (row) => selectedRows.includes(row[dataSourceVariableNames[0]])
-                                                )
-                                                : dataSourceData
-                                        ),
-                                        xKey: chosenIndependentVariable,
-                                        yKeys: dependentArray,
-                                        colours: coloursState,
-                                    })}
-                                </View>
+                                <ViewShot
+                                    ref={viewShotRef}
+                                    options={{format: "png", quality: 1.0, result: "tmpfile"}}
+                                >
+                                    <View style={styles.graphCardContainer}>
+                                        {graphDef.render({
+                                            data: convertToGraphData(
+                                                selectedRows.length > 0
+                                                    ? dataSourceData.filter(
+                                                        (row) => selectedRows.includes(row[dataSourceVariableNames[0]])
+                                                    )
+                                                    : dataSourceData
+                                            ),
+                                            xKey: chosenIndependentVariable,
+                                            yKeys: dependentArray,
+                                            colours: coloursState,
+                                        })}
+                                    </View>
+                                </ViewShot>
+                             
                             </Card.Content>
                         </Card>
 
