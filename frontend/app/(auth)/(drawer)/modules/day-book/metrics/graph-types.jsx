@@ -139,45 +139,55 @@ const GraphTypes = {
     },
 
     pie: {
-        label: "Pie Chart",
-        value: "pie",
-        previewImage: require("../../../../../../assets/images/pieChart.png"),
-        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
-            const ChartComponent = () => {
-                const [size, setSize] = React.useState({ width: 0, height: 0 });
-                const axisColor = axisColorMode === "dark" ? "white" : "black";
-                const yKey = Array.isArray(yKeys) ? yKeys[0] : yKeys;
-                return (
-                    <View
-                        style={{ flex: 1 }}
-                        onLayout={(event) => {
-                            const { width, height } = event.nativeEvent.layout;
-                            setSize({ width, height });
-                        }}
-                    >
-                        {size.width > 0 && size.height > 0 && (
-                            <VictoryPie
-                                width={size.width}
-                                height={size.height}
-                                theme={VictoryTheme.clean}
-                                data={data.map((d) => ({
-                                    x: d[xKey], // label
-                                    y: d[yKey], // value
-                                }))}
-                                colorScale={colours && colours.length > 0 ? colours : "qualitative"}
-                                labels={({ datum }) => `${datum.x}: ${datum.y}`}
-                                style={{
-                                    labels: { fontSize: 12, fill: axisColor },
-                                }}
-                                padding={{ top: 30, bottom: 30, left: 20, right: 20 }}
-                            />
-                        )}
-                    </View>
-                );
-            };
-            return <ChartComponent />;
-        },
+    label: "Pie Chart",
+    value: "pie",
+    previewImage: require("../../../../../../assets/images/pieChart.png"),
+    render: ({ data, xKey, yKeys, colours, axisColorMode = "light", backgroundMode = "transparent" }) => {
+        const ChartComponent = () => {
+            const [size, setSize] = React.useState({ width: 0, height: 0 });
+            const axisColor = axisColorMode === "dark" ? "white" : "black";
+            const yKey = Array.isArray(yKeys) ? yKeys[0] : yKeys;
+
+            const chartData = data.map((d) => ({
+                x: d[xKey], // label
+                y: d[yKey], // value
+            }));
+
+            return (
+                <View
+                    style={{ flex: 1, backgroundColor: backgroundMode === "transparent" ? "transparent" : backgroundMode }}
+                    onLayout={(event) => {
+                        const { width, height } = event.nativeEvent.layout;
+                        setSize({ width, height });
+                    }}
+                >
+                    {size.width > 0 && size.height > 0 && (
+                        <VictoryPie
+                            width={size.width}
+                            height={size.height}
+                            theme={VictoryTheme.clean}
+                            data={chartData}
+                            colorScale={colours && colours.length > 0 ? colours : "qualitative"}
+                            labels={({ datum }) => `${datum.x}\n${datum.y}`} // value on new line
+                            style={{
+                                labels: {
+                                    fontSize: 12,
+                                    fill: axisColor,
+                                    textAnchor: "middle",
+                                },
+                                parent: {
+                                    backgroundColor: "transparent", // ensures pie chart itself has no white background
+                                },
+                            }}
+                            padding={{ top: 30, bottom: 40, left: 40, right: 40 }}
+                        />
+                    )}
+                </View>
+            );
+        };
+        return <ChartComponent />;
     },
+},
 
     area: {
         label: "Area Chart",
