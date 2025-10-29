@@ -11,7 +11,7 @@ const GraphTypes = {
         label: "Line Chart",
         value: "line",
         previewImage: require("../../../../../../assets/images/lineChart.png"),
-        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = useState({ width: 0, height: 0 });
                 const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -76,7 +76,7 @@ const GraphTypes = {
         label: "Bar Chart",
         value: "bar",
         previewImage: require("../../../../../../assets/images/barChart.png"),
-        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = useState({ width: 0, height: 0 });
                 const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -142,7 +142,7 @@ const GraphTypes = {
     label: "Pie Chart",
     value: "pie",
     previewImage: require("../../../../../../assets/images/pieChart.png"),
-    render: ({ data, xKey, yKeys, colours, axisColorMode = "light", backgroundMode = "transparent" }) => {
+    render: ({ data, xKey, yKeys, colours, axisColorMode = "dark", backgroundMode = "transparent" }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
             const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -193,7 +193,7 @@ const GraphTypes = {
         label: "Area Chart",
         value: "area",
         previewImage: require("../../../../../../assets/images/areaChart.png"),
-        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
                 const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -268,7 +268,7 @@ const GraphTypes = {
         label: "Scatter Plot",
         value: "scatter",
         previewImage: require("../../../../../../assets/images/scatterPlot.png"),
-        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
                 const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -338,7 +338,7 @@ const GraphTypes = {
         label: "Box Plot",
         value: "box",
               previewImage: require("../../../../../../assets/images/boxPlot.png"),
-        render: ({ data, xKey, yKeys, colours, axisColorMode = "light" }) => {
+        render: ({ data, xKey, yKeys, colours, axisColorMode = "dark" }) => {
             const ChartComponent = () => {
               const [size, setSize] = React.useState({ width: 0, height: 0 });
               const yKey = Array.isArray(yKeys) ? yKeys[0] : yKeys; // boxplot usually uses a single dependent variable
@@ -409,7 +409,7 @@ const GraphTypes = {
         label: "Histogram",
         value: "histogram",
         previewImage: require("../../../../../../assets/images/histogram.png"),
-        render: ({ data, xKey, colours, axisColorMode = "light" }) => {
+        render: ({ data, xKey, colours, axisColorMode = "dark" }) => {
             const ChartComponent = () => {
                 const [size, setSize] = React.useState({ width: 0, height: 0 });
                 const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -475,7 +475,7 @@ const GraphTypes = {
     label: "Progress Bar",
     value: "progress",
         previewImage: require("../../../../../../assets/images/progressCircle.png"),
-    render: ({ data, yKeys, colours, axisColorMode = "light" }) => {
+    render: ({ data, yKeys, colours, axisColorMode = "dark" }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
             const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -532,7 +532,7 @@ progress: {
     label: "Progress Circle",
     value: "progress",
         previewImage: require("../../../../../../assets/images/progressCircle.png"),
-    render: ({ data, yKeys, colours, axisColorMode = "light" }) => {
+    render: ({ data, yKeys, colours, axisColorMode = "dark" }) => {
         const ChartComponent = () => {
             const [size, setSize] = React.useState({ width: 0, height: 0 });
             const axisColor = axisColorMode === "dark" ? "white" : "black";
@@ -594,7 +594,7 @@ progress: {
     label: "Numbers",
     value: "numbers",
         previewImage: require("../../../../../../assets/images/numbers.png"),
-    render: ({ data, yKeys, colours, axisColorMode = "light" }) => {
+    render: ({ data, yKeys, colours, axisColorMode = "dark" }) => {
         const ChartComponent = () => {
             const axisColor = axisColorMode === "dark" ? "white" : "black";
 
