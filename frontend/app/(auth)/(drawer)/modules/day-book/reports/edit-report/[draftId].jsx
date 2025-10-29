@@ -260,7 +260,8 @@ const EditReport = () => {
 					Alert.alert("Error", "Failed to upload export.");
 				}
 			} else {
-				const destPath = `${Platform.OS === "android" ? RNFS.DownloadDirectoryPath : RNFS.DocumentDirectoryPath}/${customFileName}.pdf`;
+				const downloadDir = RNFS.DocumentDirectoryPath;
+				const destPath = `${downloadDir}/${customFileName}.pdf`;
 				if (await RNFS.exists(destPath)) await RNFS.unlink(destPath);
 				await RNFS.moveFile(pdf.filePath, destPath);
 				Alert.alert("Export Successful", `PDF saved to:\n${destPath}`);
