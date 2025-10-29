@@ -3,6 +3,10 @@ import { getFirstAvailablePosition } from "../../components/layout/Grid/gridUtil
 
 const METRIC_WIDTH_RATIO = 2 / 3;
 const METRIC_HEIGHT_UNITS = 2;
+const TEXT_CHARACTERS_PER_UNIT = 12;
+const TEXT_MIN_WIDTH_UNITS = 3;
+const TEXT_MIN_HEIGHT_UNITS = 1;
+const TEXT_MAX_HEIGHT_UNITS = 6;
 
 export const calculateMetricGridWidth = (cols = 12) => {
   const minWidth = Math.ceil(cols * METRIC_WIDTH_RATIO);
@@ -35,6 +39,41 @@ export const calculateButtonGridWidth = (label = "", cols = 12) => {
   }
 
   return Math.min(width, cols);
+};
+
+export const calculateTextGridWidth = (text = "", cols = 12) => {
+  if (cols <= 0) return 1;
+
+  const lines = typeof text === "string" ? text.split(/\r?\n/) : [""];
+  const longestLineLength = lines.reduce(
+    (max, line) => Math.max(max, line.trim().length),
+    0
+  );
+
+  const estimatedUnits = Math.ceil(
+    Math.max(longestLineLength, TEXT_CHARACTERS_PER_UNIT) /
+      TEXT_CHARACTERS_PER_UNIT
+  );
+
+  return Math.min(
+    cols,
+    Math.max(
+      TEXT_MIN_WIDTH_UNITS,
+      Number.isFinite(estimatedUnits) ? estimatedUnits : TEXT_MIN_WIDTH_UNITS
+    )
+  );
+};
+
+export const calculateTextGridHeight = (text = "") => {
+  const lineCount = Math.max(
+    TEXT_MIN_HEIGHT_UNITS,
+    typeof text === "string" ? text.split(/\r?\n/).length : 1
+  );
+
+  if (lineCount <= 2) return 1;
+  if (lineCount <= 4) return 2;
+  if (lineCount <= 6) return 3;
+  return Math.min(TEXT_MAX_HEIGHT_UNITS, Math.ceil(lineCount / 2));
 };
 
 export const createMetricItem = (metric, existingLayout, cols = 12) => {
@@ -129,6 +168,86 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
   };
 };
 
+export const createTextItem = (textConfig = {}, existingLayout, cols = 12) => {
+  const textValue = typeof textConfig.text === "string" ? textConfig.text : "";
+  const alignment = textConfig.alignment || "left";
+  const fontSize = Number.isFinite(textConfig.fontSize)
+    ? textConfig.fontSize
+    : parseFloat(textConfig.fontSize);
+  const normalizedFontSize =
+    Number.isFinite(fontSize) && fontSize > 0 ? fontSize : 18;
+  const lineHeightValue = Number.isFinite(textConfig.lineHeight)
+    ? textConfig.lineHeight
+    : parseFloat(textConfig.lineHeight);
+  const normalizedLineHeight =
+    Number.isFinite(lineHeightValue) && lineHeightValue > 0
+      ? lineHeightValue
+      : Math.round(normalizedFontSize * 1.3);
+  const padding = Number.isFinite(textConfig.padding)
+    ? textConfig.padding
+    : parseFloat(textConfig.padding);
+  const normalizedPadding =
+    Number.isFinite(padding) && padding >= 0 ? padding : 16;
+  const normalizedText = textValue.trim() || "New text";
+
+  const widthUnits = calculateTextGridWidth(normalizedText, cols);
+  const heightUnits = Math.min(
+    TEXT_MAX_HEIGHT_UNITS,
+    Math.max(TEXT_MIN_HEIGHT_UNITS, calculateTextGridHeight(normalizedText))
+  );
+
+  const position = getFirstAvailablePosition(
+    existingLayout,
+    widthUnits,
+    heightUnits,
+    cols
+  );
+
+  const minWidthUnits = Math.max(
+    TEXT_MIN_WIDTH_UNITS,
+    textConfig.minWidthUnits ?? TEXT_MIN_WIDTH_UNITS
+  );
+  const minHeightUnits = Math.max(
+    TEXT_MIN_HEIGHT_UNITS,
+    textConfig.minHeightUnits ?? TEXT_MIN_HEIGHT_UNITS
+  );
+
+  const maxWidthUnits = Math.max(
+    minWidthUnits,
+    Math.min(textConfig.maxWidthUnits ?? cols, cols)
+  );
+  const maxHeightUnits = Math.max(
+    minHeightUnits,
+    Math.min(
+      textConfig.maxHeightUnits ?? TEXT_MAX_HEIGHT_UNITS,
+      TEXT_MAX_HEIGHT_UNITS
+    )
+  );
+
+  return {
+    id: uuidv4(),
+    type: "text",
+    x: position.x,
+    y: position.y,
+    w: widthUnits,
+    h: heightUnits,
+    config: {
+      text: normalizedText,
+      alignment,
+      fontSize: normalizedFontSize,
+      padding: normalizedPadding,
+      textColor: textConfig.textColor || "",
+      backgroundColor: textConfig.backgroundColor || "",
+      lineHeight: normalizedLineHeight,
+      maxLines: textConfig.maxLines || undefined,
+      minWidthUnits,
+      minHeightUnits,
+      maxWidthUnits,
+      maxHeightUnits,
+    },
+  };
+};
+
 export const mapItemsToLayout = (items = [], cols = 12) => {
   const metricWidth = calculateMetricGridWidth(cols);
 
@@ -139,10 +258,23 @@ export const mapItemsToLayout = (items = [], cols = 12) => {
     w:
       item.type === "metric"
         ? Math.min(Math.max(item.w ?? 1, metricWidth), cols)
+        : item.type === "text"
+        ? Math.min(
+            Math.max(
+              item.w ?? TEXT_MIN_WIDTH_UNITS,
+              item.config?.minWidthUnits ?? TEXT_MIN_WIDTH_UNITS
+            ),
+            cols
+          )
         : item.w,
     h:
       item.type === "metric"
         ? Math.max(item.h ?? METRIC_HEIGHT_UNITS, METRIC_HEIGHT_UNITS)
+        : item.type === "text"
+        ? Math.max(
+            item.h ?? TEXT_MIN_HEIGHT_UNITS,
+            item.config?.minHeightUnits ?? TEXT_MIN_HEIGHT_UNITS
+          )
         : item.h,
   }));
 };

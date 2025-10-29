@@ -13,11 +13,13 @@ import { useMetricStates } from '../../../../../hooks/useMetricStates';
 import { useDisplaySettings } from '../../../../../hooks/useDisplaySettings';
 import MetricCard from '../../../../../components/boards/MetricCard';
 import ButtonCard from '../../../../../components/boards/ButtonCard';
+import TextCard from '../../../../../components/boards/TextCard';
 import AddItemPicker from '../../../../../components/boards/AddItemPicker';
 import MetricDetailHeader from '../../../../../components/boards/MetricDetailHeader';
 import MetricDetailContent from '../../../../../components/boards/MetricDetailContent';
 import DisplaySettingsSheet from '../../../../../components/boards/DisplaySettingsSheet';
-import { createMetricItem, createButtonItem, mapItemsToLayout, calculateButtonGridWidth, calculateMetricGridWidth } from '../../../../../utils/boards/itemHandlers';
+import TextItemEditor from '../../../../../components/boards/TextItemEditor';
+import { createMetricItem, createButtonItem, createTextItem, mapItemsToLayout, calculateButtonGridWidth, calculateMetricGridWidth, calculateTextGridWidth, calculateTextGridHeight } from '../../../../../utils/boards/itemHandlers';
 import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const GRID_COLS = 12;
@@ -62,6 +64,10 @@ const BoardView = () => {
     const [showEditOptions, setShowEditOptions] = useState(false);
     const [editOptionsItem, setEditOptionsItem] = useState(null);
     const [activeResizeItemId, setActiveResizeItemId] = useState(null);
+    const [showTextEditor, setShowTextEditor] = useState(false);
+    const [textEditorMode, setTextEditorMode] = useState('create');
+    const [textEditorInitialConfig, setTextEditorInitialConfig] = useState({});
+    const [textEditorTargetId, setTextEditorTargetId] = useState(null);
     
     const isResizeActive = activeResizeItemId !== null;
 
@@ -76,6 +82,8 @@ const BoardView = () => {
         if (!isEditing) {
             setShowEditOptions(false);
             setEditOptionsItem(null);
+            setShowTextEditor(false);
+            setTextEditorTargetId(null);
         }
     }, [isEditing]);
 
@@ -112,6 +120,45 @@ const BoardView = () => {
         await addItem(newItem);
         setShowButtonPicker(false);
     }, [board, addItem]);
+
+    const normalizeTextConfig = useCallback((config) => {
+        return createTextItem(config, [], GRID_COLS).config;
+    }, [createTextItem]);
+
+    const handleCreateTextItem = useCallback(async (config) => {
+        if (!board) return;
+
+        const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
+        const newItem = createTextItem(config, existingLayout, GRID_COLS);
+
+        await addItem(newItem);
+    }, [board, addItem, mapItemsToLayout, createTextItem]);
+
+    const handleUpdateTextItem = useCallback(async (itemId, config) => {
+        if (!board || !itemId) return;
+
+        const existingItem = board.items?.find(item => item.id === itemId);
+        const normalizedConfig = normalizeTextConfig(config);
+
+        await updateItem(itemId, {
+            config: {
+                ...(existingItem?.config ?? {}),
+                ...normalizedConfig
+            }
+        });
+    }, [board, normalizeTextConfig, updateItem]);
+
+    const handleTextEditorSave = useCallback(async (config) => {
+        if (textEditorMode === 'create') {
+            await handleCreateTextItem(config);
+        } else if (textEditorMode === 'edit' && textEditorTargetId) {
+            await handleUpdateTextItem(textEditorTargetId, config);
+        }
+
+        setShowTextEditor(false);
+        setTextEditorTargetId(null);
+        setTextEditorInitialConfig({});
+    }, [handleCreateTextItem, handleUpdateTextItem, textEditorMode, textEditorTargetId]);
 
     const handleRemoveItem = useCallback((itemId) => {
         Alert.alert(
@@ -235,6 +282,15 @@ const BoardView = () => {
         handleEditMetric(metricId);
     }, [handleCloseItemOptions, handleEditMetric]);
 
+    const handleEditTextFromOptions = useCallback((item) => {
+        if (!item) return;
+        handleCloseItemOptions();
+        setTextEditorMode('edit');
+        setTextEditorInitialConfig(item.config || {});
+        setTextEditorTargetId(item.id);
+        setShowTextEditor(true);
+    }, [handleCloseItemOptions]);
+
     const handleItemLongPress = useCallback((itemId) => {
         if (!isEditing) return;
         setActiveResizeItemId(prev => {
@@ -283,6 +339,12 @@ const BoardView = () => {
                 const labelWidthUnits = calculateButtonGridWidth(item.config?.label || 'Button', GRID_COLS);
                 minWidthUnits = Math.max(minWidthUnits, labelWidthUnits);
                 maxHeightFallback = Math.max(configMinHeight, config.maxHeightUnits ?? DEFAULT_BUTTON_MAX_HEIGHT);
+            } else if (item.type === 'text') {
+                const textContent = item.config?.text || '';
+                const estimatedWidth = calculateTextGridWidth(textContent, GRID_COLS);
+                const estimatedHeight = calculateTextGridHeight(textContent);
+                minWidthUnits = Math.max(minWidthUnits, estimatedWidth);
+                maxHeightFallback = Math.max(configMinHeight, config.maxHeightUnits ?? estimatedHeight);
             }
 
             let widthUnits = Math.max(baseWidth, minWidthUnits);
@@ -307,20 +369,17 @@ const BoardView = () => {
                 maxHeight: configuredMaxHeight
             };
 
-            const WrapperComponent = isEditing ? View : TouchableOpacity;
+            const isMetricTouchable = !isEditing && item.type === 'metric';
+            const WrapperComponent = isMetricTouchable ? TouchableOpacity : View;
 
-            const wrapperProps = isEditing
+            const wrapperProps = isMetricTouchable
                 ? {
-                    style: styles.itemContent
-                }
-                : {
                     style: styles.itemContent,
                     activeOpacity: 0.7,
-                    onPress: () => {
-                        if (item.type === 'metric') {
-                            handleOpenMetricDetails(item.id);
-                        }
-                    }
+                    onPress: () => handleOpenMetricDetails(item.id)
+                }
+                : {
+                    style: styles.itemContent
                 };
 
             return {
@@ -344,6 +403,13 @@ const BoardView = () => {
                             />
                         ) : item.type === 'button' ? (
                             <ButtonCard
+                                item={item}
+                                isEditing={isEditing}
+                                onEdit={handleOpenItemOptions}
+                                disableEditActions={isResizeActive}
+                            />
+                        ) : item.type === 'text' ? (
+                            <TextCard
                                 item={item}
                                 isEditing={isEditing}
                                 onEdit={handleOpenItemOptions}
@@ -409,7 +475,7 @@ const BoardView = () => {
                                 No items yet
                             </Text>
                             <Text variant="bodyMedium" style={styles.emptyDescription}>
-                                Add metrics or buttons to get started
+                                Add metrics, buttons, or text to get started
                             </Text>
                         </View>
                     ) : (
@@ -460,7 +526,11 @@ const BoardView = () => {
                     footer={{ variant: 'none' }}
                     containerStyle={{ zIndex: 9999 }}
                     header={{
-                        title: editOptionsItem.type === 'metric' ? 'Edit Metric' : 'Edit Button',
+                        title: editOptionsItem.type === 'metric'
+                            ? 'Edit Metric'
+                            : editOptionsItem.type === 'text'
+                                ? 'Edit Text'
+                                : 'Edit Button',
                         showClose: true
                     }}
                     onChange={(index) => {
@@ -470,7 +540,10 @@ const BoardView = () => {
                 >
                     <View style={styles.editOptionsContainer}>
                         <Text style={styles.editOptionsItemLabel} numberOfLines={1}>
-                            {editOptionsItem.config?.label || editOptionsItem.config?.name || 'Board Item'}
+                            {editOptionsItem.config?.label
+                                || editOptionsItem.config?.name
+                                || (editOptionsItem.type === 'text' ? editOptionsItem.config?.text : null)
+                                || 'Board Item'}
                         </Text>
                         <Divider style={styles.editOptionsDivider} />
 
@@ -488,6 +561,18 @@ const BoardView = () => {
                                     description="Adjust how this metric appears on the board"
                                     left={(props) => <List.Icon {...props} icon="palette" />}
                                     onPress={() => handleDisplaySettingsFromOptions(editOptionsItem)}
+                                />
+                                <Divider style={styles.editOptionsDivider} />
+                            </View>
+                        )}
+
+                        {editOptionsItem.type === 'text' && (
+                            <View style={styles.editOptionsSection}>
+                                <List.Item
+                                    title="Edit Text"
+                                    description="Update the text content and styling"
+                                    left={(props) => <List.Icon {...props} icon="pencil" />}
+                                    onPress={() => handleEditTextFromOptions(editOptionsItem)}
                                 />
                                 <Divider style={styles.editOptionsDivider} />
                             </View>
@@ -589,6 +674,41 @@ const BoardView = () => {
                 </CustomBottomSheet>
             )}
 
+            {showTextEditor && (
+                <CustomBottomSheet
+                    variant="standard"
+                    footer={{ variant: 'none' }}
+                    containerStyle={{ zIndex: 9999 }}
+                    header={{
+                        title: textEditorMode === 'edit' ? 'Edit Text' : 'Add Text',
+                        showClose: true
+                    }}
+                    onChange={(index) => {
+                        if (index === -1) {
+                            setShowTextEditor(false);
+                            setTextEditorTargetId(null);
+                            setTextEditorInitialConfig({});
+                        }
+                    }}
+                    onClose={() => {
+                        setShowTextEditor(false);
+                        setTextEditorTargetId(null);
+                        setTextEditorInitialConfig({});
+                    }}
+                >
+                    <TextItemEditor
+                        initialConfig={textEditorInitialConfig}
+                        mode={textEditorMode}
+                        onSave={handleTextEditorSave}
+                        onCancel={() => {
+                            setShowTextEditor(false);
+                            setTextEditorTargetId(null);
+                            setTextEditorInitialConfig({});
+                        }}
+                    />
+                </CustomBottomSheet>
+            )}
+
             {showAddItemPicker && (
                 <CustomBottomSheet
                     variant="standard"
@@ -611,6 +731,21 @@ const BoardView = () => {
                         onSelectButton={() => {
                             setShowAddItemPicker(false);
                             setShowButtonPicker(true);
+                        }}
+                        onSelectText={() => {
+                            setShowAddItemPicker(false);
+                            setTextEditorMode('create');
+                            setTextEditorInitialConfig({
+                                text: '',
+                                alignment: 'left',
+                                fontSize: 18,
+                                padding: 16,
+                                textColor: '',
+                                backgroundColor: '',
+                                maxLines: undefined
+                            });
+                            setTextEditorTargetId(null);
+                            setShowTextEditor(true);
                         }}
                     />
                 </CustomBottomSheet>

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { List } from 'react-native-paper';
 
-const AddItemPicker = ({ onSelectMetric, onSelectButton }) => {
+const AddItemPicker = ({ onSelectMetric, onSelectButton, onSelectText }) => {
     return (
         <View style={styles.container}>
             <List.Item
@@ -17,6 +17,13 @@ const AddItemPicker = ({ onSelectMetric, onSelectButton }) => {
                 description="Add a navigation button"
                 left={(props) => <List.Icon {...props} icon="gesture-tap-button" />}
                 onPress={onSelectButton}
+                style={styles.item}
+            />
+            <List.Item
+                title="Text"
+                description="Add a formatted text block"
+                left={(props) => <List.Icon {...props} icon="format-text" />}
+                onPress={onSelectText}
                 style={styles.item}
             />
         </View>
