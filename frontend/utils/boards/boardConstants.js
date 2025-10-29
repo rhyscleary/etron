@@ -30,6 +30,7 @@ export const DEFAULT_CHART_APPEARANCE = {
   tickLabelColor: "#f4f7ff",
   gridColor: "rgba(159,179,209,0.28)",
   showGrid: true,
+  xAxisLabelAngle: 45,
 };
 
 export const INITIAL_DISPLAY_SETTINGS = {
@@ -40,4 +41,5 @@ export const INITIAL_DISPLAY_SETTINGS = {
   tickLabelColor: "",
   gridColor: "",
   showGrid: true,
+  xAxisLabelAngle: "",
 };

@@ -13,6 +13,42 @@ export const createDisplaySettingsDraft = () => ({
   ...INITIAL_DISPLAY_SETTINGS,
 });
 
+const parseAxisLabelAngle = (value) => {
+  if (value === undefined || value === null) {
+    return DEFAULT_CHART_APPEARANCE.xAxisLabelAngle;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return DEFAULT_CHART_APPEARANCE.xAxisLabelAngle;
+    }
+
+    const numeric = Number(trimmed);
+    if (!Number.isFinite(numeric)) {
+      return DEFAULT_CHART_APPEARANCE.xAxisLabelAngle;
+    }
+
+    return Math.max(-90, Math.min(90, numeric));
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return DEFAULT_CHART_APPEARANCE.xAxisLabelAngle;
+    }
+    return Math.max(-90, Math.min(90, value));
+  }
+
+  return DEFAULT_CHART_APPEARANCE.xAxisLabelAngle;
+};
+
+const resolveTickTextAnchor = (angle) => {
+  if (!Number.isFinite(angle) || angle === 0) {
+    return "middle";
+  }
+  return angle > 0 ? "start" : "end";
+};
+
 export const buildDisplayColoursForItem = (item) => {
   if (!item) {
     return [DEFAULT_BOARD_COLOUR];
@@ -59,9 +95,11 @@ export const resolveAppearance = (appearance) => ({
     appearance?.showGrid !== undefined
       ? appearance.showGrid
       : DEFAULT_CHART_APPEARANCE.showGrid,
+  xAxisLabelAngle: parseAxisLabelAngle(appearance?.xAxisLabelAngle),
 });
 
 export const buildAxisOptionsFromAppearance = (appearance) => {
+  const xAxisLabelAngle = parseAxisLabelAngle(appearance?.xAxisLabelAngle);
   const axisStyle = {
     axis: { stroke: appearance.axisColor },
     ticks: { stroke: appearance.axisColor },
@@ -72,9 +110,25 @@ export const buildAxisOptionsFromAppearance = (appearance) => {
     },
   };
 
+  const xAxisStyle = {
+    ...axisStyle,
+    tickLabels: {
+      ...axisStyle.tickLabels,
+      angle: xAxisLabelAngle,
+      textAnchor: resolveTickTextAnchor(xAxisLabelAngle),
+    },
+  };
+
+  const yAxisStyle = {
+    ...axisStyle,
+    tickLabels: {
+      ...axisStyle.tickLabels,
+    },
+  };
+
   return {
-    x: { style: axisStyle },
-    y: { style: axisStyle },
+    x: { style: xAxisStyle },
+    y: { style: yAxisStyle },
   };
 };
 

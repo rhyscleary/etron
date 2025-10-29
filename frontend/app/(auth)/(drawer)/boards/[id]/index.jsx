@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, StyleSheet, Alert, TouchableOpacity, Dimensions } from 'react-native';
+import { View, StyleSheet, Alert, Dimensions, ScrollView } from 'react-native';
 import { Text, IconButton, Menu, ActivityIndicator, FAB, List, Divider, useTheme, Appbar } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header from '../../../../../components/layout/Header';
@@ -11,23 +11,29 @@ import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen'
 import { useBoardData } from '../../../../../hooks/useBoardData';
 import { useMetricStates } from '../../../../../hooks/useMetricStates';
 import { useDisplaySettings } from '../../../../../hooks/useDisplaySettings';
-import MetricCard from '../../../../../components/boards/MetricCard';
-import ButtonCard from '../../../../../components/boards/ButtonCard';
-import TextCard from '../../../../../components/boards/TextCard';
 import AddItemPicker from '../../../../../components/boards/AddItemPicker';
 import MetricDetailHeader from '../../../../../components/boards/MetricDetailHeader';
 import MetricDetailContent from '../../../../../components/boards/MetricDetailContent';
 import DisplaySettingsSheet from '../../../../../components/boards/DisplaySettingsSheet';
 import TextItemEditor from '../../../../../components/boards/TextItemEditor';
-import { createMetricItem, createButtonItem, createTextItem, mapItemsToLayout, calculateButtonGridWidth, calculateMetricGridWidth, calculateTextGridWidth, calculateTextGridHeight } from '../../../../../utils/boards/itemHandlers';
+import { createGridItemBuilder, createAddItemOptions } from '../../../../../components/boards/boardItemRegistry';
+import { createMetricItem, createButtonItem, createTextItem, mapItemsToLayout, calculateButtonGridWidth } from '../../../../../utils/boards/itemHandlers';
 import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const GRID_COLS = 12;
 const GRID_HORIZONTAL_PADDING = 16;
 const INITIAL_GRID_WIDTH = Math.max(0, Dimensions.get('window').width - GRID_HORIZONTAL_PADDING * 2);
-const METRIC_MIN_WIDTH = calculateMetricGridWidth(GRID_COLS);
 const DEFAULT_METRIC_MAX_HEIGHT = 8;
 const DEFAULT_BUTTON_MAX_HEIGHT = 3;
+const DEFAULT_TEXT_ITEM_CONFIG = {
+    text: '',
+    alignment: 'left',
+    fontSize: 18,
+    padding: 16,
+    textColor: '',
+    backgroundColor: '',
+    maxLines: undefined
+};
 
 const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
     const params = useLocalSearchParams();
@@ -80,6 +86,43 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
 
     const editingActive = showHeader && isEditing;
     const isResizeActive = activeResizeItemId !== null;
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
+    const gridItemBuilder = useMemo(() => createGridItemBuilder({
+        gridCols: GRID_COLS,
+        defaultMetricMaxHeight: DEFAULT_METRIC_MAX_HEIGHT,
+        defaultButtonMaxHeight: DEFAULT_BUTTON_MAX_HEIGHT
+    }), []);
+
+    const handleAddMetric = useCallback(() => {
+        setShowAddItemPicker(false);
+        setShowMetricPicker(true);
+    }, []);
+
+    const handleAddButton = useCallback(() => {
+        setShowAddItemPicker(false);
+        setButtonEditorMode('create');
+        setButtonEditorInitialConfig({});
+        setButtonEditorTargetId(null);
+        setShowButtonPicker(true);
+    }, []);
+
+    const handleAddText = useCallback(() => {
+        setShowAddItemPicker(false);
+        setTextEditorMode('create');
+        setTextEditorInitialConfig({ ...DEFAULT_TEXT_ITEM_CONFIG });
+        setTextEditorTargetId(null);
+        setShowTextEditor(true);
+    }, []);
+
+    const addItemOptions = useMemo(() => createAddItemOptions(
+        gridItemBuilder.definitions,
+        {
+            metric: handleAddMetric,
+            button: handleAddButton,
+            text: handleAddText
+        }
+    ), [gridItemBuilder, handleAddMetric, handleAddButton, handleAddText]);
 
     const activeMetricItem = useMemo(() => {
         if (!board?.items || !activeMetricItemId) return null;
@@ -311,6 +354,19 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
             appearancePayload.gridColor = displayConfigDraft.gridColor.trim();
         if (displayConfigDraft.showGrid === false) 
             appearancePayload.showGrid = false;
+        const rawAngle = typeof displayConfigDraft.xAxisLabelAngle === 'number'
+            ? `${displayConfigDraft.xAxisLabelAngle}`
+            : displayConfigDraft.xAxisLabelAngle ?? '';
+        const trimmedAngle = typeof rawAngle === 'string' ? rawAngle.trim() : '';
+        if (trimmedAngle.length > 0) {
+            const parsedAngle = Number(trimmedAngle);
+            if (!Number.isNaN(parsedAngle)) {
+                const clampedAngle = Math.max(-90, Math.min(90, parsedAngle));
+                appearancePayload.xAxisLabelAngle = clampedAngle;
+            }
+        } else if (displayConfigItem.config?.appearance?.xAxisLabelAngle !== undefined) {
+            appearancePayload.xAxisLabelAngle = null;
+        }
 
         const updatedConfig = {
             ...displayConfigItem.config,
@@ -416,116 +472,31 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
         setEditOptionsItem(null);
     }, []);
 
-    const getGridItems = useCallback(() => {
-        if (!board?.items) return [];
-
-        return board.items.map(item => {
-            const baseWidth = typeof item.w === 'number' ? item.w : 1;
-            const baseHeight = typeof item.h === 'number' ? item.h : 1;
-            const config = item.config || {};
-
-            let xPosition = typeof item.x === 'number' ? item.x : 0;
-
-            const configMinWidth = Math.max(1, config.minWidthUnits ?? 1);
-            const configMinHeight = Math.max(1, config.minHeightUnits ?? 1);
-
-            let minWidthUnits = configMinWidth;
-            let maxHeightFallback = config.maxHeightUnits ?? (configMinHeight + 4);
-
-            if (item.type === 'metric') {
-                minWidthUnits = Math.max(minWidthUnits, METRIC_MIN_WIDTH);
-                maxHeightFallback = Math.max(configMinHeight, config.maxHeightUnits ?? DEFAULT_METRIC_MAX_HEIGHT);
-            } else if (item.type === 'button') {
-                const labelWidthUnits = calculateButtonGridWidth(item.config?.label || 'Button', GRID_COLS);
-                minWidthUnits = Math.max(minWidthUnits, labelWidthUnits);
-                maxHeightFallback = Math.max(configMinHeight, config.maxHeightUnits ?? DEFAULT_BUTTON_MAX_HEIGHT);
-            } else if (item.type === 'text') {
-                const textContent = item.config?.text || '';
-                const estimatedWidth = calculateTextGridWidth(textContent, GRID_COLS);
-                const estimatedHeight = calculateTextGridHeight(textContent);
-                minWidthUnits = Math.max(minWidthUnits, estimatedWidth);
-                maxHeightFallback = Math.max(configMinHeight, config.maxHeightUnits ?? estimatedHeight);
-            }
-
-            let widthUnits = Math.max(baseWidth, minWidthUnits);
-            widthUnits = Math.min(widthUnits, GRID_COLS);
-
-            if (xPosition + widthUnits > GRID_COLS) {
-                xPosition = Math.max(0, GRID_COLS - widthUnits);
-            }
-
-            const availableWidth = Math.max(1, GRID_COLS - xPosition);
-            const configuredMaxWidth = config.maxWidthUnits ?? availableWidth;
-            const maxWidthUnits = Math.max(widthUnits, Math.min(configuredMaxWidth, availableWidth));
-
-            let heightUnits = Math.max(baseHeight, configMinHeight);
-            const configuredMaxHeight = Math.max(configMinHeight, config.maxHeightUnits ?? maxHeightFallback);
-            heightUnits = Math.min(heightUnits, configuredMaxHeight);
-
-            const resizeConstraints = {
-                minWidth: Math.max(1, minWidthUnits),
-                minHeight: Math.max(1, configMinHeight),
-                maxWidth: maxWidthUnits,
-                maxHeight: configuredMaxHeight
-            };
-
-            const isMetricTouchable = !editingActive && item.type === 'metric';
-            const WrapperComponent = isMetricTouchable ? TouchableOpacity : View;
-
-            const wrapperProps = isMetricTouchable
-                ? {
-                    style: styles.itemContent,
-                    activeOpacity: 0.7,
-                    onPress: () => handleOpenMetricDetails(item.id)
-                }
-                : {
-                    style: styles.itemContent
-                };
-
-            return {
-                id: item.id,
-                x: xPosition,
-                y: typeof item.y === 'number' ? item.y : 0,
-                w: widthUnits,
-                h: heightUnits,
-                resizeConstraints,
-                content: (
-                    <WrapperComponent {...wrapperProps}>
-                        {item.type === 'metric' ? (
-                            <MetricCard
-                                item={item}
-                                metricState={metricStates[item.id]}
-                                isEditing={editingActive}
-                                styles={styles}
-                                onEdit={handleOpenItemOptions}
-                                onPress={handleOpenMetricDetails}
-                                disableEditActions={isResizeActive}
-                            />
-                        ) : item.type === 'button' ? (
-                            <ButtonCard
-                                item={item}
-                                isEditing={editingActive}
-                                onEdit={handleOpenItemOptions}
-                                disableEditActions={isResizeActive}
-                            />
-                        ) : item.type === 'text' ? (
-                            <TextCard
-                                item={item}
-                                isEditing={editingActive}
-                                onEdit={handleOpenItemOptions}
-                                disableEditActions={isResizeActive}
-                            />
-                        ) : null}
-                    </WrapperComponent>
-                )
-            };
-        });
-    }, [board?.items, editingActive, metricStates, handleOpenMetricDetails, handleOpenItemOptions, isResizeActive]);
+    const gridItems = useMemo(() => gridItemBuilder({
+        items: board?.items,
+        editingActive,
+        metricStates,
+        isResizeActive,
+        styles,
+        handlers: {
+            openMetricDetails: handleOpenMetricDetails,
+            openItemOptions: handleOpenItemOptions
+        }
+    }), [
+        gridItemBuilder,
+        board?.items,
+        editingActive,
+        metricStates,
+        isResizeActive,
+        handleOpenMetricDetails,
+        handleOpenItemOptions,
+        styles
+    ]);
 
     if (loading) {
         return (
             <ResponsiveScreen
-                header={showHeader ? <Header title="Board" {...navigationHeaderProps} /> : undefined}
+                header={showHeader ? <Header title="Board" {...navigationHeaderProps} titleAlignment="right" /> : undefined}
                 center={true}
             >
                 <ActivityIndicator size="large" />
@@ -536,7 +507,7 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
     if (!board) {
         return (
             <ResponsiveScreen
-                header={showHeader ? <Header title="Board" {...navigationHeaderProps} /> : undefined}
+                header={showHeader ? <Header title="Board" {...navigationHeaderProps} titleAlignment="right" /> : undefined}
                 center={true}
             >
                 <Text>Board not found</Text>
@@ -591,37 +562,43 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                 header={headerNode}
                 scroll={false}
                 padded={false}
+                center={false}
             >
                 <View style={styles.container}>
-                    {board.items?.length === 0 ? (
-                        <View style={styles.emptyState}>
-                            <IconButton icon="view-grid-plus" size={64} />
-                            <Text variant="titleLarge" style={styles.emptyTitle}>
-                                No items yet
-                            </Text>
-                            <Text variant="bodyMedium" style={styles.emptyDescription}>
-                                Add metrics, buttons, or text to get started
-                            </Text>
-                        </View>
-                    ) : (
-                        <View style={styles.gridWrapper} onLayout={handleGridLayout}>
-                            <GridLayout
-                                items={getGridItems()}
-                                cols={GRID_COLS}
-                                rowHeight={100}
-                                margin={[10, 10]}
-                                isDraggable={editingActive}
-                                isResizable={Boolean(activeResizeItemId)}
-                                activeResizeItemId={activeResizeItemId}
-                                onItemLongPress={editingActive ? handleItemLongPress : undefined}
-                                onBackgroundPress={handleExitResizeMode}
-                                onResizeSessionEnd={handleResizeSessionEnd}
-                                onLayoutChange={updateLayout}
-                                containerStyle={styles.gridContainer}
-                                containerWidth={gridWidth ?? undefined}
-                            />
-                        </View>
-                    )}
+                    <ScrollView
+                        contentContainerStyle={board.items?.length === 0 ? styles.emptyScrollContent : styles.boardScrollContent}
+                        showsVerticalScrollIndicator={false}
+                    >
+                        {board.items?.length === 0 ? (
+                            <View style={styles.emptyState}>
+                                <IconButton icon="view-grid-plus" size={64} />
+                                <Text variant="titleLarge" style={styles.emptyTitle}>
+                                    No items yet
+                                </Text>
+                                <Text variant="bodyMedium" style={styles.emptyDescription}>
+                                    Add metrics, buttons, or text to get started
+                                </Text>
+                            </View>
+                        ) : (
+                            <View style={styles.gridWrapper} onLayout={handleGridLayout}>
+                                <GridLayout
+                                    items={gridItems}
+                                    cols={GRID_COLS}
+                                    rowHeight={100}
+                                    margin={[10, 10]}
+                                    isDraggable={editingActive}
+                                    isResizable={Boolean(activeResizeItemId)}
+                                    activeResizeItemId={activeResizeItemId}
+                                    onItemLongPress={editingActive ? handleItemLongPress : undefined}
+                                    onBackgroundPress={handleExitResizeMode}
+                                    onResizeSessionEnd={handleResizeSessionEnd}
+                                    onLayoutChange={updateLayout}
+                                    containerStyle={styles.gridContainer}
+                                    containerWidth={gridWidth ?? undefined}
+                                />
+                            </View>
+                        )}
+                    </ScrollView>
 
                     {editingActive && !isResizeActive && (
                         <FAB
@@ -853,32 +830,10 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                     onClose={() => setShowAddItemPicker(false)}
                 >
                     <AddItemPicker
-                        onSelectMetric={() => {
-                            setShowAddItemPicker(false);
-                            setShowMetricPicker(true);
-                        }}
-                        onSelectButton={() => {
-                            setShowAddItemPicker(false);
-                            setButtonEditorMode('create');
-                            setButtonEditorInitialConfig({});
-                            setButtonEditorTargetId(null);
-                            setShowButtonPicker(true);
-                        }}
-                        onSelectText={() => {
-                            setShowAddItemPicker(false);
-                            setTextEditorMode('create');
-                            setTextEditorInitialConfig({
-                                text: '',
-                                alignment: 'left',
-                                fontSize: 18,
-                                padding: 16,
-                                textColor: '',
-                                backgroundColor: '',
-                                maxLines: undefined
-                            });
-                            setTextEditorTargetId(null);
-                            setShowTextEditor(true);
-                        }}
+                        options={addItemOptions}
+                        onSelectMetric={handleAddMetric}
+                        onSelectButton={handleAddButton}
+                        onSelectText={handleAddText}
                     />
                 </CustomBottomSheet>
             )}
@@ -886,225 +841,249 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        flex: 1
-    },
-    gridWrapper: {
-        flex: 1,
-        paddingVertical: 12,
-        paddingHorizontal: GRID_HORIZONTAL_PADDING
-    },
-    gridContainer: {
-        flex: 1
-    },
-    itemContent: {
-        flex: 1,
-        width: '100%',
-        height: '100%'
-    },
-    emptyState: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingVertical: 64
-    },
-    emptyTitle: {
-        marginTop: 16,
-        marginBottom: 8
-    },
-    emptyDescription: {
-        opacity: 0.7,
-        textAlign: 'center'
-    },
-    fab: {
-        position: 'absolute',
-        right: 16,
-        bottom: 16
-    },
-    editOptionsContainer: {
-        paddingTop: 4,
-        paddingBottom: 12
-    },
-    editOptionsItemLabel: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 4
-    },
-    editOptionsDivider: {
-        marginVertical: 4
-    },
-    editOptionsSection: {
-        marginBottom: 4
-    },
-    editOptionDeleteText: {
-        fontWeight: '600'
-    },
-    // Metric Card Styles
-    metricCardTouchable: {
-        flex: 1,
-        width: '100%',
-        height: '100%'
-    },
-    metricGraphCardWrapper: {
-        flex: 1,
-        width: '100%',
-        height: '100%'
-    },
-    metricGraphCard: {
-        flex: 1,
-        borderRadius: 8,
-        overflow: 'hidden',
-        backgroundColor: '#1a1d2e',
-        position: 'relative'
-    },
-    metricGraphCardEditing: {
-        opacity: 0.7
-    },
-    metricEditOverlay: {
-        position: 'absolute',
-        top: 4,
-        right: 4,
-        zIndex: 10
-    },
-    removeButton: {
-        margin: 0,
-        borderRadius: 16
-    },
-    metricPreviewChart: {
-        flex: 1,
-        width: '100%',
-        height: '100%'
-    },
-    metricPreviewChartInner: {
-        flex: 1,
-        padding: 8
-    },
-    metricPreviewPlaceholder: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 16
-    },
-    metricPreviewPlaceholderText: {
-        fontSize: 12,
-        textAlign: 'center',
-        opacity: 0.75,
-        marginTop: 8
-    },
-    metricCompactStatusErrorText: {
-        color: '#ff8a80'
-    },
-    // Button Card Styles - now handled in ButtonCard component itself
-    // Metric Detail Header Styles
-    metricDetailHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.08)'
-    },
-    metricDetailHeaderText: {
-        flex: 1,
-        marginRight: 8
-    },
-    metricDetailHeaderTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 2
-    },
-    metricDetailHeaderSubtitle: {
-        fontSize: 13,
-        opacity: 0.65
-    },
-    metricDetailHeaderActions: {
-        flexDirection: 'row',
-        alignItems: 'center'
-    },
-    metricDetailHeaderIcon: {
-        margin: 0,
-        marginLeft: 4
-    },
-    // Metric Detail Content Styles
-    metricDetailContainer: {
-        flex: 1
-    },
-    metricDetailChart: {
-        height: 280,
-        marginBottom: 16,
-        borderRadius: 8,
-        overflow: 'hidden',
-        backgroundColor: '#1a1d2e'
-    },
-    metricDetailChartInner: {
-        flex: 1,
-        padding: 12
-    },
-    metricStatus: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 32
-    },
-    metricStatusText: {
-        marginTop: 12,
-        fontSize: 13,
-        opacity: 0.75
-    },
-    metricErrorText: {
-        fontSize: 13,
-        textAlign: 'center'
-    },
-    metricEmptyText: {
-        fontSize: 13,
-        textAlign: 'center'
-    },
-    metricDetailInfo: {
-        paddingHorizontal: 0
-    },
-    metricDetailMetaGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        marginBottom: 16
-    },
-    metricDetailMetaItem: {
-        width: '50%',
-        marginBottom: 12
-    },
-    metricDetailMetaLabel: {
-        fontSize: 11,
-        textTransform: 'uppercase',
-        opacity: 0.5,
-        marginBottom: 4,
-        fontWeight: '600'
-    },
-    metricDetailMetaValue: {
-        fontSize: 14,
-        fontWeight: '500'
-    },
-    metricDetailSummaryRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 16
-    },
-    metricDetailSummaryChip: {
-        marginBottom: 0
-    },
-    metricDetailVariables: {
-        marginTop: 8
-    },
-    metricDetailChipsRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginTop: 8
-    },
-    metricDetailChip: {
-        marginBottom: 0
-    }
-});
-
 export default BoardView;
+
+const createStyles = (theme) => {
+    const colors = theme?.colors ?? {};
+
+    return StyleSheet.create({
+        container: {
+            flex: 1,
+            position: 'relative'
+        },
+        boardScrollContent: {
+            flexGrow: 1,
+            paddingBottom: 120
+        },
+        emptyScrollContent: {
+            flexGrow: 1,
+            justifyContent: 'center',
+            paddingHorizontal: GRID_HORIZONTAL_PADDING
+        },
+        gridWrapper: {
+            flex: 1,
+            paddingVertical: 12,
+            paddingHorizontal: GRID_HORIZONTAL_PADDING
+        },
+        gridContainer: {
+            flex: 1
+        },
+        itemContent: {
+            flex: 1,
+            width: '100%',
+            height: '100%'
+        },
+        emptyState: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingVertical: 64
+        },
+        emptyTitle: {
+            marginTop: 16,
+            marginBottom: 8
+        },
+        emptyDescription: {
+            opacity: 0.7,
+            textAlign: 'center',
+            color: colors.placeholderText ?? colors.text ?? undefined
+        },
+        fab: {
+            position: 'absolute',
+            right: 16,
+            bottom: 16
+        },
+        editOptionsContainer: {
+            paddingTop: 4,
+            paddingBottom: 12
+        },
+        editOptionsItemLabel: {
+            fontSize: 16,
+            fontWeight: '600',
+            marginBottom: 4,
+            color: colors.text ?? undefined
+        },
+        editOptionsDivider: {
+            marginVertical: 4
+        },
+        editOptionsSection: {
+            marginBottom: 4
+        },
+        editOptionDeleteText: {
+            fontWeight: '600'
+        },
+        // Metric Card Styles
+        metricCardTouchable: {
+            flex: 1,
+            width: '100%',
+            height: '100%'
+        },
+        metricGraphCardWrapper: {
+            flex: 1,
+            width: '100%',
+            height: '100%'
+        },
+        metricGraphCard: {
+            flex: 1,
+            borderRadius: 8,
+            overflow: 'hidden',
+            backgroundColor: colors.surface ?? colors.buttonBackground ?? '#1a1d2e',
+            position: 'relative'
+        },
+        metricGraphCardEditing: {
+            opacity: 0.7
+        },
+        metricEditOverlay: {
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            zIndex: 10
+        },
+        removeButton: {
+            margin: 0,
+            borderRadius: 16
+        },
+        metricPreviewChart: {
+            flex: 1,
+            width: '100%',
+            height: '100%'
+        },
+        metricPreviewChartInner: {
+            flex: 1,
+            padding: 8
+        },
+        metricPreviewPlaceholder: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 16
+        },
+        metricPreviewPlaceholderText: {
+            fontSize: 12,
+            textAlign: 'center',
+            opacity: 0.75,
+            marginTop: 8,
+            color: colors.placeholderText ?? colors.text ?? undefined
+        },
+        metricCompactStatusErrorText: {
+            color: colors.error ?? '#ff8a80'
+        },
+        // Button Card Styles - now handled in ButtonCard component itself
+        // Metric Detail Header Styles
+        metricDetailHeader: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.divider ?? 'rgba(0,0,0,0.08)'
+        },
+        metricDetailHeaderText: {
+            flex: 1,
+            marginRight: 8
+        },
+        metricDetailHeaderTitle: {
+            fontSize: 18,
+            fontWeight: '600',
+            marginBottom: 2,
+            color: colors.text ?? undefined
+        },
+        metricDetailHeaderSubtitle: {
+            fontSize: 13,
+            opacity: 0.65,
+            color: colors.placeholderText ?? colors.text ?? undefined
+        },
+        metricDetailHeaderActions: {
+            flexDirection: 'row',
+            alignItems: 'center'
+        },
+        metricDetailHeaderIcon: {
+            margin: 0,
+            marginLeft: 4
+        },
+        // Metric Detail Content Styles
+        metricDetailContainer: {
+            flex: 1
+        },
+        metricDetailChart: {
+            height: 280,
+            marginBottom: 16,
+            borderRadius: 8,
+            overflow: 'hidden',
+            backgroundColor: colors.surface ?? colors.buttonBackground ?? '#1a1d2e'
+        },
+        metricDetailChartInner: {
+            flex: 1,
+            padding: 12
+        },
+        metricStatus: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 32
+        },
+        metricStatusText: {
+            marginTop: 12,
+            fontSize: 13,
+            opacity: 0.75,
+            color: colors.placeholderText ?? colors.text ?? undefined
+        },
+        metricErrorText: {
+            fontSize: 13,
+            textAlign: 'center',
+            color: colors.error ?? colors.text ?? undefined
+        },
+        metricEmptyText: {
+            fontSize: 13,
+            textAlign: 'center',
+            color: colors.placeholderText ?? colors.text ?? undefined
+        },
+        metricDetailInfo: {
+            paddingHorizontal: 0
+        },
+        metricDetailMetaGrid: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            marginBottom: 16
+        },
+        metricDetailMetaItem: {
+            width: '50%',
+            marginBottom: 12
+        },
+        metricDetailMetaLabel: {
+            fontSize: 11,
+            textTransform: 'uppercase',
+            opacity: 0.5,
+            marginBottom: 4,
+            fontWeight: '600',
+            color: colors.placeholderText ?? colors.text ?? undefined
+        },
+        metricDetailMetaValue: {
+            fontSize: 14,
+            fontWeight: '500',
+            color: colors.text ?? undefined
+        },
+        metricDetailSummaryRow: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginBottom: 16
+        },
+        metricDetailSummaryChip: {
+            marginBottom: 0
+        },
+        metricDetailVariables: {
+            marginTop: 8
+        },
+        metricDetailChipsRow: {
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            gap: 8,
+            marginTop: 8
+        },
+        metricDetailChip: {
+            marginBottom: 0
+        }
+    });
+};

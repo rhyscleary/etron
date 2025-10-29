@@ -92,11 +92,6 @@ export const validateLayout = (layout, cols) => {
   };
 };
 
-/**
- * Clone a layout
- * @param {Array} layout - Array of grid items
- * @returns {Array} Cloned layout
- */
 export const cloneLayout = (layout) => {
   return layout.map((item) => ({ ...item }));
 };

@@ -52,6 +52,14 @@ export const useDisplaySettings = (board) => {
     setDisplayConfigItemId(item.id);
     const appearance = item.config?.appearance || {};
     const initialColours = buildDisplayColoursForItem(item);
+    const angleValue = appearance?.xAxisLabelAngle;
+    let draftAngle = "";
+
+    if (typeof angleValue === "number" && Number.isFinite(angleValue)) {
+      draftAngle = `${angleValue}`;
+    } else if (typeof angleValue === "string" && angleValue.trim().length > 0) {
+      draftAngle = angleValue.trim();
+    }
 
     setDisplayConfigDraft({
       label: item.config?.label || item.config?.name || "",
@@ -61,6 +69,7 @@ export const useDisplaySettings = (board) => {
       tickLabelColor: appearance.tickLabelColor || "",
       gridColor: appearance.gridColor || "",
       showGrid: appearance.showGrid !== undefined ? appearance.showGrid : true,
+      xAxisLabelAngle: draftAngle,
     });
   };
 
@@ -89,6 +98,14 @@ export const useDisplaySettings = (board) => {
       tickLabelColor: appearance.tickLabelColor || "",
       gridColor: appearance.gridColor || "",
       showGrid: appearance.showGrid !== undefined ? appearance.showGrid : true,
+      xAxisLabelAngle:
+        typeof appearance.xAxisLabelAngle === "number" &&
+        Number.isFinite(appearance.xAxisLabelAngle)
+          ? `${appearance.xAxisLabelAngle}`
+          : typeof appearance.xAxisLabelAngle === "string" &&
+            appearance.xAxisLabelAngle.trim().length > 0
+          ? appearance.xAxisLabelAngle.trim()
+          : "",
     }));
   };
 

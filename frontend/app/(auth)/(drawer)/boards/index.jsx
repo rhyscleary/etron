@@ -1,41 +1,21 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Card, Menu, IconButton, Chip, useTheme } from 'react-native-paper';
-import { router } from 'expo-router';
+import { Text, IconButton, useTheme } from 'react-native-paper';
+import { router, useFocusEffect } from 'expo-router';
 import Header from '../../../../components/layout/Header';
 import BoardService from '../../../../services/BoardService';
 import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
 import SearchBar from '../../../../components/common/input/SearchBar';
 import BasicButton from '../../../../components/common/buttons/BasicButton';
-
-const formatTimeAgo = (dateString) => {
-    if (!dateString) return 'Never';
-    
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    
-    if (seconds < 60) return 'just now';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `${months} month${months > 1 ? 's' : ''} ago`;
-    const years = Math.floor(months / 12);
-    return `${years} year${years > 1 ? 's' : ''} ago`;
-};
+import BoardCard from './components/BoardCard';
+import { formatTimeAgo } from '../../../../utils/boards/dateUtils';
 
 const BoardsManagement = () => {
     const theme = useTheme();
     const [boards, setBoards] = useState([]);
-    const [filteredBoards, setFilteredBoards] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [activeBoardId, setActiveBoardId] = useState(null);
-    const [menuVisible, setMenuVisible] = useState({});
 
     // Load boards
     const loadBoards = useCallback(async () => {
@@ -44,7 +24,6 @@ const BoardsManagement = () => {
             const allBoards = await BoardService.getAllBoards();
             const activeId = await BoardService.getActiveDashboardId(allBoards);
             setBoards(allBoards);
-            setFilteredBoards(allBoards);
             setActiveBoardId(activeId);
         } catch (error) {
             console.error('Error loading boards:', error);
@@ -58,19 +37,23 @@ const BoardsManagement = () => {
         loadBoards();
     }, [loadBoards]);
 
-    // Search/filter boards
-    useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredBoards(boards);
-        } else {
-            const query = searchQuery.toLowerCase();
-            const filtered = boards.filter(board =>
-                board.name?.toLowerCase().includes(query) ||
-                board.description?.toLowerCase().includes(query)
-            );
-            setFilteredBoards(filtered);
+    useFocusEffect(
+        useCallback(() => {
+            loadBoards();
+        }, [loadBoards])
+    );
+
+    const filteredBoards = useMemo(() => {
+        const trimmedQuery = searchQuery.trim().toLowerCase();
+        if (!trimmedQuery) {
+            return boards;
         }
-    }, [searchQuery, boards]);
+
+        return boards.filter(board =>
+            board.name?.toLowerCase().includes(trimmedQuery) ||
+            board.description?.toLowerCase().includes(trimmedQuery)
+        );
+    }, [boards, searchQuery]);
 
     const handleCreateBoard = () => {
         router.push('/boards/create');
@@ -146,131 +129,6 @@ const BoardsManagement = () => {
         router.push(`/boards/${board.id}/share`);
     };
 
-    const toggleMenu = (boardId) => {
-        setMenuVisible(prev => ({ ...prev, [boardId]: !prev[boardId] }));
-    };
-
-    const renderBoardCard = (board) => {
-        const isActive = board.id === activeBoardId;
-        const itemCount = board.items?.length || 0;
-        const lastUpdated = formatTimeAgo(board.metadata?.updatedAt);
-
-        return (
-            <Card
-                key={board.id}
-                style={[
-                    styles.boardCard,
-                    isActive && { borderColor: theme.colors.primary, borderWidth: 2 }
-                ]}
-                onPress={() => handleViewBoard(board.id)}
-            >
-                <Card.Content>
-                    <View style={styles.cardHeader}>
-                        <View style={styles.cardTitle}>
-                            <Text variant="titleMedium" style={styles.boardName}>
-                                {board.name}
-                            </Text>
-                            {isActive && (
-                                <Chip
-                                    mode="flat"
-                                    compact
-                                    style={styles.activeChip}
-                                    textStyle={styles.activeChipText}
-                                >
-                                    Dashboard
-                                </Chip>
-                            )}
-                        </View>
-                        <Menu
-                            visible={menuVisible[board.id]}
-                            onDismiss={() => toggleMenu(board.id)}
-                            anchor={
-                                <IconButton
-                                    icon="dots-vertical"
-                                    size={20}
-                                    onPress={() => toggleMenu(board.id)}
-                                />
-                            }
-                        >
-                            <Menu.Item
-                                leadingIcon="eye"
-                                onPress={() => {
-                                    toggleMenu(board.id);
-                                    handleViewBoard(board.id);
-                                }}
-                                title="View"
-                            />
-                            <Menu.Item
-                                leadingIcon="pencil"
-                                onPress={() => {
-                                    toggleMenu(board.id);
-                                    handleEditBoard(board.id);
-                                }}
-                                title="Edit"
-                            />
-                            {!isActive && (
-                                <Menu.Item
-                                    leadingIcon="view-dashboard"
-                                    onPress={() => {
-                                        toggleMenu(board.id);
-                                        handleSetAsActive(board);
-                                    }}
-                                    title="Set as Dashboard"
-                                />
-                            )}
-                            <Menu.Item
-                                leadingIcon="content-copy"
-                                onPress={() => {
-                                    toggleMenu(board.id);
-                                    handleDuplicateBoard(board);
-                                }}
-                                title="Duplicate"
-                            />
-                            <Menu.Item
-                                leadingIcon="share-variant"
-                                onPress={() => {
-                                    toggleMenu(board.id);
-                                    handleShareBoard(board);
-                                }}
-                                title="Share"
-                            />
-                            <Menu.Item
-                                leadingIcon="delete"
-                                onPress={() => {
-                                    toggleMenu(board.id);
-                                    handleDeleteBoard(board);
-                                }}
-                                title="Delete"
-                                titleStyle={{ color: theme.colors.error }}
-                            />
-                        </Menu>
-                    </View>
-
-                    {board.description ? (
-                        <Text
-                            variant="bodyMedium"
-                            style={styles.boardDescription}
-                            numberOfLines={2}
-                        >
-                            {board.description}
-                        </Text>
-                    ) : null}
-
-                    <View style={styles.boardMeta}>
-                        <View style={styles.metaItem}>
-                            <IconButton icon="grid" size={16} style={styles.metaIcon} />
-                            <Text variant="bodySmall">{itemCount} items</Text>
-                        </View>
-                        <View style={styles.metaItem}>
-                            <IconButton icon="clock-outline" size={16} style={styles.metaIcon} />
-                            <Text variant="bodySmall">{lastUpdated}</Text>
-                        </View>
-                    </View>
-                </Card.Content>
-            </Card>
-        );
-    };
-
     return (
         <ResponsiveScreen
             scroll={false}
@@ -321,7 +179,21 @@ const BoardsManagement = () => {
                         </View>
                     ) : (
                         <View style={styles.boardsList}>
-                            {filteredBoards.map(renderBoardCard)}
+                            {filteredBoards.map((board) => (
+                                <BoardCard
+                                    key={board.id}
+                                    board={board}
+                                    isActive={board.id === activeBoardId}
+                                    itemCount={board.items?.length || 0}
+                                    lastUpdated={formatTimeAgo(board.metadata?.updatedAt)}
+                                    onView={handleViewBoard}
+                                    onEdit={handleEditBoard}
+                                    onSetAsDashboard={handleSetAsActive}
+                                    onDuplicate={handleDuplicateBoard}
+                                    onShare={handleShareBoard}
+                                    onDelete={handleDeleteBoard}
+                                />
+                            ))}
                         </View>
                     )}
                 </ScrollView>
@@ -348,48 +220,6 @@ const styles = StyleSheet.create({
     },
     boardsList: {
         paddingBottom: 80
-    },
-    boardCard: {
-        marginBottom: 12
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    cardTitle: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    boardName: {
-        flex: 1
-    },
-
-    activeChip: {
-        height: 24,
-        marginTop: 10
-    },
-    activeChipText: {
-        fontSize: 10,
-        lineHeight: 10
-    },
-    boardDescription: {
-        opacity: 0.7,
-        marginBottom: 12
-    },
-    boardMeta: {
-        flexDirection: 'row',
-        gap: 16,
-        marginTop: 8
-    },
-    metaItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4
-    },
-    metaIcon: {
-        margin: 0
     },
     emptyState: {
         flex: 1,

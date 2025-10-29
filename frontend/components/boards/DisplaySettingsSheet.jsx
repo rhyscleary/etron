@@ -364,6 +364,19 @@ const DisplaySettingsSheet = ({
                                     dense
                                 />
                             </View>
+                            <View style={styles.row}>
+                                <TextInput
+                                    label="X-axis label angle"
+                                    value={draft.xAxisLabelAngle ?? ''}
+                                    onChangeText={(text) => onUpdateDraft({ xAxisLabelAngle: text })}
+                                    style={styles.inputHalf}
+                                    autoCapitalize="none"
+                                    autoCorrect={false}
+                                    dense
+                                    placeholder="45"
+                                />
+                            </View>
+                            <Text style={styles.angleHint}>Enter a value between -90 and 90 degrees. Leave blank for default rotation.</Text>
                             <View style={styles.switchRow}>
                                 <Text style={styles.switchLabel}>Show grid lines</Text>
                                 <Switch
@@ -502,6 +515,13 @@ const styles = StyleSheet.create({
     colourPicker: {
         width: 160,
         height: 160
+    },
+    angleHint: {
+        fontSize: 12,
+        opacity: 0.6,
+        marginTop: -6,
+        marginBottom: 8,
+        marginHorizontal: 4
     },
     actions: {
         flexDirection: 'row',

@@ -191,6 +191,11 @@ const GridItem = ({
     const shouldShowOutline = isActive;
     const outlineStrokeColor = isResizeTarget ? resizeHighlightColor : outlineColor;
     const outlineWidth = isResizeTarget ? 2 : 1;
+    const isElevated = resizeEnabled || isResizing || isResizeTarget;
+    const elevationLevel = isElevated ? (isActive ? 8 : 4) : 0;
+    const shadowOpacity = isElevated ? (isActive ? 0.3 : 0.15) : 0;
+    const shadowRadius = isElevated ? 4 : 0;
+    const shadowOffset = isElevated ? { width: 0, height: 2 } : { width: 0, height: 0 };
 
     return (
         <View
@@ -207,8 +212,10 @@ const GridItem = ({
                     backgroundColor: theme.colors.surface,
                     borderColor: shouldShowOutline ? outlineStrokeColor : 'transparent',
                     borderWidth: shouldShowOutline ? outlineWidth : 0,
-                    elevation: isActive ? 8 : 2,
-                    shadowOpacity: isActive ? 0.3 : 0.1,
+                    elevation: elevationLevel,
+                    shadowOpacity,
+                    shadowRadius,
+                    shadowOffset,
                     zIndex: isActive ? 100 : 1
                 },
                 style

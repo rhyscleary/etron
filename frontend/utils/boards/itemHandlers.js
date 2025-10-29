@@ -8,10 +8,50 @@ const TEXT_MIN_WIDTH_UNITS = 3;
 const TEXT_MIN_HEIGHT_UNITS = 1;
 const TEXT_MAX_HEIGHT_UNITS = 6;
 
+const clampUnits = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const toNumberOrFallback = (value, fallback) => {
+  if (Number.isFinite(value)) {
+    return value;
+  }
+
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const resolveButtonDefinition = (buttonConfig = {}, cols = 12) => {
+  const destination = buttonConfig.destination;
+
+  const label =
+    buttonConfig.label ||
+    (typeof destination === "object" ? destination?.label : undefined) ||
+    "Button";
+
+  const route =
+    typeof destination === "object" && destination !== null
+      ? destination.route || destination
+      : destination || null;
+
+  const icon =
+    buttonConfig.icon ||
+    (typeof destination === "object" ? destination?.icon : undefined) ||
+    "arrow-right";
+
+  const color = buttonConfig.color || "#2979FF";
+  const widthUnits = calculateButtonGridWidth(label, cols);
+
+  return {
+    label,
+    route,
+    icon,
+    color,
+    widthUnits,
+  };
+};
+
 export const calculateMetricGridWidth = (cols = 12) => {
   const minWidth = Math.ceil(cols * METRIC_WIDTH_RATIO);
-  if (minWidth <= 0) return 1;
-  return Math.min(minWidth, cols);
+  return clampUnits(minWidth || 1, 1, cols);
 };
 
 export const calculateButtonGridWidth = (label = "", cols = 12) => {
@@ -25,20 +65,15 @@ export const calculateButtonGridWidth = (label = "", cols = 12) => {
     { max: 50, width: 8 },
   ];
 
-  let width = 4;
-  for (const threshold of widthThresholds) {
-    if (textLength > threshold.max) {
-      width = threshold.width;
-    } else {
-      break;
-    }
-  }
+  const baseWidth = widthThresholds.reduce(
+    (currentWidth, threshold) =>
+      textLength > threshold.max ? threshold.width : currentWidth,
+    4
+  );
 
-  if (textLength > 50) {
-    width = cols;
-  }
+  const resolvedWidth = textLength > 50 ? cols : baseWidth;
 
-  return Math.min(width, cols);
+  return clampUnits(resolvedWidth, 1, cols);
 };
 
 export const calculateTextGridWidth = (text = "", cols = 12) => {
@@ -55,13 +90,11 @@ export const calculateTextGridWidth = (text = "", cols = 12) => {
       TEXT_CHARACTERS_PER_UNIT
   );
 
-  return Math.min(
-    cols,
-    Math.max(
-      TEXT_MIN_WIDTH_UNITS,
-      Number.isFinite(estimatedUnits) ? estimatedUnits : TEXT_MIN_WIDTH_UNITS
-    )
-  );
+  const normalizedUnits = Number.isFinite(estimatedUnits)
+    ? estimatedUnits
+    : TEXT_MIN_WIDTH_UNITS;
+
+  return clampUnits(normalizedUnits, TEXT_MIN_WIDTH_UNITS, cols);
 };
 
 export const calculateTextGridHeight = (text = "") => {
@@ -135,22 +168,14 @@ export const createMetricItem = (metric, existingLayout, cols = 12) => {
 };
 
 export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
-  // Handle both old format (destination object) and new format (buttonConfig)
-  const label =
-    buttonConfig.label || buttonConfig.destination?.label || "Button";
-  const route =
-    buttonConfig.destination?.route || buttonConfig.destination || null;
-  const color = buttonConfig.color || "#2979FF";
-  const icon =
-    buttonConfig.icon || buttonConfig.destination?.icon || "arrow-right";
-
-  // Calculate adaptive width based on text length
-  // Rough estimate: ~8-10 characters per grid unit
-  const buttonWidth = calculateButtonGridWidth(label, cols);
+  const { label, route, icon, color, widthUnits } = resolveButtonDefinition(
+    buttonConfig,
+    cols
+  );
 
   const position = getFirstAvailablePosition(
     existingLayout,
-    buttonWidth,
+    widthUnits,
     1,
     cols
   );
@@ -160,7 +185,7 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
     type: "button",
     x: position.x,
     y: position.y,
-    w: buttonWidth,
+    w: widthUnits,
     h: 1,
     config: {
       label: label,
@@ -177,29 +202,28 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
 export const createTextItem = (textConfig = {}, existingLayout, cols = 12) => {
   const textValue = typeof textConfig.text === "string" ? textConfig.text : "";
   const alignment = textConfig.alignment || "left";
-  const fontSize = Number.isFinite(textConfig.fontSize)
-    ? textConfig.fontSize
-    : parseFloat(textConfig.fontSize);
-  const normalizedFontSize =
-    Number.isFinite(fontSize) && fontSize > 0 ? fontSize : 18;
-  const lineHeightValue = Number.isFinite(textConfig.lineHeight)
-    ? textConfig.lineHeight
-    : parseFloat(textConfig.lineHeight);
-  const normalizedLineHeight =
-    Number.isFinite(lineHeightValue) && lineHeightValue > 0
-      ? lineHeightValue
-      : Math.round(normalizedFontSize * 1.3);
-  const padding = Number.isFinite(textConfig.padding)
-    ? textConfig.padding
-    : parseFloat(textConfig.padding);
-  const normalizedPadding =
-    Number.isFinite(padding) && padding >= 0 ? padding : 16;
+  const normalizedFontSize = Math.max(
+    1,
+    toNumberOrFallback(textConfig.fontSize, 18)
+  );
+  const normalizedLineHeight = Math.max(
+    1,
+    toNumberOrFallback(
+      textConfig.lineHeight,
+      Math.round(normalizedFontSize * 1.3)
+    )
+  );
+  const normalizedPadding = Math.max(
+    0,
+    toNumberOrFallback(textConfig.padding, 16)
+  );
   const normalizedText = textValue.trim() || "New text";
 
   const widthUnits = calculateTextGridWidth(normalizedText, cols);
-  const heightUnits = Math.min(
-    TEXT_MAX_HEIGHT_UNITS,
-    Math.max(TEXT_MIN_HEIGHT_UNITS, calculateTextGridHeight(normalizedText))
+  const heightUnits = clampUnits(
+    calculateTextGridHeight(normalizedText),
+    TEXT_MIN_HEIGHT_UNITS,
+    TEXT_MAX_HEIGHT_UNITS
   );
 
   const position = getFirstAvailablePosition(

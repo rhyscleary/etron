@@ -1,31 +1,53 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { List } from 'react-native-paper';
 
-const AddItemPicker = ({ onSelectMetric, onSelectButton, onSelectText }) => {
+const DEFAULT_OPTIONS = (handlers) => ([
+    {
+        key: 'metric',
+        title: 'Metric',
+        description: 'Add a data metric visualization',
+        icon: 'chart-line',
+        onPress: handlers.onSelectMetric
+    },
+    {
+        key: 'button',
+        title: 'Button',
+        description: 'Add a navigation button',
+        icon: 'gesture-tap-button',
+        onPress: handlers.onSelectButton
+    },
+    {
+        key: 'text',
+        title: 'Text',
+        description: 'Add a formatted text block',
+        icon: 'format-text',
+        onPress: handlers.onSelectText
+    }
+]);
+
+const AddItemPicker = ({ options, onSelectMetric, onSelectButton, onSelectText }) => {
+    const effectiveOptions = useMemo(() => {
+        if (Array.isArray(options) && options.length > 0) {
+            return options;
+        }
+
+        return DEFAULT_OPTIONS({ onSelectMetric, onSelectButton, onSelectText })
+            .filter(option => typeof option.onPress === 'function');
+    }, [options, onSelectMetric, onSelectButton, onSelectText]);
+
     return (
         <View style={styles.container}>
-            <List.Item
-                title="Metric"
-                description="Add a data metric visualization"
-                left={(props) => <List.Icon {...props} icon="chart-line" />}
-                onPress={onSelectMetric}
-                style={styles.item}
-            />
-            <List.Item
-                title="Button"
-                description="Add a navigation button"
-                left={(props) => <List.Icon {...props} icon="gesture-tap-button" />}
-                onPress={onSelectButton}
-                style={styles.item}
-            />
-            <List.Item
-                title="Text"
-                description="Add a formatted text block"
-                left={(props) => <List.Icon {...props} icon="format-text" />}
-                onPress={onSelectText}
-                style={styles.item}
-            />
+            {effectiveOptions.map((option) => (
+                <List.Item
+                    key={option.key}
+                    title={option.title}
+                    description={option.description}
+                    left={(props) => <List.Icon {...props} icon={option.icon} />}
+                    onPress={option.onPress}
+                    style={styles.item}
+                />
+            ))}
         </View>
     );
 };
