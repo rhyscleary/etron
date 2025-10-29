@@ -1,7 +1,7 @@
 // Author(s): Matthew Parkinson, Noah Bradley
 
 import { View, ScrollView, ActivityIndicator, StyleSheet, Alert } from "react-native";
-import { Text, useTheme, Card } from "react-native-paper";
+import { Text, useTheme, Card, Chip } from "react-native-paper";
 import Header from "../../../../../../components/layout/Header.jsx";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen.jsx";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -24,6 +24,8 @@ const ViewMetrics = () => {
     const [hasPermission, setHasPermission] = useState(null);
     const [imageUrls, setImageUrls] = useState([]);
     const selectedIds = ids ? JSON.parse(ids) : [];
+    const [backgroundMode, setBackgroundMode] = useState("white");
+    const [axisColorModeState, setAxisColorModeState] = useState("dark");
 
     const metricRefs = useRef([]);
 
@@ -143,12 +145,64 @@ const ViewMetrics = () => {
                 style={{ flex: 1 }}
                 contentContainerStyle={{ gap: 25, paddingVertical: 20 }}
             >
+                {/* Background Colour Selector */}
+                <View style={styles.selectorContainer}>
+                    <Text style={styles.sectionHeader}>Choose Background</Text>
+                    <View style={styles.chipRow}>
+                        {["white", "black", "transparent"].map((color) => (
+                            <Chip
+                                key={color}
+                                selected={backgroundMode === color}
+                                onPress={() => setBackgroundMode(color)}
+                                style={{
+                                    marginHorizontal: 4,
+                                    backgroundColor:
+                                        backgroundMode === color
+                                            ? theme.colors.primary
+                                            : "transparent",
+                                }}
+                                textStyle={{ color: "white" }}
+                                selectedColor="white"
+                            >
+                                {color.charAt(0).toUpperCase() + color.slice(1)}
+                            </Chip>
+                        ))}
+                    </View>
+                </View>
+
+                {/* Axis Colour Selector */}
+                <View style={styles.selectorContainer}>
+                    <Text style={styles.sectionHeader}>Axis Colours</Text>
+                    <View style={styles.chipRow}>
+                        {["dark", "light"].map((mode) => (
+                            <Chip
+                                key={mode}
+                                selected={axisColorModeState === mode}
+                                onPress={() => setAxisColorModeState(mode)}
+                                style={{
+                                    marginHorizontal: 4,
+                                    backgroundColor:
+                                        axisColorModeState === mode
+                                            ? theme.colors.primary
+                                            : "transparent",
+                                }}
+                                textStyle={{ color: "white" }}
+                                selectedColor="white"
+                            >
+                                {mode === "dark" ? "White" : "Black"}
+                            </Chip>
+                        ))}
+                    </View>
+                </View>
+                
                 {metricsData.map((metric, index) => (
                     <MetricCard
                         key={metric.metricId}
                         ref={(el) => (metricRefs.current[index] = el)}
                         metricSettings={metric.settings}
                         filteredData={metric.filteredData}
+                        backgroundMode={backgroundMode}
+                        axisColorModeState={axisColorModeState}
                     />
                 ))}
 
@@ -165,7 +219,7 @@ const ViewMetrics = () => {
 export default ViewMetrics;
 
 // --- MetricCard Component ---
-const MetricCard = forwardRef(({ metricSettings, filteredData }, ref) => {
+const MetricCard = forwardRef(({ metricSettings, filteredData, backgroundMode, axisColorModeState }, ref) => {
     const theme = useTheme();
     const viewShotRef = useRef();
     const coloursState = ["red", "blue", "green", "purple"];
@@ -222,7 +276,14 @@ const MetricCard = forwardRef(({ metricSettings, filteredData }, ref) => {
                     <View
                         style={[
                             styles.graphCardContainer,
-                            { backgroundColor: "white", borderRadius: 6, padding: 10 },
+                            {
+                                backgroundColor:
+                                    backgroundMode === "transparent"
+                                        ? "transparent"
+                                        : backgroundMode,
+                                borderRadius: 6,
+                                padding: 10,
+                            },
                         ]}
                     >
                         {graphDef.render({
@@ -230,6 +291,7 @@ const MetricCard = forwardRef(({ metricSettings, filteredData }, ref) => {
                             xKey: metricSettings.config.independentVariable,
                             yKeys: metricSettings.config.dependentVariables,
                             colours: metricSettings.config.colours || coloursState,
+                            axisColorMode: axisColorModeState,
                         })}
                     </View>
                 </ViewShot>
@@ -257,6 +319,20 @@ function convertToGraphData(rows, metricSettings) {
 }
 
 const styles = StyleSheet.create({
+    selectorContainer: {
+        width: "100%",
+        marginBottom: 16,
+    },
+    sectionHeader: {
+        fontSize: 16,
+        fontWeight: "600",
+        marginBottom: 8,
+    },
+    chipRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        alignItems: "center",
+    },
     metricCard: {
         borderRadius: 8,
         padding: 10,
