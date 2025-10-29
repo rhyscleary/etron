@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Appbar, useTheme, Menu, Text } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
+import PermissionGate from "../common/PermissionGate";
 
 /*
     Removed code. Incase want to add a second right icon:
@@ -90,31 +91,20 @@ const Header = ({
                     />
                 ))
                 : (showPlus || showEdit || showCheck) && (
-                rightIconPermission ? (
-                    RightIconAnchor
-                ) : (
-                    <Menu
-                        visible={noPermVisible}
-                        onDismiss={() => setNoPermVisible(false)}
-                        anchor={RightIconAnchor}
-                        contentStyle={{
-                            paddingVertical: 6,
-                            paddingHorizontal: 10,
-                            borderRadius: 8,
-                        }}
+                    <PermissionGate
+                        allowed={rightIconPermission}
+                        onAllowed={onRightIconPress}
                     >
-                        <Text
-                            style={{
-                                color: theme.colors.onSurface,
-                                maxWidth: 220,
-                                lineHeight: 18
-                            }}
-                        >
-                            You don't have permission to perform this action.
-                        </Text>
-                    </Menu>
+                        <Appbar.Action
+                            icon={
+                                showPlus ? "plus" :
+                                showEdit ? "pencil" :
+                                showCheck ? "check" : "line"
+                            }
+                        />
+                    </PermissionGate>
                 )
-            )}
+            }
         </Appbar.Header>
     );
 }

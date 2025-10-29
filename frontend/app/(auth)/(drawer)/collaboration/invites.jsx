@@ -13,6 +13,7 @@ import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 import formatTTLDate from "../../../../utils/format/formatTTLDate";
 import { useFocusEffect } from "@react-navigation/native";
+import { hasPermission } from "../../../../utils/permissions";
 
 
 const Invites = () => {
@@ -22,10 +23,17 @@ const Invites = () => {
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(true);
 	const [workspaceId, setWorkspaceId] = useState("");
+	const [inviteUserPermission, setInviteUserPermission] = useState(false);
 
 	useEffect(() => {
 		loadInvitesAndRoles();
+		loadPermission();
 	}, []);
+
+	async function loadPermission() {
+		const inviteUserPermission = await hasPermission("app.collaboration.invite_user");
+		setInviteUserPermission(inviteUserPermission);
+	}
 
 	useFocusEffect(
 		useCallback(() => {
@@ -98,6 +106,7 @@ const Invites = () => {
 					showBack
 					showPlus
 					onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "invites" } })}
+					rightIconPermission={inviteUserPermission}
 				/>			
 			}
 			center={false}

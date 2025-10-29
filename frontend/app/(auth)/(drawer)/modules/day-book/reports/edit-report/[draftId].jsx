@@ -108,8 +108,50 @@ const EditReport = () => {
 								try { window.ReactNativeWebView.postMessage(html); } catch (e) {}
 							},
 							defaultParagraphSeparator: 'p',
-							styleWithCSS: true
+							styleWithCSS: true,
+
+							classes: {
+								actionbar: 'pell-actionbar',
+								button: 'pell-button',
+								content: 'pell-content'
+							}
 						});
+
+						// Custom add metric button
+						const actionBar = document.querySelector('.pell-actionbar');
+						const metricButton = document.createElement('button');
+						metricButton.className = 'pell-button';
+						metricButton.title = 'Insert Metric';
+						metricButton.textContent = '📊 Insert Metric';
+						actionBar.appendChild(metricButton);
+
+						metricButton.onclick = () => {
+							//window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'openMetricSheet' }));
+							const img = document.createElement('img');
+							img.src = "https://d329j4s0vk14u1.cloudfront.net/public/workspaces/e905ae63-ab3d-4487-8def-35c8141ffb89/day-book/metrics/metric1.png";
+							img.style.maxWidth = '100%';
+							img.style.display = 'block';
+							img.style.margin = '10px 0';
+							editor.content.appendChild(img);
+							window.ReactNativeWebView.postMessage(editor.content.innerHTML);
+						};
+
+						function receiveMessage(event) {
+							let data = event.data;
+							try { data = JSON.parse(data); } catch (e) {}
+
+							if (data?.type === 'insertMetric' && data.metricUrl) {
+								const img = document.createElement('img');
+								img.src = data.metricUrl;
+								img.style.maxWidth = '100%';
+								img.style.display = 'block';
+								img.style.margin = '10px 0';
+								editor.content.appendChild(img);
+								window.ReactNativeWebView.postMessage(editor.content.innerHTML);
+							} else if (data?.type === 'init' || data?.type === 'load') {
+								editor.content.innerHTML = data.html || data.content || '';
+							}
+						}
 
 						function setContent(html) {
 							editor.content.innerHTML = html || '';
@@ -119,12 +161,6 @@ const EditReport = () => {
 							const sel = window.getSelection();
 							sel.removeAllRanges();
 							sel.addRange(range);
-						}
-
-						function receiveMessage(event) {
-							let data = event.data;
-							try { data = JSON.parse(data); } catch (e) {}
-							if (data?.type === 'init' || data?.type === 'load') setContent(data.html || data.content || '');
 						}
 
 						document.addEventListener('message', receiveMessage);
@@ -160,6 +196,23 @@ const EditReport = () => {
 
 	const handleWebViewLoadEnd = () => {
 		if (isEditing && !initSentRef.current) sendInitToWebView(editorContent);
+	};
+
+	// handle metric bottom sheet messages from webview
+	const handleWebViewMessage = (event) => {
+		try {
+			const data = JSON.parse(event.nativeEvent.data);
+			if (data.type == "openMetricSheet") {
+				console.log("Open metric sheet");
+			} else if (isEditing) {
+				setEditorContent(event.nativeEvent.data);
+			}
+		} catch {}
+	};
+
+	// when metric selected send message to pell to add in metric
+	const onMetricSelected = (metric) => {
+		console.log("Metric selected"); // add metric
 	};
 
 	// ✅ Generate and upload PDF
@@ -270,17 +323,11 @@ const EditReport = () => {
 					style={styles.webview}
 					javaScriptEnabled
 					domStorageEnabled
-					onMessage={(e) => isEditing && setEditorContent(e.nativeEvent.data)}
+					onMessage={handleWebViewMessage}
 					onLoadEnd={handleWebViewLoadEnd}
 				/>
 
-				{/* ✅ Test button for upload */}
-				<TouchableOpacity
-					style={styles.testButton}
-					onPress={() => exportAsPDF(fileName, true)}
-				>
-					<Text style={{ color: "#fff" }}>Test Upload Export</Text>
-				</TouchableOpacity>
+				{/* Add bottom sheet to select metrics here */}
 
 				{/* Dialogs */}
 				<Portal>

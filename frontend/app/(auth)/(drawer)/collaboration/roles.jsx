@@ -9,6 +9,7 @@ import { getWorkspaceId } from "../../../../storage/workspaceStorage";
 import { apiGet } from "../../../../utils/api/apiClient";
 import endpoints from "../../../../utils/api/endpoints";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
+import { hasPermission } from "../../../../utils/permissions";
 
 
 const Roles = () => {
@@ -18,6 +19,7 @@ const Roles = () => {
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [manageRolePermission, setManageRolePermission] = useState(false);
 
     const loadRoles = useCallback(async () => {
         try {
@@ -34,8 +36,14 @@ const Roles = () => {
 
     useEffect(() => {
         setLoading(true);
+        loadPermission();
         loadRoles();
     }, [loadRoles]);
+
+    async function loadPermission() {
+        const manageRolePermission = await hasPermission("app.collaboration.manage_roles")
+        setManageRolePermission(manageRolePermission);
+    }
 
     useFocusEffect(
         useCallback(() => {
@@ -91,6 +99,7 @@ const Roles = () => {
                     showBack
                     showPlus
                     onRightIconPress={() => router.navigate("/collaboration/create-role")}
+                    rightIconPermission={manageRolePermission}
                 />             
             }
 			center={false}

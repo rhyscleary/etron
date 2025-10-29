@@ -13,6 +13,7 @@ import endpoints from "../../../../../../utils/api/endpoints.js";
 import { apiGet } from "../../../../../../utils/api/apiClient.jsx";
 import { getCurrentUser } from "aws-amplify/auth";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen.jsx";
+import { hasPermission } from "../../../../../../utils/permissions.js";
 
 const MetricManagement = () => {
     const router = useRouter();
@@ -22,6 +23,7 @@ const MetricManagement = () => {
     const [loadingMetrics, setLoadingMetrics] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [refreshing, setRefreshing] = useState(false);
+    const [manageMetricsPermission, setManageMetricsPermission] = useState(false);
 
     const getWorkspaceMetrics = useCallback(async () => {
         const workspaceId = await getWorkspaceId();
@@ -59,8 +61,14 @@ const MetricManagement = () => {
     }, [metricsOther, searchQuery]);
 
     useEffect(() => {
+        loadPermission();
         getWorkspaceMetrics();
     }, [])
+
+    async function loadPermission() {
+        const manageMetricsPermission = await hasPermission("modules.daybook.metrics.manage_metrics");
+        setManageMetricsPermission(manageMetricsPermission);
+    }
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
@@ -70,7 +78,13 @@ const MetricManagement = () => {
     return (
         <ResponsiveScreen
             header={
-                <Header title="Metrics" showMenu showPlus onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric")}/>
+                <Header
+                    title="Metrics"
+                    showMenu
+                    showPlus
+                    onRightIconPress={() => router.navigate("/modules/day-book/metrics/create-metric")}
+                    rightIconPermission={manageMetricsPermission}
+                />
             }
             center={false}
             padded={false}

@@ -12,6 +12,7 @@ import endpoints from "../../../../utils/api/endpoints";
 import ResponsiveScreen from "../../../../components/layout/ResponsiveScreen";
 import { useFocusEffect } from "@react-navigation/native";
 import { RefreshControl } from "react-native";
+import { hasPermission } from "../../../../utils/permissions";
 
 const Users = () => {
     const [searchQuery, setSearchQuery] = useState('');
@@ -21,20 +22,24 @@ const Users = () => {
     const [selectedRoles, setSelectedRoles] = useState([]);
     const [groupedUsers, setGroupedUsers] = useState([]);
     const [allUsers, setAllUsers] = useState([]);
+    const [inviteUserPermission, setInviteUserPermission] = useState(false);
 
     useEffect(() => {
         setLoading(true);
+        loadPermission();
         loadUsersAndRoles();
     }, []);
 
     useFocusEffect(
         useCallback(() => {
-            if (!loading) {
-                setRefreshing(true);
-                loadUsersAndRoles();
-            }
+            loadUsersAndRoles();
         }, [loadUsersAndRoles])
     );
+
+    async function loadPermission() {
+        const inviteUserPermission = await hasPermission("app.collaboration.invite_user");
+        setInviteUserPermission(inviteUserPermission);
+    }
 
     const onRefresh = useCallback(async () => {
         setRefreshing(true);
@@ -113,6 +118,7 @@ const Users = () => {
                     showBack
                     showPlus
                     onRightIconPress={() => router.navigate({ pathname: "/collaboration/invite-user", params: { navigatedFrom: "users" } })}
+                    rightIconPermission={inviteUserPermission}
                 />            
             }
 			center={false}

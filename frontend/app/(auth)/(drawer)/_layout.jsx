@@ -1,29 +1,71 @@
 // Author(s): Noah Bradley
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DrawerContentScrollView, DrawerItem } from "@react-navigation/drawer";
 import { useTheme, Appbar, Icon, Text } from "react-native-paper";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { Drawer } from "expo-router/drawer"
 import DescriptiveButton from "../../../components/common/buttons/DescriptiveButton";
 import { commonStyles } from "../../../assets/styles/stylesheets/common";
+import PermissionGate from "../../../components/common/PermissionGate";
+import { hasPermission } from "../../../utils/permissions";
 
 const generalOptions = [
-    { name: "account-settings", label: "My Account", icon: "account" },
-    { name: "collaboration", label: "Collaboration", icon: "account-group" },
-    { name: "settings", label: "Workspace and App Settings", icon: "cog" }
+    {
+        name: "account-settings",
+        label: "My Account",
+        icon: "account",
+    },
+    {
+        name: "collaboration",
+        label: "Collaboration",
+        icon: "account-group",
+        permKey: "app.workspace.view_collaboration_settings",
+    },
+    {
+        name: "settings",
+        label: "Settings",
+        icon: "cog",
+    }
 ]
 
 const dayBookOptions = [
-    { name: "modules/day-book/reports", label: "Reports", icon: "file-chart" },
-    { name: "modules/day-book/data-management", label: "Data Management", icon: "database" },
-    { name: "modules/day-book/metrics", label: "Metrics", icon: "chart-line" },
-    { name: "modules/day-book/notifications", label: "Notifications", icon: "bell" },
+    {
+        name: "modules/day-book/reports",
+        label: "Reports",
+        icon: "file-chart",
+        permKey: "modules.daybook.reports.view_reports"
+    },
+    {
+        name: "modules/day-book/data-management",
+        label: "Data Management",
+        icon: "database",
+        permKey: "modules.daybook.datasources.view_dataSources"
+    },
+    {
+        name: "modules/day-book/metrics",
+        label: "Metrics",
+        icon: "chart-line",
+        permKey: "modules.daybook.metrics.view_metrics"
+    },
+    {
+        name: "modules/day-book/notifications",
+        label: "Notifications",
+        icon: "bell",
+    },
 ]
 
 const boardOptions = [
-    { name: "dashboard", label: "Dashboard", icon: "view-compact" },
-    { name: "boards", label: "Boards", icon: "view-grid-plus" },
+    {
+        name: "dashboard",
+        label: "Dashboard",
+        icon: "view-compact",
+    },
+    {
+        name: "boards",
+        label: "Boards",
+        icon: "view-grid-plus",
+    },
 ]
 
 const DrawerRow = ({ label, icon, onPress, active = false, style }) => {
@@ -50,32 +92,68 @@ const DrawerRow = ({ label, icon, onPress, active = false, style }) => {
     )
 }
 
-const DrawerButton = ({route, options, navigation, isActive }) => {
+const DrawerButton = ({route, options, navigation, allowed, isActive }) => {
     return (
-        <DrawerItem
-            key={route.key}
-            label={options.drawerLabel ?? route.name}
-            icon={({ size }) => <Icon source={options.drawerIcon ? options.drawerIcon({}).source ?? options.drawerIcon : options.drawerIcon} size={size} color={"#000"} />}
-            onPress={() => navigation.navigate(route.name)}
-            style={[styles.itemContainer, isActive && styles.itemContainerActive]}
-            labelStyle={[styles.itemLabel]}
-            focused={isActive}
-        />
+        <PermissionGate
+            allowed={allowed}
+            onAllowed={() => navigation.navigate(route.name)}
+        >
+            <DrawerItem
+                key={route.key}
+                label={options.drawerLabel ?? route.name}
+                icon={({ size }) => <Icon source={options.drawerIcon ? options.drawerIcon({}).source ?? options.drawerIcon : options.drawerIcon} size={size} color={"#000"} />}
+                
+                style={[styles.itemContainer, isActive && styles.itemContainerActive]}
+                labelStyle={[styles.itemLabel]}
+                focused={isActive}
+            />
+        </PermissionGate>
     );
 }
 
 const CustomDrawer = (props) => {
     const { navigation, drawerState, setDrawerState, state, descriptors } = props;
     const theme = useTheme();
+    const [allowedMap, setAllowedMap] = useState({});
+
+    const allOptions = [...generalOptions, ...dayBookOptions, ...boardOptions];
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            const entries = await Promise.all(
+                allOptions.map(async (option) => {
+                    if (option.permKey) {
+                        try {
+                            const allowed = await hasPermission(option.permKey);
+                            return [option.name, !!allowed];
+                        } catch {
+                            return [option.name, false];
+                        }
+                    }
+                return [option.name, true];
+                })
+            );
+            if (mounted) setAllowedMap(Object.fromEntries(entries));
+        })();
+        return () => { mounted = false; };
+    }, []);
 
     const activeRouteName = state?.routes?.[state.index]?.name;
 
     let generalRoutes = [];
     let dayBookRoutes = [];
-    state.routes.map((route) => {
-        if (generalOptions.some(page => page.name == route.name)) generalRoutes.push(route);
-        else if (dayBookOptions.some(page => page.name == route.name)) dayBookRoutes.push(route);
-    })
+    let boardRoutes = [];
+    state.routes.forEach((route) => {
+        const name = route.name;
+        const allowed = allowedMap[name] ?? true;
+        if (generalOptions.some((page) => page.name === name)) {
+            generalRoutes.push({ route, allowed });
+        } else if (dayBookOptions.some((page) => page.name === name)) {
+            dayBookRoutes.push({ route, allowed });
+        } else if (boardOptions.some((page) => page.name === name)) {
+            boardRoutes.push({ route, allowed });
+        }
+    });
 
     let displayedRoutes;
     switch (String(drawerState)) {
@@ -126,13 +204,14 @@ const CustomDrawer = (props) => {
                         />
                     </View>
                 ) : (
-                    displayedRoutes.map((route) => (
+                    displayedRoutes.map(({ route, allowed }) => (
                         <DrawerButton
                             key={route.key}
                             route={route}
                             options={descriptors[route.key].options}
                             navigation={navigation}
                             isActive={activeRouteName == route.name}
+                            allowed={allowed}
                             style={{backgroundColor:"#000000"}}
                         />
                     ))
@@ -140,10 +219,11 @@ const CustomDrawer = (props) => {
             </DrawerContentScrollView>
             <View style={styles.bottomSection}>
                 <View style={styles.divider} />
-                {generalRoutes.map((route) => (
+                {generalRoutes.map(({ route, allowed }) => (
                     <DrawerButton
                         key={route.key}
                         route={route}
+                        allowed={allowed}
                         options={descriptors[route.key].options}
                         navigation={navigation}
                         isActive={activeRouteName == route.name}    

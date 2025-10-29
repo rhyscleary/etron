@@ -1,8 +1,8 @@
 // Author(s): Holly Wyatt, Noah Bradley
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { RefreshControl, Alert, ScrollView, View, StyleSheet, Pressable } from "react-native";
-import { Text, ActivityIndicator, Card, Chip, IconButton, useTheme } from "react-native-paper";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { RefreshControl, Alert, ScrollView, View, StyleSheet, Pressable, FlatList, Dimensions } from "react-native";
+import { Text, ActivityIndicator, Card, Chip, IconButton, useTheme, Modal, Portal, DataTable } from "react-native-paper";
 import { router, useFocusEffect } from "expo-router";
 import Header from "../../../../../../components/layout/Header";
 import { getAdapterInfo, getCategoryDisplayName } from "../../../../../../adapters/day-book/data-sources/DataAdapterFactory";
@@ -11,6 +11,10 @@ import endpoints from "../../../../../../utils/api/endpoints";
 import { apiGet, apiPut, apiDelete, apiPost } from "../../../../../../utils/api/apiClient";
 import { getWorkspaceId } from "../../../../../../storage/workspaceStorage";
 import ResponsiveScreen from "../../../../../../components/layout/ResponsiveScreen";
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+import PermissionGate from "../../../../../../components/common/PermissionGate";
+import { hasPermission } from "../../../../../../utils/permissions";
 
 const StatusPill = ({ status }) => {
 	if (!status) return null;
@@ -45,6 +49,11 @@ const DataConnectionCard = ({
 	onDelete,
 	onTest,
 	onSettings,
+	onViewData,
+	onUpload,
+	uploading = false,
+	viewDataAllowed = false,
+	manageDataSourceAllowed = false,
 	height = 60,
 }) => {
 	const theme = useTheme();
@@ -58,11 +67,31 @@ const DataConnectionCard = ({
 			/>
 			<Card.Actions style={{ justifyContent: "space-between", paddingHorizontal: 8, paddingBottom: 8 }}>
 				<View style={{ flexDirection: "row" }}>
-				<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />
-				<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
-				<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
+					{onSync && (<IconButton icon="play-circle" accessibilityLabel="Sync" onPress={onSync} />)}
+					<PermissionGate allowed={manageDataSourceAllowed} >
+						<IconButton icon="cog" accessibilityLabel="Settings" onPress={onSettings} />
+					</PermissionGate>
+					<PermissionGate allowed={manageDataSourceAllowed} >
+						<IconButton icon="lan-pending" accessibilityLabel="Test Connection" onPress={onTest} />
+					</PermissionGate>
+					<PermissionGate
+						allowed={viewDataAllowed}
+						onAllowed={onViewData}
+					>
+						<IconButton icon="table-eye" accessibilityLabel="View Data" />
+					</PermissionGate>
+					{onUpload && (
+						<IconButton
+							icon={uploading ? "progress-upload" : "upload"}
+							accessibilityLabel="Upload CSV"
+							onPress={onUpload}
+							disabled={uploading}
+						/>
+					)}
 				</View>
-				<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
+				<PermissionGate allowed={manageDataSourceAllowed} >
+					<IconButton icon="delete-outline" accessibilityLabel="Delete" onPress={onDelete} />
+				</PermissionGate>
 			</Card.Actions>
 		</Card>
 	);
@@ -75,10 +104,29 @@ const DataManagement = () => {
 	const [error, setError] = useState("");
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const [lastManualRefresh, setLastManualRefresh] = useState(0);
+	const [uploadingMap, setUploadingMap] = useState({});
 	const [workspaceId, setWorkspaceId] = useState(null);
+	const [viewDataPermission, setViewDataPermission] = useState(false);
+	const [manageDataSourcesPermission, setManageDataSourcesPermission] = useState(false);
+
+	const [previewOpen, setPreviewOpen] = useState(false);
+	const [previewStatus, setPreviewStatus] = useState('idle');
+	const [previewColumns, setPreviewColumns] = useState([]);
+	const [previewRows, setPreviewRows] = useState([]);
+	const ROW_CHUNK = 20;
+	const [rowLimit, setRowLimit] = useState(ROW_CHUNK);
+	const [loadingMoreRows, setLoadingMoreRows] = useState(false);
+	const displayedRows = useMemo(
+		() => previewRows.slice(0, rowLimit),
+		[previewRows, rowLimit]
+	);
 
 	const prevCountRef = useRef(0);
 	const hasInitiallyLoadedRef = useRef(false);
+
+	const { width, height } = Dimensions.get("window");
+	const MODAL_MAX_W = Math.min(width * 0.95, 900);
+	const MODAL_MAX_H = Math.min(height * 0.8, 520);
 
 	const fetchDataSources = useCallback(async () => {
 		setHasError(false);
@@ -90,6 +138,7 @@ const DataManagement = () => {
 			const result = await apiGet(endpoints.modules.day_book.data_sources.getDataSources, {workspaceId});
 
 			setDataSourcesList(result.data);
+			console.log("Fetched data sources:", result.data);
 			prevCountRef.current = result.data.length;
 		} catch (error) {
 			console.error("Error fetching data sources", error);
@@ -98,16 +147,63 @@ const DataManagement = () => {
 		} finally {
 			setLoading(false);
 		}
-  }, [workspaceId]);
+  	}, [workspaceId]);
 
 	useFocusEffect(
 		useCallback(() => {
+			loadPermission();
 			if (!hasInitiallyLoadedRef.current) {
 				fetchDataSources();
 				hasInitiallyLoadedRef.current = true;
 			}
-		}, [fetchDataSources])
+		}, [loadPermission, fetchDataSources])
 	);
+
+	async function loadPermission() {
+		const viewDataPermission = await hasPermission("modules.daybook.datasources.view_data");
+		setViewDataPermission(viewDataPermission);
+		const manageDataSourcesPermission = await hasPermission("modules.daybook.datasources.manage_dataSources");
+		setManageDataSourcesPermission(manageDataSourcesPermission);
+	}
+
+	const handleUploadLocalCsv = useCallback(async (source) => {
+		try {
+			const pick = await DocumentPicker.getDocumentAsync({
+				type: ['text/csv', 'application/vnd.ms-excel', 'application/csv', 'text/comma-separated-values'],
+				copyToCacheDirectory: true,
+			});
+			if (pick.canceled) return;
+			const file = pick.assets?.[0];
+			if (!file?.uri) return;
+
+			setUploadingMap(prev => ({ ...prev, [source.dataSourceId]: true }));
+			const res = await apiGet(
+				endpoints.modules.day_book.data_sources.getUploadUrl(source.dataSourceId),
+				{ workspaceId }
+			);
+			
+			const uploadUrl = res?.data?.uploadUrl ?? res?.data;
+			if (!uploadUrl) throw new Error("No uploadUrl returned.");
+
+			const blobResp = await fetch(file.uri);
+			const blob = await blobResp.blob();
+			
+			await fetch(uploadUrl, {
+				method: 'PUT',
+				body: blob,
+				headers: { 'Content-Type': 'text/csv' },
+			});
+
+			await apiPut(endpoints.modules.day_book.data_sources.updateData(source.dataSourceId), { workspaceId });
+			await fetchDataSources();
+			Alert.alert("Upload complete", "Your CSV has been uploaded.");
+		} catch (error) {
+			console.error("Upload CSV failed:", error);
+			Alert.alert("Upload failed", String(error?.message || error));
+		} finally {
+			setUploadingMap(prev => ({ ...prev, [source.dataSourceId]: false }));
+		}
+	}, [workspaceId, fetchDataSources]);
 
 	const handleRefresh = useCallback(async () => {
 		try {
@@ -200,6 +296,35 @@ const DataManagement = () => {
 		}
 	}, []);
 
+	const handleViewData = useCallback(async (source) => {
+		try {
+			setPreviewOpen(true);
+			setPreviewStatus('loading');
+			setRowLimit(ROW_CHUNK);
+			const res = await apiGet(
+				endpoints.modules.day_book.data_sources.viewData(source.dataSourceId),
+				{ workspaceId }
+			);
+			const { data = [], schema = [] } = res.data || {};
+			setPreviewRows(Array.isArray(data) ? data : []);
+			setPreviewColumns(schema.map(s => s.name));
+			setPreviewStatus('ready');
+		} catch (err) {
+			console.error("Error loading preview data:", err);
+			setPreviewStatus('error');
+		}
+	}, [workspaceId]);
+
+	const onPreviewBottomReached = useCallback(() => {
+		if (loadingMoreRows) return;
+		if (rowLimit >= previewRows.length) return;
+		setLoadingMoreRows(true);
+		requestAnimationFrame(() => {
+			setRowLimit(prev => Math.min(prev + ROW_CHUNK, previewRows.length));
+			setLoadingMoreRows(false);
+		});
+	}, [previewRows.length, rowLimit, loadingMoreRows]);
+
 	const groupSourcesByCategory = useCallback(() => {
 		const grouped = {};
 		dataSourcesList.forEach((source) => {
@@ -213,29 +338,42 @@ const DataManagement = () => {
 
 	const groupedSources = groupSourcesByCategory();
 
-	const renderDataSourceCard = useCallback(
-		(source) => {
-			const adapterInfo = getAdapterInfo(source.sourceType || source.type);
-			if (!adapterInfo) return null;
+	const renderDataSourceCard = useCallback((source) => {
+		const adapterInfo = getAdapterInfo(source.sourceType || source.type);
+		if (!adapterInfo) return null;
 
-			return (
-				<View key={source.dataSourceId} style={{ marginBottom: 12 }}>
-					<DataConnectionCard
-						label={source.name}
-						height={60}
-						subtitle={source.lastUpdate ? `Last sync: ${formatLastSync(source.lastUpdate)}` : undefined}
-						status={source.status}
-						onNavigate={() => router.navigate(`/modules/day-book/data-management/view-data-source/${source.dataSourceId}`)}
-						onSync={() => handleSyncSource(source)}
-						onDelete={() => handleDisconnectSource(source)}
-						onTest={() => handleTestConnection(source)}
-						onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.dataSourceId}`)}
-					/>
-				</View>
-			);
-		},
-		[formatLastSync, handleSyncSource, handleDisconnectSource, handleTestConnection]
-	);
+		const typeLabel =
+		adapterInfo.displayName ||
+		adapterInfo.name ||
+		(source.sourceType || source.type);
+		const lastSyncText = source.lastUpdate
+			? `Last sync: ${formatLastSync(source.lastUpdate)}`
+			: undefined;
+
+		const subtitle = lastSyncText ? `${typeLabel} - ${lastSyncText}` : typeLabel;
+		return (
+			<View key={source.dataSourceId} style={{ marginBottom: 12 }}>
+				<DataConnectionCard
+					label={source.name}
+					height={60}
+					subtitle={subtitle}
+					status={source.status}
+					onNavigate={() => router.navigate(`/modules/day-book/data-management/view-data-source/${source.dataSourceId}`)}
+					//onSync={() => handleSyncSource(source)}
+					onDelete={() => handleDisconnectSource(source)}
+					onTest={() => handleTestConnection(source)}
+					onSettings={() => router.navigate(`/modules/day-book/data-management/edit-data-source/${source.dataSourceId}`)}
+					onViewData={() => handleViewData(source)}
+					/*{...( (source.sourceType || source.type) === 'local-csv'
+						? { onUpload: () => handleUploadLocalCsv(source),
+							uploading: !!uploadingMap[source.dataSourceId] }
+						: {} )}*/
+					viewDataAllowed={viewDataPermission}
+					manageDataSourceAllowed={manageDataSourcesPermission}
+				/>
+			</View>
+		);
+	}, [formatLastSync, handleSyncSource, viewDataPermission, manageDataSourcesPermission, handleDisconnectSource, handleTestConnection, handleViewData, handleUploadLocalCsv, uploadingMap]);
 
 	let body = null;
 
@@ -316,22 +454,93 @@ const DataManagement = () => {
 		);
 	}
 
+	
+
 	return (
 		<ResponsiveScreen
-		header={
-			<Header
-			title="Data Management"
-			showMenu
-			showPlus
-			onRightIconPress={() =>
-				router.navigate("/modules/day-book/data-management/create-data-connection")
-			}
-			/>
-		}
-		center={false}
-		scroll={true}
+			header={<Header
+				title="Data Management"
+				showMenu
+				showPlus
+				onRightIconPress={() =>
+					router.navigate("/modules/day-book/data-management/create-data-connection")
+				}
+				rightIconPermission={manageDataSourcesPermission}
+			/>}
+			center={false}
+			scroll={true}
 		>
-		{body}
+			{body}
+			<Portal>
+				<Modal
+					visible={previewOpen}
+					onDismiss={() => {
+						setPreviewOpen(false);
+						setPreviewStatus('idle');
+						setPreviewColumns([]);
+						setPreviewRows([]);
+						setRowLimit(ROW_CHUNK);
+					}}
+					contentContainerStyle={{ alignSelf: "center" }}
+				>
+					<Card style={{ width: MODAL_MAX_W, maxHeight: MODAL_MAX_H, borderRadius: 12 }}>
+						<Card.Title title="Data Preview" />
+						<Card.Content>
+							{previewStatus === 'loading' && (
+								<View style={{ height: MODAL_MAX_H - 120, alignItems: 'center', justifyContent: 'center' }}>
+									<ActivityIndicator size="large" />
+								</View>
+							)}
+							{previewStatus === 'error' && (
+								<Text>Couldn't load data. Please try again.</Text>
+							)}
+							{previewStatus === 'ready' && (
+								<ScrollView horizontal showsHorizontalScrollIndicator>
+									<View
+										style={{
+											minWidth: previewColumns.length * 120,
+											maxHeight: MODAL_MAX_H - 120,
+										}}
+									>
+										<DataTable>
+											<DataTable.Header>
+												{previewColumns.map((col, i) => (
+												<DataTable.Title key={i} numberOfLines={1}>
+													<Text>{String(col)}</Text>
+												</DataTable.Title>
+												))}
+											</DataTable.Header>
+											<FlatList
+												data={displayedRows}
+												keyExtractor={(_, idx) => String(idx)}
+												renderItem={({ item }) => (
+													<DataTable.Row>
+														{previewColumns.map((col, j) => (
+															<DataTable.Cell key={j} style={{ width: 120 }} numberOfLines={1}>
+																<Text>{String(item?.[col])}</Text>
+															</DataTable.Cell>
+														))}
+													</DataTable.Row>
+												)}
+												nestedScrollEnabled
+												style={{ maxHeight: MODAL_MAX_H - 160 }}
+												initialNumToRender={20}
+												windowSize={10}
+												removeClippedSubviews
+												onEndReached={onPreviewBottomReached}
+												onEndReachedThreshold={0.1}
+												ListFooterComponent={
+													loadingMoreRows ? <ActivityIndicator size="small" /> : null
+												}
+											/>
+										</DataTable>
+									</View>
+								</ScrollView>
+							)}
+						</Card.Content>
+					</Card>
+				</Modal>
+			</Portal>
 		</ResponsiveScreen>
 	);
 };

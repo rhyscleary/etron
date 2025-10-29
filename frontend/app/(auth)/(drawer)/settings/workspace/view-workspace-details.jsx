@@ -3,7 +3,7 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import Header from "../../../../../components/layout/Header";
 import { Card, List, Text, useTheme } from "react-native-paper";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import StackLayout from "../../../../../components/layout/StackLayout";
 import ResponsiveScreen from "../../../../../components/layout/ResponsiveScreen";
 import { apiGet } from "../../../../../utils/api/apiClient";
@@ -12,6 +12,7 @@ import { getWorkspaceId } from "../../../../../storage/workspaceStorage";
 import { router } from "expo-router";
 import formatDateTime from "../../../../../utils/format/formatISODate";
 import { hasPermission } from "../../../../../utils/permissions";
+import { useFocusEffect } from "expo-router";
 
 
 const WorkspaceDetails = () => {
@@ -21,23 +22,33 @@ const WorkspaceDetails = () => {
     const [loading, setLoading] = useState(false);
     const [editWorkspacePermission, setEditWorkspacePermission] = useState(false);
 
-    useEffect(() => {
-        (async () => {
-            setLoading(true);
-            try {
-                const workspaceId = await getWorkspaceId();
-                const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
-                setWorkspace(result.data);
-            } catch (error) {
-                console.error("Error loading workspace details:", error);
-                setWorkspace(null);
-            } finally {
-                setLoading(false);
-            }
+    /*useEffect(() => {
+        loadWorkspaceDetails();
+    }, []);*/
 
-            setEditWorkspacePermission(await hasPermission("app.workspace.update_workspace"));
-        })();
+    const loadWorkspaceDetails = useCallback(async () => {
+        setLoading(true);
+
+        const editWorkspacePermission = await hasPermission("app.workspace.update_workspace")
+        setEditWorkspacePermission(editWorkspacePermission);
+        
+        try {
+            const workspaceId = await getWorkspaceId();
+            const result = await apiGet(endpoints.workspace.core.getWorkspace(workspaceId));
+            setWorkspace(result.data);
+        } catch (error) {
+            console.error("Error loading workspace details:", error);
+            setWorkspace(null);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            loadWorkspaceDetails();
+        }, [loadWorkspaceDetails])
+    );
 
     return (
 		<ResponsiveScreen
