@@ -27,9 +27,12 @@ const METRIC_MIN_WIDTH = calculateMetricGridWidth(GRID_COLS);
 const DEFAULT_METRIC_MAX_HEIGHT = 8;
 const DEFAULT_BUTTON_MAX_HEIGHT = 3;
 
-const BoardView = () => {
-    const { id } = useLocalSearchParams();
+const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
+    const params = useLocalSearchParams();
+    const routeBoardId = params?.id;
+    const id = overrideBoardId ?? routeBoardId;
     const theme = useTheme();
+    const navigationHeaderProps = overrideBoardId ? { showMenu: true } : { showBack: true };
 
     const { 
         board, 
@@ -425,7 +428,7 @@ const BoardView = () => {
     if (loading) {
         return (
             <ResponsiveScreen
-                header={<Header title="Board" showBack />}
+                header={<Header title="Board" {...navigationHeaderProps} />}
                 center={true}
             >
                 <ActivityIndicator size="large" />
@@ -436,7 +439,7 @@ const BoardView = () => {
     if (!board) {
         return (
             <ResponsiveScreen
-                header={<Header title="Board" showBack />}
+                header={<Header title="Board" {...navigationHeaderProps} />}
                 center={true}
             >
                 <Text>Board not found</Text>
@@ -444,26 +447,28 @@ const BoardView = () => {
         );
     }
 
+    const headerNode = showHeader ? (
+        <Header
+            title={board.name}
+            subtitle={board.description}
+            {...navigationHeaderProps}
+            rightActions={[
+                {
+                    icon: isEditing ? 'check' : 'pencil',
+                    onPress: () => setIsEditing(!isEditing)
+                },
+                {
+                    icon: 'dots-vertical',
+                    onPress: () => setMenuVisible(true)
+                }
+            ]}
+        />
+    ) : undefined;
+
     return (
         <>
             <ResponsiveScreen
-                header={
-                    <Header
-                        title={board.name}
-                        subtitle={board.description}
-                        showBack
-                        rightActions={[
-                            {
-                                icon: isEditing ? 'check' : 'pencil',
-                                onPress: () => setIsEditing(!isEditing)
-                            },
-                            {
-                                icon: 'dots-vertical',
-                                onPress: () => setMenuVisible(true)
-                            }
-                        ]}
-                    />
-                }
+                header={headerNode}
                 scroll={false}
                 padded={false}
             >

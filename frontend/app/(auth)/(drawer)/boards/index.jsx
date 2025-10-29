@@ -41,10 +41,8 @@ const BoardsManagement = () => {
     const loadBoards = useCallback(async () => {
         try {
             setLoading(true);
-            const [allBoards, activeId] = await Promise.all([
-                BoardService.getAllBoards(),
-                BoardService.getActiveDashboardId()
-            ]);
+            const allBoards = await BoardService.getAllBoards();
+            const activeId = await BoardService.getActiveDashboardId(allBoards);
             setBoards(allBoards);
             setFilteredBoards(allBoards);
             setActiveBoardId(activeId);

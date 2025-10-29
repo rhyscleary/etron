@@ -2,8 +2,25 @@ import * as BoardStorage from '../storage/boardStorage';
 import endpoints from '../utils/api/endpoints';
 import apiClient from '../utils/api/apiClient';
 import { getWorkspaceId } from '../storage/workspaceStorage';
+import { v4 as uuidv4 } from 'uuid';
+
+const DEFAULT_BOARD_SETTINGS = {
+    cols: 12,
+    rowHeight: 100,
+    margin: [12, 12],
+    backgroundColor: null
+};
+
+const DEFAULT_DASHBOARD_TEXT = "You haven't set a dashboard yet. Use the button below to visit the Boards page and create one.";
+const DEFAULT_DASHBOARD_BUTTON_LABEL = "Go to Boards";
+const DEFAULT_DASHBOARD_ROUTE = "/boards";
+const DEFAULT_BUTTON_COLOR = "#2979FF";
 
 class BoardService {
+    constructor() {
+        this._defaultDashboardPromise = null;
+    }
+
     async getAllBoards() {
         try {
             const workspaceId = await getWorkspaceId();
@@ -18,7 +35,21 @@ class BoardService {
             
             // Transform backend response to frontend format
             const boards = Array.isArray(response.data) ? response.data : [];
-            return boards.map(board => this._transformBoardFromBackend(board));
+            const transformedBoards = boards.map(board => this._transformBoardFromBackend(board));
+
+            if (transformedBoards.length === 0) {
+                const defaultBoard = await this._createDefaultDashboard();
+                return defaultBoard ? [defaultBoard] : [];
+            }
+
+            if (!transformedBoards.some(board => board.isDashboard)) {
+                const defaultBoard = await this._createDefaultDashboard();
+                if (defaultBoard) {
+                    return [...transformedBoards, defaultBoard];
+                }
+            }
+
+            return transformedBoards;
         } catch (error) {
             console.error('[BoardService] getAllBoards error:', error);
             return [];
@@ -292,13 +323,39 @@ class BoardService {
     }
 
     async getActiveDashboard() {
-        const boardId = await BoardStorage.getActiveBoardId();
+        const boardId = await this.getActiveDashboardId();
         if (!boardId) return null;
         return await this.getBoard(boardId);
     }
 
-    async getActiveDashboardId() {
-        return await BoardStorage.getActiveBoardId();
+    async getActiveDashboardId(existingBoards) {
+        const storedId = await BoardStorage.getActiveBoardId();
+        if (storedId) {
+            return storedId;
+        }
+
+        let boards = Array.isArray(existingBoards)
+            ? existingBoards
+            : await this.getAllBoards();
+
+        if (!boards.length) {
+            return null;
+        }
+
+        if (!boards.some(board => board.isDashboard)) {
+            const defaultBoard = await this._createDefaultDashboard();
+            if (defaultBoard) {
+                boards = [...boards, defaultBoard];
+            }
+        }
+
+        const dashboard = boards.find(board => board.isDashboard) || boards[0];
+        if (dashboard?.id) {
+            await BoardStorage.setActiveBoard(dashboard.id);
+            return dashboard.id;
+        }
+
+        return null;
     }
 
     async markAsViewed(boardId) {
@@ -337,6 +394,88 @@ class BoardService {
             console.error('[BoardService] clearDraft error:', error);
             return false;
         }
+    }
+
+    _buildDefaultDashboardData() {
+        const textItemId = uuidv4();
+        const buttonItemId = uuidv4();
+
+        const textItem = {
+            id: textItemId,
+            type: 'text',
+            x: 2,
+            y: 1,
+            w: 8,
+            h: 2,
+            config: {
+                text: DEFAULT_DASHBOARD_TEXT,
+                alignment: 'center',
+                fontSize: 18,
+                lineHeight: 26,
+                padding: 20,
+                textColor: '',
+                backgroundColor: 'transparent',
+                maxLines: 4,
+                minWidthUnits: 8,
+                minHeightUnits: 2,
+                maxWidthUnits: 8,
+                maxHeightUnits: 6
+            }
+        };
+
+        const buttonItem = {
+            id: buttonItemId,
+            type: 'button',
+            x: 1,
+            y: 3,
+            w: 10,
+            h: 1,
+            config: {
+                label: DEFAULT_DASHBOARD_BUTTON_LABEL,
+                destination: DEFAULT_DASHBOARD_ROUTE,
+                color: DEFAULT_BUTTON_COLOR,
+                fullWidth: true,
+                alignment: 'center',
+                buttonProps: {
+                    icon: 'view-grid-plus'
+                }
+            }
+        };
+
+        return {
+            name: 'Default Dashboard',
+            description: 'Automatically created placeholder dashboard',
+            items: [textItem, buttonItem],
+            settings: { ...DEFAULT_BOARD_SETTINGS },
+            isDashboard: true
+        };
+    }
+
+    async _createDefaultDashboard() {
+        if (this._defaultDashboardPromise) {
+            return this._defaultDashboardPromise;
+        }
+
+        this._defaultDashboardPromise = (async () => {
+            let createdBoard = null;
+            try {
+                const defaultBoardData = this._buildDefaultDashboardData();
+                createdBoard = await this.createBoard(defaultBoardData);
+
+                if (createdBoard?.id) {
+                    await BoardStorage.setActiveBoard(createdBoard.id);
+                }
+
+                return createdBoard;
+            } catch (error) {
+                console.error('[BoardService] _createDefaultDashboard error:', error);
+                return null;
+            } finally {
+                this._defaultDashboardPromise = null;
+            }
+        })();
+
+        return this._defaultDashboardPromise;
     }
 }
 
