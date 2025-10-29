@@ -23,8 +23,23 @@ const GridLayout = ({
 }) => {
     const [layout, setLayout] = useState(() => mapToLayoutItems(items));
     const [draggingId, setDraggingId] = useState(null);
+    const [dragPreview, setDragPreview] = useState(null);
     const prevItemsRef = useRef(items);
     const layoutRef = useRef(layout);
+    const dragPreviewRef = useRef(null);
+    const dragStateRef = useRef(null);
+
+    const updateLayoutState = useCallback((updater) => {
+        setLayout(prevLayout => {
+            const nextLayout = typeof updater === 'function' ? updater(prevLayout) : updater;
+            layoutRef.current = nextLayout;
+            return nextLayout;
+        });
+    }, []);
+
+    useEffect(() => {
+        dragPreviewRef.current = dragPreview;
+    }, [dragPreview]);
 
     useEffect(() => {
         layoutRef.current = layout;
@@ -55,7 +70,9 @@ const GridLayout = ({
         }
 
         if (hasDifference) {
-            setLayout(mapToLayoutItems(items));
+            const mappedLayout = mapToLayoutItems(items);
+            layoutRef.current = mappedLayout;
+            setLayout(mappedLayout);
         }
 
         prevItemsRef.current = items;
@@ -80,22 +97,34 @@ const GridLayout = ({
         height: item.h * rowHeight + Math.max(0, item.h - 1) * marginY
     }), [colWidth, rowHeight, marginX, marginY]);
 
-    const getGridPosition = useCallback((x, y) => {
+    const getGridPositionFromPixels = useCallback((pixelX, pixelY) => {
         const colUnit = colWidth + marginX;
         const rowUnit = rowHeight + marginY;
 
         if (colUnit <= 0 || rowUnit <= 0) {
-            return { x: 0, y: 0 };
+            return {
+                rawX: 0,
+                rawY: 0,
+                snappedX: 0,
+                snappedY: 0
+            };
         }
 
+        const rawX = pixelX / colUnit;
+        const rawY = pixelY / rowUnit;
+
         return {
-            x: Math.max(0, Math.min(Math.round(x / colUnit), cols - 1)),
-            y: Math.max(0, Math.round(y / rowUnit))
+            rawX,
+            rawY,
+            snappedX: Math.round(rawX),
+            snappedY: Math.round(rawY)
         };
-    }, [colWidth, rowHeight, marginX, marginY, cols]);
+    }, [colWidth, marginX, rowHeight, marginY]);
 
     const hasCollision = useCallback((item, newX, newY, excludeId = null) => {
-        return layout.some(layoutItem => {
+        const currentLayout = layoutRef.current;
+
+        return currentLayout.some(layoutItem => {
             if (layoutItem.id === excludeId) return false;
             
             const itemRight = newX + item.w;
@@ -106,48 +135,174 @@ const GridLayout = ({
             return !(newX >= layoutRight || itemRight <= layoutItem.x || 
                      newY >= layoutBottom || itemBottom <= layoutItem.y);
         });
-    }, [layout]);
+    }, []);
 
-    const handleDrag = useCallback((id, x, y) => {
+    const handleDragStart = useCallback((id, position) => {
         const item = layoutRef.current.find(i => i.id === id);
         if (!item) return;
 
-        const gridPos = getGridPosition(x, y);
-        if (gridPos.x + item.w > cols) gridPos.x = cols - item.w;
-        if (hasCollision(item, gridPos.x, gridPos.y, id)) return;
+        setDraggingId(id);
+        dragStateRef.current = {
+            id,
+            item,
+            originPx: { x: position.x, y: position.y }
+        };
+        const initialPreview = { id, x: item.x, y: item.y, snappedX: item.x, snappedY: item.y };
+        dragPreviewRef.current = initialPreview;
+        setDragPreview(initialPreview);
+    }, []);
 
-        setLayout(prevLayout =>
-            prevLayout.map(i => i.id === id ? { ...i, x: gridPos.x, y: gridPos.y } : i)
-        );
-    }, [getGridPosition, hasCollision, cols]);
+    const handleDragMove = useCallback((id, dx, dy) => {
+        const dragState = dragStateRef.current;
+        if (!dragState || dragState.id !== id) return;
+
+        const { item, originPx } = dragState;
+        const pixelX = originPx.x + dx;
+        const pixelY = originPx.y + dy;
+
+        const gridPos = getGridPositionFromPixels(pixelX, pixelY);
+    const clampedRawX = Math.max(0, Math.min(gridPos.rawX, cols - item.w));
+    const clampedRawY = Math.max(0, gridPos.rawY);
+    const snappedX = Math.max(0, Math.min(Math.round(clampedRawX), cols - item.w));
+    const snappedY = Math.max(0, Math.round(clampedRawY));
+
+        const currentPreview = dragPreviewRef.current;
+        if (
+            currentPreview &&
+            currentPreview.id === id &&
+            Math.abs(currentPreview.x - clampedRawX) < 0.01 &&
+            Math.abs(currentPreview.y - clampedRawY) < 0.01
+        ) {
+            return;
+        }
+
+        const nextPreview = { id, x: clampedRawX, y: clampedRawY, snappedX, snappedY };
+        dragPreviewRef.current = nextPreview;
+
+        setDragPreview(prev => {
+            if (
+                prev &&
+                prev.id === id &&
+                Math.abs(prev.x - clampedRawX) < 0.01 &&
+                Math.abs(prev.y - clampedRawY) < 0.01
+            ) {
+                return prev;
+            }
+            return nextPreview;
+        });
+    }, [cols, getGridPositionFromPixels]);
+
+    const handleDragEnd = useCallback((id) => {
+        const dragState = dragStateRef.current;
+        const preview = dragPreviewRef.current;
+
+        dragStateRef.current = null;
+        setDraggingId(null);
+
+        if (!dragState) {
+            dragPreviewRef.current = null;
+            setDragPreview(null);
+            return;
+        }
+
+        if (!preview || preview.id !== id) {
+            dragPreviewRef.current = null;
+            setDragPreview(null);
+            return;
+        }
+
+        const { item } = dragState;
+
+        const targetX = Math.max(0, Math.min(Math.round(preview.snappedX ?? preview.x), cols - item.w));
+        const targetY = Math.max(0, Math.round(preview.snappedY ?? preview.y));
+
+        if (hasCollision(item, targetX, targetY, id)) {
+            dragPreviewRef.current = null;
+            setDragPreview(null);
+            return;
+        }
+
+        if (targetX === item.x && targetY === item.y) {
+            dragPreviewRef.current = null;
+            setDragPreview(null);
+            return;
+        }
+
+        updateLayoutState(prevLayout => prevLayout.map(layoutItem =>
+            layoutItem.id === id ? { ...layoutItem, x: targetX, y: targetY } : layoutItem
+        ));
+
+        dragPreviewRef.current = null;
+        setDragPreview(null);
+        setTimeout(() => {
+            onLayoutChange?.(layoutRef.current);
+        }, 0);
+    }, [hasCollision, onLayoutChange, updateLayoutState]);
+
+    const previewHighlightPosition = useMemo(() => {
+        if (!dragPreview) return null;
+
+        const layoutItem = layout.find(item => item.id === dragPreview.id);
+        if (!layoutItem) return null;
+
+        const clampedX = Math.max(0, Math.min((dragPreview.snappedX ?? Math.round(dragPreview.x)), cols - layoutItem.w));
+        const clampedY = Math.max(0, dragPreview.snappedY ?? Math.round(dragPreview.y));
+
+        return getItemPosition({ ...layoutItem, x: clampedX, y: clampedY });
+    }, [dragPreview, layout, cols, getItemPosition]);
 
     const containerHeight = useMemo(() => {
-        if (layout.length === 0) return rowHeight;
-        const maxY = Math.max(...layout.map(item => item.y + item.h));
-        return maxY * rowHeight + Math.max(0, maxY - 1) * marginY;
-    }, [layout, rowHeight, marginY]);
+        const effectiveLayout = dragPreview
+            ? layout.map(item => item.id === dragPreview.id
+                ? { ...item, y: dragPreview.y }
+                : item)
+            : layout;
+
+        if (effectiveLayout.length === 0) return rowHeight;
+
+        const maxY = Math.max(...effectiveLayout.map(item => item.y + item.h));
+        const normalizedMaxY = Math.ceil(maxY);
+        return normalizedMaxY * rowHeight + Math.max(0, normalizedMaxY - 1) * marginY;
+    }, [layout, dragPreview, rowHeight, marginY]);
 
     return (
         <View style={[styles.container, { height: containerHeight, width }, containerStyle]}>
+            {previewHighlightPosition && (
+                <View
+                    pointerEvents="none"
+                    style={[
+                        styles.snapHighlight,
+                        {
+                            left: previewHighlightPosition.x,
+                            top: previewHighlightPosition.y,
+                            width: previewHighlightPosition.width,
+                            height: previewHighlightPosition.height
+                        }
+                    ]}
+                />
+            )}
             {layout.map(item => {
                 const sourceItem = itemMap.get(item.id);
                 if (!sourceItem) {
                     return null;
                 }
 
+                const preview = dragPreview && dragPreview.id === item.id ? dragPreview : null;
+                const displayItem = preview
+                    ? { ...item, x: preview.x, y: preview.y }
+                    : item;
+                const position = getItemPosition(displayItem);
+
                 return (
                     <GridItem
                         key={item.id}
                         id={item.id}
-                        position={getItemPosition(item)}
+                        position={position}
                         isDraggable={isDraggable}
                         isDragging={draggingId === item.id}
-                        onDragStart={() => setDraggingId(item.id)}
-                        onDrag={handleDrag}
-                        onDragEnd={() => {
-                            setDraggingId(null);
-                            onLayoutChange?.(layoutRef.current);
-                        }}
+                        onDragStart={handleDragStart}
+                        onDragMove={handleDragMove}
+                        onDragEnd={handleDragEnd}
                         content={sourceItem.content}
                         style={sourceItem.style}
                     />
@@ -161,6 +316,13 @@ const styles = StyleSheet.create({
     container: {
         position: 'relative',
         backgroundColor: 'transparent'
+    },
+    snapHighlight: {
+        position: 'absolute',
+        borderRadius: 12,
+        backgroundColor: 'rgba(79, 70, 229, 0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(79, 70, 229, 0.14)'
     }
 });
 

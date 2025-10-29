@@ -17,10 +17,11 @@ import AddItemPicker from '../../../../../components/boards/AddItemPicker';
 import MetricDetailHeader from '../../../../../components/boards/MetricDetailHeader';
 import MetricDetailContent from '../../../../../components/boards/MetricDetailContent';
 import DisplaySettingsSheet from '../../../../../components/boards/DisplaySettingsSheet';
-import { createMetricItem, createButtonItem, mapItemsToLayout, calculateButtonGridWidth } from '../../../../../utils/boards/itemHandlers';
+import { createMetricItem, createButtonItem, mapItemsToLayout, calculateButtonGridWidth, calculateMetricGridWidth } from '../../../../../utils/boards/itemHandlers';
 import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const GRID_COLS = 12;
+const METRIC_MIN_WIDTH = calculateMetricGridWidth(GRID_COLS);
 
 const BoardView = () => {
     const { id } = useLocalSearchParams();
@@ -76,8 +77,8 @@ const BoardView = () => {
     const handleMetricSelected = useCallback(async (metric) => {
         if (!board) return;
         
-        const existingLayout = mapItemsToLayout(board.items);
-        const newItem = createMetricItem(metric, existingLayout);
+    const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
+    const newItem = createMetricItem(metric, existingLayout, GRID_COLS);
         
         await addItem(newItem);
         setShowMetricPicker(false);
@@ -86,8 +87,8 @@ const BoardView = () => {
     const handleButtonSelected = useCallback(async (destination) => {
         if (!board) return;
         
-        const existingLayout = mapItemsToLayout(board.items);
-        const newItem = createButtonItem(destination, existingLayout);
+    const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
+    const newItem = createButtonItem(destination, existingLayout, GRID_COLS);
         
         await addItem(newItem);
         setShowButtonPicker(false);
@@ -224,7 +225,14 @@ const BoardView = () => {
             let widthUnits = baseWidth;
             let xPosition = typeof item.x === 'number' ? item.x : 0;
 
-            if (item.type === 'button') {
+            if (item.type === 'metric') {
+                widthUnits = Math.max(baseWidth, METRIC_MIN_WIDTH);
+                widthUnits = Math.min(widthUnits, GRID_COLS);
+
+                if (xPosition + widthUnits > GRID_COLS) {
+                    xPosition = Math.max(0, GRID_COLS - widthUnits);
+                }
+            } else if (item.type === 'button') {
                 const minWidthUnits = calculateButtonGridWidth(item.config?.label || 'Button', GRID_COLS);
                 widthUnits = Math.max(baseWidth, minWidthUnits);
                 widthUnits = Math.min(widthUnits, GRID_COLS);
@@ -234,6 +242,20 @@ const BoardView = () => {
                 }
             }
 
+            const WrapperComponent = isEditing ? View : TouchableOpacity;
+
+            const wrapperProps = isEditing
+                ? { style: styles.itemContent }
+                : {
+                    style: styles.itemContent,
+                    activeOpacity: 0.7,
+                    onPress: () => {
+                        if (item.type === 'metric') {
+                            handleOpenMetricDetails(item.id);
+                        }
+                    }
+                };
+
             return {
                 id: item.id,
                 x: xPosition,
@@ -241,16 +263,7 @@ const BoardView = () => {
                 w: widthUnits,
                 h: baseHeight,
                 content: (
-                    <TouchableOpacity
-                        style={styles.itemContent}
-                        activeOpacity={isEditing ? 1 : 0.7}
-                        onPress={() => {
-                            if (isEditing) return;
-                            if (item.type === 'metric') {
-                                handleOpenMetricDetails(item.id);
-                            }
-                        }}
-                    >
+                    <WrapperComponent {...wrapperProps}>
                         {item.type === 'metric' ? (
                             <MetricCard
                                 item={item}
@@ -267,7 +280,7 @@ const BoardView = () => {
                                 onEdit={handleOpenItemOptions}
                             />
                         ) : null}
-                    </TouchableOpacity>
+                    </WrapperComponent>
                 )
             };
         });

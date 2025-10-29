@@ -1,6 +1,14 @@
 import { v4 as uuidv4 } from "uuid";
 import { getFirstAvailablePosition } from "../../components/layout/Grid/gridUtils";
 
+const METRIC_WIDTH_RATIO = 2 / 3;
+
+export const calculateMetricGridWidth = (cols = 12) => {
+  const minWidth = Math.ceil(cols * METRIC_WIDTH_RATIO);
+  if (minWidth <= 0) return 1;
+  return Math.min(minWidth, cols);
+};
+
 export const calculateButtonGridWidth = (label = "", cols = 12) => {
   const textLength = label.length;
 
@@ -29,14 +37,20 @@ export const calculateButtonGridWidth = (label = "", cols = 12) => {
 };
 
 export const createMetricItem = (metric, existingLayout, cols = 12) => {
-  const position = getFirstAvailablePosition(existingLayout, 4, 3, cols);
+  const metricWidth = calculateMetricGridWidth(cols);
+  const position = getFirstAvailablePosition(
+    existingLayout,
+    metricWidth,
+    3,
+    cols
+  );
 
   return {
     id: uuidv4(),
     type: "metric",
     x: position.x,
     y: position.y,
-    w: 4,
+    w: metricWidth,
     h: 3,
     config: {
       metricId: metric.metricId,
@@ -87,12 +101,17 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
   };
 };
 
-export const mapItemsToLayout = (items = []) => {
+export const mapItemsToLayout = (items = [], cols = 12) => {
+  const metricWidth = calculateMetricGridWidth(cols);
+
   return items.map((item) => ({
     id: item.id,
     x: item.x,
     y: item.y,
-    w: item.w,
+    w:
+      item.type === "metric"
+        ? Math.min(Math.max(item.w ?? 1, metricWidth), cols)
+        : item.w,
     h: item.h,
   }));
 };

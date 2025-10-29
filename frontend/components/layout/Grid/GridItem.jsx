@@ -1,71 +1,69 @@
-import React, { useRef, useState } from 'react';
-import { View, StyleSheet, Animated, PanResponder } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, StyleSheet, PanResponder } from 'react-native';
 import { useTheme } from 'react-native-paper';
 
-const GridItem = ({ id, position, isDraggable = true, isDragging = false, onDragStart, onDrag, onDragEnd, content, style }) => {
+const GridItem = ({
+    id,
+    position,
+    isDraggable = true,
+    isDragging = false,
+    onDragStart,
+    onDragMove,
+    onDragEnd,
+    content,
+    style
+}) => {
     const theme = useTheme();
-    const pan = useRef(new Animated.ValueXY({ x: position.x, y: position.y })).current;
     const [isPressed, setIsPressed] = useState(false);
+    const positionRef = useRef(position);
 
-    React.useEffect(() => {
-        if (!isDragging) {
-            Animated.spring(pan, {
-                toValue: { x: position.x, y: position.y },
-                useNativeDriver: false,
-                tension: 50,
-                friction: 7
-            }).start();
+    useEffect(() => {
+        positionRef.current = position;
+    }, [position]);
+
+    const panResponder = useMemo(() => PanResponder.create({
+        onStartShouldSetPanResponder: () => isDraggable,
+        onMoveShouldSetPanResponder: () => isDraggable,
+
+        onPanResponderGrant: () => {
+            setIsPressed(true);
+            onDragStart?.(id, positionRef.current);
+        },
+
+        onPanResponderMove: (_, gestureState) => {
+            onDragMove?.(id, gestureState.dx, gestureState.dy);
+        },
+
+        onPanResponderTerminationRequest: () => false,
+
+        onPanResponderRelease: () => {
+            setIsPressed(false);
+            onDragEnd?.(id);
+        },
+
+        onPanResponderTerminate: () => {
+            setIsPressed(false);
+            onDragEnd?.(id);
         }
-    }, [position.x, position.y, isDragging]);
+    }), [id, isDraggable, onDragStart, onDragMove, onDragEnd]);
 
-    const panResponder = React.useMemo(
-        () => PanResponder.create({
-            onStartShouldSetPanResponder: () => isDraggable,
-            onMoveShouldSetPanResponder: () => isDraggable,
-            
-            onPanResponderGrant: () => {
-                setIsPressed(true);
-                onDragStart?.(id);
-                pan.setOffset({ x: pan.x._value, y: pan.y._value });
-                pan.setValue({ x: 0, y: 0 });
-            },
-            
-            onPanResponderMove: (evt, gestureState) => {
-                Animated.event(
-                    [null, { dx: pan.x, dy: pan.y }],
-                    { useNativeDriver: false }
-                )(evt, gestureState);
-
-                if (onDrag) {
-                    const newX = pan.x._offset + gestureState.dx;
-                    const newY = pan.y._offset + gestureState.dy;
-                    onDrag(id, newX, newY);
-                }
-            },
-            
-            onPanResponderRelease: () => {
-                setIsPressed(false);
-                pan.flattenOffset();
-                onDragEnd?.(id);
-            }
-        }),
-        [isDraggable, id, onDragStart, onDrag, onDragEnd, pan]
-    );
+    const isActive = isDragging || isPressed;
 
     return (
-        <Animated.View
+        <View
             {...(isDraggable ? panResponder.panHandlers : {})}
             style={[
                 styles.item,
                 {
+                    left: position.x,
+                    top: position.y,
                     width: position.width,
                     height: position.height,
-                    transform: pan.getTranslateTransform(),
                     backgroundColor: theme.colors.surface,
                     borderColor: theme.colors.outline,
-                    elevation: isPressed ? 8 : 2,
-                    shadowOpacity: isPressed ? 0.3 : 0.1,
-                    zIndex: isPressed ? 100 : 1
+                    elevation: isActive ? 8 : 2,
+                    shadowOpacity: isActive ? 0.3 : 0.1,
+                    zIndex: isActive ? 100 : 1
                 },
                 style
             ]}
@@ -73,7 +71,7 @@ const GridItem = ({ id, position, isDraggable = true, isDragging = false, onDrag
             <View style={styles.content}>
                 {content}
             </View>
-        </Animated.View>
+        </View>
     );
 };
 

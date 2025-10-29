@@ -5,6 +5,7 @@ import GraphTypes from '../../app/(auth)/(drawer)/modules/day-book/metrics/graph
 import { resolveAppearance, buildAxisOptionsFromAppearance, formatMetricValue, formatRangeValue } from '../../utils/boards/boardUtils';
 import { DEFAULT_CHART_COLOURS } from '../../utils/boards/boardConstants';
 import metricDataService from '../../services/MetricDataService';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const MetricDetailContent = ({ item, metricState, styles }) => {
     if (!item) {
