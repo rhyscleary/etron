@@ -52,6 +52,7 @@ const ButtonCard = ({ item, isEditing, onEdit, disableEditActions = false }) => 
         onPress: _ignoredOnPress,
         label: _ignoredLabel,
         disabled: propsDisabled,
+        icon: propsIcon,
         ...restButtonProps
     } = buttonProps;
 
@@ -61,6 +62,8 @@ const ButtonCard = ({ item, isEditing, onEdit, disableEditActions = false }) => 
         : typeof fullWidth === 'boolean'
             ? fullWidth
             : true;
+
+    const buttonIcon = propsIcon ?? config.icon ?? null;
 
     const wrapperAlignmentStyle = resolvedAlignment === 'stretch'
         ? { alignItems: 'stretch' }
@@ -115,6 +118,7 @@ const ButtonCard = ({ item, isEditing, onEdit, disableEditActions = false }) => 
                         onPress={isEditing ? undefined : handleButtonPress}
                         disabled={shouldDisableButton}
                         fullWidth={shouldFullWidth}
+                        icon={buttonIcon}
                         {...restButtonProps}
                     />
                 </View>

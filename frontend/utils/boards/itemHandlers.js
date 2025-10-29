@@ -141,6 +141,8 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
   const route =
     buttonConfig.destination?.route || buttonConfig.destination || null;
   const color = buttonConfig.color || "#2979FF";
+  const icon =
+    buttonConfig.icon || buttonConfig.destination?.icon || "arrow-right";
 
   // Calculate adaptive width based on text length
   // Rough estimate: ~8-10 characters per grid unit
@@ -164,6 +166,10 @@ export const createButtonItem = (buttonConfig, existingLayout, cols = 12) => {
       label: label,
       destination: route,
       color: color,
+      icon,
+      buttonProps: {
+        icon,
+      },
     },
   };
 };

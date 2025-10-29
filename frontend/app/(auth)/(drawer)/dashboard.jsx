@@ -45,6 +45,7 @@ const Dashboard = () => {
     if (loading) {
         return (
             <ResponsiveScreen
+                header={false}    
                 scroll={false}
                 padded={false}
                 center={true}

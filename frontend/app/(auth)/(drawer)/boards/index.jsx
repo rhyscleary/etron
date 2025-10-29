@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Card, FAB, Menu, IconButton, Chip, useTheme } from 'react-native-paper';
+import { Text, Card, Menu, IconButton, Chip, useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
 import Header from '../../../../components/layout/Header';
 import BoardService from '../../../../services/BoardService';
@@ -175,7 +175,7 @@ const BoardsManagement = () => {
                                     mode="flat"
                                     compact
                                     style={styles.activeChip}
-                                    textStyle={{ fontSize: 10 }}
+                                    textStyle={styles.activeChipText}
                                 >
                                     Dashboard
                                 </Chip>
@@ -327,12 +327,6 @@ const BoardsManagement = () => {
                 </ScrollView>
             </View>
 
-            <FAB
-                icon="plus"
-                style={styles.fab}
-                onPress={handleCreateBoard}
-                label="New Board"
-            />
         </ResponsiveScreen>
     );
 };
@@ -362,19 +356,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 8
     },
     cardTitle: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8
     },
     boardName: {
         flex: 1
     },
+
     activeChip: {
-        height: 24
+        height: 24,
+        marginTop: 10
+    },
+    activeChipText: {
+        fontSize: 10,
+        lineHeight: 10
     },
     boardDescription: {
         opacity: 0.7,
@@ -412,11 +410,6 @@ const styles = StyleSheet.create({
     },
     createButton: {
         marginTop: 8
-    },
-    fab: {
-        position: 'absolute',
-        right: 16,
-        bottom: 16
     }
 });
 

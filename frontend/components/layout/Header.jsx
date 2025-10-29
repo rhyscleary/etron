@@ -1,8 +1,8 @@
 // Author(s): Rhys Cleary, Matthew Page, Noah Bradley
 
+import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Appbar, useTheme, Menu, Text } from "react-native-paper";
+import { Appbar, useTheme } from "react-native-paper";
 import { useNavigation } from '@react-navigation/native';
 import PermissionGate from "../common/PermissionGate";
 
@@ -27,7 +27,10 @@ const Header = ({
     onEllipsisPress,
     onBackPress,
     backIcon,
-    rightActions = []
+    rightActions = [],
+    titleAlignment = 'left',
+    titleStyle,
+    subtitleStyle
 }) => {
     const router = useRouter();
     const theme = useTheme();
@@ -35,25 +38,6 @@ const Header = ({
 
     const [noPermVisible, setNoPermVisible] = useState(false);
     
-    const RightIconAnchor = (
-        <Appbar.Action
-            icon={showPlus ? "plus"
-                : showEdit ? "pencil"
-                : showCheck ? "check"
-                : null }
-            color={rightIconPermission ? undefined : theme.colors.onSurfaceDisabled ?? theme.colors.onSurfaceVariant}  // Dims when user doesn't have permission
-            style={!rightIconPermission ? { opacity: 0.6 } : null}
-            onPress={async () => {
-                if (!rightIconPermission) {
-                    setNoPermVisible(true);
-                    setTimeout(() => setNoPermVisible(false), 1600);
-                    return;
-                }
-                if (onRightIconPress) await onRightIconPress();
-            }}
-        />
-    );
-
     return (
         <Appbar.Header mode="center-aligned"
             style={{
@@ -75,7 +59,20 @@ const Header = ({
                 ) : null
             }
             
-            <Appbar.Content title={title} subtitle={subtitle} />
+            <Appbar.Content
+                title={title}
+                subtitle={subtitle}
+                titleStyle={[
+                    titleAlignment === 'right' && { textAlign: 'right' },
+                    titleAlignment === 'center' && { textAlign: 'center' },
+                    titleStyle
+                ]}
+                subtitleStyle={[
+                    titleAlignment === 'right' && { textAlign: 'right' },
+                    titleAlignment === 'center' && { textAlign: 'center' },
+                    subtitleStyle
+                ]}
+            />
 
             {showEllipsis && (
                 <Appbar.Action icon="dots-vertical" onPress={onEllipsisPress} />
@@ -83,12 +80,20 @@ const Header = ({
 
             {rightActions.length > 0
                 ? rightActions.map((action, index) => (
-                    <Appbar.Action
-                        key={action.key || index}
-                        icon={action.icon}
-                        onPress={action.onPress}
-                        disabled={action.disabled}
-                    />
+                    action?.render
+                        ? (
+                            <React.Fragment key={action.key || index}>
+                                {action.render({ theme })}
+                            </React.Fragment>
+                        )
+                        : (
+                            <Appbar.Action
+                                key={action.key || index}
+                                icon={action.icon}
+                                onPress={action.onPress}
+                                disabled={action.disabled}
+                            />
+                        )
                 ))
                 : (showPlus || showEdit || showCheck) && (
                     <PermissionGate

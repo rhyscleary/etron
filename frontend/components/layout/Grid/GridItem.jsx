@@ -188,6 +188,9 @@ const GridItem = ({
     }, [resizeEnabled, id, onResizeStart, onResizeMove, onResizeEnd]);
 
     const isActive = isDragging || isPressed || isResizing || isResizeTarget;
+    const shouldShowOutline = isActive;
+    const outlineStrokeColor = isResizeTarget ? resizeHighlightColor : outlineColor;
+    const outlineWidth = isResizeTarget ? 2 : 1;
 
     return (
         <View
@@ -202,8 +205,8 @@ const GridItem = ({
                     width: position.width,
                     height: position.height,
                     backgroundColor: theme.colors.surface,
-                    borderColor: isResizeTarget ? resizeHighlightColor : outlineColor,
-                    borderWidth: isResizeTarget ? 2 : 1,
+                    borderColor: shouldShowOutline ? outlineStrokeColor : 'transparent',
+                    borderWidth: shouldShowOutline ? outlineWidth : 0,
                     elevation: isActive ? 8 : 2,
                     shadowOpacity: isActive ? 0.3 : 0.1,
                     zIndex: isActive ? 100 : 1

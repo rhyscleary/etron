@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import { Text, IconButton, Menu, ActivityIndicator, FAB, List, Divider, useTheme } from 'react-native-paper';
+import { View, StyleSheet, Alert, TouchableOpacity, Dimensions } from 'react-native';
+import { Text, IconButton, Menu, ActivityIndicator, FAB, List, Divider, useTheme, Appbar } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header from '../../../../../components/layout/Header';
 import { GridLayout } from '../../../../../components/layout/Grid';
@@ -23,6 +23,8 @@ import { createMetricItem, createButtonItem, createTextItem, mapItemsToLayout, c
 import { sanitizeColourValue } from '../../../../../utils/boards/boardUtils';
 
 const GRID_COLS = 12;
+const GRID_HORIZONTAL_PADDING = 16;
+const INITIAL_GRID_WIDTH = Math.max(0, Dimensions.get('window').width - GRID_HORIZONTAL_PADDING * 2);
 const METRIC_MIN_WIDTH = calculateMetricGridWidth(GRID_COLS);
 const DEFAULT_METRIC_MAX_HEIGHT = 8;
 const DEFAULT_BUTTON_MAX_HEIGHT = 3;
@@ -71,7 +73,12 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
     const [textEditorMode, setTextEditorMode] = useState('create');
     const [textEditorInitialConfig, setTextEditorInitialConfig] = useState({});
     const [textEditorTargetId, setTextEditorTargetId] = useState(null);
-    
+    const [buttonEditorMode, setButtonEditorMode] = useState('create');
+    const [buttonEditorInitialConfig, setButtonEditorInitialConfig] = useState({});
+    const [buttonEditorTargetId, setButtonEditorTargetId] = useState(null);
+    const [gridWidth, setGridWidth] = useState(INITIAL_GRID_WIDTH);
+
+    const editingActive = showHeader && isEditing;
     const isResizeActive = activeResizeItemId !== null;
 
     const activeMetricItem = useMemo(() => {
@@ -82,19 +89,29 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
     const activeMetricState = activeMetricItem ? metricStates[activeMetricItem.id] : null;
 
     useEffect(() => {
-        if (!isEditing) {
+        if (!editingActive) {
             setShowEditOptions(false);
             setEditOptionsItem(null);
             setShowTextEditor(false);
             setTextEditorTargetId(null);
+            setShowButtonPicker(false);
+            setButtonEditorMode('create');
+            setButtonEditorInitialConfig({});
+            setButtonEditorTargetId(null);
         }
-    }, [isEditing]);
+    }, [editingActive]);
 
     useEffect(() => {
-        if (!isEditing && activeResizeItemId !== null) {
+        if (!editingActive && activeResizeItemId !== null) {
             setActiveResizeItemId(null);
         }
-    }, [isEditing, activeResizeItemId]);
+    }, [editingActive, activeResizeItemId]);
+
+    useEffect(() => {
+        if (!showHeader && isEditing) {
+            setIsEditing(false);
+        }
+    }, [showHeader, isEditing, setIsEditing]);
 
     useEffect(() => {
         if (!activeResizeItemId) return;
@@ -114,15 +131,78 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
         setShowMetricPicker(false);
     }, [board, addItem]);
 
-    const handleButtonSelected = useCallback(async (destination) => {
-        if (!board) return;
-
-        const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
-        const newItem = createButtonItem(destination, existingLayout, GRID_COLS);
-
-        await addItem(newItem);
+    const handleCloseButtonPicker = useCallback(() => {
         setShowButtonPicker(false);
-    }, [board, addItem]);
+        setButtonEditorTargetId(null);
+        setButtonEditorInitialConfig({});
+        setButtonEditorMode('create');
+    }, []);
+
+    const handleButtonSelected = useCallback(async (buttonConfig) => {
+        if (!board) {
+            handleCloseButtonPicker();
+            return;
+        }
+
+        const trimmedLabel = typeof buttonConfig?.label === 'string'
+            ? buttonConfig.label.trim()
+            : '';
+
+        if (buttonEditorMode === 'edit' && buttonEditorTargetId) {
+            const existingItem = board.items?.find(item => item.id === buttonEditorTargetId);
+
+            if (!existingItem) {
+                handleCloseButtonPicker();
+                return;
+            }
+
+            const destinationRoute = typeof buttonConfig.destination === 'string'
+                ? buttonConfig.destination
+                : buttonConfig.destination?.route
+                    ?? existingItem.config?.destination
+                    ?? null;
+
+            const updatedLabel = trimmedLabel || existingItem.config?.label || 'Button';
+
+            const updatedConfig = {
+                ...existingItem.config,
+                label: updatedLabel,
+                destination: destinationRoute,
+                color: buttonConfig.color ?? existingItem.config?.color,
+                icon: buttonConfig.icon ?? existingItem.config?.icon,
+                buttonProps: {
+                    ...(existingItem.config?.buttonProps ?? {}),
+                    icon: buttonConfig.icon ?? existingItem.config?.buttonProps?.icon
+                }
+            };
+
+            const targetWidth = calculateButtonGridWidth(updatedLabel, GRID_COLS);
+            let targetX = existingItem.x ?? 0;
+            if (targetX + targetWidth > GRID_COLS) {
+                targetX = Math.max(0, GRID_COLS - targetWidth);
+            }
+
+            const updates = {
+                config: updatedConfig
+            };
+
+            if (existingItem.w !== targetWidth) {
+                updates.w = targetWidth;
+            }
+            if (existingItem.x !== targetX) {
+                updates.x = targetX;
+            }
+
+            await updateItem(existingItem.id, updates);
+        } else {
+            const existingLayout = mapItemsToLayout(board.items, GRID_COLS);
+            const newItem = createButtonItem(buttonConfig, existingLayout, GRID_COLS);
+
+            await addItem(newItem);
+        }
+
+        handleCloseButtonPicker();
+    }, [board, buttonEditorMode, buttonEditorTargetId, addItem, updateItem, handleCloseButtonPicker]);
 
     const normalizeTextConfig = useCallback((config) => {
         return createTextItem(config, [], GRID_COLS).config;
@@ -179,7 +259,7 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
     }, [removeItem]);
 
     const handleOpenMetricDetails = useCallback((itemId) => {
-        if (isEditing) return;
+        if (editingActive) return;
         
         setActiveMetricItemId(itemId);
         setShowMetricDetails(true);
@@ -188,7 +268,7 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
         if (item) {
             ensureMetricState(item, { forceRefresh: true });
         }
-    }, [isEditing, board?.items, ensureMetricState]);
+    }, [editingActive, board?.items, ensureMetricState]);
 
     const handleCloseMetricDetails = useCallback(() => {
         setShowMetricDetails(false);
@@ -294,8 +374,25 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
         setShowTextEditor(true);
     }, [handleCloseItemOptions]);
 
+    const handleEditButtonFromOptions = useCallback((item) => {
+        if (!item) return;
+        handleCloseItemOptions();
+        setButtonEditorMode('edit');
+        setButtonEditorInitialConfig({ ...(item.config || {}) });
+        setButtonEditorTargetId(item.id);
+        setShowButtonPicker(true);
+    }, [handleCloseItemOptions]);
+
+    const handleGridLayout = useCallback((event) => {
+        const rawWidth = event?.nativeEvent?.layout?.width ?? 0;
+        if (rawWidth > 0) {
+            const adjustedWidth = Math.max(0, rawWidth - GRID_HORIZONTAL_PADDING * 2);
+            setGridWidth(prev => (prev === adjustedWidth ? prev : adjustedWidth));
+        }
+    }, []);
+
     const handleItemLongPress = useCallback((itemId) => {
-        if (!isEditing) return;
+        if (!editingActive) return;
         setActiveResizeItemId(prev => {
             const nextId = prev === itemId ? null : itemId;
             if (nextId !== prev) {
@@ -303,11 +400,11 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                 setEditOptionsItem(null);
                 setShowAddItemPicker(false);
                 setShowMetricPicker(false);
-                setShowButtonPicker(false);
+                handleCloseButtonPicker();
             }
             return nextId;
         });
-    }, [isEditing]);
+    }, [editingActive, handleCloseButtonPicker]);
 
     const handleResizeSessionEnd = useCallback((itemId) => {
         setActiveResizeItemId(prev => (prev === itemId ? null : prev));
@@ -372,7 +469,7 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                 maxHeight: configuredMaxHeight
             };
 
-            const isMetricTouchable = !isEditing && item.type === 'metric';
+            const isMetricTouchable = !editingActive && item.type === 'metric';
             const WrapperComponent = isMetricTouchable ? TouchableOpacity : View;
 
             const wrapperProps = isMetricTouchable
@@ -398,7 +495,7 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                             <MetricCard
                                 item={item}
                                 metricState={metricStates[item.id]}
-                                isEditing={isEditing}
+                                isEditing={editingActive}
                                 styles={styles}
                                 onEdit={handleOpenItemOptions}
                                 onPress={handleOpenMetricDetails}
@@ -407,14 +504,14 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                         ) : item.type === 'button' ? (
                             <ButtonCard
                                 item={item}
-                                isEditing={isEditing}
+                                isEditing={editingActive}
                                 onEdit={handleOpenItemOptions}
                                 disableEditActions={isResizeActive}
                             />
                         ) : item.type === 'text' ? (
                             <TextCard
                                 item={item}
-                                isEditing={isEditing}
+                                isEditing={editingActive}
                                 onEdit={handleOpenItemOptions}
                                 disableEditActions={isResizeActive}
                             />
@@ -423,12 +520,12 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                 )
             };
         });
-    }, [board?.items, isEditing, metricStates, handleOpenMetricDetails, handleOpenItemOptions, isResizeActive]);
+    }, [board?.items, editingActive, metricStates, handleOpenMetricDetails, handleOpenItemOptions, isResizeActive]);
 
     if (loading) {
         return (
             <ResponsiveScreen
-                header={<Header title="Board" {...navigationHeaderProps} />}
+                header={showHeader ? <Header title="Board" {...navigationHeaderProps} /> : undefined}
                 center={true}
             >
                 <ActivityIndicator size="large" />
@@ -439,7 +536,7 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
     if (!board) {
         return (
             <ResponsiveScreen
-                header={<Header title="Board" {...navigationHeaderProps} />}
+                header={showHeader ? <Header title="Board" {...navigationHeaderProps} /> : undefined}
                 center={true}
             >
                 <Text>Board not found</Text>
@@ -452,14 +549,37 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
             title={board.name}
             subtitle={board.description}
             {...navigationHeaderProps}
+            titleAlignment="right"
             rightActions={[
                 {
-                    icon: isEditing ? 'check' : 'pencil',
+                    key: 'toggle-edit',
+                    icon: editingActive ? 'check' : 'pencil',
                     onPress: () => setIsEditing(!isEditing)
                 },
                 {
-                    icon: 'dots-vertical',
-                    onPress: () => setMenuVisible(true)
+                    key: 'menu',
+                    render: () => (
+                        <Menu
+                            visible={menuVisible}
+                            onDismiss={() => setMenuVisible(false)}
+                            anchor={
+                                <Appbar.Action
+                                    icon="dots-vertical"
+                                    onPress={() => setMenuVisible(true)}
+                                />
+                            }
+                            anchorPosition="bottom"
+                        >
+                            <Menu.Item
+                                leadingIcon="cog"
+                                title="Settings"
+                                onPress={() => {
+                                    setMenuVisible(false);
+                                    router.navigate(`/boards/${id}/settings`);
+                                }}
+                            />
+                        </Menu>
+                    )
                 }
             ]}
         />
@@ -484,45 +604,34 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                             </Text>
                         </View>
                     ) : (
-                        <GridLayout
-                            items={getGridItems()}
-                            cols={GRID_COLS}
-                            rowHeight={100}
-                            margin={[10, 10]}
-                            isDraggable={isEditing}
-                            isResizable={Boolean(activeResizeItemId)}
-                            activeResizeItemId={activeResizeItemId}
-                            onItemLongPress={isEditing ? handleItemLongPress : undefined}
-                            onBackgroundPress={handleExitResizeMode}
-                            onResizeSessionEnd={handleResizeSessionEnd}
-                            onLayoutChange={updateLayout}
-                            containerStyle={styles.gridContainer}
-                        />
+                        <View style={styles.gridWrapper} onLayout={handleGridLayout}>
+                            <GridLayout
+                                items={getGridItems()}
+                                cols={GRID_COLS}
+                                rowHeight={100}
+                                margin={[10, 10]}
+                                isDraggable={editingActive}
+                                isResizable={Boolean(activeResizeItemId)}
+                                activeResizeItemId={activeResizeItemId}
+                                onItemLongPress={editingActive ? handleItemLongPress : undefined}
+                                onBackgroundPress={handleExitResizeMode}
+                                onResizeSessionEnd={handleResizeSessionEnd}
+                                onLayoutChange={updateLayout}
+                                containerStyle={styles.gridContainer}
+                                containerWidth={gridWidth ?? undefined}
+                            />
+                        </View>
                     )}
 
-                    {isEditing && !isResizeActive && (
+                    {editingActive && !isResizeActive && (
                         <FAB
                             icon="plus"
-                            style={styles.fab}
+                            style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+                            color={theme.colors.onPrimary ?? '#ffffff'}
                             onPress={() => setShowAddItemPicker(true)}
                         />
                     )}
                 </View>
-
-                <Menu
-                    visible={menuVisible}
-                    onDismiss={() => setMenuVisible(false)}
-                    anchor={{ x: 0, y: 0 }}
-                >
-                    <Menu.Item
-                        leadingIcon="cog"
-                        title="Settings"
-                        onPress={() => {
-                            setMenuVisible(false);
-                            router.navigate(`/boards/${id}/settings`);
-                        }}
-                    />
-                </Menu>
             </ResponsiveScreen>
 
             {showEditOptions && editOptionsItem && (
@@ -578,6 +687,18 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                                     description="Update the text content and styling"
                                     left={(props) => <List.Icon {...props} icon="pencil" />}
                                     onPress={() => handleEditTextFromOptions(editOptionsItem)}
+                                />
+                                <Divider style={styles.editOptionsDivider} />
+                            </View>
+                        )}
+
+                        {editOptionsItem.type === 'button' && (
+                            <View style={styles.editOptionsSection}>
+                                <List.Item
+                                    title="Edit Button"
+                                    description="Update the label and destination"
+                                    left={(props) => <List.Icon {...props} icon="pencil" />}
+                                    onPress={() => handleEditButtonFromOptions(editOptionsItem)}
                                 />
                                 <Divider style={styles.editOptionsDivider} />
                             </View>
@@ -664,17 +785,20 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                     footer={{ variant: 'none' }}
                     containerStyle={{ zIndex: 9999 }}
                     header={{
-                        title: 'Add Button',
+                        title: buttonEditorMode === 'edit' ? 'Edit Button' : 'Add Button',
                         showClose: true
                     }}
                     onChange={(index) => {
-                        if (index === -1) setShowButtonPicker(false);
+                        if (index === -1) handleCloseButtonPicker();
                     }}
-                    onClose={() => setShowButtonPicker(false)}
+                    onClose={handleCloseButtonPicker}
                 >
                     <ButtonPicker
+                        key={buttonEditorMode === 'edit' ? `edit-${buttonEditorTargetId ?? 'new'}` : 'create'}
+                        mode={buttonEditorMode}
+                        initialConfig={buttonEditorInitialConfig}
                         onSelect={handleButtonSelected}
-                        onCancel={() => setShowButtonPicker(false)}
+                        onCancel={handleCloseButtonPicker}
                     />
                 </CustomBottomSheet>
             )}
@@ -735,6 +859,9 @@ const BoardView = ({ boardId: overrideBoardId, showHeader = true } = {}) => {
                         }}
                         onSelectButton={() => {
                             setShowAddItemPicker(false);
+                            setButtonEditorMode('create');
+                            setButtonEditorInitialConfig({});
+                            setButtonEditorTargetId(null);
                             setShowButtonPicker(true);
                         }}
                         onSelectText={() => {
@@ -763,9 +890,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1
     },
-    gridContainer: {
+    gridWrapper: {
         flex: 1,
-        padding: 10
+        paddingVertical: 12,
+        paddingHorizontal: GRID_HORIZONTAL_PADDING
+    },
+    gridContainer: {
+        flex: 1
     },
     itemContent: {
         flex: 1,

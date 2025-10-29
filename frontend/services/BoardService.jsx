@@ -434,10 +434,11 @@ class BoardService {
                 label: DEFAULT_DASHBOARD_BUTTON_LABEL,
                 destination: DEFAULT_DASHBOARD_ROUTE,
                 color: DEFAULT_BUTTON_COLOR,
+                icon: 'view-dashboard',
                 fullWidth: true,
                 alignment: 'center',
                 buttonProps: {
-                    icon: 'view-grid-plus'
+                    icon: 'view-dashboard'
                 }
             }
         };
