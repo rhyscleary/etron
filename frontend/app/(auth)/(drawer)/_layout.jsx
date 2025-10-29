@@ -48,11 +48,11 @@ const dayBookOptions = [
         icon: "chart-line",
         permKey: "modules.daybook.metrics.view_metrics"
     },
-    {
+    /*{
         name: "modules/day-book/notifications",
         label: "Notifications",
         icon: "bell",
-    },
+    },*/
 ]
 
 const boardOptions = [
