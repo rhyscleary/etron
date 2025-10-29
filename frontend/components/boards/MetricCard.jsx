@@ -15,8 +15,10 @@ const MetricCard = ({
     disableEditActions = false
 }) => {
     const theme = useTheme();
-    const editIconColor = theme.colors?.primary ?? '#1d4ed8';
-    const editContainerColor = theme.colors?.surfaceVariant
+    const editIconColor = theme.colors?.primary ?? theme.colors?.icon ?? '#118AB2';
+    const editContainerColor = theme.colors?.lowOpacityButton
+        ?? theme.colors?.buttonBackground
+        ?? theme.colors?.surfaceVariant
         ?? (theme.dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)');
 
     const config = item.config || {};
@@ -29,8 +31,16 @@ const MetricCard = ({
     const graphDef = config.chartType ? GraphTypes[config.chartType] : null;
     const appearance = resolveAppearance(config.appearance);
     const baseAxisOptions = buildAxisOptionsFromAppearance(appearance);
-    const statusTextColor = appearance.tickLabelColor || '#f4f7ff';
-    const statusMutedColor = 'rgba(255,255,255,0.78)';
+    const statusTextColor = appearance.tickLabelColor
+        || theme.colors?.textAlt
+        || theme.colors?.icon
+        || '#f4f7ff';
+    const statusMutedColor = theme.colors?.lowOpacityText
+        || theme.colors?.onSurfaceVariant
+        || 'rgba(255,255,255,0.78)';
+    const graphBackground = appearance.background
+        || theme.colors?.surface
+        || theme.colors?.background;
 
     const chartPreview = (() => {
         if (isLoading) {
@@ -134,7 +144,7 @@ const MetricCard = ({
             <View style={[
                 styles.metricGraphCard,
                 isEditing && styles.metricGraphCardEditing,
-                { backgroundColor: appearance.background }
+                { backgroundColor: graphBackground }
             ]}>
                 {isEditing && !disableEditActions && (
                     <View style={styles.metricEditOverlay}>

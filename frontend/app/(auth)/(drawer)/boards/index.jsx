@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, Card, FAB, Searchbar, Menu, IconButton, Button, Chip, useTheme } from 'react-native-paper';
+import { Text, Card, FAB, Menu, IconButton, Chip, useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
 import Header from '../../../../components/layout/Header';
 import BoardService from '../../../../services/BoardService';
 import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
+import SearchBar from '../../../../components/common/input/SearchBar';
+import BasicButton from '../../../../components/common/buttons/BasicButton';
 
 const formatTimeAgo = (dateString) => {
     if (!dateString) return 'Never';
@@ -287,11 +289,12 @@ const BoardsManagement = () => {
             )}
         >
             <View style={styles.container}>
-                <Searchbar
+                <SearchBar
                     placeholder="Search boards..."
-                    onChangeText={setSearchQuery}
                     value={searchQuery}
-                    style={styles.searchBar}
+                    onSearch={setSearchQuery}
+                    containerStyle={styles.searchBarContainer}
+                    searchbarStyle={styles.searchBar}
                 />
 
                 <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -311,13 +314,11 @@ const BoardsManagement = () => {
                                     : 'Create your first board to get started'}
                             </Text>
                             {!searchQuery && (
-                                <Button
-                                    mode="contained"
+                                <BasicButton
+                                    label="Create Board"
                                     onPress={handleCreateBoard}
                                     style={styles.createButton}
-                                >
-                                    Create Board
-                                </Button>
+                                />
                             )}
                         </View>
                     ) : (
@@ -343,8 +344,12 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16
     },
-    searchBar: {
+    searchBarContainer: {
+        marginHorizontal: 0,
         marginBottom: 16
+    },
+    searchBar: {
+        marginBottom: 0
     },
     scrollView: {
         flex: 1

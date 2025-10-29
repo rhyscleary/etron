@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { Text, TextInput, Switch, Button, List, Divider } from 'react-native-paper';
+import { Text, TextInput, Switch, Button, List, Divider, useTheme } from 'react-native-paper';
 import ColorPicker from 'react-native-wheel-color-picker';
 import CustomBottomSheet from '../BottomSheet';
 import { 
@@ -23,12 +23,28 @@ const DisplaySettingsSheet = ({
     onResetColours,
     onResetAppearance
 }) => {
+    const theme = useTheme();
     const [showColourSheet, setShowColourSheet] = useState(false);
     const [showAppearanceSheet, setShowAppearanceSheet] = useState(false);
     const [colourPickerIndex, setColourPickerIndex] = useState(0);
     const [colourInputValue, setColourInputValue] = useState(DEFAULT_BOARD_COLOUR);
     const [colourInputError, setColourInputError] = useState(false);
     const colourInputFocusedRef = useRef(false);
+
+    const primaryColor = theme.colors?.primary ?? '#6200ee';
+    const chipBorderColor = primaryColor;
+    const chipBackgroundColor = theme.colors?.focusedBackground
+        ?? theme.colors?.lowOpacityButton
+        ?? theme.colors?.buttonBackground
+        ?? 'rgba(98,0,238,0.08)';
+    const chipSelectedBackground = theme.colors?.buttonBackground
+        ?? theme.colors?.focusedBackground
+        ?? 'rgba(98,0,238,0.18)';
+    const swatchBorderColor = theme.colors?.outline ?? 'rgba(255,255,255,0.4)';
+    const previewBorderColor = theme.colors?.outline ?? 'rgba(255,255,255,0.35)';
+    const subSheetDividerColor = theme.colors?.divider
+        ?? theme.colors?.outline
+        ?? 'rgba(0,0,0,0.08)';
 
     if (!visible || !item) return null;
 
@@ -197,12 +213,22 @@ const DisplaySettingsSheet = ({
                                                 activeOpacity={0.85}
                                                 style={[
                                                     styles.colourChip,
-                                                    isSelected && styles.colourChipSelected
+                                                    {
+                                                        borderColor: chipBorderColor,
+                                                        backgroundColor: chipBackgroundColor
+                                                    },
+                                                    isSelected && {
+                                                        borderColor: primaryColor,
+                                                        backgroundColor: chipSelectedBackground
+                                                    }
                                                 ]}
                                             >
                                                 <View style={[
                                                     styles.colourSwatch, 
-                                                    { backgroundColor: colourValue || DEFAULT_BOARD_COLOUR }
+                                                    {
+                                                        backgroundColor: colourValue || DEFAULT_BOARD_COLOUR,
+                                                        borderColor: swatchBorderColor
+                                                    }
                                                 ]} />
                                                 <Text style={styles.colourChipLabel} numberOfLines={1}>
                                                     {label || `S${index + 1}`}
@@ -216,9 +242,11 @@ const DisplaySettingsSheet = ({
                                     <View
                                         style={[
                                             styles.colourPreview,
-                                            { backgroundColor: isValidHexColour(colourInputValue) 
-                                                ? colourInputValue 
-                                                : DEFAULT_BOARD_COLOUR 
+                                            {
+                                                backgroundColor: isValidHexColour(colourInputValue)
+                                                    ? colourInputValue
+                                                    : DEFAULT_BOARD_COLOUR,
+                                                borderColor: previewBorderColor
                                             }
                                         ]}
                                     />
@@ -259,7 +287,7 @@ const DisplaySettingsSheet = ({
                                     Reset colours
                                 </Button>
 
-                                <View style={styles.subSheetActions}>
+                                <View style={[styles.subSheetActions, { borderTopColor: subSheetDividerColor }]}>
                                     <Button 
                                         mode="contained" 
                                         onPress={handleCloseColourSheet}
@@ -352,7 +380,7 @@ const DisplaySettingsSheet = ({
                                 Reset appearance
                             </Button>
 
-                            <View style={styles.subSheetActions}>
+                            <View style={[styles.subSheetActions, { borderTopColor: subSheetDividerColor }]}>
                                 <Button 
                                     mode="contained" 
                                     onPress={handleCloseAppearanceSheet}
@@ -433,25 +461,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(98,0,238,0.24)',
         borderRadius: 16,
         paddingHorizontal: 10,
         paddingVertical: 4,
         marginHorizontal: 3,
-        marginBottom: 6,
-        backgroundColor: 'rgba(98,0,238,0.08)'
-    },
-    colourChipSelected: {
-        borderColor: '#6200ee',
-        backgroundColor: 'rgba(98,0,238,0.18)'
+        marginBottom: 6
     },
     colourSwatch: {
         width: 14,
         height: 14,
         borderRadius: 7,
         marginRight: 6,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.4)'
+        borderWidth: 1
     },
     colourChipLabel: {
         fontSize: 12,
@@ -467,7 +488,6 @@ const styles = StyleSheet.create({
         height: 32,
         borderRadius: 16,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.35)',
         marginRight: 10
     },
     colourTextInput: {
@@ -496,8 +516,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         marginTop: 16,
         paddingTop: 16,
-        borderTopWidth: 1,
-        borderTopColor: 'rgba(0,0,0,0.08)'
+        borderTopWidth: 1
     },
     subSheetSaveButton: {
         minWidth: 120

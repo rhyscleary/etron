@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Text, Searchbar, Card, Checkbox, Button, Chip, IconButton, Divider } from 'react-native-paper';
+import { Text, Searchbar, Card, Checkbox, Button, Chip, IconButton, Divider, useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
 import { getWorkspaceId } from '../../storage/workspaceStorage';
 import endpoints from '../../utils/api/endpoints';
 import { apiGet } from '../../utils/api/apiClient';
 
 const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
+    const theme = useTheme();
+    const outlineColor = theme.colors?.outline ?? '#e0e0e0';
+    const primaryColor = theme.colors?.primary ?? '#6200ee';
+    const mutedTextColor = theme.colors?.lowOpacityText
+        ?? theme.colors?.onSurfaceVariant
+        ?? 'rgba(0,0,0,0.6)';
+    const surfaceAltColor = theme.colors?.buttonBackground
+        ?? theme.colors?.surfaceVariant
+        ?? '#f5f5f5';
+    const dividerColor = theme.colors?.divider ?? outlineColor;
+
     const [searchQuery, setSearchQuery] = useState('');
     const [metrics, setMetrics] = useState([]);
     const [filteredMetrics, setFilteredMetrics] = useState([]);
@@ -149,14 +160,17 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
             <Card
                 style={[
                     styles.metricCard,
-                    isSelected(metric.id) && styles.metricCardSelected
+                    isSelected(metric.id) && {
+                        borderWidth: 2,
+                        borderColor: primaryColor
+                    }
                 ]}
                 onPress={() => handleToggleMetric(metric)}
             >
                 <Card.Content style={styles.cardContent}>
                     <View style={styles.cardLeft}>
                         <Text variant="titleMedium">{metric.name || 'Unnamed Metric'}</Text>
-                        <Text variant="bodySmall" style={styles.description}>
+                        <Text variant="bodySmall" style={[styles.description, { color: mutedTextColor }]}>
                             {variablesText}
                         </Text>
                         <View style={styles.chips}>
@@ -185,12 +199,12 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
         <View style={styles.container}>
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" />
-                    <Text style={styles.loadingText}>Loading metrics...</Text>
+                    <ActivityIndicator size="large" color={primaryColor} />
+                    <Text style={[styles.loadingText, { color: mutedTextColor }]}>Loading metrics...</Text>
                 </View>
             ) : error ? (
                 <View style={styles.errorContainer}>
-                    <Text variant="bodyLarge" style={styles.errorText}>{error}</Text>
+                    <Text variant="bodyLarge" style={[styles.errorText, { color: theme.colors?.error ?? '#d32f2f' }]}>{error}</Text>
                     <Button mode="contained" onPress={loadMetrics} style={styles.retryButton}>
                         Retry
                     </Button>
@@ -201,25 +215,36 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
                         placeholder="Search metrics..."
                         onChangeText={setSearchQuery}
                         value={searchQuery}
-                        style={styles.searchBar}
+                        style={[
+                            styles.searchBar,
+                            {
+                                backgroundColor: theme.colors?.surface,
+                                borderColor: outlineColor,
+                                borderWidth: 1,
+                                borderRadius: 10
+                            }
+                        ]}
+                        inputStyle={{ fontSize: 16 }}
+                        iconColor={theme.colors?.icon}
                     />
 
                     {/* Create New Metric Option - Only show if there are metrics or if searching */}
                     {(metrics.length > 0 || searchQuery) && (
                         <>
                             <TouchableOpacity onPress={handleCreateMetric}>
-                                <Card style={styles.createMetricCard}>
+                                <Card style={[styles.createMetricCard, { backgroundColor: surfaceAltColor }]}>
                                     <Card.Content style={styles.createMetricContent}>
                                         <IconButton
                                             icon="plus-circle"
                                             size={24}
                                             style={styles.createMetricIcon}
+                                            iconColor={primaryColor}
                                         />
                                         <View style={styles.createMetricText}>
-                                            <Text variant="titleMedium" style={styles.createMetricTitle}>
+                                            <Text variant="titleMedium" style={[styles.createMetricTitle, { color: primaryColor }]}>
                                                 Create New Metric
                                             </Text>
-                                            <Text variant="bodySmall" style={styles.createMetricHint}>
+                                            <Text variant="bodySmall" style={[styles.createMetricHint, { color: mutedTextColor }]}>
                                                 Go to Day Book to create a new metric
                                             </Text>
                                         </View>
@@ -227,7 +252,7 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
                                 </Card>
                             </TouchableOpacity>
 
-                            <Divider style={styles.divider} />
+                            <Divider style={[styles.divider, { backgroundColor: dividerColor }]} />
                         </>
                     )}
 
@@ -249,11 +274,11 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
                         contentContainerStyle={styles.list}
                         ListEmptyComponent={
                             <View style={styles.emptyState}>
-                                <IconButton icon="chart-box-outline" size={64} />
+                                <IconButton icon="chart-box-outline" size={64} iconColor={theme.colors?.icon} />
                                 <Text variant="titleLarge" style={styles.emptyTitle}>
                                     {searchQuery ? 'No metrics found' : 'No Metrics Created Yet'}
                                 </Text>
-                                <Text variant="bodyMedium" style={styles.emptyHint}>
+                                <Text variant="bodyMedium" style={[styles.emptyHint, { color: mutedTextColor }]}>
                                     {searchQuery
                                         ? 'Try a different search term or create a new metric'
                                         : 'You haven\'t created any metrics yet. Create your first metric to add it to this board.'}
@@ -271,7 +296,7 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
                     />
 
                     {multiSelect && (
-                        <View style={styles.footer}>
+                        <View style={[styles.footer, { borderTopColor: dividerColor }]}>
                             <Button
                                 mode="outlined"
                                 onPress={onCancel}
@@ -316,7 +341,6 @@ const styles = StyleSheet.create({
         padding: 32
     },
     errorText: {
-        color: '#d32f2f',
         marginBottom: 16,
         textAlign: 'center'
     },
@@ -329,8 +353,7 @@ const styles = StyleSheet.create({
     },
     createMetricCard: {
         marginHorizontal: 16,
-        marginBottom: 8,
-        backgroundColor: '#f5f5f5'
+        marginBottom: 8
     },
     createMetricContent: {
         flexDirection: 'row',
@@ -345,8 +368,7 @@ const styles = StyleSheet.create({
         flex: 1
     },
     createMetricTitle: {
-        fontWeight: '600',
-        color: '#6200ee'
+        fontWeight: '600'
     },
     createMetricHint: {
         opacity: 0.7,
@@ -369,10 +391,6 @@ const styles = StyleSheet.create({
     },
     metricCard: {
         marginBottom: 12
-    },
-    metricCardSelected: {
-        borderWidth: 2,
-        borderColor: '#6200ee'
     },
     cardContent: {
         flexDirection: 'row',
@@ -414,8 +432,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         gap: 12,
         padding: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#e0e0e0'
+        borderTopWidth: 1
     },
     footerButton: {
         flex: 1

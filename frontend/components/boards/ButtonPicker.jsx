@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { List, Button, TextInput, Text } from 'react-native-paper';
+import { List, Button, TextInput, Text, useTheme } from 'react-native-paper';
 
 
 
@@ -50,9 +50,11 @@ const NAVIGATION_DESTINATIONS = [
 ];
 
 const ButtonPicker = ({ onSelect, onCancel }) => {
+    const theme = useTheme();
     const [buttonLabel, setButtonLabel] = useState('');
     const [selectedDestination, setSelectedDestination] = useState(null);
-    const [buttonColor, setButtonColor] = useState('#2979FF');
+    const defaultButtonColor = theme.colors?.primary ?? '#2979FF';
+    const [buttonColor, setButtonColor] = useState(defaultButtonColor);
     const [labelError, setLabelError] = useState(false);
 
     const handleDestinationSelect = (destination) => {
@@ -102,7 +104,10 @@ const ButtonPicker = ({ onSelect, onCancel }) => {
                     dense
                 />
                 {labelError && (
-                    <Text variant="bodySmall" style={styles.errorText}>
+                    <Text
+                        variant="bodySmall"
+                        style={[styles.errorText, { color: theme.colors?.error ?? '#ff5252' }]}
+                    >
                         Button label is required
                     </Text>
                 )}
@@ -120,7 +125,18 @@ const ButtonPicker = ({ onSelect, onCancel }) => {
                             onPress={() => handleDestinationSelect(destination)}
                             style={[
                                 styles.destinationCard,
-                                selectedDestination?.id === destination.id && styles.destinationCardSelected
+                                {
+                                    borderColor: theme.colors?.outline ?? 'rgba(0,0,0,0.12)',
+                                    backgroundColor: theme.colors?.surface ?? '#ffffff'
+                                },
+                                selectedDestination?.id === destination.id && {
+                                    borderColor: theme.colors?.primary ?? defaultButtonColor,
+                                    backgroundColor: theme.colors?.focusedBackground
+                                        ?? theme.colors?.lowOpacityButton
+                                        ?? theme.colors?.buttonBackground
+                                        ?? '#E3F2FD',
+                                    borderWidth: 2
+                                }
                             ]}
                         >
                             <List.Icon icon={destination.icon} />
@@ -169,7 +185,6 @@ const styles = StyleSheet.create({
         marginBottom: 8
     },
     errorText: {
-        color: '#ff5252',
         marginTop: -4,
         marginBottom: 8
     },
@@ -183,17 +198,10 @@ const styles = StyleSheet.create({
         width: '31%',
         aspectRatio: 1,
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.12)',
         borderRadius: 8,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 8,
-        backgroundColor: '#fff'
-    },
-    destinationCardSelected: {
-        borderColor: '#2979FF',
-        borderWidth: 2,
-        backgroundColor: 'rgba(41, 121, 255, 0.08)'
+        padding: 8
     },
     destinationLabel: {
         marginTop: 4,

@@ -15,8 +15,10 @@ const alignmentMap = {
 
 const ButtonCard = ({ item, isEditing, onEdit, disableEditActions = false }) => {
     const theme = useTheme();
-    const editIconColor = theme.colors?.primary ?? '#1d4ed8';
-    const editContainerColor = theme.colors?.surfaceVariant
+    const editIconColor = theme.colors?.primary ?? theme.colors?.icon ?? '#118AB2';
+    const editContainerColor = theme.colors?.lowOpacityButton
+        ?? theme.colors?.buttonBackground
+        ?? theme.colors?.surfaceVariant
         ?? (theme.dark ? 'rgba(255,255,255,0.16)' : 'rgba(0,0,0,0.08)');
 
     const config = item.config || {};

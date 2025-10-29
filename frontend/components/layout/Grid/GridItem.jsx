@@ -22,6 +22,14 @@ const GridItem = ({
     showDragHandle = false
 }) => {
     const theme = useTheme();
+    const outlineColor = theme.colors?.outline ?? 'rgba(0,0,0,0.12)';
+    const resizeHighlightColor = theme.colors?.primary ?? '#6366f1';
+    const resizeHandleFill = theme.colors?.focusedBackground
+        ?? theme.colors?.lowOpacityButton
+        ?? 'rgba(99, 102, 241, 0.25)';
+    const resizeHandleBorder = theme.colors?.primary ?? 'rgba(99, 102, 241, 0.45)';
+    const dragHandleBackground = theme.colors?.primary ?? 'rgba(99, 102, 241, 0.9)';
+    const dragHandleGripColor = theme.colors?.onPrimary ?? theme.colors?.text ?? '#fff';
     const [isPressed, setIsPressed] = useState(false);
     const positionRef = useRef(position);
 
@@ -184,6 +192,8 @@ const GridItem = ({
     return (
         <View
             {...(isDraggable ? panResponder.panHandlers : {})}
+            onTouchEndCapture={clearLongPressTimeout}
+            onTouchCancel={clearLongPressTimeout}
             style={[
                 styles.item,
                 {
@@ -192,7 +202,7 @@ const GridItem = ({
                     width: position.width,
                     height: position.height,
                     backgroundColor: theme.colors.surface,
-                    borderColor: isResizeTarget ? 'rgba(99, 102, 241, 0.6)' : theme.colors.outline,
+                    borderColor: isResizeTarget ? resizeHighlightColor : outlineColor,
                     borderWidth: isResizeTarget ? 2 : 1,
                     elevation: isActive ? 8 : 2,
                     shadowOpacity: isActive ? 0.3 : 0.1,
@@ -207,25 +217,34 @@ const GridItem = ({
             {showDragHandle && dragHandlePanResponder && (
                 <View
                     {...dragHandlePanResponder.panHandlers}
-                    style={styles.dragHandle}
+                    style={[styles.dragHandle, { backgroundColor: dragHandleBackground }]}
                 >
-                    <View style={styles.dragHandleGrip} />
-                    <View style={[styles.dragHandleGrip, styles.dragHandleGripLower]} />
+                    <View style={[styles.dragHandleGrip, { backgroundColor: dragHandleGripColor }]} />
+                    <View style={[styles.dragHandleGrip, styles.dragHandleGripLower, { backgroundColor: dragHandleGripColor }]} />
                 </View>
             )}
             {resizeEnabled && resizePanResponders && (
                 <View pointerEvents="box-none" style={styles.resizeOverlay}>
                     <View
                         {...resizePanResponders.e.panHandlers}
-                        style={[styles.resizeHandle, styles.handleEast]}
+                        style={[styles.resizeHandle, styles.handleEast, {
+                            backgroundColor: resizeHandleFill,
+                            borderColor: resizeHandleBorder
+                        }]}
                     />
                     <View
                         {...resizePanResponders.s.panHandlers}
-                        style={[styles.resizeHandle, styles.handleSouth]}
+                        style={[styles.resizeHandle, styles.handleSouth, {
+                            backgroundColor: resizeHandleFill,
+                            borderColor: resizeHandleBorder
+                        }]}
                     />
                     <View
                         {...resizePanResponders.se.panHandlers}
-                        style={[styles.resizeHandle, styles.handleCorner]}
+                        style={[styles.resizeHandle, styles.handleCorner, {
+                            backgroundColor: resizeHandleFill,
+                            borderColor: resizeHandleBorder
+                        }]}
                     />
                 </View>
             )}
@@ -252,8 +271,6 @@ const styles = StyleSheet.create({
     },
     resizeHandle: {
         position: 'absolute',
-        backgroundColor: 'rgba(99, 102, 241, 0.25)',
-        borderColor: 'rgba(99, 102, 241, 0.45)',
         borderWidth: 1,
         borderRadius: 6
     },
@@ -282,7 +299,6 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         borderRadius: 14,
-        backgroundColor: 'rgba(99, 102, 241, 0.9)',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 25
@@ -291,7 +307,6 @@ const styles = StyleSheet.create({
         width: 14,
         height: 3,
         borderRadius: 2,
-        backgroundColor: '#fff',
         opacity: 0.9
     },
     dragHandleGripLower: {

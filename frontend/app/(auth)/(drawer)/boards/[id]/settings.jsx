@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, TextInput, Button, List, Divider, useTheme } from 'react-native-paper';
+import { Text, TextInput, List, Divider } from 'react-native-paper';
 import { router, useLocalSearchParams } from 'expo-router';
 import Header from '../../../../../components/layout/Header';
 import BoardService from '../../../../../services/BoardService';
 import ResponsiveScreen from '../../../../../components/layout/ResponsiveScreen';
+import BasicButton from '../../../../../components/common/buttons/BasicButton';
 
 const BoardSettings = () => {
-    const theme = useTheme();
     const { id } = useLocalSearchParams();
     const [board, setBoard] = useState(null);
     const [name, setName] = useState('');
@@ -189,43 +189,42 @@ const BoardSettings = () => {
                     <Text variant="titleMedium" style={styles.sectionTitle}>
                         Actions
                     </Text>
-                    <Button
+                    <BasicButton
+                        label="Duplicate Board"
                         mode="outlined"
                         icon="content-copy"
+                        fullWidth
                         onPress={handleDuplicate}
                         style={styles.actionButton}
-                    >
-                        Duplicate Board
-                    </Button>
-                    <Button
+                    />
+                    <BasicButton
+                        label="Delete Board"
                         mode="outlined"
                         icon="delete"
+                        danger
+                        fullWidth
                         onPress={handleDelete}
                         style={styles.actionButton}
-                        textColor={theme.colors.error}
-                    >
-                        Delete Board
-                    </Button>
+                    />
                 </View>
 
                 <View style={styles.buttonContainer}>
-                    <Button
+                    <BasicButton
+                        label="Cancel"
                         mode="outlined"
+                        fullWidth
                         onPress={() => router.back()}
-                        style={styles.cancelButton}
                         disabled={saving}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        mode="contained"
+                        style={styles.cancelButton}
+                    />
+                    <BasicButton
+                        label="Save Changes"
+                        fullWidth
                         onPress={handleSave}
-                        style={styles.saveButton}
                         loading={saving}
                         disabled={saving}
-                    >
-                        Save Changes
-                    </Button>
+                        style={styles.saveButton}
+                    />
                 </View>
             </ScrollView>
         </ResponsiveScreen>

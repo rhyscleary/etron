@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
+import { Text, TextInput } from 'react-native-paper';
 import { router } from 'expo-router';
 import Header from '../../../../components/layout/Header';
 import BoardService from '../../../../services/BoardService';
 import ResponsiveScreen from '../../../../components/layout/ResponsiveScreen';
+import BasicButton from '../../../../components/common/buttons/BasicButton';
 
 const CreateBoard = () => {
     const [name, setName] = useState('');
@@ -95,23 +96,22 @@ const CreateBoard = () => {
                 />
 
                 <View style={styles.buttonContainer}>
-                    <Button
+                    <BasicButton
+                        label="Cancel"
                         mode="outlined"
+                        fullWidth
                         onPress={() => router.back()}
-                        style={styles.cancelButton}
                         disabled={creating}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        mode="contained"
+                        style={styles.cancelButton}
+                    />
+                    <BasicButton
+                        label="Create Board"
+                        fullWidth
                         onPress={handleCreate}
-                        style={styles.createButton}
                         loading={creating}
                         disabled={creating || !name.trim()}
-                    >
-                        Create Board
-                    </Button>
+                        style={styles.createButton}
+                    />
                 </View>
             </ScrollView>
         </ResponsiveScreen>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { Text, Chip } from 'react-native-paper';
+import { Text, Chip, useTheme } from 'react-native-paper';
 import GraphTypes from '../../app/(auth)/(drawer)/modules/day-book/metrics/graph-types';
 import { resolveAppearance, buildAxisOptionsFromAppearance, formatMetricValue, formatRangeValue } from '../../utils/boards/boardUtils';
 import { DEFAULT_CHART_COLOURS } from '../../utils/boards/boardConstants';
@@ -11,6 +11,8 @@ const MetricDetailContent = ({ item, metricState, styles }) => {
     if (!item) {
         return null;
     }
+
+    const theme = useTheme();
 
     const config = item.config || {};
     const dependentVariables = Array.isArray(config.dependentVariables) ? config.dependentVariables : [];
@@ -23,8 +25,16 @@ const MetricDetailContent = ({ item, metricState, styles }) => {
     const dataCount = data.length;
     const appearance = resolveAppearance(config.appearance);
     const axisOptions = buildAxisOptionsFromAppearance(appearance);
-    const statusTextColor = appearance.tickLabelColor || '#f4f7ff';
-    const statusMutedColor = 'rgba(255,255,255,0.75)';
+    const statusTextColor = appearance.tickLabelColor
+        || theme.colors?.textAlt
+        || theme.colors?.icon
+        || '#f4f7ff';
+    const statusMutedColor = theme.colors?.lowOpacityText
+        || theme.colors?.onSurfaceVariant
+        || 'rgba(255,255,255,0.75)';
+    const chartBackground = appearance.background
+        || theme.colors?.surface
+        || theme.colors?.background;
     const selectedRows = Array.isArray(config.selectedRows) ? config.selectedRows : [];
     const dataSummaryText = selectedRows.length > 0
         ? `${dataCount} pts · ${selectedRows.length} selected`
@@ -53,7 +63,7 @@ const MetricDetailContent = ({ item, metricState, styles }) => {
 
     return (
         <View style={styles.metricDetailContainer}>
-            <View style={[styles.metricDetailChart, { backgroundColor: appearance.background }]}> 
+            <View style={[styles.metricDetailChart, { backgroundColor: chartBackground }]}> 
                 {isLoading && (
                     <View style={styles.metricStatus}>
                         <ActivityIndicator color={statusTextColor} />
@@ -63,13 +73,18 @@ const MetricDetailContent = ({ item, metricState, styles }) => {
 
                 {!isLoading && errorMessage && (
                     <View style={styles.metricStatus}>
-                        <Text style={[styles.metricErrorText, { color: '#ff8a80' }]} numberOfLines={3}>{errorMessage}</Text>
+                        <Text
+                            style={[styles.metricErrorText, { color: theme.colors?.error ?? '#ff8a80' }]}
+                            numberOfLines={3}
+                        >
+                            {errorMessage}
+                        </Text>
                     </View>
                 )}
 
                 {!isLoading && !errorMessage && !graphDef && (
                     <View style={styles.metricStatus}>
-                        <Text style={[styles.metricErrorText, { color: '#ff8a80' }]}>Unsupported chart type.</Text>
+                        <Text style={[styles.metricErrorText, { color: theme.colors?.error ?? '#ff8a80' }]}>Unsupported chart type.</Text>
                     </View>
                 )}
 
