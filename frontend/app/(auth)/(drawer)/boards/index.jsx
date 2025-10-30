@@ -16,7 +16,6 @@ const BoardsManagement = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [activeBoardId, setActiveBoardId] = useState(null);
-
     // Load boards
     const loadBoards = useCallback(async () => {
         try {
@@ -125,8 +124,8 @@ const BoardsManagement = () => {
         }
     };
 
-    const handleShareBoard = (board) => {
-        router.push(`/boards/${board.id}/share`);
+    const handleSettingsBoard = (board) => {
+        router.push(`/boards/${board.id}/settings`);
     };
 
     return (
@@ -179,21 +178,31 @@ const BoardsManagement = () => {
                         </View>
                     ) : (
                         <View style={styles.boardsList}>
-                            {filteredBoards.map((board) => (
-                                <BoardCard
-                                    key={board.id}
-                                    board={board}
-                                    isActive={board.id === activeBoardId}
-                                    itemCount={board.items?.length || 0}
-                                    lastUpdated={formatTimeAgo(board.metadata?.updatedAt)}
-                                    onView={handleViewBoard}
-                                    onEdit={handleEditBoard}
-                                    onSetAsDashboard={handleSetAsActive}
-                                    onDuplicate={handleDuplicateBoard}
-                                    onShare={handleShareBoard}
-                                    onDelete={handleDeleteBoard}
-                                />
-                            ))}
+                            {filteredBoards.map((board) => {
+                                const owner = board.owner || (
+                                    board.access?.ownerId
+                                        ? { userId: String(board.access.ownerId) }
+                                        : null
+                                );
+                                const isShared = Array.isArray(board?.access?.collaborators) && board.access.collaborators.length > 0;
+
+                                return (
+                                    <BoardCard
+                                        key={board.id}
+                                        board={board}
+                                        isActive={board.id === activeBoardId}
+                                        lastUpdated={formatTimeAgo(board.metadata?.updatedAt)}
+                                        owner={owner}
+                                        isShared={isShared}
+                                        onView={handleViewBoard}
+                                        onEdit={handleEditBoard}
+                                        onSetAsDashboard={handleSetAsActive}
+                                        onDuplicate={handleDuplicateBoard}
+                                        onSettings={handleSettingsBoard}
+                                        onDelete={handleDeleteBoard}
+                                    />
+                                );
+                            })}
                         </View>
                     )}
                 </ScrollView>

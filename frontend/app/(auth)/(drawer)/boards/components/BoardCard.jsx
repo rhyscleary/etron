@@ -1,17 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Card, Chip, IconButton, Menu, Text, useTheme } from 'react-native-paper';
+import { Avatar, Card, Chip, IconButton, Menu, Text, useTheme } from 'react-native-paper';
 
 const BoardCard = ({
     board,
     isActive,
-    itemCount,
     lastUpdated,
+    owner,
+    isShared,
     onView,
     onEdit,
     onSetAsDashboard,
     onDuplicate,
-    onShare,
+    onSettings,
     onDelete,
     style
 }) => {
@@ -34,16 +35,50 @@ const BoardCard = ({
         callback?.(board);
     };
 
+    const ownerIdValue = owner?.id ?? owner?.userId ?? null;
+    const ownerId = ownerIdValue ? String(ownerIdValue) : null;
+    const ownerPicture = owner?.picture || null;
+    const ownerEmail = owner?.email || null;
+
+    let ownerName = owner?.name || null;
+    if (!ownerName) {
+        if (ownerEmail) {
+            ownerName = ownerEmail;
+        } else if (ownerId) {
+            ownerName = ownerId.includes('@') ? ownerId : `User ${ownerId.slice(0, 8)}`;
+        } else {
+            ownerName = 'No owner assigned';
+        }
+    }
+
+    const buildInitials = (label) => {
+        if (!label) return '?';
+        const trimmed = String(label).trim();
+        if (!trimmed) return '?';
+        const parts = trimmed.split(/\s+/).filter(Boolean);
+        if (!parts.length) return '?';
+        if (parts.length === 1) {
+            return parts[0].charAt(0).toUpperCase();
+        }
+        const first = parts[0].charAt(0);
+        const last = parts[parts.length - 1].charAt(0);
+        return `${first}${last}`.toUpperCase();
+    };
+
+    const boardTitle = (
+        typeof board?.name === 'string' && board.name.trim().length
+    ) ? board.name : 'Untitled Board';
+
     return (
         <Card
             style={cardStyle}
             onPress={() => onView?.(board.id)}
         >
-            <Card.Content>
+            <Card.Content style={styles.content}>
                 <View style={styles.headerRow}>
                     <View style={styles.titleRow}>
-                        <Text variant="titleMedium" style={styles.title}>
-                            {board.name}
+                        <Text variant="titleMedium" style={styles.title} numberOfLines={1}>
+                            {boardTitle}
                         </Text>
                         {isActive && (
                             <Chip
@@ -56,51 +91,48 @@ const BoardCard = ({
                             </Chip>
                         )}
                     </View>
-                    <Menu
-                        visible={menuVisible}
-                        onDismiss={handleDismissMenu}
-                        anchor={
-                            <IconButton
-                                icon="dots-vertical"
-                                size={20}
-                                onPress={handleToggleMenu}
-                            />
-                        }
-                    >
-                        <Menu.Item
-                            leadingIcon="eye"
-                            onPress={handleMenuAction(() => onView?.(board.id))}
-                            title="View"
-                        />
-                        <Menu.Item
-                            leadingIcon="pencil"
-                            onPress={handleMenuAction(() => onEdit?.(board.id))}
-                            title="Edit"
-                        />
-                        {!isActive && (
+                    <View style={styles.actionsRow}>
+                        <Menu
+                            visible={menuVisible}
+                            onDismiss={handleDismissMenu}
+                            anchor={
+                                <IconButton
+                                    icon="dots-vertical"
+                                    size={20}
+                                    onPress={handleToggleMenu}
+                                />
+                            }
+                        >
                             <Menu.Item
-                                leadingIcon="view-dashboard"
-                                onPress={handleMenuAction(onSetAsDashboard)}
-                                title="Set as Dashboard"
+                                leadingIcon="eye"
+                                onPress={handleMenuAction(() => onView?.(board.id))}
+                                title="View"
                             />
-                        )}
-                        <Menu.Item
-                            leadingIcon="content-copy"
-                            onPress={handleMenuAction(onDuplicate)}
-                            title="Duplicate"
-                        />
-                        <Menu.Item
-                            leadingIcon="share-variant"
-                            onPress={handleMenuAction(onShare)}
-                            title="Share"
-                        />
-                        <Menu.Item
-                            leadingIcon="delete"
-                            onPress={handleMenuAction(onDelete)}
-                            title="Delete"
-                            titleStyle={{ color: theme.colors.error }}
-                        />
-                    </Menu>
+                            {!isActive && (
+                                <Menu.Item
+                                    leadingIcon="view-dashboard"
+                                    onPress={handleMenuAction(onSetAsDashboard)}
+                                    title="Set as Dashboard"
+                                />
+                            )}
+                            <Menu.Item
+                                leadingIcon="content-copy"
+                                onPress={handleMenuAction(onDuplicate)}
+                                title="Duplicate"
+                            />
+                            <Menu.Item
+                                leadingIcon="cog"
+                                onPress={handleMenuAction(onSettings)}
+                                title="Settings"
+                            />
+                            <Menu.Item
+                                leadingIcon="delete"
+                                onPress={handleMenuAction(onDelete)}
+                                title="Delete"
+                                titleStyle={{ color: theme.colors.error }}
+                            />
+                        </Menu>
+                    </View>
                 </View>
 
                 {board.description ? (
@@ -114,14 +146,35 @@ const BoardCard = ({
                 ) : null}
 
                 <View style={styles.metaRow}>
-                    <View style={styles.metaItem}>
-                        <IconButton icon="grid" size={16} style={styles.metaIcon} />
-                        <Text variant="bodySmall">{itemCount} items</Text>
+                    <View style={[styles.metaItem, styles.ownerMeta]}>
+                        {ownerPicture ? (
+                            <Avatar.Image size={28} source={{ uri: ownerPicture }} />
+                        ) : (
+                            <Avatar.Text size={28} label={buildInitials(ownerName)} />
+                        )}
+                        <Text
+                            variant="bodySmall"
+                            numberOfLines={1}
+                            style={styles.ownerName}
+                        >
+                            {ownerName}
+                        </Text>
                     </View>
                     <View style={styles.metaItem}>
                         <IconButton icon="clock-outline" size={16} style={styles.metaIcon} />
                         <Text variant="bodySmall">{lastUpdated}</Text>
                     </View>
+                    {isShared ? (
+                    <View pointerEvents="none" style={styles.metaIcon}>
+                        <IconButton
+                            icon="account-multiple"
+                            size={18}
+                            style={styles.metaIcon}
+                            iconColor={theme.colors.secondary}
+                            containerColor={"transparent"}
+                        />
+                    </View>
+                ) : null}
                 </View>
             </Card.Content>
         </Card>
@@ -132,15 +185,23 @@ const styles = StyleSheet.create({
     card: {
         marginBottom: 12
     },
+    content: {
+        position: 'relative'
+    },
     headerRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start'
     },
+    actionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center'
+    },
     titleRow: {
         flex: 1,
         flexDirection: 'row',
-        alignItems: 'center'
+        alignItems: 'center',
+        marginTop: 10
     },
     title: {
         flex: 1
@@ -168,7 +229,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 4
     },
+    ownerMeta: {
+        flex: 1,
+        gap: 8
+    },
+    ownerName: {
+        flex: 1
+    },
     metaIcon: {
+        margin: 0
+    },
+    sharedBadge: {
+        position: 'absolute',
+        bottom: 4,
+        right: 4,
+        backgroundColor: 'transparent'
+    },
+    sharedBadgeIcon: {
         margin: 0
     }
 });

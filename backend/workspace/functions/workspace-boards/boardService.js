@@ -142,17 +142,24 @@ async function updateBoardInWorkspace(
     throw new Error("Board not found");
   }
 
-  const { name, config, isDashboard, isThumbnailUpdated } = payload;
+  const { name, config, isDashboard, isThumbnailUpdated, ownerId } = payload;
   const currentDate = new Date().toISOString();
 
   // ensure only unique users are added to editedBy
   const editedBySet = new Set([...(board.editedBy || []), authUserId]);
+  if (ownerId) {
+    editedBySet.add(ownerId);
+  }
 
   // create board item and update repo
   const boardUpdateItem = {
     updatedAt: currentDate,
     editedBy: Array.from(editedBySet),
   };
+
+  if (ownerId) {
+    boardUpdateItem.createdBy = ownerId;
+  }
 
   let thumbnailUploadUrl = null;
 

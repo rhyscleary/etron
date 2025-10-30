@@ -236,6 +236,12 @@ async function updateBoard(workspaceId, boardId, data) {
     expressionAttributeNames["#editedBy"] = "editedBy";
   }
 
+  if (data.createdBy !== undefined) {
+    updateFields.push("#createdBy = :createdBy");
+    expressionAttributeValues[":createdBy"] = data.createdBy;
+    expressionAttributeNames["#createdBy"] = "createdBy";
+  }
+
   updateFields.push("#updatedAt = :updatedAt");
   expressionAttributeValues[":updatedAt"] = new Date().toISOString();
   expressionAttributeNames["#updatedAt"] = "updatedAt";
