@@ -11,28 +11,58 @@ const DropDown = ({
     onSelect,
     value,
     allowed=true,
+    searchPlaceholder = "Search...",
+    onSearchChange,
+    searchQueryValue,
+    clearOnSelect = false,
 }) => {
     const [expanded, setExpanded] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
-    const [searchQuery, setSearchQuery] = useState("");
+    const [internalSearchQuery, setInternalSearchQuery] = useState("");
+
+    const activeSearchQuery = searchQueryValue !== undefined ? searchQueryValue : internalSearchQuery;
     
     useEffect(() => {
-        if (value) {
-            const found = items.find((i) => i.value === value);
-            setSelectedItem(found || null);
+        if (value === undefined) {
+            return;
         }
+
+        if (value === null) {
+            setSelectedItem(null);
+            return;
+        }
+
+        const found = items.find((i) => i.value === value);
+        setSelectedItem(found || null);
     }, [value, items]);
     
     const handleItemSelect = (item) => {
         setSelectedItem(item);
         setExpanded(false);
         if (onSelect) {
-            onSelect(item.value);
+            onSelect(item.value, item);
+        }
+
+        if (clearOnSelect) {
+            setSelectedItem(null);
+            if (searchQueryValue === undefined) {
+                setInternalSearchQuery("");
+            }
+        }
+    }
+
+    const handleSearchQueryChange = (query) => {
+        if (searchQueryValue === undefined) {
+            setInternalSearchQuery(query);
+        }
+
+        if (onSearchChange) {
+            onSearchChange(query);
         }
     }
 
     const filteredItems = items.filter((item) =>
-        (item.label ?? "").toLowerCase().includes(searchQuery.toLowerCase())
+        (item.label ?? "").toLowerCase().includes(activeSearchQuery.toLowerCase())
     )
 
     const theme = useTheme();
@@ -51,10 +81,10 @@ const DropDown = ({
     <View style={styles.searchContainer}>
         <TextInput
             mode="outlined"
-            placeholder="Search..."
+            placeholder={searchPlaceholder}
             placeholderTextColor={theme.colors.placeholderText}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+            value={activeSearchQuery}
+            onChangeText={handleSearchQueryChange}
             style={styles.searchInput}
             outlineColor={theme.colors.outline}
             activeOutlineColor={theme.colors.primary}
