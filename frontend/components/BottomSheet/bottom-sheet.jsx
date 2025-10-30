@@ -15,6 +15,7 @@ import {
   getInitialIndex,
   calculateAdjustedMaxContentSize
 } from './utils';
+import { ScrollView } from 'react-native-gesture-handler';
 
 const CustomBottomSheetInner = (props, ref) => {
   const {
@@ -326,9 +327,11 @@ const CustomBottomSheetInner = (props, ref) => {
     >
       {hasCustomContent ? (
         <BottomSheetView
-          style={{ flex: 1, paddingHorizontal: 16, paddingBottom: bottomPadding, paddingTop: 12 }}
+          style={{ flex: 1, paddingHorizontal: 16, paddingBottom: bottomPadding + 40, paddingTop: 12 }}
         >
+          <ScrollView style={{}}>
           {resolvedCustomContent}
+          </ScrollView>
         </BottomSheetView>
       ) : (
         <Contents
@@ -341,7 +344,7 @@ const CustomBottomSheetInner = (props, ref) => {
           itemTitleExtractor={itemTitleExtractor}
           theme={theme}
           emptyComponent={emptyComponent}
-          extraBottomPadding={bottomPadding}
+          extraBottomPadding={bottomPadding + 40}
           enableSearch={enableSearch}
           searchQuery={searchQuery}
           textColor={headerTextColor}

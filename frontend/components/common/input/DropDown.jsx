@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, InteractionManager } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, InteractionManager, Touchable } from 'react-native';
 import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
 import PermissionGate from '../PermissionGate';
@@ -96,7 +96,13 @@ const DropDown = ({
         style={{ maxHeight: 500 }}   // <-- THIS IS THE CUT-OFF HEIGHT
         keyboardShouldPersistTaps="handled"
     >
-        {filteredItems.map((item, index) => (
+        {filteredItems.map((item, index) => (   
+            <TouchableOpacity onPress={() => {
+                    Keyboard.dismiss();
+                    handleItemSelect(item);
+                }}
+                key={index}
+                >
             <List.Item
                 key={index}
                 title={item.label}
@@ -106,6 +112,7 @@ const DropDown = ({
                     handleItemSelect(item);
                 }}
             />
+            </TouchableOpacity>
         ))}
     </ScrollView>
 

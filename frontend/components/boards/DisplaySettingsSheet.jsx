@@ -123,12 +123,14 @@ const DisplaySettingsSheet = ({
                 containerStyle={{ zIndex: 9999 }}
                 header={{
                     title: 'Edit Display',
-                    showClose: true
+                    showClose: true,
+                    actionLabel: 'Save',
+                    onActionPress: handleSaveAndClose
                 }}
                 onChange={(index) => {
                     if (index === -1) onClose();
                 }}
-                onClose={onClose}
+                onClose={handleCancelAndClose}
             >
                 <View style={styles.container}>
                     <TextInput
@@ -168,17 +170,6 @@ const DisplaySettingsSheet = ({
                             right={props => <List.Icon {...props} icon="chevron-right" />}
                         />
                     </TouchableOpacity>
-
-                    <Divider style={styles.divider} />
-                    
-                    <View style={styles.actions}>
-                        <Button mode="text" onPress={handleCancelAndClose} style={styles.actionButton}>
-                            Cancel
-                        </Button>
-                        <Button mode="contained" onPress={handleSaveAndClose} style={styles.actionButton}>
-                            Save
-                        </Button>
-                    </View>
                 </View>
             </CustomBottomSheet>
 
@@ -189,7 +180,9 @@ const DisplaySettingsSheet = ({
                     containerStyle={{ zIndex: 10000 }}
                     header={{
                         title: 'Series Colours',
-                        showClose: true
+                        showClose: true,
+                        actionLabel: 'Done',
+                        onActionPress: handleCloseColourSheet
                     }}
                     onChange={(index) => {
                         if (index === -1) handleCloseColourSheet();
@@ -286,16 +279,6 @@ const DisplaySettingsSheet = ({
                                 >
                                     Reset colours
                                 </Button>
-
-                                <View style={[styles.subSheetActions, { borderTopColor: subSheetDividerColor }]}>
-                                    <Button 
-                                        mode="contained" 
-                                        onPress={handleCloseColourSheet}
-                                        style={styles.subSheetSaveButton}
-                                    >
-                                        Done
-                                    </Button>
-                                </View>
                             </View>
                         ) : (
                             <View style={styles.emptyMessage}>
@@ -315,7 +298,9 @@ const DisplaySettingsSheet = ({
                     containerStyle={{ zIndex: 10000 }}
                     header={{
                         title: 'Chart Appearance',
-                        showClose: true
+                        showClose: true,
+                        actionLabel: 'Done',
+                        onActionPress: handleCloseAppearanceSheet
                     }}
                     onChange={(index) => {
                         if (index === -1) handleCloseAppearanceSheet();
@@ -392,16 +377,6 @@ const DisplaySettingsSheet = ({
                             >
                                 Reset appearance
                             </Button>
-
-                            <View style={[styles.subSheetActions, { borderTopColor: subSheetDividerColor }]}>
-                                <Button 
-                                    mode="contained" 
-                                    onPress={handleCloseAppearanceSheet}
-                                    style={styles.subSheetSaveButton}
-                                >
-                                    Done
-                                </Button>
-                            </View>
                         </View>
                     </ScrollView>
                 </CustomBottomSheet>
@@ -522,24 +497,6 @@ const styles = StyleSheet.create({
         marginTop: -6,
         marginBottom: 8,
         marginHorizontal: 4
-    },
-    actions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginTop: 12
-    },
-    actionButton: {
-        marginLeft: 12
-    },
-    subSheetActions: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginTop: 16,
-        paddingTop: 16,
-        borderTopWidth: 1
-    },
-    subSheetSaveButton: {
-        minWidth: 120
     }
 });
 
