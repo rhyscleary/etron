@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { Text, Searchbar, Card, Checkbox, Button, Chip, IconButton, Divider, useTheme } from 'react-native-paper';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Text, Card, Button, IconButton, Divider, useTheme } from 'react-native-paper';
 import { router } from 'expo-router';
 import { getWorkspaceId } from '../../storage/workspaceStorage';
 import endpoints from '../../utils/api/endpoints';
 import { apiGet } from '../../utils/api/apiClient';
+import DropDown from '../common/input/DropDown';
 
 const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
     const theme = useTheme();
@@ -116,6 +117,31 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
         }
     }, [searchQuery, metrics]);
 
+    const metricsDropdownItems = useMemo(() => {
+        const seenMetricIds = new Set();
+
+        return metrics.reduce((acc, metric) => {
+            if (!metric || typeof metric !== 'object') {
+                return acc;
+            }
+
+            const metricId = metric.id ?? metric.metricId;
+
+            if (!metricId || seenMetricIds.has(metricId)) {
+                return acc;
+            }
+
+            seenMetricIds.add(metricId);
+            acc.push({
+                value: metricId,
+                label: metric.name || 'Unnamed Metric',
+                metric
+            });
+
+            return acc;
+        }, []);
+    }, [metrics]);
+
     const handleToggleMetric = (metric) => {
         if (multiSelect) {
             setSelectedMetrics(prev =>
@@ -144,57 +170,6 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
         return selectedMetrics.some(m => m.id === metricId);
     };
 
-    const renderMetricCard = ({ item: metric }) => {
-        // Validate that we have a proper metric object
-        if (!metric || typeof metric !== 'object' || !metric.metricId) {
-            console.warn('Invalid metric item:', metric);
-            return null;
-        }
-
-        // Get the dependent variables text
-        const variablesText = metric.dependentVariables && Array.isArray(metric.dependentVariables) && metric.dependentVariables.length > 0
-            ? metric.dependentVariables.join(', ')
-            : 'No variables';
-
-        return (
-            <Card
-                style={[
-                    styles.metricCard,
-                    isSelected(metric.id) && {
-                        borderWidth: 2,
-                        borderColor: primaryColor
-                    }
-                ]}
-                onPress={() => handleToggleMetric(metric)}
-            >
-                <Card.Content style={styles.cardContent}>
-                    <View style={styles.cardLeft}>
-                        <Text variant="titleMedium">{metric.name || 'Unnamed Metric'}</Text>
-                        <Text variant="bodySmall" style={[styles.description, { color: mutedTextColor }]}>
-                            {variablesText}
-                        </Text>
-                        <View style={styles.chips}>
-                            <Chip mode="outlined" compact>
-                                {metric.chartType || 'unknown'}
-                            </Chip>
-                            {metric.dependentVariables?.length > 0 && (
-                                <Chip mode="outlined" compact>
-                                    {metric.dependentVariables.length} variable{metric.dependentVariables.length > 1 ? 's' : ''}
-                                </Chip>
-                            )}
-                        </View>
-                    </View>
-                    {multiSelect && (
-                        <Checkbox
-                            status={isSelected(metric.id) ? 'checked' : 'unchecked'}
-                            onPress={() => handleToggleMetric(metric)}
-                        />
-                    )}
-                </Card.Content>
-            </Card>
-        );
-    };
-
     return (
         <View style={styles.container}>
             {loading ? (
@@ -211,22 +186,22 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
                 </View>
             ) : (
                 <>
-                    <Searchbar
-                        placeholder="Search metrics..."
-                        onChangeText={setSearchQuery}
-                        value={searchQuery}
-                        style={[
-                            styles.searchBar,
-                            {
-                                backgroundColor: theme.colors?.surface,
-                                borderColor: outlineColor,
-                                borderWidth: 1,
-                                borderRadius: 10
-                            }
-                        ]}
-                        inputStyle={{ fontSize: 16 }}
-                        iconColor={theme.colors?.icon}
-                    />
+                    <View style={styles.searchContainer}>
+                        <DropDown
+                            title="Search metrics..."
+                            items={metricsDropdownItems}
+                            showRouterButton={false}
+                            onSelect={(_, item) => {
+                                if (item?.metric) {
+                                    handleToggleMetric(item.metric);
+                                }
+                            }}
+                            onSearchChange={setSearchQuery}
+                            searchQueryValue={searchQuery}
+                            searchPlaceholder="Search metrics..."
+                            clearOnSelect
+                        />
+                    </View>
 
                     {/* Create New Metric Option - Only show if there are metrics or if searching */}
                     {(metrics.length > 0 || searchQuery) && (
@@ -267,33 +242,54 @@ const MetricPicker = ({ onSelect, onCancel, multiSelect = false }) => {
                         </View>
                     )}
 
-                    <FlatList
-                        data={filteredMetrics}
-                        renderItem={renderMetricCard}
-                        keyExtractor={(item, index) => item?.id || item?.metricId || `metric-${index}`}
-                        contentContainerStyle={styles.list}
-                        ListEmptyComponent={
-                            <View style={styles.emptyState}>
-                                <IconButton icon="chart-box-outline" size={64} iconColor={theme.colors?.icon} />
-                                <Text variant="titleLarge" style={styles.emptyTitle}>
-                                    {searchQuery ? 'No metrics found' : 'No Metrics Created Yet'}
-                                </Text>
-                                <Text variant="bodyMedium" style={[styles.emptyHint, { color: mutedTextColor }]}>
-                                    {searchQuery
-                                        ? 'Try a different search term or create a new metric'
-                                        : 'You haven\'t created any metrics yet. Create your first metric to add it to this board.'}
-                                </Text>
-                                <Button
-                                    mode="contained"
-                                    onPress={handleCreateMetric}
-                                    style={styles.createButton}
-                                    icon="plus"
+                    {multiSelect && selectedMetrics.length > 0 && (
+                        <View style={styles.selectedMetricsContainer}>
+                            <Text variant="titleSmall" style={styles.selectedMetricsTitle}>
+                                Selected Metrics
+                            </Text>
+                            {selectedMetrics.map((metric) => (
+                                <Card
+                                    key={metric.id}
+                                    style={styles.selectedMetricCard}
                                 >
-                                    Create Your First Metric
-                                </Button>
-                            </View>
-                        }
-                    />
+                                    <Card.Content style={styles.selectedMetricContent}>
+                                        <View style={styles.selectedMetricLeft}>
+                                            <Text variant="titleSmall">{metric.name}</Text>
+                                            <Text variant="bodySmall" style={[styles.selectedMetricHint, { color: mutedTextColor }]}>
+                                                {metric.chartType} • {metric.dependentVariables?.length || 0} variable{metric.dependentVariables?.length !== 1 ? 's' : ''}
+                                            </Text>
+                                        </View>
+                                        <IconButton
+                                            icon="close"
+                                            size={20}
+                                            onPress={() => handleToggleMetric(metric)}
+                                            iconColor={theme.colors?.error ?? '#d32f2f'}
+                                        />
+                                    </Card.Content>
+                                </Card>
+                            ))}
+                        </View>
+                    )}
+
+                    {metrics.length === 0 && !loading && (
+                        <View style={styles.emptyState}>
+                            <IconButton icon="chart-box-outline" size={64} iconColor={theme.colors?.icon} />
+                            <Text variant="titleLarge" style={styles.emptyTitle}>
+                                No Metrics Created Yet
+                            </Text>
+                            <Text variant="bodyMedium" style={[styles.emptyHint, { color: mutedTextColor }]}>
+                                You haven't created any metrics yet. Create your first metric to add it to this board.
+                            </Text>
+                            <Button
+                                mode="contained"
+                                onPress={handleCreateMetric}
+                                style={styles.createButton}
+                                icon="plus"
+                            >
+                                Create Your First Metric
+                            </Button>
+                        </View>
+                    )}
 
                     {multiSelect && (
                         <View style={[styles.footer, { borderTopColor: dividerColor }]}>
@@ -347,7 +343,7 @@ const styles = StyleSheet.create({
     retryButton: {
         marginTop: 8
     },
-    searchBar: {
+    searchContainer: {
         margin: 16,
         marginBottom: 8
     },
@@ -385,30 +381,29 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 8
     },
-    list: {
-        padding: 16,
-        paddingTop: 8
+    selectedMetricsContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 16
     },
-    metricCard: {
-        marginBottom: 12
+    selectedMetricsTitle: {
+        marginBottom: 8,
+        fontWeight: '600'
     },
-    cardContent: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    cardLeft: {
-        flex: 1,
-        marginRight: 12
-    },
-    description: {
-        opacity: 0.7,
-        marginTop: 4,
+    selectedMetricCard: {
         marginBottom: 8
     },
-    chips: {
+    selectedMetricContent: {
         flexDirection: 'row',
-        gap: 8
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 4
+    },
+    selectedMetricLeft: {
+        flex: 1
+    },
+    selectedMetricHint: {
+        opacity: 0.7,
+        marginTop: 2
     },
     emptyState: {
         padding: 32,
