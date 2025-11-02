@@ -117,6 +117,14 @@ const TextItemEditor = ({
     return (
         <View style={styles.container}>
             <View style={styles.section}>
+                <View style={styles.actions}>
+                    <Button mode="text" onPress={onCancel}>
+                        Cancel
+                    </Button>
+                    <Button mode="contained" onPress={handleSave}>
+                        {actionLabel}
+                    </Button>
+            </View>
                 <TextInput
                     label="Text"
                     value={textValue}
@@ -238,15 +246,6 @@ const TextItemEditor = ({
                 >
                     {textValue.trim() || 'Preview text will appear here'}
                 </Text>
-            </View>
-
-            <View style={styles.actions}>
-                <Button mode="text" onPress={onCancel}>
-                    Cancel
-                </Button>
-                <Button mode="contained" onPress={handleSave}>
-                    {actionLabel}
-                </Button>
             </View>
         </View>
     );

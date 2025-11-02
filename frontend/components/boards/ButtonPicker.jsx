@@ -243,6 +243,23 @@ const ButtonPicker = ({ onSelect, onCancel, initialConfig = {}, mode = 'create' 
                     </Text>
                 )}
             </View>
+            <View style={styles.actions}>
+                <Button
+                    mode="text"
+                    onPress={onCancel}
+                    style={styles.actionButton}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    mode="contained"
+                    onPress={handleConfirm}
+                    disabled={!isValid}
+                    style={styles.actionButton}
+                >
+                    {mode === 'edit' ? 'Save Button' : 'Add Button'}
+                </Button>
+            </View>
 
             <View style={styles.section}>
                 <Text variant="titleSmall" style={styles.sectionTitle}>
@@ -275,23 +292,7 @@ const ButtonPicker = ({ onSelect, onCancel, initialConfig = {}, mode = 'create' 
                 </View>
             </View>
 
-            <View style={styles.actions}>
-                <Button
-                    mode="text"
-                    onPress={onCancel}
-                    style={styles.actionButton}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    mode="contained"
-                    onPress={handleConfirm}
-                    disabled={!isValid}
-                    style={styles.actionButton}
-                >
-                    {mode === 'edit' ? 'Save Button' : 'Add Button'}
-                </Button>
-            </View>
+            
         </View>
     );
 

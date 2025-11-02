@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Keyboard, Platform, InteractionManager, Touchable } from 'react-native';
 import { Text, useTheme, IconButton, List, TextInput } from 'react-native-paper';
 import { router } from "expo-router";
 import PermissionGate from '../PermissionGate';
@@ -101,31 +101,32 @@ const DropDown = ({
         />
     </View>
 
+
                 <View
                     style={[ styles.panelContainer, {borderColor: theme.colors.outline,} ]}
                 >
+
                     <ScrollView
-                        nestedScrollEnabled
-                        style={{ maxHeight: listMaxHeight }}
-                        keyboardShouldPersistTaps="always"
-                        bounces
-                        onStartShouldSetResponderCapture={() => false}
-                        onMoveShouldSetResponderCapture={(e) => {
-                            const touches = e.nativeEvent?.touches;
-                            return touches && touches.length > 0;
-                        }}
+                        style={{ maxHeight: 500 }}   // <-- THIS IS THE CUT-OFF HEIGHT
+                        keyboardShouldPersistTaps="handled"
                     >
-                        {filteredItems.map((item, index) => (
+                        {filteredItems.map((item, index) => (   
+                            <TouchableOpacity onPress={() => {
+                                    Keyboard.dismiss();
+                                    handleItemSelect(item);
+                                }}
+                                key={index}
+                                >
                             <List.Item
                                 key={index}
                                 title={item.label}
-                                style={[styles.items, { borderColor: theme.colors.outline, height: ITEM_HEIGHT }]}
-                                titleStyle={{ lineHeight: 20 }}
+                                style={[styles.items, { borderColor: theme.colors.outline }]}
                                 onPress={() => {
                                     Keyboard.dismiss();
                                     handleItemSelect(item);
                                 }}
                             />
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
 
