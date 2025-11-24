@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-2_Q4EgaQS86",
+    "user_pool_id": "ap-southeast-2_X7uxI2NuY",
     "aws_region": "ap-southeast-2",
-    "user_pool_client_id": "nor0j2skjolr23qkbt2fehuhp",
-    "identity_pool_id": "ap-southeast-2:760300f0-80f7-412c-befb-5e68329c99a6",
+    "user_pool_client_id": "6m6d0id5tv4mn3v3e53i8racv4",
+    "identity_pool_id": "ap-southeast-2:94902576-5fa1-42b6-bec1-2095288538bf",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -23,65 +23,15 @@
       "require_symbols": true,
       "require_uppercase": true
     },
-    "oauth": {
-      "identity_providers": [
-        "GOOGLE"
-      ],
-      "redirect_sign_in_uri": [
-        "myapp://callback"
-      ],
-      "redirect_sign_out_uri": [
-        "myapp://signout/"
-      ],
-      "response_type": "code",
-      "scopes": [
-        "phone",
-        "email",
-        "openid",
-        "profile",
-        "aws.cognito.signin.user.admin"
-      ],
-      "domain": "e4ae5e45b546f60ae83d.auth.ap-southeast-2.amazoncognito.com"
-    },
     "unauthenticated_identities_enabled": true
   },
   "storage": {
     "aws_region": "ap-southeast-2",
-    "bucket_name": "amplify-d3vtak5uri6g9a-de-profilepicturesbucket46b-q7toxf3npzs2",
+    "bucket_name": "amplify-d27l1c58bbfs9w-de-appconfigurationbucket22-a941sxt2tz5g",
     "buckets": [
       {
-        "name": "profilePictures",
-        "bucket_name": "amplify-d3vtak5uri6g9a-de-profilepicturesbucket46b-q7toxf3npzs2",
-        "aws_region": "ap-southeast-2",
-        "paths": {
-          "profile-pictures/*": {
-            "authenticated": [
-              "get",
-              "list",
-              "write",
-              "delete"
-            ]
-          }
-        }
-      },
-      {
-        "name": "workspaceReadyData",
-        "bucket_name": "amplify-d3vtak5uri6g9a-de-workspacereadydatabucket-lizhwuaiyrtk",
-        "aws_region": "ap-southeast-2",
-        "paths": {
-          "ready-data/*": {
-            "authenticated": [
-              "get",
-              "list",
-              "write",
-              "delete"
-            ]
-          }
-        }
-      },
-      {
         "name": "users",
-        "bucket_name": "amplify-d3vtak5uri6g9a-develop-usersbucket22de6c1b-zlzw9djjefwj",
+        "bucket_name": "amplify-d27l1c58bbfs9w-develop-usersbucket22de6c1b-m2oisiwusssd",
         "aws_region": "ap-southeast-2",
         "paths": {
           "users/*": {
@@ -96,7 +46,7 @@
       },
       {
         "name": "workspaces",
-        "bucket_name": "amplify-d3vtak5uri6g9a-de-workspacesbucket784af028-utfi3tbysihb",
+        "bucket_name": "amplify-d27l1c58bbfs9w-de-workspacesbucket784af028-qkhwilfbwduv",
         "aws_region": "ap-southeast-2",
         "paths": {
           "workspaces/*": {
@@ -105,6 +55,31 @@
               "list",
               "write",
               "delete"
+            ]
+          },
+          "public/workspaces/*": {
+            "guest": [
+              "get",
+              "list"
+            ]
+          }
+        }
+      },
+      {
+        "name": "appConfiguration",
+        "bucket_name": "amplify-d27l1c58bbfs9w-de-appconfigurationbucket22-a941sxt2tz5g",
+        "aws_region": "ap-southeast-2",
+        "paths": {
+          "permissions/*": {
+            "authenticated": [
+              "get",
+              "list"
+            ]
+          },
+          "modules/*": {
+            "authenticated": [
+              "get",
+              "list"
             ]
           }
         }
