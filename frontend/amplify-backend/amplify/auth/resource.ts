@@ -9,7 +9,7 @@ export const auth = defineAuth({
   loginWith: {
     email: true,
     
-    externalProviders: {
+    /*externalProviders: {
       google: {
         clientId: secret('GOOGLE_CLIENT_ID'),
         clientSecret: secret('GOOGLE_CLIENT_SECRET'),
@@ -43,7 +43,7 @@ export const auth = defineAuth({
 
       callbackUrls: ["myapp://callback"],
       logoutUrls: ["myapp://signout/"],
-    }
+    }*/
   },
 
   userAttributes: {
