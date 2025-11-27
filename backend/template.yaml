@@ -27,6 +27,8 @@ Parameters:
     Type: String
   AppSyncApiKey:
     Type: String
+  UserPoolArn:
+    Type: String
 
 Resources:
 
@@ -45,6 +47,7 @@ Resources:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         WorkspaceBucketName: !Ref WorkspaceBucketName
         AuditQueueUrl: !Ref AuditQueueUrl
+        UserPoolArn: !Ref UserPoolArn
 
   AuditDomainFunctions:
     Type: AWS::CloudFormation::Stack
@@ -55,6 +58,7 @@ Resources:
         WorkspaceBucketName: !Ref WorkspaceBucketName
         AuditQueueArn: !Ref AuditQueueArn
         AuditQueueUrl: !Ref AuditQueueUrl
+        UserPoolArn: !Ref UserPoolArn
         
   UserDomainFunctions:
     Type: AWS::CloudFormation::Stack
@@ -63,6 +67,7 @@ Resources:
       Parameters:
         AppConfigurationBucketName: !Ref AppConfigurationBucketName
         AuditQueueUrl: !Ref AuditQueueUrl
+        UserPoolArn: !Ref UserPoolArn
         
   DayBookFunctions:
     Type: AWS::CloudFormation::Stack
@@ -75,3 +80,4 @@ Resources:
         AuditQueueUrl: !Ref AuditQueueUrl
         AppSyncUrl: !Ref AppSyncUrl
         AppSyncApiKey: !Ref AppSyncApiKey
+        UserPoolArn: !Ref UserPoolArn
