@@ -8,7 +8,9 @@ const {
 
 const cognito = new CognitoIdentityProviderClient({region: "ap-southeast-2"});
 
-const userPoolId = "ap-southeast-2_Q4EgaQS86";
+// extract userpool from arn env
+const userPoolArn = process.env.USERPOOL_ARN;
+const userPoolId = userPoolArn.split('/').pop();
 
 async function getUserByEmail(email) {
 
