@@ -42,7 +42,7 @@ async function getUserByEmail(email) {
 }
 
 async function getUserById(userId) {
-
+    console.log("Using Cognito User Pool ID:", userPoolId);
     const result = await cognito.send(new ListUsersCommand({
         UserPoolId: userPoolId,
         Filter: `sub = \"${userId}\"`,

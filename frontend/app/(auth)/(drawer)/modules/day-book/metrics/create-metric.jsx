@@ -240,7 +240,7 @@ const CreateMetric = () => {
         (step == 1 && (!metricName))
 
 
-    async function uploadGraphToS3(metricId, fileUploadUrl) {
+async function uploadGraphToS3(metricId, fileUploadUrl) {
   try {
     // Capture as a temporary file
     const tmpUri = await viewShotRef.current.capture({
@@ -271,7 +271,7 @@ const CreateMetric = () => {
     console.log("✅ Graph uploaded successfully");
   } catch (error) {
     console.error("❌ Error uploading graph to S3:", error);
-    throw error;
+    //throw error;
   }
 }
 
