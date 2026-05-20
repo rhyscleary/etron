@@ -1,79 +1,113 @@
 // Author(s): Rhys Cleary
 const workspaceUsersRepo = require("../repositories/workspaceUsersRepository");
 const workspaceRepo = require("../repositories/workspaceRepository");
-const { GetObjectCommand, NoSuchKey, S3Client, S3ServiceException } = require("@aws-sdk/client-s3");
-const { getAppPermissions } = require("../repositories/appConfigBucketRepository");
+const {
+  GetObjectCommand,
+  NoSuchKey,
+  S3Client,
+  S3ServiceException,
+} = require("@aws-sdk/client-s3");
+const {
+  getAppPermissions,
+} = require("../repositories/appConfigBucketRepository");
 const s3Client = new S3Client({});
 
 // get the default permissions. Permissions with defaultStatus: true
 async function getDefaultPermissions() {
-    const config = await getAppPermissions();
+  const config = await getAppPermissions();
 
-    if (!config) {
-        return [];
-    }
+  if (!config) {
+    return [];
+  }
 
-    const result = [];
+  const result = [];
 
-    // get keys from the categories
-    function getKeysFromCategories(categories, prefix) {
-        if (!categories) return;
+  // get keys from the categories
+  function getKeysFromCategories(categories, prefix) {
+    if (!categories) return;
 
-        for (const [categoryName, category] of Object.entries(categories)) {
-            if (category.permissions) {
-                for (const perm of category.permissions) {
-                    if (perm.defaultStatus) {
-                        result.push(`${prefix}.${perm.key}`);
-                    }
-                }
-            }
-
-            // recursive if nested category
-            if (category.categories) {
-                getKeysFromCategories(category.categories, `${prefix}.${categoryName}`);
-            }
+    for (const [categoryName, category] of Object.entries(categories)) {
+      if (category.permissions) {
+        for (const perm of category.permissions) {
+          if (perm.defaultStatus) {
+            result.push(`${prefix}.${perm.key}`);
+          }
         }
-    }
+      }
 
-    // get app permission keys
-    if (config.app?.categories) {
-        getKeysFromCategories(config.app.categories, "app");
+      // recursive if nested category
+      if (category.categories) {
+        getKeysFromCategories(category.categories, `${prefix}.${categoryName}`);
+      }
     }
+  }
 
-    // handle the modules
-    if (config.modules) {
-        for (const [moduleName, module] of Object.entries(config.modules)) {
-            getKeysFromCategories(module.categories, `modules.${moduleName}`);
-        }
+  // get app permission keys
+  if (config.app?.categories) {
+    getKeysFromCategories(config.app.categories, "app");
+  }
+
+  // handle the modules
+  if (config.modules) {
+    for (const [moduleName, module] of Object.entries(config.modules)) {
+      getKeysFromCategories(module.categories, `modules.${moduleName}`);
     }
+  }
 
-    return result;
+  return result;
 }
 
 // check if the user has permissions
 async function hasPermission(userId, workspaceId, permissionKey) {
-    if (!userId || typeof userId !== "string") {
-        throw new Error("Invalid or missing userId");
-    }
+  if (!userId || typeof userId !== "string") {
+    throw new Error("Invalid or missing userId");
+  }
 
-    if (!workspaceId || typeof workspaceId !== "string") {
-        throw new Error("Invalid or missing workspaceId");
-    }
+  if (!workspaceId || typeof workspaceId !== "string") {
+    throw new Error("Invalid or missing workspaceId");
+  }
 
-    const user = await workspaceUsersRepo.getUser(workspaceId, userId);
-    if (!user?.roleId) return false;
+  const user = await workspaceUsersRepo.getUser(workspaceId, userId);
+  if (!user?.roleId) return false;
 
-    const role = await workspaceRepo.getRoleById(workspaceId, user.roleId);
-    if (!role) return false;
+  const role = await workspaceRepo.getRoleById(workspaceId, user.roleId);
+  if (!role) return false;
 
-    // Owners always have permissions (exceptions can be added later)
-    if (role.owner) return true
+  // Owners always have permissions (exceptions can be added later)
+  if (role.owner) return true;
 
-    // check for specific permission
-    return role.permissions?.includes(permissionKey) || false;       
+  // Normalise permissions to simple string keys
+  let permissionKeys = [];
+  if (Array.isArray(role.permissions)) {
+    permissionKeys = role.permissions
+      .map((permission) => {
+        if (!permission) return null;
+        if (typeof permission === "string") {
+          return permission;
+        }
+
+        if (typeof permission === "object") {
+          if (typeof permission.key === "string") {
+            return permission.key;
+          }
+
+          if (typeof permission.permission === "string") {
+            return permission.permission;
+          }
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+  }
+
+  // ensure unique keys to avoid redundant comparisons
+  const permissionSet = new Set(permissionKeys);
+
+  return permissionSet.has(permissionKey);
 }
 
 module.exports = {
-    getDefaultPermissions,
-    hasPermission
+  getDefaultPermissions,
+  hasPermission,
 };

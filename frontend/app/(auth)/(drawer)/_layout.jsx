@@ -61,6 +61,11 @@ const boardOptions = [
         label: "Dashboard",
         icon: "view-compact",
     },
+    {
+        name: "boards",
+        label: "Boards",
+        icon: "view-grid-plus",
+    },
 ]
 
 const DrawerRow = ({ label, icon, onPress, active = false, style }) => {
@@ -155,9 +160,6 @@ const CustomDrawer = (props) => {
         case "day-book":
             displayedRoutes = dayBookRoutes;
             break;
-        case "boards":
-            displayedRoutes = boardRoutes;
-            break;
         default:
             displayedRoutes = []
     }
@@ -173,10 +175,25 @@ const CustomDrawer = (props) => {
                 {drawerState == "default" ? (
                     <View>
                         <DrawerRow
-                            label="Boards"
+                            label="Dashboard"
                             icon="view-dashboard"
-                            onPress={() => setDrawerState("boards")}
+                            onPress={() => {
+                                setDrawerState("default");
+                                navigation.navigate("dashboard");
+                                navigation.closeDrawer();
+                            }}
                             style={{ marginTop: 6 }}
+                            active={activeRouteName === "dashboard"}
+                        />
+                        <DrawerRow
+                            label="Boards"
+                            icon="view-grid-plus"
+                            onPress={() => {
+                                setDrawerState("default");
+                                navigation.navigate("boards");
+                                navigation.closeDrawer();
+                            }}
+                            active={activeRouteName === "boards"}
                         />
                         <View style={styles.divider} />
                         <DrawerRow
