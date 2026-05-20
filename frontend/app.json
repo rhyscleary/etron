@@ -2,11 +2,11 @@
   "expo": {
     "scheme": "myapp",
     "name": "frontend",
-    "slug": "frontend",
+    "slug": "etron",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "platforms":[
+    "platforms": [
       "ios",
       "android"
     ],
@@ -55,7 +55,13 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-app-auth",
+        {
+          "redirectUrls": ["myapp://auth"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -63,12 +69,13 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "003b5c2f-3456-427b-ab80-4311639976e5"
+        "projectId": "31895f3a-82a4-46f0-9971-39e13e5134b5"
       }
     },
     "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/003b5c2f-3456-427b-ab80-4311639976e5"
-    }
+    },
+    "owner": "insyncdev"
   }
 }

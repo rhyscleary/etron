@@ -1,17 +1,17 @@
 // eTRONs API endpoints
 
 const WORKSPACE_BASE_URL =
-  "https://ji83u88njk.execute-api.ap-southeast-2.amazonaws.com/dev/workspace";
+  "https://8yryc36r77.execute-api.ap-southeast-2.amazonaws.com/dev/workspace";
 const USER_BASE_URL =
-  "https://tt8hqttod3.execute-api.ap-southeast-2.amazonaws.com/dev/user";
+  "https://zbqahztru3.execute-api.ap-southeast-2.amazonaws.com/dev/user";
 const DATASOURCES_BASE_URL =
-  "https://3nnekw6cb5.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/data-sources";
+  "https://y6v3m5bv2h.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/data-sources";
 const METRICS_BASE_URL =
-  "https://3nnekw6cb5.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/metrics";
+  "https://y6v3m5bv2h.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/metrics";
 const REPORTS_BASE_URL =
-  "https://3nnekw6cb5.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/reports";
+  "https://y6v3m5bv2h.execute-api.ap-southeast-2.amazonaws.com/dev/day-book/reports";
 const AUDIT_BASE_URL =
-  "https://5dzdrirs49.execute-api.ap-southeast-2.amazonaws.com/dev/audits";
+  "https://4hm2fdjh92.execute-api.ap-southeast-2.amazonaws.com/dev/audits";
 
 const endpoints = {
 	workspace: {

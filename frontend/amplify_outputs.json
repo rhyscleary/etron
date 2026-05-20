@@ -1,9 +1,9 @@
 {
   "auth": {
-    "user_pool_id": "ap-southeast-2_d2Jecy0b9",
+    "user_pool_id": "ap-southeast-2_yEd6JBLZb",
     "aws_region": "ap-southeast-2",
-    "user_pool_client_id": "3di87vng2rp03j3cdvs4pogbg2",
-    "identity_pool_id": "ap-southeast-2:0e12f32c-d48c-4f05-92c1-4cce54e98909",
+    "user_pool_client_id": "6rqdlvcud53fpqcu7rs16gi299",
+    "identity_pool_id": "ap-southeast-2:47e9427c-9e35-4d5b-856b-a52971850bd2",
     "mfa_methods": [],
     "standard_required_attributes": [
       "email"
@@ -27,11 +27,11 @@
   },
   "storage": {
     "aws_region": "ap-southeast-2",
-    "bucket_name": "amplify-dw9x9f8kcq4l4-mai-appconfigurationbucket22-knsnj7tf8mls",
+    "bucket_name": "amplify-d1ehz3hteoqg6o-de-appconfigurationbucket22-5qonbpxesmjg",
     "buckets": [
       {
         "name": "users",
-        "bucket_name": "amplify-dw9x9f8kcq4l4-main-bra-usersbucket22de6c1b-sqkgrx3inh0w",
+        "bucket_name": "amplify-d1ehz3hteoqg6o-develop-usersbucket22de6c1b-9r6uzb867vbz",
         "aws_region": "ap-southeast-2",
         "paths": {
           "users/*": {
@@ -46,7 +46,7 @@
       },
       {
         "name": "workspaces",
-        "bucket_name": "amplify-dw9x9f8kcq4l4-mai-workspacesbucket784af028-tyhgap5jppje",
+        "bucket_name": "amplify-d1ehz3hteoqg6o-de-workspacesbucket784af028-9unfdhr6eauy",
         "aws_region": "ap-southeast-2",
         "paths": {
           "workspaces/*": {
@@ -67,7 +67,7 @@
       },
       {
         "name": "appConfiguration",
-        "bucket_name": "amplify-dw9x9f8kcq4l4-mai-appconfigurationbucket22-knsnj7tf8mls",
+        "bucket_name": "amplify-d1ehz3hteoqg6o-de-appconfigurationbucket22-5qonbpxesmjg",
         "aws_region": "ap-southeast-2",
         "paths": {
           "permissions/*": {
