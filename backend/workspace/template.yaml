@@ -13,6 +13,8 @@ Parameters:
     Default: etron_day_book_db
   AuditQueueUrl:
     Type: String
+  UserPoolArn:
+    Type: String
     
 Globals:
   Function:
@@ -26,6 +28,7 @@ Globals:
         WORKSPACE_BUCKET: !Ref WorkspaceBucketName
         ATHENA_DATABASE: !Ref AthenaDatabaseName
         AUDIT_QUEUE_URL: !Ref AuditQueueUrl
+        USERPOOL_ARN: !Ref UserPoolArn
 
 Resources:
 
@@ -37,7 +40,7 @@ Resources:
           DefaultAuthorizer: CognitoAuthorizer
           Authorizers:
             CognitoAuthorizer:
-              UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              UserPoolArn: !Ref UserPoolArn
               Identity:
                 Header: Authorization
 
@@ -70,7 +73,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         CreateWorkspace:
@@ -142,7 +145,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         InviteUser:
@@ -207,7 +210,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         AddUser:
@@ -273,7 +276,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         CreateRole:
@@ -346,7 +349,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         CreateBoard:
@@ -438,7 +441,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         DeleteWorkspace:
@@ -503,7 +506,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         InstallModule:

@@ -1,9 +1,13 @@
-# eTRON
+# Electronic Tracking Revenue and Operations Network
 
-THE FOLLOWING IS HOW TO INSTALL AND SET UP EVERYTHING NEEDED TO RUN OUR APPLICATION
+eTRON is an all-in-one affordable mobile solution for small to medium enterprises to aggregate and track business operations.
+It delivers a collaborative platform to use on the go. The modular design gives businesses many options to customise it to their needs.
+
+## The following is how to install and setup everything needed to run the application:
 
 # Setting up Development Environment
-## Install Apps
+## Frontend
+### Install Apps
 1. Install VSCode
 2. Install GitHub Desktop
     1. Link it to vscode
@@ -35,7 +39,7 @@ THE FOLLOWING IS HOW TO INSTALL AND SET UP EVERYTHING NEEDED TO RUN OUR APPLICAT
     7. Press "OK" to save it
     8. Can close all that now
 
-## Set up Environment
+### Set up Environment
 1. Download code
     1. Get copy of code into computer
 2. Install dependencies
@@ -55,7 +59,17 @@ THE FOLLOWING IS HOW TO INSTALL AND SET UP EVERYTHING NEEDED TO RUN OUR APPLICAT
     4. Press 'a' to open with Android
     5. Let it build
 
+## Backend
+### Setup the Environment
+#### Install AWS SAM CLI
+Follow the tutorial to configure SAM for your environment:
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
+
+Optional -
+Invoke the Lambda functions locally for testing (You will not be able to have them interact with the emulator for a full integration test): 
+https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-local-invoke.html
+
 
 # API Documentation
 We use Postman during devleopment to document our API endpoints.
-The Postman collection is available at https://insync-6111.postman.co/workspace/InSync-Workspace~dc1db447-258b-47ae-847e-38ad0486491f/collection/34328174-89ee0fd8-025e-4e8c-94df-96b04d71143b?action=share&creator=34328174
+The Postman collection is available at https://documenter.getpostman.com/view/34328174/2sB3Wjy3XW

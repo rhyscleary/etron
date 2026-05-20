@@ -8,6 +8,8 @@ Parameters:
     Type: String
   AuditQueueUrl:
     Type: String
+  UserPoolArn:
+    Type: String
 
 Globals:
   Function:
@@ -19,6 +21,7 @@ Globals:
       Variables:
         APP_CONFIGURATION_BUCKET: !Ref AppConfigurationBucketName
         AUDIT_QUEUE_URL: !Ref AuditQueueUrl
+        USERPOOL_ARN: !Ref UserPoolArn
 
 Resources:
 
@@ -30,7 +33,7 @@ Resources:
         DefaultAuthorizer: CognitoAuthorizer
         Authorizers:
           CognitoAuthorizer:
-            UserPoolArn: arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+            UserPoolArn: !Ref UserPoolArn
             Identity:
               Header: Authorization
   
@@ -61,7 +64,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         UpdateUser:
@@ -99,7 +102,7 @@ Resources:
               - cognito-idp:ListUsers
               - cognito-idp:AdminUpdateUserAttributes
             Resource:
-              - arn:aws:cognito-idp:ap-southeast-2:841196398222:userpool/ap-southeast-2_Q4EgaQS86
+              - !Ref UserPoolArn
 
       Events:
         GetInvites:
